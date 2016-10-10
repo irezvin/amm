@@ -5,8 +5,9 @@
  * @class Amm.Element
  * @constructor
  */
-Amm.Element = function() {
+Amm.Element = function(options) {
     this._subscribers = {};
+    Amm.init(this, options);
     Amm.registerItem(this);
 };
 
@@ -216,12 +217,18 @@ Amm.Element.prototype = {
      * @return {Array[]}
      */ 
     getSubscribers: function(outSignal, funcOrPath, scopeOrInSignal) {
-        var res = [];
-        for (var i in this._subscribers) if (this._subscribers.hasOwnProperty(i)) {
-            if (outSignal !== undefined && outSignal !== i) continue;
-            if (funcOrPath !== undefined && funcOrPath !== this._subscribers[i][0]) continue;
-            if (scopeOrInSignal !== undefined && scopeOrInSignal !== this._subscribers[i][1]) continue;
-            res.push([funcOrPath, scopeOrInSignal, outSignal, i]);
+        var res = [], keys = null;
+        if (outSignal === undefined) keys = this._subscribers; else {
+            keys = {};
+            keys[outSignal] = true;
+        }
+        for (var i in keys) if (this._subscribers.hasOwnProperty(i)) {
+            var arr = this._subscribers[i], n = arr.length;
+            for (var j = 0; j < n; j++) {
+                if (funcOrPath !== undefined && funcOrPath !== arr[j][0]) continue;
+                if (scopeOrInSignal !== undefined && scopeOrInSignal !== arr[j][1]) continue;
+                res.push([arr[j][0], arr[j][1], outSignal, j]);
+            }
         }
         return res;
     },

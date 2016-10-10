@@ -11,7 +11,8 @@
             echo "
         <script src=\"../js/classes/{$f}\"></script>";
         }        
-?>
+?> 
+        
         <style type='text/css'>
             h1 {
                 color: orangered;

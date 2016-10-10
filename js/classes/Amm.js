@@ -53,10 +53,21 @@ Amm = {
     
     extend: function(subClass, parentClass) {
         Ajs_Util.extend(subClass, parentClass);
+        var c = this.getClass(parentClass.prototype);
+        if (c) subClass.prototype[c] = '__PARENT__';
+    },
+    
+    getClass: function(object) {
+        for (var i in object) {
+            if (object[i] === '__CLASS__') {
+                return i;
+            }
+        }
+        return null;
     },
     
     is: function(item, className, throwIfNot) {
-        var res = item && item[className] === '__CLASS__';
+        var res = item && (item[className] === '__CLASS__' || item[className] === '__PARENT__');
         if (!res && throwIfNot) {
             var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
             throw argname += " must be an instance of " + className;
@@ -109,13 +120,38 @@ Amm = {
         }
     },
     
-    init: function(object, constructorHash) {
-        if (!constructorHash) return;
-        for (var i in constructorHash) if (constructorHash.hasOwnProperty(i)) {
-            var v = constructorHash[i], s = 'set' + ('' + i).slice(0, 1).toUpperCase() + ('' + i).slice(1);
+    /**
+     * If Array propList is provided, only properties in propList will be used to initialize object.
+     * Found properties will be deleted from options array.
+     * That allows us to prioritize properties using several init() calls
+     */
+    init: function(object, options, propList) {
+        if (!options) return;
+        var optToSet = null;
+        if (propList instanceof Array) {
+            for (var j = 0, l = propList.length; j < l; j++) {
+                if (propList[j] in options) {
+                    if (!optToSet) optToSet = {};
+                    optToSet[propList[j]] = options[propList[j]];
+                    delete options[propList[j]];
+                }
+            }
+        } else {
+            optToSet = options;
+        }
+        if (!optToSet) return;
+        for (var i in optToSet) if (optToSet.hasOwnProperty(i)) {
+            if (i[0] === '_') throw "Use of pseudo-private identifiers is prohibited in `optToSet`, encountered: '" + i + "'";
+            var v = optToSet[i], s = 'set' + ('' + i).slice(0, 1).toUpperCase() + ('' + i).slice(1);
             if (typeof object[s] === 'function') object[s](v);
+            else if (i in object) object[i] = v;
+            else {
+                throw "No such property: '" + i + "' in " + (this.getClass(object) || '`object`');
+            }
         }
     },
+    
+    
     
     getConstructor: function(strName) {
         if (typeof strName !== 'string') throw "`strName` must be a string";

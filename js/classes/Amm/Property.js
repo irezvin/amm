@@ -6,7 +6,7 @@ Amm.Property = function(options) {
 
 Amm.Property.prototype = {
 
-    'Amm.Element': '__CLASS__',
+    'Amm.Property': '__CLASS__',
     
     _value: undefined,
     
@@ -15,13 +15,16 @@ Amm.Property.prototype = {
     defaultOut: 'change',
     
     setValue: function(value) {
-        this.inValue(value);
+        return this.inValue(value);
     },
     
     inValue: function(value) {
         var o = this._value;
         this._value = value;
-        if (o !== this.value) this.outChange(this._value, o);
+        if (o !== this.value) {
+            this.outChange(this._value, o);
+            return true;
+        }    
     },
     
     getValue: function() {
