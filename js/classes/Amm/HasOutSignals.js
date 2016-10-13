@@ -50,7 +50,8 @@ Amm.HasOutSignals.prototype = {
     _out: function(outSignal) {
         var ss = this._subscribers[outSignal];
         if (!ss) return; // no subscribers - so we're done
-        var args = Array.prototype.slice.call(arguments, 1), probl = [];
+        var args = Array.prototype.slice.call(arguments), probl = [];
+        args[0] = this;
         for (var i = 0; i < ss.length; i++) {
             if (typeof ss[i][0] === 'string') { // this is an Element
                 // TODO: support deferred notification

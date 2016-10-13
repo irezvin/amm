@@ -19,6 +19,10 @@ Amm.Element.prototype = {
     
     _id: null,
     
+    _path: null,
+    
+    _parent: null,
+    
     /**
      * Default signal when some observer pushes data to the element without specifying the signal name
      * @type {string}
@@ -27,28 +31,44 @@ Amm.Element.prototype = {
     
     setId: function(id) {
         if (this._id === id) return;
-        var o = this._id;
+        if (('' + id).indexOf(Amm.ID_SEPARATOR) >= 0) {
+            throw "`id` must not contain Amm.ID_SEPARATOR ('" + Amm.ID_SEPARATOR + "')";
+        }
+        var o = this._id, oldPath = this.getPath();
         if (this._parent && this._parent.hasChild(id) && this._parent.getChild(id) !== this) {
             throw "Cannot setId() since the Parent already hasChild() with id '" + id + "'";
         }
         this._id = id;
-        this.outIdChanged(this, o);
-        this.outPathChanged();
+        this.outIdChanged(id, o);
+        this._path = null;
+        var path = this.getPath();
+        if (path !== oldPath)
+            this.outPathChanged(path, oldPath);
+        return true;
+    },
+    
+    getPath: function() {
+        if (this._path === null && this._id !== null) {
+            this._path = (this._parent? this._parent.getPath() : '') + Amm.ID_SEPARATOR + this._id;
+        }
+        return this._path;
     },
     
     getId: function() {
         return this._id;
     },
     
-    _parent: null,
-    
     setParent: function(parent) {
         if (parent === this._parent) return; // nothing to do
+        var oldParent = this._parent, oldPath = this.getPath();
         this._parent = null;
-        if (this._parent)
-            this._parent.removeChild(this);
-        this.outDetached();
+        this._path = null;
+        if (oldParent) {
+            oldParent.unsubscribe('pathChanged', this._parentPathChanged, this);
+            oldParent.removeChild(this);
+        }
         if (parent) {
+            parent.subscribeFunc('pathChanged', this._parentPathChanged, this);
             if (this._requiredParentClass) Amm.is(parent, this._requiredParentClass, 'parent');
             try {
                 this._parent = parent;
@@ -58,23 +78,33 @@ Amm.Element.prototype = {
                 throw e;
             }
         }
+        this.outParentChanged(parent, oldParent);
+        var path = this.getPath();
+        if (path !== oldPath) this.outPathChanged(path, oldPath);
         return true;
     },
     
-    outDetached: function() {
-        this._out('detached', this);
+    _parentPathChanged: function(element, path, oldPath) {
+        var oldPath = this._path;
+        this._path = path + Amm.ID_SEPARATOR + this._id;
+        if (this._path !== oldPath) this.outPathChanged(this._path, oldPath);
     },
     
-    outAttached: function() {
-        this._out('attached');
+    outIdChanged: function(id, oldId) {
+        this._out('idChanged', id, oldId);
     },
     
-    outIdChanged: function() {
-        this._out('idChanged', this);
+    outPathChanged: function(path, oldPath) {
+        this._out('pathChanged', path, oldPath);
     },
     
-    outPathChanged: function() {
-        this._out('pathChanged', this);
+    outParentChanged: function(oldParent) {
+        this._out('parentChanged', oldParent);
+    },
+    
+    p: function(path) {
+        if (path === undefined) return this.getPath();
+        return this.getByPath(path);
     },
     
     /**
@@ -82,15 +112,14 @@ Amm.Element.prototype = {
      * @param {string|Array} path (path must be non-empty!)
      * @return {Amm.Element}
      */
-    getElementByPath: function(path) {
+    getByPath: function(path) {
         if ((!typeof path === 'string' && !path instanceof Array) || !path.length) 
             throw "`path` must be a non-empty array or non-empty string";
         var res = null, scope;
         
-        // head, tail. Use regExp to treat multiple occurances of '/' as one (more UNIXy)
         var head, tail; 
         if (typeof path === 'string') {
-            tail = path.split(/\/+/);
+            tail = path.split(Amm.ID_SEPARATOR);
         } else {
             tail = [].concat(path);
         }
@@ -105,7 +134,7 @@ Amm.Element.prototype = {
             if (!tail.length) { // nothing left to do
                 res = scope;
             } else {
-                res = scope.getElementByPath(tail);
+                res = scope.getByPath(tail);
             }
         }
         return res;

@@ -9,6 +9,8 @@ Amm = {
     _constructors: {},
     
     _namespaces: {},
+    
+    ID_SEPARATOR: '/',
 
     /**
      * We maintain huge hash of all created items to reference them in appropriate places of the DOM (really?) or whatever

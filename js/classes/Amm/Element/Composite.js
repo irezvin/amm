@@ -28,21 +28,57 @@ Amm.Element.Composite.prototype = {
             child.setId(id);
         }
         if (this.hasChild(child)) return; // bingo - have it already
-        if (this.children[id]) {
-            if (this.children[id] !== child) throw "Parent already has child with id '" + id + "'";
+        if (this._children[id]) {
+            if (this._children[id] !== child) throw "Parent already has child with id '" + id + "'";
             else throw "Assertion: hasChild() returned FALSE, but the instance is there!";
         }
-        this.children[id] = child;
+        this._children[id] = child;
         this._subscribeChild(child);
+        this.outChildAdded(child);
         return true;
     },
     
-    _subscribeChild: function(child) {
-        
+    removeChild: function(child) {
+        var hasChild = this.hasChild(child), isParent = child.getParent() === this;
+        if (hasChild) {
+            delete this._children[child.getId()];
+            this._unsubscribeChild(child);
+        }
+        if (isParent) child.setParent(null);
+        this.outChildRemoved(child);
     },
     
-    _handleChildIdChange: function(child, oldId) {
-        
+    outChildAdded: function(child) {
+        this._out('childAdded', child);
+    },
+    
+    outChildRemoved: function(child) {
+        this._out('childRemoved', child);
+    },
+    
+    outChildIdChanged: function(child, id, oldId) {
+        this._out('childIdChanged', child, id, oldId);
+    },
+    
+    _subscribeChild: function(child) {
+        child.subscribeFunc('idChanged', this._childIdChanged, this);
+    },
+    
+    _unsubscribeChild: function(child) {
+        child.unsubscribe('idChanged', undefined, this);
+    },
+    
+    _childIdChanged: function(child, oldId) {
+        var newId = child.getId();
+        if (this._children[newId] && this._children[newId] !== child)
+            throw "Cannot _handleChildIdChange to id that is already busy ('" + newId + "')";
+        if (this._children[oldId] === child) {
+            delete this._children[oldId];
+        } else {
+            console.warn("Wtf: childIdChange notification received, but child not found with child id");
+        }
+        this._children[newId] = child;
+        this._outChildIdChanged(child, newId, oldId);
     },
     
     hasChild: function(child) {
@@ -52,6 +88,10 @@ Amm.Element.Composite.prototype = {
     listChildren: function() {
         return Ajs_Util.hashKeys(this._children);
     },
+    
+    getChild: function(id) {
+        return this._children[id];
+    }
     
 };
 
