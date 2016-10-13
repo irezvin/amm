@@ -46,7 +46,8 @@ Amm = {
         if (typeof item === 'string') item = this._items[item._amm_id];
         if (typeof item.cleanup === 'function') item.cleanup();
         for (var i in this._items) if (this._items.hasOwnProperty(i)) {
-            if (this._items[i]['Amm.Element']) this._items[i].unsubscribe(item);
+            if (typeof this._items[i].unsubscribe === 'function')
+                this._items[i].unsubscribe(undefined, undefined, item);
         }
         this.unregisterItem(item);
     },

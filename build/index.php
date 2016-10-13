@@ -25,15 +25,17 @@
     <body>
         <h1>A.M.M. Playground</h1>
         <script type='text/javascript' src='test.js'></script>
-        <input type='text' id='val1' />
-        <input type='text' id='val2' />
+        <input type='text' id='val1' value='10' class='prop-p' />
+        <input type='text' id='val2' class='prop-p' />
         <script type='text/javascript'>
+            
+            var Amm;
+            
             jQuery(function() {
-                jQuery('#val1').on('change', function() { testElement.inValue(this.value); } );
-                jQuery('#val2').on('change', function() { testElement.inValue(this.value); } );
-                testElement.subscribeFunc('change', function(v){jQuery('#val1').val(v)});
-                testElement.subscribeFunc('change', function(v){jQuery('#val2').val(v)});
-                testElement.inValue(10);
+                p = new Amm.Property(); 
+                q = new Amm.Handler.Property.JQuery({element: p, query: '.prop-p', extractMethod: 'val', method: 'val'});
+                e = new Amm.Emitter({element: p, signal: 'value'});
+                console.log(p.getValue());
             });
         </script>
         
