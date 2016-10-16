@@ -54,9 +54,8 @@ Amm.HasOutSignals.prototype = {
         args[0] = this;
         for (var i = 0; i < ss.length; i++) {
             if (typeof ss[i][0] === 'string') { // this is an Element
-                // TODO: support deferred notification
-                var e = this.getElementByPath(ss[i][0]);
-                // TODO: what should we do if target not found?
+                if (typeof this.getByPath === 'function') e = this.getByPath(ss[i][0]);
+                else e = Amm.getByPath(ss[i][0]);
                 if (e) {
                     var sigArgs = [ss[i][1]].concat(args);
                     e.receiveSignal.apply(e, sigArgs);
@@ -85,7 +84,7 @@ Amm.HasOutSignals.prototype = {
     },
     
     // Observes specified "outSignal" using inSignal of other element specified by path
-    subscribeElement: function(outSignal, path, inSignal) {
+    subscribeElement: function(outSignal, path, fn) {
         if (this.strictSignals && !this.hasOutSignal(outSignal))
             throw "No such out signal: '" + outSignal+ "'";
         if (typeof outSignal !== 'string' || !outSignal.length) throw "`outSignal` must be a non-empty string";

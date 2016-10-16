@@ -32,6 +32,7 @@ Amm.Element.Composite.prototype = {
             if (this._children[id] !== child) throw "Parent already has child with id '" + id + "'";
             else throw "Assertion: hasChild() returned FALSE, but the instance is there!";
         }
+        child.setParent(this);
         this._children[id] = child;
         this._subscribeChild(child);
         this.outChildAdded(child);

@@ -39,7 +39,7 @@ Amm.ElementBound.prototype = {
             }
             this.setElement(null);
         }
-        var element = Amm.getElementByPath(elementPath);
+        var element = (typeof this.getByPath === 'function')? this.getByPath(elementPath) : Amm.p(elementPath);
         if (!element) {
             this._elementPath = elementPath;
             Amm.waitFor(elementPath, this.setElement, this);
@@ -57,6 +57,7 @@ Amm.ElementBound.prototype = {
     },
     
     setElement: function(element) {
+        if (typeof element === 'string') return this.setElementPath(element);
         if (this.requiredElementClass)
             Amm.is(element, this.requiredElementClass, 'element');
         var o = this._element;

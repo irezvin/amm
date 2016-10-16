@@ -21,7 +21,7 @@ Amm.Property.prototype = {
     inValue: function(value) {
         var o = this._value;
         this._value = value;
-        if (o !== this.value) {
+        if (o !== this._value) {
             this.outChange(this._value, o);
             return true;
         }    

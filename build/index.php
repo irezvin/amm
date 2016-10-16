@@ -35,7 +35,12 @@
                 p = new Amm.Property(); 
                 q = new Amm.Handler.Property.JQuery({element: p, query: '.prop-p', extractMethod: 'val', method: 'val'});
                 e = new Amm.Emitter({element: p, signal: 'value'});
+                
                 console.log(p.getValue());
+                
+
+                h1 = new Amm.Handler({elementPath: '^/foo', signal: 'change', handleSignal: function(e, v) { console.log(': ', v); }});
+                foo = new Amm.Property({id: 'foo', parent: '^', value: 'deferred ok'});                
             });
         </script>
         

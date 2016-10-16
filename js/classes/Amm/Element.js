@@ -23,6 +23,11 @@ Amm.Element.prototype = {
     
     _parent: null,
     
+    /*
+     * Path to the non-exiting (yet) parent for deferred association
+     */
+    _parentPath: null,
+    
     /**
      * Default signal when some observer pushes data to the element without specifying the signal name
      * @type {string}
@@ -58,8 +63,33 @@ Amm.Element.prototype = {
         return this._id;
     },
     
+    setDeferredParentPath: function(parentPath) {
+        if (this._parentPath === parentPath) return;
+        if (this._parentPath) Amm.stopWaiting(this._parent, this.setParent, this);
+        var p = this.getByPath(parentPath);
+        if (p) return this.setParent(p);
+        if (this._parent) this.setParent(null);
+        this._parentPath = parentPath;
+        if (parentPath) {
+            Amm.waitFor(this._parentPath, this.setParent, this);
+        }
+    },
+    
+    getDeferredParentPath: function() {
+        return this._parentPath;
+    },
+    
     setParent: function(parent) {
         if (parent === this._parent) return; // nothing to do
+        
+        if (typeof parent === 'string') return this.setDeferredParentPath(parent);
+        
+        // check that parent isn't our child
+        if (parent) {
+            for (var e = parent; e; e = e.getParent()) {
+                if (e === this) throw "Cannot setParent() when `parent` is the child of me";
+            }
+        }
         var oldParent = this._parent, oldPath = this.getPath();
         this._parent = null;
         this._path = null;
@@ -96,6 +126,9 @@ Amm.Element.prototype = {
     
     outPathChanged: function(path, oldPath) {
         this._out('pathChanged', path, oldPath);
+        if (path && path[0] === '^' || oldPath && oldPath[0] === '^') {
+            Amm.notifyElementPathChanged(this, path, oldPath);
+        }
     },
     
     outParentChanged: function(oldParent) {
@@ -113,9 +146,12 @@ Amm.Element.prototype = {
      * @return {Amm.Element}
      */
     getByPath: function(path) {
-        if ((!typeof path === 'string' && !path instanceof Array) || !path.length) 
+        if (!((typeof path === 'string' || path instanceof Array) && path.length)) 
             throw "`path` must be a non-empty array or non-empty string";
         var res = null, scope;
+        
+        if (path[0] === '^' && this._id !== '^') // it's a root - take a shortcut
+            return Amm.p(path);
         
         var head, tail; 
         if (typeof path === 'string') {
@@ -125,8 +161,9 @@ Amm.Element.prototype = {
         }
         head = tail.splice(0, 1)[0];
         if (head === '') {
-            scope = this.getRoot();
+            scope = this.getTopElement();
         }
+        else if (head === '^') scope = Amm.getRoot();
         else if (head === '.') scope = this;
         else if (head === '..') scope = this.getParent();
         else scope = this.getChild(head);
@@ -151,9 +188,9 @@ Amm.Element.prototype = {
     /**
      * @return {Amm.Element}
      */
-    getRoot: function() {
+    getTopElement: function() {
         var res = null;
-        for (var e = this.getParent(); e; e = e.getParent()) res = e;
+        for (var e = this; e; e = e.getParent()) res = e;
         return res;
     },
     
