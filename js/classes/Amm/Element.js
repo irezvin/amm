@@ -6,7 +6,7 @@
  * @constructor
  */
 Amm.Element = function(options) {
-    Amm.HasOutSignals.call(this, options);
+    Amm.HasSignals.call(this, options);
     Amm.init(this, options, ['id']);
     Amm.init(this, options);
 };
@@ -39,8 +39,8 @@ Amm.Element.prototype = {
         if (('' + id).indexOf(Amm.ID_SEPARATOR) >= 0) {
             throw "`id` must not contain Amm.ID_SEPARATOR ('" + Amm.ID_SEPARATOR + "')";
         }
-        var o = this._id, oldPath = this.getPath();
-        if (this._parent && this._parent.hasChild(id) && this._parent.getChild(id) !== this) {
+        var o = this._id, oldPath = this.getPath(), otherChild;
+        if (this._parent && (otherChild = this._parent.getChild(id)) && otherChild !== this) {
             throw "Cannot setId() since the Parent already hasChild() with id '" + id + "'";
         }
         this._id = id;
@@ -98,7 +98,7 @@ Amm.Element.prototype = {
             oldParent.removeChild(this);
         }
         if (parent) {
-            parent.subscribeFunc('pathChanged', this._parentPathChanged, this);
+            parent.subscribe('pathChanged', this._parentPathChanged, this);
             if (this._requiredParentClass) Amm.is(parent, this._requiredParentClass, 'parent');
             try {
                 this._parent = parent;
@@ -114,7 +114,7 @@ Amm.Element.prototype = {
         return true;
     },
     
-    _parentPathChanged: function(element, path, oldPath) {
+    _parentPathChanged: function(path, oldPath) {
         var oldPath = this._path;
         this._path = path + Amm.ID_SEPARATOR + this._id;
         if (this._path !== oldPath) this.outPathChanged(this._path, oldPath);
@@ -208,57 +208,16 @@ Amm.Element.prototype = {
     getChild: function(id) {
     },
     
-    // converts list of functions inFoo(), inBar() to 'foo', 'bar'
-    listInSignals: function() {
-        var res = [];
-        for (var i in this) {
-            if (('' + i).slice(0, 2) === 'in' && typeof this[i] === 'function') {
-                i = '' + i;
-                i = i.slice(2, 3).toLowerCase() + i.slice(3, i.length);
-                if (i.length) res.push(i);
-            }
-        }
-        return res;
-    },
-    
-    /**
-     * @param {string} inSignal
-     * @returns {String} Empty string if there is no such in signal, or function name to receive the signal
-     */
-    hasInSignal: function(inSignal) {
-        var res = '', n = 'in' + Ajs_Util.ucFirst(inSignal);
-        if (typeof this[n] === 'function') res = n;
-        return res;
-    },
-    
-    /**
-     * Accepts any number of additional arguments
-     * @param {string} inSignal
-     * @returns {bool} Whether such signal was found or not 
-     * If there was no such signal, will raise an error if strictSignals === TRUE, instead of returning FALSE
-     */
-    receiveSignal: function(inSignal) {
-        var args = Array.prototype.slice.call(arguments, 1), sn = this.hasInSignal(inSignal), res = true;
-        if (sn) {
-            this[sn].apply(this, args);
-        } else {
-            if (this.strictSignals)
-                throw "No such inSignal: '" + inSignal + "'";
-            res = false;
-        }
-        return res;
-    },
-    
     outCleanup: function() {
         this._out('cleanup', this);
     },
     
     cleanup: function() {
-        Amm.HasOutSignals.prototype.cleanup.call(this);
+        Amm.HasSignals.prototype.cleanup.call(this);
         this.setParent(null);
         this.outCleanup();
     }
     
 };
 
-Amm.extend(Amm.Element, Amm.HasOutSignals);
+Amm.extend(Amm.Element, Amm.HasSignals);

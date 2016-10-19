@@ -39,7 +39,7 @@ Amm.Handler.Property.JQuery.prototype = {
         }
     },
     
-    _handleSignal: function(element, value) {
+    _handleSignal: function(value) {
         if (this.query && this.method) {
             var q = this.htmlRoot? jQuery(this.htmlRoot).find(this.query) : jQuery(this.query);
             if (this.args instanceof Array || this.valueArgIndex) {

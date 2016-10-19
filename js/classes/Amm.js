@@ -6,9 +6,9 @@ Amm = {
     
     id: 'amm',
     
-    _counter: 0,
+    _counter: 1,
     
-    _constructors: {},
+    _functions: {},
     
     _namespaces: {},
 
@@ -28,6 +28,17 @@ Amm = {
     _waitList: {},
     
     _root: null,
+    
+    /**
+     * Signal stack
+     */
+    _signalStack: [],
+    
+    signal: {
+        origin: null,
+        name: '',
+        args: []
+    },
     
     getRoot: function() {
         if (!this._root) this._root = new this.Root();
@@ -101,6 +112,7 @@ Amm = {
      */
     waitFor: function(elementPath, fn, scope, extra) {
         scope = scope || null;
+        extra = extra || null;
         if (!this._waitList[elementPath]) this._waitList[elementPath] = [];
         else {
             for (var i = this._waitList[elementPath].length - 1; i >= 0; i--) {
@@ -128,18 +140,17 @@ Amm = {
     stopWaiting: function(elementPath, fn, scope, extra) {
         elementPath = elementPath || null;
         fn = fn || null;
-        var hasExtra = arguments.length > 3;
         if (elementPath === null) kk = this._waitList;
         else kk = { elementPath : true };
         for (var i in kk) if (this._waitList.hasOwnProperty(i)) {
-            if (fn === undefined && scope === undefined && !hasExtra) {
+            if (fn === undefined && scope === undefined && extra === undefined) {
                 delete this._waitList[i];
             } else {
                 var v = this._waitList[elementPath];
                 for (var j = v.length - 1; j >= 0; j--) {
                     if (    (fn === undefined || v[j][0] === fn) 
                          && (scope === undefined || v[j][1] === scope) 
-                         && (!hasExtra || v[j][2] === extra)
+                         && (extra === undefined || v[j][2] === extra)
                         ) {
                         v[i].splice(j, 1);
                     }
@@ -181,9 +192,9 @@ Amm = {
     
     
     
-    getConstructor: function(strName) {
+    getFunction: function(strName) {
         if (typeof strName !== 'string') throw "`strName` must be a string";
-        if (this._constructors[strName]) return this._constructors[strName];
+        if (this._functions[strName]) return this._functions[strName];
         var p = strName.split('.'), r = this._namespaces, s = [];
         while (p.length && r) {
             var h = p.splice(0, 1)[0];
@@ -192,9 +203,9 @@ Amm = {
         }
         if (!r) {
             if (p.length) {
-                throw "Unknown namespace '" + s.join('.') + "' (when trying to locate constructor '" + strName + "')";
+                throw "Unknown namespace '" + s.join('.') + "' (when trying to locate function '" + strName + "')";
             } 
-            else throw "Unknown constructor '" + s.join('.') + "'";
+            else throw "Unknown function '" + s.join('.') + "'";
         }
         return r;
     },
@@ -205,14 +216,25 @@ Amm = {
         this._namespaces[ns] = hash;
     },
     
-    registerConstructor: function(name, fn) {
+    registerFunction: function(name, fn) {
         if (typeof name !== 'string') throw "`name` must be a string";
         if (!fn || typeof fn !== 'function') throw "`fn` must be a function";
-        this._constructors[name] = fn;
+        this._functions[name] = fn;
+    },
+    
+    pushSignal: function(signal) {
+        this._signalStack.push(this.signal);
+        this.signal = signal;
+    },
+    
+    popSignal: function() {
+        this.signal = this._signalStack.pop();
     }
     
 };
 
-Amm.id = 'amm_' + Math.trunc(Math.random() * 1000000);
+Amm.signal = null;
+
+//Amm.id = 'amm_' + Math.trunc(Math.random() * 1000000);
 
 Amm.registerNamespace('Amm', Amm);

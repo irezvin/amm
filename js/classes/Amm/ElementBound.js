@@ -53,7 +53,7 @@ Amm.ElementBound.prototype = {
         }
         this._element = element;
         this._elementPath = null;
-        if (this._element) this._element.subscribeFunc('cleanup', this._handleElementCleanup, this);
+        if (this._element) this._element.subscribe('cleanup', this._handleElementCleanup, this);
     },
     
     setElement: function(element) {

@@ -62,24 +62,24 @@ Amm.Element.Composite.prototype = {
     },
     
     _subscribeChild: function(child) {
-        child.subscribeFunc('idChanged', this._childIdChanged, this);
+        child.subscribe('idChanged', this._childIdChanged, this);
     },
     
     _unsubscribeChild: function(child) {
         child.unsubscribe('idChanged', undefined, this);
     },
     
-    _childIdChanged: function(child, oldId) {
-        var newId = child.getId();
+    _childIdChanged: function(newId, oldId) {
+        child = Amm.signal.origin;
         if (this._children[newId] && this._children[newId] !== child)
-            throw "Cannot _handleChildIdChange to id that is already busy ('" + newId + "')";
+            throw "Cannot handle _childIdChanged to id that is already busy ('" + newId + "')";
         if (this._children[oldId] === child) {
             delete this._children[oldId];
         } else {
             console.warn("Wtf: childIdChange notification received, but child not found with child id");
         }
         this._children[newId] = child;
-        this._outChildIdChanged(child, newId, oldId);
+        this.outChildIdChanged(child, newId, oldId);
     },
     
     hasChild: function(child) {

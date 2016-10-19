@@ -43,7 +43,7 @@ Amm.Handler.prototype = {
     },
     
     _subscribe: function() {
-        this._element.subscribeFunc(this._signal, this._handleSignal, this);
+        this._element.subscribe(this._signal, this._handleSignal, this);
     },
     
     _unsubscribe: function(fully) {

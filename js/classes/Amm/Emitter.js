@@ -36,10 +36,16 @@ Amm.Emitter.prototype = {
     
     _queue: null,
     
+    outSignalName: null,
+    
+    extra: null,
+    
+    decorator: null,
+    
     emit: function() {
-        if (!this._signal) throw "Cannot emit() without name of the signal!";
+        if (!this._method) throw "Cannot emit() without name of the method!";
         if (!this._element && this._deferredMode === Amm.Emitter.DEFERRED_DROP) return;
-        var args = [this._signal].concat(Array.prototype.slice.call(arguments));
+        var args = [this._method].concat(Array.prototype.slice.call(arguments));
         if (!this._element) {
             if (this._deferredMode === Amm.Emitter.DEFERRED_FIRST) 
                 this._queue = this._queue || [args];
@@ -57,15 +63,16 @@ Amm.Emitter.prototype = {
     },
     
     _doEmit: function(args) {
-        this._element.receiveSignal.apply(this._element, args);
+        var handler = args.splice(0, 1)[0];
+        return Amm.HasSignals.invokeHandler.call(this, this.outSignalName, args, handler, this._element, this.extra, this.decorator, !this.outSignalName);
     },
     
-    setSignal: function(signal) {
-        this._signal = signal;
+    setMethod: function(method) {
+        this._method = method;
         this._queue = null;
     },
     
-    getSignal: function() { return this._signal; },
+    getMethod: function() { return this._method; },
     
     _doElementChange: function(element, oldElement) {
         Amm.ElementBound.prototype._doElementChange.call(this, element, oldElement);
