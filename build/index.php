@@ -27,6 +27,10 @@
         <script type='text/javascript' src='test.js'></script>
         <input type='text' id='val1' value='10' class='prop-p' />
         <input type='text' id='val2' class='prop-p' />
+        <br />
+        <br />
+        <input type='text' id='val3' />
+        <input type='text' id='val4' />
         <script type='text/javascript'>
             
             var Amm;
@@ -34,12 +38,16 @@
             jQuery(function() {
                 p = new Amm.Property(); 
                 q = new Amm.Handler.Property.JQuery({element: p, query: '.prop-p', extractMethod: 'val', method: 'val'});
-                e = new Amm.Emitter({element: p, method: 'setValue'});
+                e = new Amm.Emitter.JQuery({element: p, method: 'setValue', eventName: 'change', selector: '.prop-p', eventPass: 'target.value'});
                 
                 console.log(p.getValue());
                 
-                h1 = new Amm.Handler({elementPath: '^/foo', signal: 'change', handleSignal: function(v) { console.log(': ', v); }});
+                h1 = new Amm.Handler({elementPath: '^/foo', signal: 'valueChange', handleSignal: function(v) { console.log(': ', v); }});
                 foo = new Amm.Property({id: 'foo', parent: '^', value: 'deferred ok'});                
+                
+                pf = new Amm.Field({id: 'val3', value: 'v'});
+                f = new Amm.Adapter.Html.Input({element: pf, htmlElement: '#val3'});
+                
             });
         </script>
         

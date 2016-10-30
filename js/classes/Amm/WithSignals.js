@@ -1,16 +1,16 @@
 /* global Amm */
 
-Amm.HasSignals = function(options) {
+Amm.WithSignals = function(options) {
     this._subscribers = {};
     Amm.registerItem(this);
     Amm.init(this, options);
 };
 
-Amm.HasSignals.invokeHandler = function(outSignal, args, handler, scope, extra, decorator, dontPush) {
-    return Amm.HasSignals.invokeHandlers.call(this, outSignal, args, [[handler, scope, extra, decorator]], dontPush);
+Amm.WithSignals.invokeHandler = function(outSignal, args, handler, scope, extra, decorator, dontPush) {
+    return Amm.WithSignals.invokeHandlers.call(this, outSignal, args, [[handler, scope, extra, decorator]], dontPush);
 };
 
-Amm.HasSignals.invokeHandlers = function(outSignal, args, subscribers, dontPush) {
+Amm.WithSignals.invokeHandlers = function(outSignal, args, subscribers, dontPush) {
     if (!dontPush) {
         Amm.pushSignal({
             origin: this,
@@ -67,9 +67,9 @@ Amm.HasSignals.invokeHandlers = function(outSignal, args, subscribers, dontPush)
     return true;
 }
 
-Amm.HasSignals.prototype = {
+Amm.WithSignals.prototype = {
     
-    'Amm.HasSignals': '__CLASS__',
+    'Amm.WithSignals': '__CLASS__',
     
     _subscribers: null,
     
@@ -98,7 +98,7 @@ Amm.HasSignals.prototype = {
      * @param {string} outSignal
      * @returns {String} Empty string if there is no such out signal, or function name to produce the signal
      */
-    hasOutSignal: function(inSignal) {
+    hasSignal: function(inSignal) {
         var res = '', n = 'out' + Ajs_Util.ucFirst(inSignal);
         if (typeof this[n] === 'function') res = n;
         return res;
@@ -112,7 +112,7 @@ Amm.HasSignals.prototype = {
         var ss = this._subscribers[outSignal];
         if (!ss) return; // no subscribers - so we're done
         var args = Array.prototype.slice.call(arguments, 1);
-        Amm.HasSignals.invokeHandlers.call(this, outSignal, args, ss);
+        Amm.WithSignals.invokeHandlers.call(this, outSignal, args, ss);
     },
     
     subscribe: function(outSignal, handler, scope, extra, decorator) {
@@ -120,7 +120,7 @@ Amm.HasSignals.prototype = {
         scope = scope || null; // required by getSubscribers to work properly
         extra = extra || null;
         decorator = decorator || null;
-        if (this.strictSignals && !this.hasOutSignal(outSignal))
+        if (this.strictSignals && !this.hasSignal(outSignal))
             throw "No such out signal: '" + outSignal+ "'";
         if (!this._subscribers[outSignal]) this._subscribers[outSignal] = [];
         if (!this.getSubscribers(outSignal, handler, scope, extra, decorator).length)
@@ -155,8 +155,8 @@ Amm.HasSignals.prototype = {
      * All parameters are optional
      * @return {Array[]} list of unsubscribed handlers (as in 'getSubscribers()')
      */
-    unsubscribe: function(outSignal, funcOrPath, scopeOrInSignal) {
-        var ss = this.getSubscribers(outSignal, funcOrPath, scopeOrInSignal);
+    unsubscribe: function(outSignal, handler, scope) {
+        var ss = this.getSubscribers(outSignal, handler, scope);
         for (var i = ss.length - 1; i >= 0; i--) {
             var r = ss[i];
             this._subscribers[r[4]].splice(r[5], 1);

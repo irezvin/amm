@@ -58,7 +58,7 @@ Amm.ElementBound.prototype = {
     
     setElement: function(element) {
         if (typeof element === 'string') return this.setElementPath(element);
-        if (this.requiredElementClass)
+        if (this.requiredElementClass && element !== null)
             Amm.is(element, this.requiredElementClass, 'element');
         var o = this._element;
         if (element === o) return; // nothing to do
@@ -81,6 +81,7 @@ Amm.ElementBound.prototype = {
     },
     
     cleanup: function() {
+        Amm.cleanupAggregates.call(this);
         if (this._element) {
             if (!this._isElementCleanup) {
                 // full un-subscription

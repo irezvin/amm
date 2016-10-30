@@ -36,7 +36,7 @@ Amm.Emitter.prototype = {
     
     _queue: null,
     
-    outSignalName: null,
+    _method: null,
     
     extra: null,
     
@@ -64,7 +64,7 @@ Amm.Emitter.prototype = {
     
     _doEmit: function(args) {
         var handler = args.splice(0, 1)[0];
-        return Amm.HasSignals.invokeHandler.call(this, this.outSignalName, args, handler, this._element, this.extra, this.decorator, !this.outSignalName);
+        return Amm.WithSignals.invokeHandler.call(this, this.methodName, args, handler, this._element, this.extra, this.decorator, !this.methodName);
     },
     
     setMethod: function(method) {

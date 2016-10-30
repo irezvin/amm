@@ -1,15 +1,13 @@
 /* global Amm */
 
 Amm.Emitter.JQuery = function(options) {
-    this._receiveEventProxy = jQuery.proxy(this._receiveEvent, this);
+    this._handler = jQuery.proxy(this._receiveEvent, this);
     Amm.Emitter.call(this, options);
+    Amm.JQueryListener.call(this, options);
 };
 
 Amm.Emitter.JQuery.prototype = {
     
-    // proxy function that handles events using this() scope
-    _receiveEventProxy: null,
-
     // JQuery result with selected elements that .on() was called on
     _onJQuery: null,
 
@@ -38,53 +36,8 @@ Amm.Emitter.JQuery.prototype = {
     // (i.e. _htmlRoot points to the container, and _selector specifies only 'input[type=text]' (relative to that container)
     _htmlRoot: null,
     
-    setEventName: function(eventName) {
-        if ((o = this._eventName) === eventName) return;
-        this._eventName = eventName;
-        this._bind();
-    },
-    
-    getEventName: function() { return this._eventName; },
-    
-    setSelector: function(selector) {
-        if ((o = this._selector) === selector) return;
-        this._selector = selector;
-        this._bind();
-    },
-    
-    getSelector: function() { return this._selector; },
-    
-    setDelegateSelector: function(delegateSelector) {
-        if ((o = this._delegateSelector) === delegateSelector) return;
-        this._delegateSelector = delegateSelector;
-        this._bind();
-    },
-    
-    getDelegateSelector: function() { return this._delegateSelector; },
-    
-    setHtmlRoot: function(htmlRoot) {
-        if ((o = this._htmlRoot) === htmlRoot) return;
-        this._htmlRoot = htmlRoot;
-        this._bind();
-    },
-    
-    getHtmlRoot: function() { return this._htmlRoot; },
-    
-    _bind: function() {
-        // un-bind old
-        if (this._onJQuery) {
-            this._onJQuery.off.apply(this._onJQuery, this._onArgs);
-            this._onJQuery = null;
-            this._onArgs = null;
-        }
-        // bind new
-        if (this._selector && this._eventName) { // not less
-            this._onArgs = [this._receiveEventProxy];
-            if (this._delegateSelector) this._onArgs.unshift(this._delegateSelector);
-            this._onArgs.unshift(this._eventName);
-            this._onJQuery = this._htmlRoot? jQuery(this._htmlRoot).find(this._selector) : jQuery(this._selector);
-            this._onJQuery.on.apply(this._onJQuery, this._onArgs);
-        }
+    setHandler: function() {
+        console.warn("Amm.Emitter.JQuery::setHandler() has no effect");
     },
     
     // By default, values extracted from elementPass values are sent first, then ones from eventPass
@@ -110,15 +63,18 @@ Amm.Emitter.JQuery.prototype = {
     },
     
     cleanup: function() {
-        if (this._onJquery) this._off();
-        this._receiveEventProxy = null;
+        Amm.JQueryListener.prototype.cleanup.call(this);
         Amm.Emitter.prototype.cleanup.call(this);
     },
     
     _extractJq: function(src, spec) {
-        var fnArg = /(^[^:]+)(:(.*$))?/.exec(spec), fn, arg, res;
-        if (fnArg) fn = fnArg[0] || src, arg = fnArg[1];
-        res = (jQuery(src)[fn])(arg);
+        var fnArg = /(^[^:]+)(:(.*$))?/.exec(spec), fn, arg = [], res;
+        if (fnArg) {
+            fn = fnArg[1] || src;
+            if (fnArg[2] !== undefined) arg.push(fnArg[1]);
+        }
+        var scope = (jQuery(src));
+        res = scope[fn].apply(scope, arg);
         return res;
     },
     
@@ -150,3 +106,4 @@ Amm.Emitter.JQuery.prototype = {
 };
 
 Amm.extend(Amm.Emitter.JQuery, Amm.Emitter);
+Amm.extend(Amm.Emitter.JQuery, Amm.JQueryListener);

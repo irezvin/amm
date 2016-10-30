@@ -6,7 +6,7 @@
  * @constructor
  */
 Amm.Element = function(options) {
-    Amm.HasSignals.call(this, options);
+    Amm.WithSignals.call(this, options);
     Amm.init(this, options, ['id']);
     Amm.init(this, options);
 };
@@ -28,11 +28,7 @@ Amm.Element.prototype = {
      */
     _parentPath: null,
     
-    /**
-     * Default signal when some observer pushes data to the element without specifying the signal name
-     * @type {string}
-     */
-    defaultIn: null,
+    defaultProperty: null,
     
     setId: function(id) {
         if (this._id === id) return;
@@ -213,11 +209,12 @@ Amm.Element.prototype = {
     },
     
     cleanup: function() {
-        Amm.HasSignals.prototype.cleanup.call(this);
+        Amm.WithSignals.prototype.cleanup.call(this);
+        Amm.cleanupAggregates.call(this);
         this.setParent(null);
         this.outCleanup();
     }
     
 };
 
-Amm.extend(Amm.Element, Amm.HasSignals);
+Amm.extend(Amm.Element, Amm.WithSignals);

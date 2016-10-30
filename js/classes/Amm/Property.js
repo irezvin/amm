@@ -10,9 +10,7 @@ Amm.Property.prototype = {
     
     _value: undefined,
     
-    defaultIn: 'value',
-    
-    defaultOut: 'change',
+    defaultProperty: 'value',
     
     setValue: function(value) {
         return this.inValue(value);
@@ -22,7 +20,7 @@ Amm.Property.prototype = {
         var o = this._value;
         this._value = value;
         if (o !== this._value) {
-            this.outChange(this._value, o);
+            this.outValueChange(this._value, o);
             return true;
         }    
     },
@@ -31,8 +29,8 @@ Amm.Property.prototype = {
         return this._value;
     },
     
-    outChange: function(value, oldValue) {
-        this._out('change', value, oldValue);
+    outValueChange: function(value, oldValue) {
+        this._out('valueChange', value, oldValue);
     }
     
 };

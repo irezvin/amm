@@ -1,6 +1,36 @@
 #!/usr/bin/php
 <?php
 
+function mkJsProps(array $props = array(), $withSignal = false) {
+?>
+<?php foreach ($props as $prop) { $p = '_'.$prop; $u = ucfirst($prop); ?>
+
+    <?php echo $p; ?>: null,
+<?php } ?>
+<?php foreach ($props as $prop) { $p = '_'.$prop; $u = ucfirst($prop); ?>
+
+    set<?php echo $u; ?>: function(<?php echo $prop; ?>) {
+        var old<?php echo $u; ?> = this.<?php echo $p; ?>;
+        if (old<?php echo $u; ?> === <?php echo $prop; ?>) return;
+        this.<?php echo $p; ?> = <?php echo $prop; ?>;
+<?php   if ($withSignal) { ?> 
+        this.out<?php echo $u; ?>Change(<?php echo $prop; ?>, old<?php echo $u; ?>);
+<?php   } ?>
+        return true;
+    },
+
+    get<?php echo $u; ?>: function() { return this.<?php echo $p; ?>; },
+<?php   if ($withSignal) { ?> 
+
+    out<?php echo $u; ?>Change: function(<?php echo $prop; ?>, old<?php echo $u; ?>) {
+        this._out('<?php echo $prop; ?>Change', <?php echo $prop; ?>, old<?php echo $u; ?>);
+    },
+<?php   } ?>
+<?php } ?>
+
+<?php
+}
+
 function mkJsClass($class, $baseClass, array $props = array(), $save = false) {
 
     ob_start();
@@ -15,22 +45,7 @@ function mkJsClass($class, $baseClass, array $props = array(), $save = false) {
 <?php echo $class; ?>.prototype = {
 
     '<?php echo $class; ?>': '__CLASS__', 
-<?php foreach ($props as $prop) { $p = '_'.$prop; $u = ucfirst($prop); ?>
-
-    <?php echo $p; ?>: null,
-<?php } ?>
-<?php foreach ($props as $prop) { $p = '_'.$prop; $u = ucfirst($prop); ?>
-
-    set<?php echo $u; ?>: function(<?php echo $prop; ?>) {
-        var old<?php $u; ?> = this.<?php echo $p; ?>;
-        if (old<?php $u; ?> === this.<?php echo $p; ?>) return;
-        this.<?php echo $p; ?> = <?php echo $prop; ?>;
-        return true;
-    },
-
-    get<?php echo $u; ?>: function() { return this.<?php echo $p; ?>; },
-<?php } ?>
-
+<?php mkJsProps($props); ?>
 };
 
 Amm.extend(<?php echo $class; ?>, <?php echo $baseClass; ?>);
@@ -54,6 +69,20 @@ Amm.extend(<?php echo $class; ?>, <?php echo $baseClass; ?>);
 
 if (!count(debug_backtrace())) {
     $vv = array_slice($_SERVER['argv'], 1);
+    
+    if (in_array('-p', $vv)) {
+        $vv = array_diff($vv, array('-p'));
+    
+        if (in_array('-c', $vv)) {
+            $sig = true;
+            $vv = array_diff($vv, array('-c'));
+        } else {
+            $sig = false;
+        }
+        mkJsProps($vv, $sig);
+        die();
+    }
+    
     if (count($vv) < 2) {
         die("Usage: mk.php Class.Name base.Class.Name [prop1, prop2...]");
     }

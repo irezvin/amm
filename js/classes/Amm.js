@@ -93,6 +93,7 @@ Amm = {
         var res = item && (item[className] === '__CLASS__' || item[className] === '__PARENT__');
         if (!res && throwIfNot) {
             var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
+            console.trace();
             throw argname += " must be an instance of " + className;
         }
         return res;
@@ -229,6 +230,40 @@ Amm = {
     
     popSignal: function() {
         this.signal = this._signalStack.pop();
+    },
+    
+    cleanupComponents: function() {
+        if (this._components instanceof Array) {
+            for (var i = 0, l = this._components.length; i < l; i++) {
+                var prop = this._components[i], ag = this[prop];
+                if (ag && typeof ag.cleanup === 'function') {
+                    this[prop] = null;
+                    ag.cleanup();
+                }
+            }
+        }
+    },
+    
+    // returns TRUE if `element` has together setter, getter and change event for given `property`.
+    // if outCaps is object, then it will have 'setterName', 'getterName' and 'signalName' properties set to either
+    // respective value (i.e. getFoo, setFoo and fooChange) or NULL if such method or event doesn't exists 
+    // -- disregarding to the method result
+    
+    detectProperty: function(element, property, outCaps) {
+        var P = property[0].toUpperClase() + property.slice(1),
+            getterName = 'get' + P, 
+            setterName = 'set' + P, 
+            signalName = property + 'Change';
+        if (typeof element[getterName] !== 'function') getterName = null;
+        if (typeof element[setterName] !== 'function') setterName = null;
+        if (typeof element.hasSignal !== 'function' || !element.hasSignal(signalName)) signalName = null;
+        var res = signalName && getterName && setterName;
+        if (outCaps && typeof outCaps === 'object') {
+            outCaps.getterName = getterName;
+            outCaps.setterName = setterName;
+            outCaps.signalName = signalName;
+        }
+        return res;
     }
     
 };
