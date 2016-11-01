@@ -9,7 +9,7 @@ Amm.Adapter.Field.prototype = {
     'Amm.Adapter.Field': '__CLASS__', 
     
     // Works with Property
-    requiredElementClass: 'Amm.Field',
+    requiredElementClass: 'Amm.Trait.Field',
     
 };
 

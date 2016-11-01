@@ -1,12 +1,12 @@
 /* global Amm */
 
-Amm.Field = function(options) {
+Amm.Trait.Field = function(options) {
     Amm.Property.call(this, options);
 };
 
-Amm.Field.prototype = {
+Amm.Trait.Field.prototype = {
 
-    'Amm.Field': '__CLASS__', 
+    'Amm.Trait.Field': '__CLASS__', 
 
     _readOnly: undefined,
 
@@ -81,5 +81,5 @@ Amm.Field.prototype = {
 
 };
 
-Amm.extend(Amm.Field, Amm.Property);
+Amm.extend(Amm.Trait.Field, Amm.Property);
 

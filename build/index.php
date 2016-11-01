@@ -45,7 +45,7 @@
                 h1 = new Amm.Handler({elementPath: '^/foo', signal: 'valueChange', handleSignal: function(v) { console.log(': ', v); }});
                 foo = new Amm.Property({id: 'foo', parent: '^', value: 'deferred ok'});                
                 
-                pf = new Amm.Field({id: 'val3', value: 'v'});
+                pf = new Amm.Trait.Field({id: 'val3', value: 'v'});
                 f = new Amm.Adapter.Html.Input({element: pf, htmlElement: '#val3'});
                 
             });
