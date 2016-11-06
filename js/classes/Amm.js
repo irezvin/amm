@@ -250,7 +250,7 @@ Amm = {
     // -- disregarding to the method result
     
     detectProperty: function(element, property, outCaps) {
-        var P = property[0].toUpperClase() + property.slice(1),
+        var P = property[0].toUpperCase() + property.slice(1),
             getterName = 'get' + P, 
             setterName = 'set' + P, 
             signalName = property + 'Change';

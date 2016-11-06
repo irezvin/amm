@@ -98,8 +98,8 @@ Amm.WithSignals.prototype = {
      * @param {string} outSignal
      * @returns {String} Empty string if there is no such out signal, or function name to produce the signal
      */
-    hasSignal: function(inSignal) {
-        var res = '', n = 'out' + Ajs_Util.ucFirst(inSignal);
+    hasSignal: function(signal) {
+        var res = '', n = 'out' + Ajs_Util.ucFirst(signal);
         if (typeof this[n] === 'function') res = n;
         return res;
     },
