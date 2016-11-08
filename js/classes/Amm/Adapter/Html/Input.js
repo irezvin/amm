@@ -62,14 +62,20 @@ Amm.Adapter.Html.Input.prototype = {
         var e = jQuery(this._htmlElement)[0];
         if (e) return e.getAttribute('readonly'); 
     },
-    
-    setAdpEnabled: function(enabled) {
-        var q = jQuery(this._htmlElement), disabled = !enabled;
+
+    _doSetEnabled: function(enabled, locked) {
+        if (enabled === undefined) enabled = this._element.getEnabled();
+        if (locked === undefined) locked = this._element.getLocked();
+        disabled = !enabled || locked;
+        var q = jQuery(this._htmlElement), disabled = !enabled || locked;
         if (q[0]) {
-            console.log(q[0]);
             if (disabled && !q[0].hasAttribute('disabled')) q[0].setAttribute('disabled', 'disabled');
             else if (!disabled && q[0].hasAttribute('disabled')) q[0].removeAttribute('disabled');
         }
+    },
+    
+    setAdpEnabled: function(enabled) {
+        this._doSetEnabled(enabled, undefined);
     },
     getAdpEnabled: function() { 
         var e = jQuery(this._htmlElement)[0];
@@ -80,6 +86,10 @@ Amm.Adapter.Html.Input.prototype = {
         if (this._htmlElement) {
             jQuery(this._htmlElement).val(value);
         }
+    },
+    
+    setAdpLocked: function(locked) {
+        this._doSetEnabled(undefined, locked);
     },
     
     getAdpValue: function() {

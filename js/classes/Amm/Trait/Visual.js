@@ -26,7 +26,6 @@ Amm.Trait.Visual.prototype = {
     },
 
     getVisible: function() { return this._visible; },
- 
 
     outVisibleChange: function(visible, oldVisible) {
         this._out('visibleChange', visible, oldVisible);
@@ -43,7 +42,6 @@ Amm.Trait.Visual.prototype = {
 
     getDisplayParent: function() { return this._displayParent; },
  
-
     outDisplayParentChange: function(displayParent, oldDisplayParent) {
         this._out('displayParentChange', displayParent, oldDisplayParent);
     },
@@ -59,7 +57,6 @@ Amm.Trait.Visual.prototype = {
 
     getDisplayOrder: function() { return this._displayOrder; },
  
-
     outDisplayOrderChange: function(displayOrder, oldDisplayOrder) {
         this._out('displayOrderChange', displayOrder, oldDisplayOrder);
     },
@@ -75,7 +72,6 @@ Amm.Trait.Visual.prototype = {
 
     getClasses: function() { return this._classes; },
  
-
     outClassesChange: function(classes, oldClasses) {
         this._out('classesChange', classes, oldClasses);
     },

@@ -8,7 +8,6 @@ Amm.Adapter.Abstract.Field.prototype = {
 
     'Amm.Adapter.Abstract.Field': '__CLASS__', 
     
-    // Works with Property
     requiredElementClass: 'Amm.Trait.Field',
     
     setAdpFocused: function(focus) {
@@ -33,6 +32,9 @@ Amm.Adapter.Abstract.Field.prototype = {
     },
     
     getAdpValue: function() {
+    },
+    
+    setAdpLocked: function(locked) {
     }
     
 };

@@ -15,6 +15,8 @@ Amm.Trait.Field.prototype = {
     _enabled: true,
 
     _value: undefined,
+    
+    _locked: false,
 
     setValue: function(value) {
         var oldValue = this._value;
@@ -57,7 +59,6 @@ Amm.Trait.Field.prototype = {
 
     getFocused: function() { return this._focused; },
  
-
     outFocusedChange: function(focused, oldFocused) {
         this._out('focusedChange', focused, oldFocused);
     },
@@ -73,11 +74,24 @@ Amm.Trait.Field.prototype = {
 
     getEnabled: function() { return this._enabled; },
  
-
     outEnabledChange: function(enabled, oldEnabled) {
         this._out('enabledChange', enabled, oldEnabled);
-    }
+    },
+    
+    setLocked: function(locked) {
+        var oldLocked = this._locked;
+        if (oldLocked === locked) return;
+        this._locked = locked;
+ 
+        this.outLockedChange(locked, oldLocked);
+        return true;
+    },
 
+    getLocked: function() { return this._locked; },
+ 
+    outLockedChange: function(locked, oldLocked) {
+        this._out('lockedChange', locked, oldLocked);
+    },
 
 };
 

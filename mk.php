@@ -20,7 +20,7 @@ function mkJsProps(array $props = array(), $withSignal = false) {
     },
 
     get<?php echo $u; ?>: function() { return this.<?php echo $p; ?>; },
-<?php   if ($withSignal) { ?> 
+<?php   if ($withSignal) { ?>
 
     out<?php echo $u; ?>Change: function(<?php echo $prop; ?>, old<?php echo $u; ?>) {
         this._out('<?php echo $prop; ?>Change', <?php echo $prop; ?>, old<?php echo $u; ?>);
