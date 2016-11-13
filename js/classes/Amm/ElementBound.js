@@ -11,6 +11,8 @@ Amm.ElementBound.prototype = {
     
     requiredElementClass: 'Amm.Element',
     
+    requiredElementInterfaces: null,
+    
     /**
      * @type {Amm.Element}
      */
@@ -58,8 +60,12 @@ Amm.ElementBound.prototype = {
     
     setElement: function(element) {
         if (typeof element === 'string') return this.setElementPath(element);
-        if (this.requiredElementClass && element !== null)
-            Amm.is(element, this.requiredElementClass, 'element');
+        if (element !== null) {
+            if (this.requiredElementClass)
+                Amm.is(element, this.requiredElementClass, 'element');
+            if (this.requiredElementInterfaces)
+                Amm.hasInterfaces(element, this.requiredElementInterfaces, 'element');
+        }
         var o = this._element;
         if (element === o) return; // nothing to do
         this._doElementChange(element, o);
@@ -89,7 +95,16 @@ Amm.ElementBound.prototype = {
             }
             this.setElement(null);
         }
+    },
+
+    _requireInterfaces: function(interface, _) {
+        var args = Array.prototype.slice.call(arguments);
+        if (!(this.requiredElementInterfaces instanceof Array)) {
+            this.requiredElementInterfaces = this.requiredElementInterfaces? [this.requiredElementInterfaces] : [];
+        }
+        this.requiredElementInterfaces = this.requiredElementInterfaces.concat(args);
     }
+    
     
 };
 

@@ -6,7 +6,16 @@
  * @constructor
  */
 Amm.Element = function(options) {
-    Amm.WithSignals.call(this, options);
+    if (options && options.traits) {
+        if (!(options.traits instanceof Array)) options.traits = [options.traits];
+        console.log(options.traits);
+        for (var i = 0; i < options.traits.length; i++) {
+            Amm.augment(this, options.traits[i]);
+        }
+        console.log('!!!', this.setValue);
+        delete options.traits;
+    }
+    Amm.WithSignals.call(this, {});
     Amm.init(this, options, ['id']);
     Amm.init(this, options);
 };

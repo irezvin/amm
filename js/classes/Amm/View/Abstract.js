@@ -1,20 +1,20 @@
 /* global Amm */
 
 /**
- * Adapter binds events {Name}Change of element to setAdp{Name} setters of the adapter.
+ * Adapter binds events {Name}Change of element to setV{Name} setters of the adapter.
  * 
  * Also, initially, adapter applies two-way initialization:
  * - element values that are "undefined" are set to the values extracted from the adapter
- *   (methods getAdp{Name});
+ *   (methods getV{Name});
  * - other element values are passed to corresponding setters
  */
-Amm.Adapter.Abstract = function(options) {
+Amm.View.Abstract = function(options) {
     Amm.ElementBound.call(this, options);
 };
 
-Amm.Adapter.Abstract.prototype = {
+Amm.View.Abstract.prototype = {
 
-    'Amm.Adapter.Abstract': '__CLASS__', 
+    'Amm.View.Abstract': '__CLASS__', 
 
     // Init "undefined" element properties with values extracted from the adapter
     twoWayInit: true,
@@ -32,15 +32,16 @@ Amm.Adapter.Abstract.prototype = {
     
     _canObserve: function() {
         if (!this._presentationProperty) return false;
-        return this._element && this[this._presentationProperty];
+        return !!(this._element && this[this._presentationProperty]);
     },
     
     _observeElementIfPossible: function() {
+        console.log(this._canObserve());
         if (!this._canObserve()) return;
         var bindList = [];
         for (var i in this) {
-            if (typeof this[i] === 'function' && ('' + i).slice(0, 6) === 'setAdp') {
-                var prop = i[6].toLowerCase() + i.slice(7);
+            if (typeof this[i] === 'function' && ('' + i).slice(0, 4) === 'setV') {
+                var prop = i[4].toLowerCase() + i.slice(5);
                 this._observeProp(prop, i, bindList);
             }
         }
@@ -64,19 +65,19 @@ Amm.Adapter.Abstract.prototype = {
         for (var i = 0; i < bindList.length; i++) {
             var caps = bindList[i], propName = caps.propName;
             propName = propName[0].toUpperCase() + propName.slice(1);
-            var setAdp = 'setAdp' + propName, getAdp = 'getAdp' + propName;
+            var setV = 'setV' + propName, getV = 'getV' + propName;
             // perform 2-way init
             var elementVal = this._element[caps.getterName]();
-            if (this.twoWayInit && elementVal === undefined && caps.setterName && typeof this[getAdp] === 'function') {
-                var myVal = this[getAdp]();
+            if (this.twoWayInit && elementVal === undefined && caps.setterName && typeof this[getV] === 'function') {
+                var myVal = this[getV]();
                 if (myVal !== undefined) this._element[caps.setterName](myVal);
             } else {
-                if (typeof this[setAdp] === 'function') this[setAdp](elementVal);
+                if (typeof this[setV] === 'function') this[setV](elementVal);
             }
         }
     }
 
 };
 
-Amm.extend(Amm.Adapter.Abstract, Amm.ElementBound);
+Amm.extend(Amm.View.Abstract, Amm.ElementBound);
 

@@ -1,14 +1,14 @@
 /* global Amm */
 
-Amm.Adapter.Html.Visual = function(options) {
-    Amm.Adapter.Abstract.Visual.call(this, options);
+Amm.View.Html.Visual = function(options) {
+    Amm.View.Abstract.Visual.call(this, options);
 };
 
-Amm.Adapter.Html.Visual.prototype = {
+Amm.View.Html.Visual.prototype = {
 
-    'Amm.Adapter.Html.Visual': '__CLASS__', 
+    'Amm.View.Html.Visual': '__CLASS__', 
     
-    _presentationProperty: 'htmlElement',
+    _presentationProperty: '_htmlElement',
     
     _htmlElement: null,
     
@@ -24,46 +24,46 @@ Amm.Adapter.Html.Visual.prototype = {
     
     getHtmlElement: function() { return this._htmlElement; },
     
-    setAdpVisible: function(visible) {
+    setVVisible: function(visible) {
         jQuery(this._htmlElement)[visible? 'show' : 'hide'](this.delay || undefined);
         
     },
 
-    getAdpVisible: function() {
+    getVVisible: function() {
         return jQuery(this._htmlElement).is(':visible');
     },
 
-    setAdpDisplayParent: function(displayParent) {
+    setVDisplayParent: function(displayParent) {
         // TODO
     },
 
-    getAdpDisplayParent: function() {
+    getVDisplayParent: function() {
         // TODO... but unreal?
     },
  
-    setAdpDisplayOrder: function(displayOrder) {
+    setVDisplayOrder: function(displayOrder) {
     },
 
-    getAdpDisplayOrder: function() { 
+    getVDisplayOrder: function() { 
     },
  
-    setAdpToggleClass: function(className, enabled) {
-        jQuery(this._htmlElement).[enabled? 'addClass' : 'removeClass'](className);
+    setVToggleClass: function(className, enabled) {
+        jQuery(this._htmlElement)[enabled? 'addClass' : 'removeClass'](className);
     },
     
-    getAdpToggleClass: function(className) {
+    getVToggleClass: function(className) {
         return jQuery(this._htmlElement).hasClass(className);
     },
     
-    setAdpClasses: function(classes) {
+    setVClasses: function(classes) {
         jQuery(this._htmlElement).attr('class', classes);
     },
 
-    getAdpClasses: function() {
+    getVClasses: function() {
         return jQuery(this._htmlElement).attr('class');
     }
     
 };
 
-Amm.extend(Amm.Adapter.Html.Visual, Amm.Adapter.Abstract.Visual);
+Amm.extend(Amm.View.Html.Visual, Amm.View.Abstract.Visual);
 

@@ -1,12 +1,11 @@
 /* global Amm */
 
-Amm.Trait.Annotated = function(options) {
-    Amm.Element.Composite.call(this, options);
-};
+// Amm.Trait.Annotated.prototype = {
+// Amm.Trait.Annotated = function(options) {
 
-Amm.Trait.Annotated.prototype = {
+Amm.Trait.Annotated = {
 
-    'Amm.Trait.Annotated': '__CLASS__', 
+    'Annotated': '__INTERFACE__',
 
     _label: null,
 
@@ -53,6 +52,3 @@ Amm.Trait.Annotated.prototype = {
     getDescription: function() { return this._description; },
 
 };
-
-Amm.extend(Amm.Trait.Annotated, Amm.Element.Composite);
-

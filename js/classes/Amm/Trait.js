@@ -4,5 +4,7 @@
 //Amm.Trait.prototype
 
 Amm.Trait = {
-    
+
+    //add: function()
+
 };

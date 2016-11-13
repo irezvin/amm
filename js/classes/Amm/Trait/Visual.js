@@ -1,20 +1,20 @@
 /* global Amm */
 
-Amm.Trait.Visual = function(options) {
-    Amm.Element.call(this, options);
-};
+// Amm.Trait.Visual = function(options) {
+//Amm.Trait.Visual.prototype = {
 
-Amm.Trait.Visual.prototype = {
+Amm.Trait.Visual = {
 
-    'Amm.Visual': '__CLASS__', 
+    'Visual': '__INTERFACE__',
+    'Classes': '__INTERFACE__',
 
-    _visible: null,
+    _visible: undefined,
 
-    _displayParent: null,
+    _displayParent: undefined,
 
-    _displayOrder: null,
+    _displayOrder: undefined,
 
-    _classes: null,
+    _classes: undefined,
 
     setVisible: function(visible) {
         var oldVisible = this._visible;
@@ -74,9 +74,6 @@ Amm.Trait.Visual.prototype = {
  
     outClassesChange: function(classes, oldClasses) {
         this._out('classesChange', classes, oldClasses);
-    },
+    }
 
 };
-
-Amm.extend(Amm.Trait.Visual, Amm.Element);
-

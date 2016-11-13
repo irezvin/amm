@@ -1,12 +1,13 @@
 /* global Amm */
 
-Amm.Trait.Field = function(options) {
-    Amm.Property.call(this, options);
-};
+// Amm.Trait.Field = function(options) {
+//Amm.Trait.Field.prototype = {
 
-Amm.Trait.Field.prototype = {
+Amm.Trait.Field = {
 
-    'Amm.Trait.Field': '__CLASS__', 
+    'Focusable': '__INTERFACE__',
+    'Editor': '__INTERFACE__',
+    'Lockable': '__INTERFACE__',
 
     _readOnly: undefined,
 
@@ -91,9 +92,8 @@ Amm.Trait.Field.prototype = {
  
     outLockedChange: function(locked, oldLocked) {
         this._out('lockedChange', locked, oldLocked);
-    },
+    }
 
 };
 
-Amm.extend(Amm.Trait.Field, Amm.Property);
 

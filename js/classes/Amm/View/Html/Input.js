@@ -5,15 +5,15 @@
  * jQuery to Element: value, focus
  * Element to JQuery: value, focus, readOnly, enabled
  */
-Amm.Adapter.Html.Input = function(options) {
+Amm.View.Html.Input = function(options) {
     this._handler = jQuery.proxy(this._receiveEvent, this);
-    Amm.Adapter.Abstract.Field.call(this, options);
+    Amm.View.Abstract.Field.call(this, options);
     Amm.JQueryListener.call(this, {});
 };
 
-Amm.Adapter.Html.Input.prototype = {
+Amm.View.Html.Input.prototype = {
 
-    'Amm.Adapter.Html.Input': '__CLASS__', 
+    'Amm.View.Html.Input': '__CLASS__', 
 
     _eventName: 'change focus blur',
     
@@ -25,7 +25,7 @@ Amm.Adapter.Html.Input.prototype = {
         if (!this._element) return;
         if (event.type === 'change') {
             if (!this._element.getReadOnly()) {
-                this._element.setValue(this.getAdpValue());
+                this._element.setValue(this.getVValue());
             }
             return true;
         } else if (event.type === 'focus') {
@@ -39,26 +39,26 @@ Amm.Adapter.Html.Input.prototype = {
         }
     },
     
-    setAdpFocused: function(focus) {
+    setVFocused: function(focus) {
         var q = jQuery(this._htmlElement);
         if (q[0]) {
             if (focus && !q.is(':focus')) q.focus();
             else if (!focus && q.is(':focus')) q.blur();
         }
     },
-    getAdpFocused: function() { 
+    getVFocused: function() { 
         var e = jQuery(this._htmlElement)[0];
         if (e) return jQuery(this._htmlElement).is(':focus'); 
     },
     
-    setAdpReadOnly: function(readOnly) {
+    setVReadOnly: function(readOnly) {
         var q = jQuery(this._htmlElement);
         if (q[0]) {
             if (readOnly && !q[0].hasAttribute('readonly')) q[0].setAttribute('readonly', 'readonly');
             else if (!readOnly && q[0].hasAttribute('readonly')) q[0].removeAttribute('readonly');
         }
     },
-    getAdpReadOnly: function() { 
+    getVReadOnly: function() { 
         var e = jQuery(this._htmlElement)[0];
         if (e) return e.getAttribute('readonly'); 
     },
@@ -74,25 +74,25 @@ Amm.Adapter.Html.Input.prototype = {
         }
     },
     
-    setAdpEnabled: function(enabled) {
+    setVEnabled: function(enabled) {
         this._doSetEnabled(enabled, undefined);
     },
-    getAdpEnabled: function() { 
+    getVEnabled: function() { 
         var e = jQuery(this._htmlElement)[0];
         if (e) return !e.hasAttribute('disabled'); 
     },
     
-    setAdpValue: function(value) {
+    setVValue: function(value) {
         if (this._htmlElement) {
             jQuery(this._htmlElement).val(value);
         }
     },
     
-    setAdpLocked: function(locked) {
+    setVLocked: function(locked) {
         this._doSetEnabled(undefined, locked);
     },
     
-    getAdpValue: function() {
+    getVValue: function() {
         if (this._htmlElement) 
             return jQuery(this._htmlElement).val();
     },
@@ -109,12 +109,12 @@ Amm.Adapter.Html.Input.prototype = {
     getHtmlElement: function() { return this._htmlElement; },
 
     cleanup: function() {
-        Amm.Adapter.Abstract.Field.cleanup.call(this);
+        Amm.View.Abstract.Field.cleanup.call(this);
         Amm.JQueryListener.cleanup.call(this);
     }
 
 };
 
-Amm.extend(Amm.Adapter.Html.Input, Amm.Adapter.Abstract.Field);
-Amm.extend(Amm.Adapter.Html.Input, Amm.JQueryListener);
+Amm.extend(Amm.View.Html.Input, Amm.View.Abstract.Field);
+Amm.extend(Amm.View.Html.Input, Amm.JQueryListener);
 
