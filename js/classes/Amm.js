@@ -6,6 +6,8 @@ Amm = {
     
     id: 'amm',
     
+    domHolderAttribute: 'data-amm-id',
+    
     _counter: 1,
     
     _functions: {},
@@ -48,10 +50,11 @@ Amm = {
     registerItem: function(item) {
         if (item._amm_id) return;
         item._amm_id = this.id + '_' + this._counter++;
+        this._items[item._amm_id] = item;
     },
     
     unregisterItem: function(item) {
-        if (typeof item === 'string') item = this._items[item._amm_id];
+        if (typeof item === 'string') item = this._items[item];
         if (!item._amm_id || this._items[item._amm_id] !== item) throw "Item not found";
         if (typeof item.getPath === 'function') {
             var p = item.getPath();
@@ -63,9 +66,26 @@ Amm = {
         delete this._items[item._amm_id];
         item._amm_id = null;
     },
-            
+    
+    getItem: function(item, throwIfNotFound) {
+        if (item instanceof Array) {
+            var r = [];
+            for (var i = 0, l = item.length; i < l; i++) {
+                if (item[i].length) { // ignore empty identifiers
+                    var item = this.getItem(item[i], throwIfNotFound);
+                    if (item) r.push(item);
+                }
+            }
+            return r;
+        } else {
+            var res = this._items[item];
+            if (!res && throwIfNotFound) throw "Item '" + item + "' not found";
+            return res;
+        }
+    },
+    
     destroyItem: function(item) {
-        if (typeof item === 'string') item = this._items[item._amm_id];
+        if (typeof item === 'string') item = this._items[item];
         if (typeof item.cleanup === 'function') item.cleanup();
         for (var i in this._items) if (this._items.hasOwnProperty(i)) {
             if (typeof this._items[i].unsubscribe === 'function')
@@ -80,20 +100,83 @@ Amm = {
         if (c) subClass.prototype[c] = '__PARENT__';
     },
     
-    getClass: function(object) {
-        for (var i in object) {
-            if (object[i] === '__CLASS__') {
-                return i;
+    augment: function(instance, trait) {
+        var l = arguments.length;
+        if (l > 2) {
+            for (var j = 1; j < l; j++) {
+                Amm.augment(instance, arguments[j]);
+            }
+        } else {
+            var traitInstance, proto;
+            if (typeof trait === 'string') {
+                trait = Amm.getFunction(trait);
+            }
+            if (typeof instance !== 'object') throw "`instance` must be an object";
+            if (typeof trait === 'function') traitInstance = new trait();
+            else if (typeof trait === 'object') traitInstance = trait;
+            else throw "`trait` must be an object or a function (constructor)";
+            var conflicts = Amm.getInterfaces(instance, traitInstance);
+            if (conflicts.length) 
+                throw "Cannot augment: `instance` already implements same interfaces as the `traitInstance`: "
+                    + conflicts.join(', ') + ")";
+            for (var i in traitInstance) if (i.slice(0, 2) !== '__') {
+                if (instance[i] === undefined) 
+                    instance[i] = traitInstance[i];
+            }
+            if (typeof traitInstance.__augment === 'function') {
+                traitInstance.__augment.call(instance, traitInstance);
             }
         }
-        return null;
+    },
+    
+    getClass: function(object, all) {
+        var r;
+        if (all) r = [];
+        for (var i in object) {
+            if (object[i] === '__CLASS__') {
+                if (all) r.push(i); 
+                    else return i;
+            }
+        }
+        if (!all) return null;
+            else return r;
+    },
+    
+    // commonWithObject - list only interfaces that are already present in object "commonWithObject" argument
+    getInterfaces: function(object, commonWithObject) {
+        var res = [];
+        for (var i in object) {
+            if (object[i] === '__INTERFACE__') {
+                if (!commonWithObject || commonWithObject[i]) {
+                    res.push(i); 
+                }
+            }
+        }
+        return res;
+    },
+
+    // Returns true if `item` has all aff the `interfaces` (may be array or a string)
+    hasInterfaces: function(item, interfaces, throwIfNot) {
+        if (!interfaces) return true; // empty parameter - don't do anything
+        if (!interfaces instanceof Array) interfaces = [interfaces];
+        for (var i = interfaces.length - 1; i >=0; i--) {
+            if (!item || item[interfaces[i]] !== '__INTERFACE__') {
+                if (throwIfNot) {
+                    var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
+                    throw argname += " must implement all following interfaces: " + interfaces.join(',')
+                        + " but it doesn't implement interface " + interfaces[i];
+                } else {
+                    return false;
+                }
+            }
+        }
+        return true;
     },
     
     is: function(item, className, throwIfNot) {
-        var res = item && (item[className] === '__CLASS__' || item[className] === '__PARENT__');
+        var res = item && (item[className] === '__CLASS__' || item[className] === '__PARENT__' || item[className] === '__INTERFACE__');
         if (!res && throwIfNot) {
             var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
-            console.trace();
             throw argname += " must be an instance of " + className;
         }
         return res;
@@ -191,8 +274,6 @@ Amm = {
         }
     },
     
-    
-    
     getFunction: function(strName) {
         if (typeof strName !== 'string') throw "`strName` must be a string";
         if (this._functions[strName]) return this._functions[strName];
@@ -264,6 +345,17 @@ Amm = {
             outCaps.signalName = signalName;
         }
         return res;
+    },
+    
+    decorate: function(value, decorator, context) {
+        if (!decorator) return value;
+        else if (typeof decorator === 'function') return context? decorator.call(context, value) : decorator(value);
+        else if (typeof decorator === 'object') {
+            if (typeof decorator.decorate === 'function') return decorator.decorate(value, context);
+            else throw "`decorator` has no function decorate";
+        } else {
+            throw "`decorator` must be either function or an object with .decorate() method";
+        }
     }
     
 };

@@ -8,6 +8,7 @@
 Amm.View.Html.Input = function(options) {
     this._handler = jQuery.proxy(this._receiveEvent, this);
     Amm.View.Abstract.Field.call(this, options);
+    Amm.DomHolder.call(this);
     Amm.JQueryListener.call(this, {});
 };
 
@@ -100,7 +101,10 @@ Amm.View.Html.Input.prototype = {
     setHtmlElement: function(htmlElement) {
         var old = this._htmlElement;
         if (old === htmlElement) return;
+        if (old) this._releaseDomNode(old);
         this._htmlElement = htmlElement;
+        if (this._htmlElement)
+            this._acquireDomNode(this._htmlElement);
         this.setSelector(this._htmlElement);
         this._observeElementIfPossible();
         return true;
@@ -109,12 +113,14 @@ Amm.View.Html.Input.prototype = {
     getHtmlElement: function() { return this._htmlElement; },
 
     cleanup: function() {
-        Amm.View.Abstract.Field.cleanup.call(this);
-        Amm.JQueryListener.cleanup.call(this);
+        Amm.View.Abstract.Field.prototype.cleanup.call(this);
+        Amm.JQueryListener.prototype.cleanup.call(this);
+        if (this._htmlElement) this._releaseDomNode(this._htmlElement);
     }
 
 };
 
 Amm.extend(Amm.View.Html.Input, Amm.View.Abstract.Field);
 Amm.extend(Amm.View.Html.Input, Amm.JQueryListener);
+Amm.extend(Amm.View.Html.Input, Amm.DomHolder);
 

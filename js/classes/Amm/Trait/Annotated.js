@@ -1,9 +1,9 @@
 /* global Amm */
 
-// Amm.Trait.Annotated.prototype = {
-// Amm.Trait.Annotated = function(options) {
+Amm.Trait.Annotated = function() {
+};
 
-Amm.Trait.Annotated = {
+Amm.Trait.Annotated.prototype = {
 
     'Annotated': '__INTERFACE__',
 

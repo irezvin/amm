@@ -1,9 +1,9 @@
 /* global Amm */
 
-// Amm.Trait.Visual = function(options) {
-//Amm.Trait.Visual.prototype = {
-
-Amm.Trait.Visual = {
+Amm.Trait.Visual = function() {
+};
+ 
+Amm.Trait.Visual.prototype = {
 
     'Visual': '__INTERFACE__',
     'Classes': '__INTERFACE__',

@@ -15,7 +15,7 @@ Amm.View.Abstract = function(options) {
 Amm.View.Abstract.prototype = {
 
     'Amm.View.Abstract': '__CLASS__', 
-
+    
     // Init "undefined" element properties with values extracted from the adapter
     twoWayInit: true,
     
@@ -36,7 +36,6 @@ Amm.View.Abstract.prototype = {
     },
     
     _observeElementIfPossible: function() {
-        console.log(this._canObserve());
         if (!this._canObserve()) return;
         var bindList = [];
         for (var i in this) {
@@ -80,4 +79,3 @@ Amm.View.Abstract.prototype = {
 };
 
 Amm.extend(Amm.View.Abstract, Amm.ElementBound);
-

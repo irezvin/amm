@@ -8,7 +8,6 @@
 Amm.Element = function(options) {
     if (options && options.traits) {
         if (!(options.traits instanceof Array)) options.traits = [options.traits];
-        console.log(options.traits);
         for (var i = 0; i < options.traits.length; i++) {
             Amm.augment(this, options.traits[i]);
         }

@@ -2,7 +2,10 @@
 
 Amm.View.Html.Visual = function(options) {
     Amm.View.Abstract.Visual.call(this, options);
+    Amm.DomHolder.call(this);
 };
+
+Amm.View.Html.Visual.defaultDelay = 250;
 
 Amm.View.Html.Visual.prototype = {
 
@@ -12,12 +15,15 @@ Amm.View.Html.Visual.prototype = {
     
     _htmlElement: null,
     
-    delay: 250,
+    delay: undefined,
 
     setHtmlElement: function(htmlElement) {
         var old = this._htmlElement;
         if (old === htmlElement) return;
+        if (old) this._releaseDomNode(old);
         this._htmlElement = htmlElement;
+        if (this._htmlElement)
+            this._acquireDomNode(htmlElement);
         this._observeElementIfPossible();
         return true;
     },
@@ -25,8 +31,9 @@ Amm.View.Html.Visual.prototype = {
     getHtmlElement: function() { return this._htmlElement; },
     
     setVVisible: function(visible) {
-        jQuery(this._htmlElement)[visible? 'show' : 'hide'](this.delay || undefined);
-        
+        var delay = this.delay;
+        if (delay === undefined) delay = Amm.View.Html.Visual.defaultDelay;
+        jQuery(this._htmlElement)[visible? 'show' : 'hide'](delay);
     },
 
     getVVisible: function() {
@@ -61,9 +68,14 @@ Amm.View.Html.Visual.prototype = {
 
     getVClasses: function() {
         return jQuery(this._htmlElement).attr('class');
+    },
+    
+    cleanup: function() {
+        Amm.View.Abstract.Visual.prototype.cleanup.call(this);
+        if (this._htmlElement) this._releaseDomNode(this._htmlElement);
     }
     
 };
 
 Amm.extend(Amm.View.Html.Visual, Amm.View.Abstract.Visual);
-
+Amm.extend(Amm.View.Html.Visual, Amm.DomHolder);

@@ -1,9 +1,9 @@
 /* global Amm */
 
-// Amm.Trait.Field = function(options) {
-//Amm.Trait.Field.prototype = {
+ Amm.Trait.Field = function() {
+ };
 
-Amm.Trait.Field = {
+Amm.Trait.Field.prototype = {
 
     'Focusable': '__INTERFACE__',
     'Editor': '__INTERFACE__',
