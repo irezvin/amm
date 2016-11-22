@@ -30,7 +30,7 @@ Amm.Emitter.prototype = {
     
     requiredElementClass: 'Amm.Element',
     
-    _signal: null,
+    _event: null,
     
     _deferredMode: Amm.Emitter.DEFERRED_DROP,
     
@@ -64,7 +64,7 @@ Amm.Emitter.prototype = {
     
     _doEmit: function(args) {
         var handler = args.splice(0, 1)[0];
-        return Amm.WithSignals.invokeHandler.call(this, this.methodName, args, handler, this._element, this.extra, this.decorator, !this.methodName);
+        return Amm.WithEvents.invokeHandler.call(this, this.methodName, args, handler, this._element, this.extra, this.decorator, !this.methodName);
     },
     
     setMethod: function(method) {

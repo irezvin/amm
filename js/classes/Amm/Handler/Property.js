@@ -23,18 +23,18 @@ Amm.Handler.Property.prototype = {
     setValueOnBind: false,
     
     /**
-     * Call _handleSignal(_element.getValue()) when element is set
+     * Call _handleEvent(_element.getValue()) when element is set
      */
     updateOnBind: true,
     
     _bindToProperty: function (propertyName) {
         if (propertyName) {
-            this.setSignal(propertyName + 'Change');
+            this.setEvent(propertyName + 'Change');
             var P = propertyName[0].toUpperCase() + propertyName.slice(1);
             this._getterName = 'get' + P;
             this._setterName = 'set' + P;
         } else {
-            this.setSignal(null);
+            this.setEvent(null);
             this._getterName = null;
             this._setterName = null;
         }
@@ -83,7 +83,7 @@ Amm.Handler.Property.prototype = {
         }
         if (!valueIsSet && this.updateOnBind && this._element)
             console.log("Element value is ", this.getValue());
-            this._handleSignal(this.getValue());
+            this._handleEvent(this.getValue());
         return res;
     }
     

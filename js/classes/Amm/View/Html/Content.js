@@ -12,7 +12,7 @@ Amm.View.Html.Content = function(options) {
 
 Amm.View.Html.Content.prototype = {
 
-    'Amm.View.Html.Content': '__CLASS__', 
+    'Amm.View.Html.Content': '__CLASS__',
 
     _presentationProperty: '_htmlElement',
     

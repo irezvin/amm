@@ -10,6 +10,8 @@
  */
 Amm.View.Abstract = function(options) {
     Amm.ElementBound.call(this, options);
+    Amm.init(this, options, ['element', 'elementPath']);
+    this._requireInterfaces('Annotated');
 };
 
 Amm.View.Abstract.prototype = {
@@ -39,12 +41,21 @@ Amm.View.Abstract.prototype = {
         if (!this._canObserve()) return;
         var bindList = [];
         for (var i in this) {
-            if (typeof this[i] === 'function' && ('' + i).slice(0, 4) === 'setV') {
-                var prop = i[4].toLowerCase() + i.slice(5);
-                this._observeProp(prop, i, bindList);
+            if (typeof this[i] === 'function') {
+                if (('' + i).slice(0, 4) === 'setV') {
+                    var prop = i[4].toLowerCase() + i.slice(5);
+                    this._observeProp(prop, i, bindList);
+                } else {
+                    if (('' + i).slice(0, 14) === '_handleElement') {
+                        var ev = i[14].toLowerCase() + i.slice(15);
+                        if (this._element.hasEvent(ev)) 
+                            this._element.subscribe(ev, this[i], this);
+                    }
+                }
             }
         }
         this._initProperties(bindList);
+        return true;
     },
     
     _observeProp: function(propName, setterName, bindList) {
@@ -52,7 +63,7 @@ Amm.View.Abstract.prototype = {
         Amm.detectProperty(this._element, propName, caps);
         
         // fooChanged -> adpSetFoo(v)
-        if (caps.signalName) this._element.subscribe(caps.signalName, setterName, this);
+        if (caps.eventName) this._element.subscribe(caps.eventName, setterName, this);
         
         if (caps.getterName) {
             caps.propName = propName;

@@ -21,7 +21,8 @@ Amm.DomHolder.prototype = {
     
     'Amm.DomHolder': '__CLASS__',
     
-    _domExclusive: true,
+    // temp. false - until I'll sort this out
+    _domExclusive: false, 
     
     _notifyDomNodeConflict: function(domNode, otherDomHolder) {
         if (this._domExclusive) throw "Element already acquired by a different DomHolder";

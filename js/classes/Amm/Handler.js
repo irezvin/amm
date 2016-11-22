@@ -8,48 +8,48 @@ Amm.Handler.prototype = {
 
     'Amm.Handler': '__CLASS__',
     
-    _signal: null,
+    _event: null,
     
-    setSignal: function(signal) {
-        if (this._signal === signal) return;
-        if (this._element && this._signal && this._signal !== signal) {
+    setEvent: function(event) {
+        if (this._event === event) return;
+        if (this._element && this._event && this._event !== event) {
             this._unsubscribe();
         }
-        this._signal = signal;
-        if (this._element && this._signal) {
+        this._event = event;
+        if (this._element && this._event) {
             this._subscribe();
         }
         return true;
     },
     
-    getSignal: function() { return this._signal; },
+    getEvent: function() { return this._event; },
 
-    setHandleSignal: function(fn) {
+    setHandleEvent: function(fn) {
         if (typeof fn !== 'function') throw "`fn` must be a function";
-        if (this._handleSignal === fn) return;
-        if (this._element && this._signal) this._unsubscribe();
-        this._handleSignal = fn;
-        if (this._element && this._signal) this._subscribe();
+        if (this._handleEvent === fn) return;
+        if (this._element && this._event) this._unsubscribe();
+        this._handleEvent = fn;
+        if (this._element && this._event) this._subscribe();
     },
 
     // to-be-replaced in child classes
-    _handleSignal: function() {
+    _handleEvent: function() {
     },
     
     _doElementChange: function(element, oldElement) {
-        if (oldElement && this._signal) this._unsubscribe();
+        if (oldElement && this._event) this._unsubscribe();
         Amm.ElementBound.prototype._doElementChange.call(this, element, oldElement);
-        if (element && this._signal) this._subscribe();
+        if (element && this._event) this._subscribe();
     },
     
     _subscribe: function() {
-        this._element.subscribe(this._signal, this._handleSignal, this);
+        this._element.subscribe(this._event, this._handleEvent, this);
     },
     
     _unsubscribe: function(fully) {
         if (this._isElementCleanup) return;
         if (fully) this._element.unsubscribe(undefined, undefined, this);
-            else this._element.unsubscribe(this._signal, this._handleSignal, this);
+            else this._element.unsubscribe(this._event, this._handleEvent, this);
     }
     
 };

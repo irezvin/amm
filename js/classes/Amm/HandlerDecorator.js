@@ -2,7 +2,7 @@
 
 Amm.HandlerDecorator = {
     
-    MapArgs: function(scope, args, outSignal, fn) {
+    MapArgs: function(scope, args, outEvent, fn) {
         // this.map must be an Array
         // this.defs must be either Array or undefined
         

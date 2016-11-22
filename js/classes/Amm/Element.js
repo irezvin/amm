@@ -11,10 +11,9 @@ Amm.Element = function(options) {
         for (var i = 0; i < options.traits.length; i++) {
             Amm.augment(this, options.traits[i]);
         }
-        console.log('!!!', this.setValue);
         delete options.traits;
     }
-    Amm.WithSignals.call(this, {});
+    Amm.WithEvents.call(this, {});
     Amm.init(this, options, ['id']);
     Amm.init(this, options);
 };
@@ -31,10 +30,13 @@ Amm.Element.prototype = {
     
     _parent: null,
     
+    // null means "check parent cleanupChildren value", true and false - specific action on parent cleanup event
+    _cleanupWithParent: null,
+    
     /*
      * Path to the non-exiting (yet) parent for deferred association
      */
-    _parentPath: null,
+    _deferredParentPath: null,
     
     defaultProperty: null,
     
@@ -48,7 +50,7 @@ Amm.Element.prototype = {
             throw "Cannot setId() since the Parent already hasChild() with id '" + id + "'";
         }
         this._id = id;
-        this.outIdChanged(id, o);
+        this.outIdChange(id, o);
         this._path = null;
         var path = this.getPath();
         if (path !== oldPath)
@@ -68,19 +70,19 @@ Amm.Element.prototype = {
     },
     
     setDeferredParentPath: function(parentPath) {
-        if (this._parentPath === parentPath) return;
-        if (this._parentPath) Amm.stopWaiting(this._parent, this.setParent, this);
+        if (this._deferredParentPath === parentPath) return;
+        if (this._deferredParentPath) Amm.stopWaiting(this._parent, this.setParent, this);
         var p = this.getByPath(parentPath);
         if (p) return this.setParent(p);
         if (this._parent) this.setParent(null);
-        this._parentPath = parentPath;
+        this._deferredParentPath = parentPath;
         if (parentPath) {
-            Amm.waitFor(this._parentPath, this.setParent, this);
+            Amm.waitFor(this._deferredParentPath, this.setParent, this);
         }
     },
     
     getDeferredParentPath: function() {
-        return this._parentPath;
+        return this._deferredParentPath;
     },
     
     setParent: function(parent) {
@@ -98,11 +100,13 @@ Amm.Element.prototype = {
         this._parent = null;
         this._path = null;
         if (oldParent) {
-            oldParent.unsubscribe('pathChanged', this._parentPathChanged, this);
+            oldParent.unsubscribe('pathChanged', this._deferredParentPathChanged, this);
+            oldParent.unsubscribe('cleanup', this._handleParentCleanup, this);
             oldParent.removeChild(this);
         }
         if (parent) {
-            parent.subscribe('pathChanged', this._parentPathChanged, this);
+            parent.subscribe('pathChanged', this._deferredParentPathChanged, this);
+            parent.subscribe('cleanup', this._handleParentCleanup, this);
             if (this._requiredParentClass) Amm.is(parent, this._requiredParentClass, 'parent');
             try {
                 this._parent = parent;
@@ -118,14 +122,14 @@ Amm.Element.prototype = {
         return true;
     },
     
-    _parentPathChanged: function(path, oldPath) {
+    _deferredParentPathChanged: function(path, oldPath) {
         var oldPath = this._path;
         this._path = path + Amm.ID_SEPARATOR + this._id;
         if (this._path !== oldPath) this.outPathChanged(this._path, oldPath);
     },
     
-    outIdChanged: function(id, oldId) {
-        this._out('idChanged', id, oldId);
+    outIdChange: function(id, oldId) {
+        this._out('idChange', id, oldId);
     },
     
     outPathChanged: function(path, oldPath) {
@@ -215,14 +219,29 @@ Amm.Element.prototype = {
     outCleanup: function() {
         this._out('cleanup', this);
     },
-    
+
+    _handleParentCleanup: function() {
+        var shouldCleanup = this._cleanupWithParent;
+        if (shouldCleanup === null) shouldCleanup = this._parent.getCleanupChildren();
+        if (shouldCleanup) this.cleanup();
+        else this.setParent(null);
+    },
+
+    setCleanupWithParent: function(cleanupWithParent) {
+        var oldCleanupWithParent = this._cleanupWithParent;
+        if (oldCleanupWithParent === cleanupWithParent) return;
+        this._cleanupWithParent = cleanupWithParent;
+        return true;
+    },
+
+    getCleanupWithParent: function() { return this._cleanupWithParent; },
+
     cleanup: function() {
-        Amm.WithSignals.prototype.cleanup.call(this);
-        Amm.cleanupAggregates.call(this);
+        Amm.WithEvents.prototype.cleanup.call(this);
         this.setParent(null);
         this.outCleanup();
     }
     
 };
 
-Amm.extend(Amm.Element, Amm.WithSignals);
+Amm.extend(Amm.Element, Amm.WithEvents);

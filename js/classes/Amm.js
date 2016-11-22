@@ -32,11 +32,11 @@ Amm = {
     _root: null,
     
     /**
-     * Signal stack
+     * Event stack
      */
-    _signalStack: [],
+    _eventStack: [],
     
-    signal: {
+    event: {
         origin: null,
         name: '',
         args: []
@@ -174,10 +174,18 @@ Amm = {
     },
     
     is: function(item, className, throwIfNot) {
+        if (className instanceof Array) {
+            for (var j = 0, n = j.length; j < n; j++) if (Amm.is(item, className[j])) return true;
+            if (throwIfNot) {
+                var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
+                throw argname + " must be an instance of " + className.join("|");
+            }
+            return res;
+        }
         var res = item && (item[className] === '__CLASS__' || item[className] === '__PARENT__' || item[className] === '__INTERFACE__');
         if (!res && throwIfNot) {
             var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
-            throw argname += " must be an instance of " + className;
+            throw argname + " must be an instance of " + className;
         }
         return res;
     },
@@ -304,13 +312,13 @@ Amm = {
         this._functions[name] = fn;
     },
     
-    pushSignal: function(signal) {
-        this._signalStack.push(this.signal);
-        this.signal = signal;
+    pushEvent: function(event) {
+        this._eventStack.push(this.event);
+        this.event = event;
     },
     
-    popSignal: function() {
-        this.signal = this._signalStack.pop();
+    popEvent: function() {
+        this.event = this._eventStack.pop();
     },
     
     cleanupComponents: function() {
@@ -326,7 +334,7 @@ Amm = {
     },
     
     // returns TRUE if `element` has together setter, getter and change event for given `property`.
-    // if outCaps is object, then it will have 'setterName', 'getterName' and 'signalName' properties set to either
+    // if outCaps is object, then it will have 'setterName', 'getterName' and 'eventName' properties set to either
     // respective value (i.e. getFoo, setFoo and fooChange) or NULL if such method or event doesn't exists 
     // -- disregarding to the method result
     
@@ -334,16 +342,30 @@ Amm = {
         var P = property[0].toUpperCase() + property.slice(1),
             getterName = 'get' + P, 
             setterName = 'set' + P, 
-            signalName = property + 'Change';
+            eventName = property + 'Change';
         if (typeof element[getterName] !== 'function') getterName = null;
         if (typeof element[setterName] !== 'function') setterName = null;
-        if (typeof element.hasSignal !== 'function' || !element.hasSignal(signalName)) signalName = null;
-        var res = signalName && getterName && setterName;
+        if (typeof element.hasEvent !== 'function' || !element.hasEvent(eventName)) eventName = null;
+        var res = eventName && getterName && setterName;
         if (outCaps && typeof outCaps === 'object') {
             outCaps.getterName = getterName;
             outCaps.setterName = setterName;
-            outCaps.signalName = signalName;
+            outCaps.eventName = eventName;
         }
+        return res;
+    },
+    
+    getProperty: function(element, property, defaultValue) {
+        var P = ('' + property)[0].toUpperCase() + property.slice(1), getterName = 'get' + P;
+        if (typeof element[getterName] === 'function') res = element[getterName]();
+            else res = defaultValue;
+        return res;
+    },
+    
+    setProperty: function(element, property, value, throwIfNotFound) {
+        var P = ('' + property[0]).toUpperCase() + property.slice(1), setterName = 'set' + P;
+        if (typeof element[setterName] === 'function') res = element[setterName](value);
+        else if (throwIfNotFound) throw "No setter for property: `" + property + "`";
         return res;
     },
     
@@ -360,7 +382,7 @@ Amm = {
     
 };
 
-Amm.signal = null;
+Amm.event = null;
 
 //Amm.id = 'amm_' + Math.trunc(Math.random() * 1000000);
 

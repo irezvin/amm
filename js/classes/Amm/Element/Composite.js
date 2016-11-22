@@ -14,6 +14,8 @@ Amm.Element.Composite.prototype = {
     
     _children: null,
     
+    _cleanupChildren: false,
+
     _autoId: function(child) {
         return (Amm.getClass(child) || '__auto__') + child._amm_id;
     },
@@ -62,17 +64,17 @@ Amm.Element.Composite.prototype = {
     },
     
     _subscribeChild: function(child) {
-        child.subscribe('idChanged', this._childIdChanged, this);
+        child.subscribe('idChange', this._childIdChange, this);
     },
     
     _unsubscribeChild: function(child) {
-        child.unsubscribe('idChanged', undefined, this);
+        child.unsubscribe('idChange', undefined, this);
     },
     
-    _childIdChanged: function(newId, oldId) {
-        child = Amm.signal.origin;
+    _childIdChange: function(newId, oldId) {
+        child = Amm.event.origin;
         if (this._children[newId] && this._children[newId] !== child)
-            throw "Cannot handle _childIdChanged to id that is already busy ('" + newId + "')";
+            throw "Cannot handle _childIdChange to id that is already busy ('" + newId + "')";
         if (this._children[oldId] === child) {
             delete this._children[oldId];
         } else {
@@ -83,7 +85,15 @@ Amm.Element.Composite.prototype = {
     },
     
     hasChild: function(child) {
-        return this._children[child.getId()] === child;
+        var res = false, id;
+        if (typeof child !== 'object') {
+            id = child;
+            res = !!this._children[id];
+        } else if (child && typeof child === 'object' && typeof child.getId === 'function') {
+            id = child.getId();
+            res = this._children[id] === child;
+        }
+        return res;
     },
     
     listChildren: function() {
@@ -92,7 +102,16 @@ Amm.Element.Composite.prototype = {
     
     getChild: function(id) {
         return this._children[id];
-    }
+    },
+    
+    setCleanupChildren: function(cleanupChildren) {
+        var oldCleanupChildren = this._cleanupChildren;
+        if (oldCleanupChildren === cleanupChildren) return;
+        this._cleanupChildren = cleanupChildren;
+        return true;
+    },
+
+    getCleanupChildren: function() { return this._cleanupChildren; },
     
 };
 
