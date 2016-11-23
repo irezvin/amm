@@ -39,6 +39,7 @@ Amm.View.Abstract.prototype = {
     
     _observeElementIfPossible: function() {
         if (!this._canObserve()) return;
+        this._acquireResources();
         var bindList = [];
         for (var i in this) {
             if (typeof this[i] === 'function') {
@@ -56,6 +57,9 @@ Amm.View.Abstract.prototype = {
         }
         this._initProperties(bindList);
         return true;
+    },
+    
+    _acquireResources: function() {
     },
     
     _observeProp: function(propName, setterName, bindList) {

@@ -47,9 +47,6 @@ Amm.View.Html.Annotated.prototype = {
         if (old === htmlElement) return;
         if (old) this._releaseDomNode(old);
         this._htmlElement = htmlElement;
-        if (this._htmlElement) {
-            this._acquireDomNode(this._htmlElement);
-        }
         this._observeElementIfPossible();
         return true;
     },
@@ -94,6 +91,10 @@ Amm.View.Html.Annotated.prototype = {
             htmlElement: childHtmlElement
         });
         return res;
+    },
+    
+    _acquireResources: function() {
+        this._acquireDomNode(this._htmlElement);
     }
     
 };

@@ -103,8 +103,6 @@ Amm.View.Html.Input.prototype = {
         if (old === htmlElement) return;
         if (old) this._releaseDomNode(old);
         this._htmlElement = htmlElement;
-        if (this._htmlElement)
-            this._acquireDomNode(this._htmlElement);
         this.setSelector(this._htmlElement);
         this._observeElementIfPossible();
         return true;
@@ -116,6 +114,10 @@ Amm.View.Html.Input.prototype = {
         Amm.View.Abstract.Field.prototype.cleanup.call(this);
         Amm.JQueryListener.prototype.cleanup.call(this);
         if (this._htmlElement) this._releaseDomNode(this._htmlElement);
+    },
+    
+    _acquireResources: function() {
+        this._acquireDomNode(this._htmlElement);
     }
 
 };

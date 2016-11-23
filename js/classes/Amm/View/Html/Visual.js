@@ -22,8 +22,6 @@ Amm.View.Html.Visual.prototype = {
         if (old === htmlElement) return;
         if (old) this._releaseDomNode(old);
         this._htmlElement = htmlElement;
-        if (this._htmlElement)
-            this._acquireDomNode(htmlElement);
         this._observeElementIfPossible();
         return true;
     },
@@ -73,7 +71,12 @@ Amm.View.Html.Visual.prototype = {
     cleanup: function() {
         Amm.View.Abstract.Visual.prototype.cleanup.call(this);
         if (this._htmlElement) this._releaseDomNode(this._htmlElement);
+    },
+    
+    _acquireResources: function() {
+        this._acquireDomNode(this._htmlElement);
     }
+    
     
 };
 

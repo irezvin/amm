@@ -111,7 +111,7 @@ Amm.Element.Composite.prototype = {
         return true;
     },
 
-    getCleanupChildren: function() { return this._cleanupChildren; },
+    getCleanupChildren: function() { return this._cleanupChildren; }
     
 };
 

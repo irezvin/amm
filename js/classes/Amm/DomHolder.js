@@ -22,10 +22,20 @@ Amm.DomHolder.prototype = {
     'Amm.DomHolder': '__CLASS__',
     
     // temp. false - until I'll sort this out
-    _domExclusive: false, 
+    _domExclusive: true, 
     
     _notifyDomNodeConflict: function(domNode, otherDomHolder) {
-        if (this._domExclusive) throw "Element already acquired by a different DomHolder";
+        if (this._domExclusive && !this._domCompat(otherDomHolder))
+            throw "Element already acquired by a different DomHolder";
+    },
+    
+    _domCompat: function(otherDomHolder) {
+        var res = 
+                this['Amm.ElementBound'] 
+                && otherDomHolder['Amm.ElementBound'] 
+                && this._element 
+                && otherDomHolder._element === this._element;
+        return res;
     },
     
     _acquireDomNode: function(selector) {
@@ -37,8 +47,8 @@ Amm.DomHolder.prototype = {
                 var ids = v.split(' '), items = Amm.getItem(ids);
                 
                 // throw: we're want to be exclusive, but we can't
-                if (items.length && t._domExclusive) t._notiyDomNodeConflict(domNode, items[0]);
                 for (var i = 0, l = items.length; i < l; i++) {
+                    t._notifyDomNodeConflict(domNode, items[i])
                     items[i]._notifyDomNodeConflict(domNode, t);
                 }
                 ids.push(t._amm_id);

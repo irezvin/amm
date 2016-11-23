@@ -25,8 +25,6 @@ Amm.View.Html.Content.prototype = {
         if (old === htmlElement) return;
         if (old) this._releaseDomNode(old);
         this._htmlElement = htmlElement;
-        if (this._htmlElement)
-            this._acquireDomNode(htmlElement);
         this._observeElementIfPossible();
         return true;
     },
@@ -40,7 +38,12 @@ Amm.View.Html.Content.prototype = {
     
     getVContent: function() { 
         return jQuery(this._htmlElement).html();
+    },
+    
+    _acquireResources: function() {
+        this._acquireDomNode(this._htmlElement);
     }
+
 };
 
 Amm.extend(Amm.View.Html.Content, Amm.View.Abstract.Content);
