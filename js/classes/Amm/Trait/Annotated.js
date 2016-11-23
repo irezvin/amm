@@ -9,6 +9,14 @@ Amm.Trait.Annotated.prototype = {
     'Annotated': '__INTERFACE__',
     
     _defaultAnnotations: null,
+    
+    _label: undefined,
+    
+    _description: undefined,
+    
+    _required: undefined,
+    
+    _error: undefined,
 
     // Element that contains Content elements showing annotations
     _annotationsContainer: undefined,
@@ -92,6 +100,34 @@ Amm.Trait.Annotated.prototype = {
 
     outRequiredChange: function(required, oldRequired) {
         this._out('requiredChange', required, oldRequired);
-    }
+    },
+    
+    setError: function(error) {
+        var oldError = this._error;
+        if (oldError === error) return;
+        this._error = error;
+ 
+        this.outErrorChange(error, oldError);
+        return true;
+    },
+
+    getError: function() { return this._error; },
+
+    outErrorChange: function(error, oldError) {
+        this._out('errorChange', error, oldError);
+    },
+
+    listAnnotations: function() {
+        return this.getAnnotationsContainer().listChildren();
+    },
+    
+    getAnnotationValue: function(id) {
+        var ane = this.getAnnotationsContainer().getAnnotationElement(id, true);
+        if (ane) return ane.getContent();
+    },
+    
+    setAnnotationValue: function(id, value) {
+        return this.getAnnotationsContainer().getAnnotationElement(id).setContent(value);
+    }    
 
 };

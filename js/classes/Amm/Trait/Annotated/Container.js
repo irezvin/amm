@@ -1,6 +1,7 @@
 /* global Amm */
 
 Amm.Trait.Annotated.Container = function(options) {
+    this._requireInterfaces('Annotated'); // our element must support annotated interface
     Amm.ElementBound.call(this);
     Amm.Element.Composite.call(this, options);
 };
@@ -15,6 +16,12 @@ Amm.Trait.Annotated.Container.prototype = {
     
     _cleanupWithParent: true,
 
+    setElement: function(element) {
+        if (this._element !== null && this._element !== element)
+            throw "can setElement() only once in Amm.Trait.Annotated.Container";
+        return Amm.ElementBound.prototype.setElement.call(this, element);
+    },
+
     _passAnnotatedContentChange: function(value, oldValue) {
         if (this._element) Amm.setProperty(this._element, Amm.event.origin.getId(), value);
     },
@@ -25,7 +32,7 @@ Amm.Trait.Annotated.Container.prototype = {
         if (Amm.detectProperty(this._element, id, prop)) {
             res.subscribe('contentChange', this._passAnnotatedContentChange, this);
             var p = this._element[prop.getterName](), v = res.getContent();
-            if (p !== undefined) res.setContent(v);
+            if (p !== undefined) res.setContent(p);
             else if (p === undefined && v !== undefined) {
                 this._element[prop.setterName](v);
             }

@@ -32,7 +32,6 @@
         <div id='val3c' class='foo bar'>
             <input type='text' id='val3' />
         </div>
-        <input type='text' id='val4' />
         <div id='contentElement'>
             The content
         </div>
