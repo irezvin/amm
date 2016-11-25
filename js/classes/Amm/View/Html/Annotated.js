@@ -74,22 +74,28 @@ Amm.View.Html.Annotated.prototype = {
         var t = this, res = {};
         jQuery(this._htmlElement).find('.' + this.annotationClass).each(function(i, domNode) {
             var id = t.classToId(domNode.getAttribute('class'), true);
-            if (id) res[id] = t._createChildView(t._element.getAnnotationsContainer().getAnnotationElement(id), false, domNode);
         });
         return res;
     },
     
     // child is a child element of this.element.getAnnotationsContainer()
-    _createChildView: function(child, throwIfCant, childHtmlElement) {
+    _createChildViews: function(child, throwIfCant, childHtmlElement) {
         childHtmlElement = childHtmlElement || this.locateChildHtmlElement(child.getId(), this.createNodesOnDemand);
         if (!childHtmlElement) {
             if (throwIfCant) throw "Cannot locate child htmlElement for child with id " + child.getId();
             return null;
         }
-        var res = new Amm.View.Html.Content({
+        var res = [];
+        if (child['Visual']) {
+            res.push(new Amm.View.Html.Visual({
+                element: child,
+                htmlElement: childHtmlElement
+            }));
+        }
+        res.push(new Amm.View.Html.Content({
             element: child,
             htmlElement: childHtmlElement
-        });
+        }));
         return res;
     },
     

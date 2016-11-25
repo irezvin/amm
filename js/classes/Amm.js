@@ -71,7 +71,7 @@ Amm = {
         if (item instanceof Array) {
             var r = [];
             for (var i = 0, l = item.length; i < l; i++) {
-                if (item[i].length) { // ignore empty identifiers
+                if (item[i] && item[i].length) { // ignore empty identifiers
                     var item = this.getItem(item[i], throwIfNotFound);
                     if (item) r.push(item);
                 }

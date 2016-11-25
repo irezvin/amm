@@ -7,6 +7,7 @@ Amm.Trait.Visual.prototype = {
 
     'Visual': '__INTERFACE__',
     'Classes': '__INTERFACE__',
+    'DisplayChild': '__INTERFACE__',
 
     _visible: undefined,
 

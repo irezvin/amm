@@ -39,7 +39,7 @@ Amm.View.Abstract.Annotated.prototype = {
             anc.subscribe('childAdded', this._onAnnotationAdded, this);
             var cc = anc.listChildren();
             for (var i = 0; i < cc.length; i++) {
-                this._createChildView(anc.getChild(cc[i]));
+                this._createChildViews(anc.getChild(cc[i]));
             }
         }
     },
@@ -53,11 +53,11 @@ Amm.View.Abstract.Annotated.prototype = {
     
     // child is a child element of this.element.getAnnotationsContainer()
     _onAnnotationAdded: function(child) {
-        this._createChildView(child);
+        this._createChildViews(child);
     },
     
     // child is a child element of this.element.getAnnotationsContainer()
-    _createChildView: function(child, throwIfCant) {
+    _createChildViews: function(child, throwIfCant) {
         // abstract
     },
     
