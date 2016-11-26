@@ -1,5 +1,20 @@
 <?php
 
+function listTests($dir = null) {
+    if (is_null($dir)) $dir = dirname(__FILE__).'/../js/tests';
+    $directory = new RecursiveDirectoryIterator($dir);
+    $iterator = new RecursiveIteratorIterator($directory);
+    $regex = new RegexIterator($iterator, '/^.+\.js$/i', RecursiveRegexIterator::GET_MATCH);
+    // class name => file name
+    $files = array();
+    foreach ($regex as $v) {
+        $f = $v[0];
+        $jsName = str_replace(DIRECTORY_SEPARATOR, '.', substr($f, strlen($dir) + 1));
+        $res[] = $jsName;
+    }
+    return $res;
+}
+
 function listAmmFiles($dir = null, $cacheFile = null) {
     if (is_null($dir)) $dir = dirname(__FILE__).'/../js/classes';
     $directory = new RecursiveDirectoryIterator($dir);

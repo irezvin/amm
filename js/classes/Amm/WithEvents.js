@@ -82,7 +82,7 @@ Amm.WithEvents.prototype = {
     defaultOut: null,
     
     // converts list of functions outFoo(), outBar() to 'foo', 'bar'
-    listOutEvents: function() {
+    listEvents: function() {
         var res = [];
         for (var i in this) {
             if (('' + i).slice(0, 3) === 'out' && typeof this[i] === 'function') {
