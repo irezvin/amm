@@ -75,7 +75,7 @@ function getDeps($file, $allFiles, $stack = array()) {
                 if (!in_array($f, $res)) $res[] = $f;
             }
         }
-        return $res;   
+        return $res;
 }
 
 
