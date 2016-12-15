@@ -2,7 +2,7 @@
 
 Amm.WithEvents = function(options) {
     this._subscribers = {};
-    Amm.registerItem(this);
+    //Amm.registerItem(this);
     Amm.init(this, options);
 };
 
@@ -56,7 +56,10 @@ Amm.WithEvents.invokeHandlers = function(outEvent, args, subscribers, dontPush) 
                 }
             }
 
-            if (typeof handler !== 'function') throw "Cannot call non-function handler";
+            if (typeof handler !== 'function') {
+                console.log(handler, subscribers[i]);
+                throw "Cannot call non-function handler";
+            }
             handler.apply(scope, args);
         }
     } catch(e) {
@@ -65,7 +68,7 @@ Amm.WithEvents.invokeHandlers = function(outEvent, args, subscribers, dontPush) 
     }
     if (!dontPush) Amm.popEvent();
     return true;
-}
+};
 
 Amm.WithEvents.prototype = {
     

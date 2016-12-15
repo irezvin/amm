@@ -13,6 +13,18 @@ Amm.ObservableArray = function(options) {
     if (val !== undefined) this.setItems(val);
 };
 
+Amm.ObservableArray.arrayChangeEvents = {
+    appendItems: 'outAppendItems',
+    insertItem: 'outInsertItem',
+    deleteItem: 'outDeleteItem',
+    replaceItem: 'outReplaceItem',
+    spliceItems: 'outSpliceItems',
+    reorderItems: 'outReorderItems',
+    moveItem: 'outMoveItem',
+    clearItems: 'outClearItems',
+    itemsChange: 'outItemsChange'
+};
+
 Amm.ObservableArray.prototype = {
 
     'Amm.ObservableArray': '__CLASS__', 
@@ -35,6 +47,8 @@ Amm.ObservableArray.prototype = {
     
     _preUpdateItems: null,
     
+    _evCache: null,
+    
     length: 0,
     
     // array compat
@@ -46,7 +60,7 @@ Amm.ObservableArray.prototype = {
         for (var i = 0; i < l; i++) {
             this[this.length++] = items[i];
         }
-        this.outAppendItems(items);
+        if (!this._update) this.outAppendItems(items);
         return this.length;
     },
     
@@ -55,7 +69,7 @@ Amm.ObservableArray.prototype = {
         --this.length;
         res = this[this.length];
         delete this[this.length];
-        this.outDeleteItem(this.length, res);
+        if (!this._update) this.outDeleteItem(this.length, res);
         return res;
     },
     
@@ -72,11 +86,12 @@ Amm.ObservableArray.prototype = {
         return res;
     },
     
-    // rotates values in numeric keys to allocate or delete indexes.
-    // updates length.
-    // start: starting index to shift left or right
-    // delta: non-zero, negative or positive value
-    _rotate: function(start, delta) {
+    /* Rotates values in numeric keys to allocate or delete indexes.
+       Updates this.length if {until} isn't provided.
+       {start}: starting index to shift left or right
+       {delta}: non-zero, negative or positive value
+   */
+    _rotate: function(start, delta, until) {
         if (!delta) return; // nothing to do
         var 
             a = delta < 0? start - delta : this.length - 1, 
@@ -95,6 +110,13 @@ Amm.ObservableArray.prototype = {
                 delete(this[i]);
         
         this.length += delta;
+    },
+    
+    _innerShift: function(a, b) {
+        var d = a > b? -1 : 1;
+        for (var i = a; i*d < b*d; i += d) {
+            this[i] = this[i + d];
+        }
     },
     
     /**
@@ -173,7 +195,7 @@ Amm.ObservableArray.prototype = {
         this._rotate(start, delta);
         for (i = 0; i < insertCount; i++) this[start + i] = insert[i];
         
-        this._outSmartSplice(start, res, insert, oldLength);
+        if (!this._update) this._outSmartSplice(start, res, insert);
         return res;
     },
     
@@ -181,7 +203,7 @@ Amm.ObservableArray.prototype = {
         if (!this.length) return undefined;
         var res = this[0];
         this._rotate(0, -1);
-        this.outDeleteItem(0, res);
+        if (!this._update) this.outDeleteItem(0, res);
         return res;
     },
     
@@ -195,7 +217,7 @@ Amm.ObservableArray.prototype = {
         for (var i = 0; i < l; i++) {
             this[i] = items[i];
         }
-        this._outSmartSplice(0, [], items, oldLength);
+        if (!this._update) this._outSmartSplice(0, [], items);
         return this.length;
     },
     
@@ -237,8 +259,13 @@ Amm.ObservableArray.prototype = {
     },
     
     setItem: function(index, item) {
-        if (this[index] && this._comparison? !this._comparison.call(this[index], item): this[index] === item)
-            return; // already has the item in place
+        // already has the same item in place?
+        if (
+            this[index] 
+            &&  this._comparison? 
+                !this._comparison.call(this[index], item): this[index] === item
+        )
+            return; 
         if (this._unique) this._checkDuplicates("setItem()", [item], index, 1);
         if (index < 0) throw "`index` must be >= 0";
         if (index >= this.length) {
@@ -248,10 +275,10 @@ Amm.ObservableArray.prototype = {
         if (index in this) {
             var oldItem = this[index];
             this[index] = item;
-            this.outReplaceItem(index, item, oldItem);
+            if (!this._update) this.outReplaceItem(index, item, oldItem);
         } else {
             this[index] = item;
-            this.outInsertItem(index, item);
+            if (!this._update) this.outInsertItem(index, item);
         }
         return index;
     },
@@ -263,8 +290,22 @@ Amm.ObservableArray.prototype = {
         var item = this[index];
         if (!sparse) this._rotate(index, -1);
             else delete this[index];
-        this.outDeleteItem(index, item);
+        if (!this._update) this.outDeleteItem(index, item);
         return true;
+    },
+    
+    moveItem: function(index, newIndex) {
+        if (index < 0) throw "`index` must be >= 0";
+        if (index >= this.length) throw "No item with index " + index;
+        if (newIndex < 0) throw "`newIndex` must be >= 0";
+        if (newIndex >= this.length && !this._sparse) {
+            newIndex = this.length - 1;
+        }
+        if (newIndex === index) return; // nothing to do
+        var item = this[index], delta, start, until;
+        this._innerShift(index, newIndex);
+        this[newIndex] = item;
+        this.outMoveItem(index, newIndex, item);
     },
     
     insertItem: function(item, index) {
@@ -276,7 +317,7 @@ Amm.ObservableArray.prototype = {
         if (index < this.length) this._rotate(index, 1);
         if (index >= this.length) this.length = index;
         this[index] = item;
-        this.outInsertItem(index, item);
+        if (!this._update) this.outInsertItem(index, item);
         return index;
     },
     
@@ -318,37 +359,18 @@ Amm.ObservableArray.prototype = {
         }
         this.length = j;
         while (j < oldLength) delete this[j++];
-        this._outSmartSplice(0, oldItems, items, oldLength);
+        if (!this._update) {
+            if (this._diff) {
+                this._doDiff(oldItems, items);
+            } else {
+                this._outSmartSplice(0, oldItems, items);
+            }
+        }
         return this.length;
     },
             
-    clear: function() {
+    clearItems: function() {
         return this.setItems([]);
-    },
-    
-    outDeleteItem: function(index, item) {
-        
-    },
-            
-    outInsertItem: function(index, newItem) {
-        
-    },
-    
-    outReplaceItem: function(index, newItem, oldItem) {
-        
-    },
-    
-    outAppendItems: function(items) {
-        
-    },
-    
-    outRebuild: function() {
-        
-    },
-    
-    // detects boundaries and transform them into more atomic events
-    _outSmartSplice: function(start, cut, insert, oldLength) {
-        
     },
     
     setSparse: function(sparse) {
@@ -394,15 +416,16 @@ Amm.ObservableArray.prototype = {
     getDiff: function() { return this._diff; },
     
     _doBeginUpdate: function() {
-        if (this._diff) this._preUpdateItems = this.getItems();
+        this._preUpdateItems = this.getItems();
     },
     
     _doEndUpdate: function() {
-        if (this._diff && this._preUpdateItems) {
+        if (this._diff) {
             this._doDiff();
         } else {
-            this.outRebuild();
+            if (!this._update) this.outItemsChange(this._getItems, this._preUpdateItems);
         }
+        this._preUpdateItems = null;
     },
     
     beginUpdate: function() { 
@@ -418,10 +441,335 @@ Amm.ObservableArray.prototype = {
         if (this._update === 0) {
             this._doEndUpdate();
         }
+    },
+    
+    getUpdateLevel: function() {
+        return this._update;
+    },
+    
+    _buildEvCache: function() {
+        var ec = [{}], scp = [null]; 
+        
+        if (!scp.indexOf) {
+            scp.indexOf = this.indexOf;
+        }
+        
+        // sp used to keep scopes registry
+        
+        for (var ev in this._subscribers) {
+            if (
+                this._subscribers.hasOwnProperty(ev) 
+        
+                // only for events that are handled specially
+                && Amm.ObservableArray.arrayChangeEvents[ev]
+            ) {
+                var l = this._subscribers[ev].length, hdl, i, idx;
+                for (i = 0; i < l; i++) {
+                    hdl = this._subscribers[ev][i];
+                    if (hdl[1]) {
+                        idx = scp.indexOf(hdl[1]);
+                        if (idx < 0) {
+                            idx = scp.length;
+                            scp.push(hdl[1]);
+                            ec.push({});
+                        }
+                    }
+                    else idx = 0;
+                    if (!ec[idx][ev]) ec[idx][ev] = [];
+                    ec[idx][ev].push(hdl);
+                }
+            }
+        }
+        
+        this._evCache = ec;
+        return this._evCache;
+    },
+    
+    _outChain: function(events) {
+        if (!this._evCache) this._buildEvCache();
+        if (!this._evCache.length) return;
+        var ev = [], evName, spl, args;
+        for (evName in events)
+            if (events.hasOwnProperty(evName)) ev.push(evName);
+        var evl = ev.length;
+        for (var i = 0, l = this._evCache.length; i < l; i++) {
+            for (var j = 0; j < evl; j++) {
+                evName = ev[j];
+                if (this._evCache[i][evName]) { // found suitable subscriber
+                    var args = events[evName];
+                    if (!args) {
+                        args = [];
+                        if (evName === 'itemsChange') {
+                            args = [this.getItems()];
+                            // already have'em
+                            if (this._preUpdateItems) {
+                                args.push(this._preUpdateItems);
+                            } else if (spl = events['spliceItems']) {
+                                // splice is reversibe - swap to get old value
+                                var preup = [].concat(args[0]);
+                                preup.splice.apply(preup, [spl[0], spl[2].length].concat(spl[1]));
+                                args.push(preup);
+                            }
+                        }
+                    }
+                    Amm.WithEvents.invokeHandlers.call(
+                        this,  // origin
+                        evName,  // event name
+                        args, // args (in "events[evName]")
+                        this._evCache[i][evName] // event observers (same scope)
+                    );
+                    // first index in _evCache is reserved 
+                    // to the subscribers w/o scope, so we notify them all
+                    if (i !== 0) break;
+                }
+            }
+        }
+    },
+    
+    outClearItems: function(oldItems) {
+        return this._outChain({
+            clearItems: null, 
+            spliceItems: [0, oldItems, []], 
+            itemsChange: [[], oldItems]
+        });
+    },
+    
+    outDeleteItem: function(index, item) {
+        return this._outChain({
+            deleteItem: [index, item],
+            spliceItems: [index, [item], []],
+            itemsChange: null
+        });
+    },
+            
+    outInsertItem: function(index, newItem) {
+        return this._outChain({
+            insertItem: [index, newItem],
+            spliceItems: [index, [], [newItem]],
+            itemsChange: null
+        });
+    },
+    
+    outReplaceItem: function(index, newItem, oldItem) {
+        return this._outChain({
+            replaceItem: [index, newItem, oldItem],
+            spliceItems: [index, [oldItem], [newItem]],
+            itemsChange: null
+        });
+    },
+    
+    outAppendItems: function(items) {
+        return this._outChain({
+            appendItems: [items],
+            spliceItems: [this.length - items.length, [], items],
+            itemsChange: null
+        });
+    },
+    
+    outSpliceItems: function(index, cut, insert) {
+        return this._outChain({
+            spliceItems: [index, cut, insert],
+            itemsChange: null
+        });
+    },
+    
+    outMoveItem: function(oldIndex, newIndex, item) {
+        var old, offset, l;
+        if (oldIndex < newIndex) {
+            offset = oldIndex, l = newIndex - oldIndex + 1;
+            old = this.slice(offset, newIndex);
+            old.unshift(item);
+        } else {
+            offset = newIndex;
+            l = oldIndex - newIndex + 1;
+            old = this.slice(offset + 1, offset + 1 - l);
+            old.push(item);
+        }
+        return this._outChain({
+            moveItem: [oldIndex, newIndex, this[newIndex]],
+            reorderItems: [offset, l, old],
+            spliceItems: [offset, old, this.slice(offset, offset + l)],
+            itemsChange: null
+        });
+    },
+    
+    outReorderItems: function(index, length, oldOrder) {
+        return this._outChain({ 
+            reorderItems: [index, length, oldOrder],
+            spliceItems: [index, oldOrder, this.slice(index, index + length)],
+            itemsChange: null
+        });
+    },
+    
+    // never call directly - is called from the chain when spliceItems event 
+    // is encountered (since splice is reversible and we can figure out oldItems)
+    outItemsChange: function(items, oldItems) {
+        return this._outChain({
+            itemsChange: [items, oldItems]
+        });
+    },
+    
+    // detects boundaries and transform them into more atomic events
+    _outSmartSplice: function(start, cut, insert) {
+        if (!cut.length && !insert.length) return; // nothing changed
+
+        // clear
+        if (start === 0 && !insert.length && !this.length) {
+            return this.outClearItems(cut);
+        }
+        
+        // append
+        if (!cut.length && start >= this.length - insert.length) {
+            return this.outAppendItems(insert);
+        }
+        
+        // insert 1
+        if (!cut.length && insert.length == 1) {
+            return this.outInsertItem(start, insert[0]);
+        }
+
+        // replace
+        if (cut.length == 1 && insert.length == 1) {
+            return this.outReplaceItem(start, insert[0], cut[0]);
+        }
+        
+        // delete
+        if (cut.length == 1 && !insert.length) {
+            return this.outDeleteItem(start, cut[0]);
+        }
+
+        // same... but different order?
+        if (cut.length === insert.length) {
+            var l1 = cut.length - 1;
+            // same?
+            if (Amm.ObservableArray.equal(cut, insert, undefined, undefined, undefined, this._comparison)) {
+                return; // nothing changed
+                
+            // move first spliced element to end of splice
+            } else if (this._comparison? !this._comparsion(cut[0], insert[l1]) : cut[0] === insert[l1]) { // move fwd?
+                if (Amm.ObservableArray.equal(cut, insert, 1, 0, l1, this._comparison))
+                    return this.outMoveItem(start, start + l1, cut[0]);
+            // move last spliced element to beginning of splice
+            } else if (this._comparison? !this._comparsion(cut[l1], insert[0]) : cut[l1] === insert[0]) {
+                if (Amm.ObservableArray.equal(cut, insert, 0, 1, l1, this._comparison))
+                    return this.outMoveItem(start + l1, start, cut[l1]);
+            }
+            // same elements, different order?
+            if (!Amm.ObservableArray.symmetricDiff(cut, insert, this._comparison).length) {
+                return this.outReorderItems(start, cut.length, cut);
+            }
+        }
+        
+        // phew... maybe just ordinary splice?
+        return this.outSpliceItems(start, cut, insert);
+    },
+    
+    _doDiff: function(oldItems, items) {
+        oldItems = oldItems || this._preUpdateItems;
+        items = items || this.getItems();
+        var d = Amm.ObservableArray.smartDiff(oldItems, items);
+        
+        // * a) ['splice', start, length, elements[]]
+        // * b) ['move', oldIndex, newIndex] - element was moved from `oldIndex` to `newIndex`, that's all
+        // * c) ['reorder', start, length, oldItems] - `length` elements starting from `start` have different order, otherwise the same array
+        // * d) null - nothing changed
+        
+        if (!d) return;
+        if (d[0] === 'splice') {
+            // will figure append/delete/insert/replace
+            return this._outSmartSplice(d[1], oldItems.slice(d[1], d[1] + d[2]), d[3]);
+        }
+        
+        if (d[0] === 'move') {
+            return this.outMoveItem(d[1], d[2], this[d[2]]);
+        }
+            
+        if (d[0] === 'reorder') {
+            console.log(d);
+            return this.outReorderItems(d[1], d[2], d[3]);
+        }
+    },
+
+    subscribe: function(outEvent, handler, scope, extra, decorator) {    
+        this._evCache = null;
+        return Amm.WithEvents.prototype.subscribe.call
+            (this, outEvent, handler, scope, extra, decorator);
+    },
+    
+    unsubscribe: function(outEvent, handler, scope) {    
+        this._evCache = null;
+        return Amm.WithEvents.prototype.unsubscribe.call
+            (this, outEvent, handler, scope);
+    },
+    
+    clear: function() {
+        return Amm.WithEvents.unsubscribe.call(this);
+        this._evCache = null;
+        this._update = 1;
+        this.setItems([]);
+        this._preUpdateItems = null;
+        this._update = 0;
     }
+    
 };
 
 Amm.extend(Amm.ObservableArray, Amm.WithEvents);
+
+/**
+ * returns TRUE when a.slice(aOffset, aOffset + length) === b.slice(bOffset, bOffset+length)
+ * Offset defaults to 0. Ommitting length will check if arrays are equal.
+ */
+Amm.ObservableArray.equal = function(a, b, aOffset, bOffset, length, comparisonFn) {
+    // shortcut
+    if (!aOffset && !bOffset && length === undefined) {
+        if (a.length !== b.length) return false;
+        aOffset = 0;
+        bOffset = 0;
+        length = a.length;
+    } else {
+        // check how many items we will actually compare
+        aOffset = aOffset || 0;
+        if (aOffset < 0) aOffset = a.length + aOffset;
+        if (aOffset < 0) aOffset = 0;
+        bOffset = bOffset || 0;
+        if (bOffset < 0) bOffset = b.length + bOffset;
+        if (bOffset < 0) bOffset = 0;
+        // default toward remaining items
+        if (length === undefined) length = a.length - aOffset;
+        if (length < 0) length = 0;
+        if (length === 0) return true;
+        
+        // rA, rB - how much items we actually have to compare in both arrays
+        
+        var 
+            rA = length, 
+            rB = length;
+    
+        
+        if (aOffset + length > a.length) rA = a.length - aOffset;
+        if (bOffset + length > b.length) rB = b.length - bOffset;
+    
+        // [] == []
+        if (rA <= 0 && rB <= 0) return true;
+        
+        // slices are of different length
+        if (rA !== rB) return false; 
+    }
+    // at this point we are guaranteed to have slices of equal length,
+    // and have aOffset, bOffset and length populated
+    if (comparisonFn) {
+        for (var i = 0; i < length; i++) {
+            if (comparisonFn(a[aOffset + i], b[bOffset + i])) 
+                return false;
+        }
+    } else {
+        for (var i = 0; i < length; i++) {
+            if (a[aOffset + i] !== b[bOffset + i]) 
+                return false;
+        }
+    }
+    return true;
+};
 
 /** 
  * {a} - old version of array. 
@@ -432,15 +780,14 @@ Amm.extend(Amm.ObservableArray, Amm.WithEvents);
  * 
  * a) ['splice', start, length, elements[]]
  * b) ['move', oldIndex, newIndex] - element was moved from `oldIndex` to `newIndex`, that's all
- * c) ['reorder', start, length] - `length` elements starting from `start` have different order, otherwise the same array
+ * c) ['reorder', start, length, oldItems] - `length` elements starting from `start` have different order, otherwise the same array
  * d) null - nothing changed
  */
 Amm.ObservableArray.smartDiff = function(a, b, comparisonFn) {
     
     var al = a.length, bl = b.length, 
-            maxL = al > bl? al: bl, 
-            minL = al < bl? al: bl,
-            delta = al - bl,
+            delta = bl - al,
+            dBeginMax = al > bl? al : bl,
             i,
             dBegin, dEnd;
     
@@ -458,26 +805,30 @@ Amm.ObservableArray.smartDiff = function(a, b, comparisonFn) {
      *          -   second base case: 'reorder' event
      *      - arrays of different length? - 'splicing' took place
      */
-    for (dBegin = 0; dBegin < minL; dBegin++) { //dBegin is index in a
+    for (dBegin = 0; dBegin < dBeginMax; dBegin++) { //dBegin is index in a
         if (comparisonFn? comparisonFn(a[dBegin], b[dBegin]) : (a[dBegin] !== b[dBegin])) {
             break;
         }
     }
-    
-    var dEndMin = dBegin > delta? dBegin : delta;
-    for (dEnd = al; dEnd > dEndMin; dEnd--) { //dEnd is index in a
-        if (comparisonFn? comparisonFn(a[dEnd], b[dEnd - delta]) : (a[dEnd] !== b[dEnd - delta])) {
-            dEnd++;
+    var dEndMin = delta > 0? dBegin + delta - 1 : dBegin;
+    for (dEnd = al - 1; dEnd >= dEndMin; dEnd--) { //dEnd is index in a
+        if (comparisonFn? comparisonFn(a[dEnd], b[dEnd + delta]) : (a[dEnd] !== b[dEnd + delta])) {
             break;
         }
     }
+    dEnd++;
     
-    var matchStartNum = dBegin;
-    var matchEndNum = al - dEnd;
-    var cutSize = al - matchEndNum - matchStartNum;
-    var insertSize = bl - matchEndNum - matchStartNum;
+    var cutSize = dEnd - dBegin;
+    var insertSize = cutSize + delta;
     
-    if (insertSize) insert = b.slice(bl - matchEndNum - insertSize, bl - matchEndNum);
+    /*
+    console.log(a, al);
+    console.log(b, bl);
+    console.log('dBegin', dBegin, 'dEndMin', dEndMin, 'delta', delta, 'dEnd', dEnd, 
+        'cutSize', cutSize, 'insertSize', insertSize);
+    */
+    
+    if (insertSize) insert = b.slice(dBegin, dBegin + insertSize);
         else insert = [];
         
     if (!cutSize && !insertSize) return null; // same
@@ -508,7 +859,7 @@ Amm.ObservableArray.smartDiff = function(a, b, comparisonFn) {
                 else return ['move', dEnd - 1, dEnd - cutSize];
             }
         }
-        if (!Amm.ObservableArray.symmetricDiff(cut, insert, comparisonFn).length) return ['reorder', dBegin, cutSize];
+        if (!Amm.ObservableArray.symmetricDiff(cut, insert, comparisonFn).length) return ['reorder', dBegin, cutSize, cut];
     }
     
     return ['splice', dBegin, cutSize, insert];
