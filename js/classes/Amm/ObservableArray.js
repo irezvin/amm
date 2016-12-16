@@ -86,6 +86,73 @@ Amm.ObservableArray.prototype = {
         return res;
     },
     
+    // triggers rerderItems event for all items if order of any item was
+    // changed because of sorting 
+    sort: function(fn) {
+        
+        if (this.length <= 1) return this; // nothing to do
+        
+        var items = this.getItems(), oldItems = [].concat(items),
+            i, l = this.length;
+    
+        items.sort(fn);
+        var changed = false;
+        if (this._comparison) {
+            for (i = 0; i < l; i++) {
+                changed = changed || this._comparison(this[i], items[i]);
+                if (!this._sparse || i in items) {
+                    this[i] = items[i];
+                } else {
+                    delete this[i];
+                }
+            }
+        } else {
+            for (i = 0; i < l; i++) {
+                changed = changed || this[i] !== items[i];
+                this[i] = items[i];
+                if (!this._sparse || i in items) {
+                    this[i] = items[i];
+                } else {
+                    delete this[i];
+                }
+            }
+        }
+        if (changed) 
+            this.outReorderItems(0, this.length, oldItems);
+        return this;
+    },
+    
+    // triggers rerderItems event
+    reverse: function() {
+        
+        if (this.length <= 1) return this; // nothing to do
+        
+        var items = this.getItems(),
+            i, l = this.length - 1, max = (l - l%2)/2, tmp, a, b;
+    
+            
+        for (i = 0; i <= max; i++) {
+            if (!this._sparse || ((i in this) && (l - i) in this)) {
+                tmp = this[i];
+                this[i] = this[l - i];
+                this[l - i] = tmp;
+            } else {
+                a = i in this;
+                b = (l - i) in this;
+                if (!a && !b) continue;
+                if (b) {
+                    this[i] = this[l - i];
+                    delete this[l - i];
+                } else {
+                    this[l - i] = this[i];
+                    delete this[i];
+                }
+            }
+        }
+        this.outReorderItems(0, this.length, items);
+        return this;
+    },
+    
     /* Rotates values in numeric keys to allocate or delete indexes.
        Updates this.length if {until} isn't provided.
        {start}: starting index to shift left or right

@@ -251,6 +251,7 @@
         var desc = descCall(b, method, args);
         var r1 = a[method].apply(a, args);
         var r2 = b[method].apply(b, args);
+        if (r1 instanceof Amm.ObservableArray) r1 = r1.getItems();
         currAssert.deepEqual(r1, r2, desc + ' [result]');
         currAssert.deepEqual(a.getItems(), b, desc + ' [state]');
     };
@@ -282,6 +283,18 @@
         testArrayCompat(['a', 'b', 'c', 'b', 'c'], 'indexOf', 'b', -1);
         testArrayCompat(['a', 'b', 'c', 'b', 'c'], 'indexOf', 'b', 3);
         testArrayCompat(['a', 'b', 'c', 'b', 'c'], 'indexOf', 'nx');
+        
+        testArrayCompat(['a', 'b', 'c', 'd'], 'reverse');
+        testArrayCompat(['a', 'b', 'c', 'd', 'e'], 'reverse');
+        testArrayCompat([], 'reverse');
+        testArrayCompat([1], 'reverse');
+        var a = [0, 1, 2, 3, 4, 5, 6, 7];
+        delete a[0];
+        delete a[7];
+        delete a[4];
+        delete a[2];
+        var ob = new Amm.ObservableArray({items: a, sparse: true});
+        testArrayCompat(ob, 'reverse');
     });
     
     var testArrayManipulation = function(items, method, args, resItems, result) {
@@ -755,10 +768,42 @@
             [],
             [0, 1, 2, 3,  4, 5, 6]
         );
-
-
-        
-        
     }); 
     
+    QUnit.test("Amm.ObservableArray.sort", function(assert) {
+        currAssert = assert;
+        var allEv = [], i;
+        for (var i in Amm.ObservableArray.arrayChangeEvents) {
+            if (Amm.ObservableArray.arrayChangeEvents.hasOwnProperty(i)) {
+                allEv.push(i);
+            }
+        }
+        
+        var orig = [1, 2, 5, 4, 3];
+        var rev = function(a, b) {
+            return b - a;
+        };
+        var a = new Amm.ObservableArray(orig);
+        var allLog = [];
+        var allEvents = new EvReceiver('allEvents', 
+            ['reorderItems', 'itemsChange'], a, allLog);
+        
+        a.sort();
+        assertReceivedEvent(allLog, null, 'reorderItems',
+        0, 5, [1, 2, 5, 4, 3])
+        assert.deepEqual(a.getItems(), [1, 2, 3, 4, 5]);
+        
+        allLog.splice(0, allLog.length); // clear log
+        a.sort(); // sort the sorted array again
+        assert.ok(!allEvents.length); // expect NO events
+        
+        a.sort(rev);
+        assertReceivedEvent(allLog, null, 'reorderItems',
+        0, 5, [1, 2, 3, 4, 5])
+        assert.deepEqual(a.getItems(), [5, 4, 3, 2, 1]);
+        
+        
+    });
+    
 })();
+ 
