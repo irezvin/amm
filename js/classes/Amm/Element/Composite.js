@@ -1,5 +1,4 @@
 /* global Amm */
-/* global Ajs_Util */
 
 Amm.Element.Composite = function(options) {
     this._children = {};
@@ -97,7 +96,12 @@ Amm.Element.Composite.prototype = {
     },
     
     listChildren: function() {
-        return Ajs_Util.hashKeys(this._children);
+        if (Object.getOwnPropertyNames) return Object.getOwnPropertyNames(this._children);
+        var r = [];
+        for (var i in this._children) {
+            if (this._children.hasOwnProperty(i)) r.push(i);
+        }
+        return r;
     },
     
     getChild: function(id) {

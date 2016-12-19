@@ -1,5 +1,7 @@
 (function() {
 
+    QUnit.module("Observable Array");
+
     var currAssert;
 
     /* global Amm */

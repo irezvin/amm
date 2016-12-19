@@ -1,5 +1,3 @@
-/* global Ajs_Util */
-
 Amm = {
     
     ID_SEPARATOR: '/',
@@ -51,11 +49,13 @@ Amm = {
         if (item._amm_id) return;
         item._amm_id = this.id + '_' + this._counter++;
         this._items[item._amm_id] = item;
+        return true;
     },
     
     unregisterItem: function(item) {
         if (typeof item === 'string') item = this._items[item];
-        if (!item._amm_id || this._items[item._amm_id] !== item) throw "Item not found";
+        if (!item._amm_id || this._items[item._amm_id] !== item)
+            throw "Item not found";
         if (typeof item.getPath === 'function') {
             var p = item.getPath();
             if (p[0] === '^') {
@@ -72,8 +72,8 @@ Amm = {
             var r = [];
             for (var i = 0, l = item.length; i < l; i++) {
                 if (item[i] && item[i].length) { // ignore empty identifiers
-                    var item = this.getItem(item[i], throwIfNotFound);
-                    if (item) r.push(item);
+                    var resItem = this.getItem(item[i], throwIfNotFound);
+                    if (resItem) r.push(resItem);
                 }
             }
             return r;
@@ -95,7 +95,9 @@ Amm = {
     },
     
     extend: function(subClass, parentClass) {
-        Ajs_Util.extend(subClass, parentClass);
+    	for (var i in parentClass.prototype)
+            if (!subClass.prototype[i])
+                subClass.prototype[i] = parentClass.prototype[i];
         var c = this.getClass(parentClass.prototype);
         if (c) subClass.prototype[c] = '__PARENT__';
     },
@@ -158,7 +160,7 @@ Amm = {
     // Returns true if `item` has all aff the `interfaces` (may be array or a string)
     hasInterfaces: function(item, interfaces, throwIfNot) {
         if (!interfaces) return true; // empty parameter - don't do anything
-        if (!interfaces instanceof Array) interfaces = [interfaces];
+        if (!(interfaces instanceof Array)) interfaces = [interfaces];
         for (var i = interfaces.length - 1; i >=0; i--) {
             if (!item || item[interfaces[i]] !== '__INTERFACE__') {
                 if (throwIfNot) {
@@ -319,18 +321,6 @@ Amm = {
     
     popEvent: function() {
         this.event = this._eventStack.pop();
-    },
-    
-    cleanupComponents: function() {
-        if (this._components instanceof Array) {
-            for (var i = 0, l = this._components.length; i < l; i++) {
-                var prop = this._components[i], ag = this[prop];
-                if (ag && typeof ag.cleanup === 'function') {
-                    this[prop] = null;
-                    ag.cleanup();
-                }
-            }
-        }
     },
     
     // returns TRUE if `element` has together setter, getter and change event for given `property`.

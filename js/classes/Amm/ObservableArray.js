@@ -770,12 +770,13 @@ Amm.ObservableArray.prototype = {
     },
     
     clear: function() {
-        return Amm.WithEvents.unsubscribe.call(this);
+        var r = Amm.WithEvents.unsubscribe.call(this);
         this._evCache = null;
         this._update = 1;
         this.setItems([]);
         this._preUpdateItems = null;
         this._update = 0;
+        return r;
     }
     
 };

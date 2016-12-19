@@ -102,7 +102,7 @@ Amm.WithEvents.prototype = {
      * @returns {String} Empty string if there is no such out event, or function name to produce the event
      */
     hasEvent: function(event) {
-        var res = '', n = 'out' + Ajs_Util.ucFirst(event);
+        var res = '', n = 'out' + event.charAt(0).toUpperCase() + event.slice(1);
         if (typeof this[n] === 'function') res = n;
         return res;
     },

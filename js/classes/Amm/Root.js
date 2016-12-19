@@ -1,5 +1,4 @@
 /* global Amm */
-/* global Ajs_Util */
 
 Amm.Root = function(options) {
     Amm.Element.Composite.call(this, options);

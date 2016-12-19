@@ -1,5 +1,4 @@
 /* global Amm */
-/* global Ajs_Util */
 
 /**
  * @class Amm.Element
