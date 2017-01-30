@@ -115,6 +115,12 @@ QUnit.test("Amm object inheritance support", function(assert) {
     assert.deepEqual(Amm.getInterfaces(c1), ['traitX', 'traitY']);
     assert.deepEqual(Amm.getInterfaces(c), []);
     
+    assert.ok(Amm.meetsRequirements(c, [['ClassA', 'ClassB', 'ClassC', ClassC]]));
+    assert.ok(Amm.meetsRequirements(c, ClassC));
+    assert.ok(Amm.meetsRequirements(c, ['foo', 'bar', 'ClassC']));
+    assert.ok(Amm.meetsRequirements(c1, [['traitX', 'traitY', 'cMethod']]));
+    assert.notOk(Amm.meetsRequirements(c, ['nx', 'ny', 'nz']));
+    
 });
 
 QUnit.test("Amm init() and detect/get/set Property", function(assert) {

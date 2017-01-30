@@ -7,7 +7,7 @@
     /* global Amm */
     /* global Ajs_Util */
 
-    QUnit.test("Amm.ObservableArray.equal", function(assert) {
+    QUnit.test("ObservableArray.equal", function(assert) {
        
         var eq = Amm.ObservableArray.equal;
         assert.ok(eq([1, 2, 3, 4], [1, 2, 3, 4]));
@@ -27,7 +27,7 @@
     });
 
 
-    QUnit.test("Amm.ObservableArray.diff", function(assert) {
+    QUnit.test("ObservableArray.diff", function(assert) {
 
         var arrayDiff = Amm.ObservableArray.arrayDiff;
         var symmetricDiff = Amm.ObservableArray.symmetricDiff;
@@ -63,7 +63,7 @@
 
     });
 
-    QUnit.test("Amm.ObservableArray.smartDiff.noComparisonFn", function(assert) {
+    QUnit.test("ObservableArray.smartDiff.noComparisonFn", function(assert) {
 
         var smartDiff = Amm.ObservableArray.smartDiff;
 
@@ -160,7 +160,7 @@
 
     });
 
-    QUnit.test("Amm.ObservableArray.smartDiff.withComparisonFn", function(assert) {
+    QUnit.test("ObservableArray.smartDiff.withComparisonFn", function(assert) {
 
         var smartDiff = Amm.ObservableArray.smartDiff;
 
@@ -258,7 +258,7 @@
         currAssert.deepEqual(a.getItems(), b, desc + ' [state]');
     };
 
-    QUnit.test("Amm.ObservableArray.arrayCompat", function(assert) {
+    QUnit.test("ObservableArray.arrayCompat", function(assert) {
         currAssert = assert;
 
         testArrayCompat([], 'push', 4, 5, 6, 7);
@@ -316,7 +316,7 @@
         return a;
     };
     
-    QUnit.test("Amm.ObservableArray.arrayManipulation", function(assert) {
+    QUnit.test("ObservableArray.arrayManipulation", function(assert) {
         currAssert = assert;
         
         var a = ['a', 'b', 'c'];
@@ -381,7 +381,7 @@
                
     });
     
-    QUnit.test("Amm.ObservableArray.arrayManipulation", function(assert) {
+    QUnit.test("ObservableArray.arrayManipulation", function(assert) {
         
         var findDuplicates = Amm.ObservableArray.findDuplicates;
         var cmp = function(a, b) { return a != b; };
@@ -407,7 +407,7 @@
         
     });
     
-    QUnit.test("Amm.ObservableArray.arrayUnique", function(assert) {
+    QUnit.test("ObservableArray.arrayUnique", function(assert) {
         
         var OA = Amm.ObservableArray;
         var a = [1, 2, 3, 4, 5, '5', 6];
@@ -495,7 +495,7 @@
         return currAssert.deepEqual(found, expected, desc);
     };
     
-    QUnit.test("Amm.ObservableArray.events", function(assert) {
+    QUnit.test("ObservableArray.events", function(assert) {
         currAssert = assert;
         var allEv = [], i;
         for (var i in Amm.ObservableArray.arrayChangeEvents) {
@@ -515,7 +515,7 @@
         }
         var ec = a._buildEvCache();
         assert.equal(ec.length, 2 + allEv.length);
-        assert.equal(Ajs_Util.hashKeys(ec[1]).length, allEv.length);
+        assert.equal(Object.getOwnPropertyNames(ec[1]).length, allEv.length);
         
 
         // push
@@ -772,7 +772,7 @@
         );
     }); 
     
-    QUnit.test("Amm.ObservableArray.sort", function(assert) {
+    QUnit.test("ObservableArray.sort", function(assert) {
         currAssert = assert;
         var allEv = [], i;
         for (var i in Amm.ObservableArray.arrayChangeEvents) {

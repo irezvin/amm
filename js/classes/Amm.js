@@ -131,6 +131,53 @@ Amm = {
         }
     },
     
+    /**
+     * Checks if object matches any of sets of classes, interfaces or methods in the {requirements}
+     * Requirements are [[AND, AND] OR [AND, AND]] and so on.
+     * Example:
+     * ['WithEvents', ['subscribe', 'hasEvent'], Object, ['Visual', 'Annotated']]
+     * will match any of the following:
+     * - objects of WithEvents class
+     * - objects having both subscribe/hasEvent methods
+     * - Object instances
+     * - objects implementing both Visual and Annotated interfaces
+     * 
+     * Of course we don't distinguish which identifiers mean Classes, Interfaces
+     * or method names. (except real functions that we check with instanceof).
+     * Usually we have methods starting with lowercase letter and Classes/Interfaces
+     * with capital letters.
+     * 
+     * Note: non-object {requirements} param is treated in such way:
+     * scalar -> [[scalar]]; [scalar] -> [[scalar]]
+     * 
+     * @param {Object} object Object that we check
+     * @param array|string {requirements} one/two dimensional array or single element
+     *          with class/interface name(s), method name(s) or constructors
+     * @returns boolean TRUE if matches, FALSE if not
+     */
+    
+    meetsRequirements: function(object, requirements) {
+        if (!(requirements instanceof Array)) requirements = [[requirements]];
+        for (var i = 0, l = requirements.length; i < l; i++) {
+            var rqs = requirements[i], matches = true;
+            if (!(rqs instanceof Array)) rqs = [rqs];
+            for (var j = 0, l1 = rqs.length; j < l1; j++) {
+                var rq = rqs[j], m = false, v;
+                if (typeof rq === 'function') m = object instanceof rq;
+                else {
+                    v = object[rq];
+                    m =     v === '__CLASS__' 
+                        ||  v === '__INTERFACE__' 
+                        ||  v === '__PARENT__' 
+                        ||  typeof v === 'function';
+                }
+                if (!m) { matches = false; break; }
+            }
+            if (matches) return true;
+        }
+        return false;
+    },
+    
     getClass: function(object, all) {
         var r;
         if (all) r = [];
@@ -348,13 +395,15 @@ Amm = {
     getProperty: function(element, property, defaultValue) {
         var P = ('' + property)[0].toUpperCase() + property.slice(1), getterName = 'get' + P;
         if (typeof element[getterName] === 'function') res = element[getterName]();
-            else res = defaultValue;
+        else if (property in element) res = element[property];
+        else res = defaultValue;
         return res;
     },
     
     setProperty: function(element, property, value, throwIfNotFound) {
         var P = ('' + property[0]).toUpperCase() + property.slice(1), setterName = 'set' + P;
         if (typeof element[setterName] === 'function') res = element[setterName](value);
+        else if (property in element) element[property] = value;
         else if (throwIfNotFound) throw "No setter for property: `" + property + "`";
         return res;
     },

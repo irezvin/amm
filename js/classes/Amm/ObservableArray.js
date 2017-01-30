@@ -13,6 +13,13 @@ Amm.ObservableArray = function(options) {
     if (val !== undefined) this.setItems(val);
 };
 
+Amm.ObservableArray.indexOf = function(item, arr, start) {
+    start = start || 0;
+    if (arr instanceof Array && arr.indexOf) return arr.indexOf(item, start);
+    for (var i = start, l = arr.length; i < l; i++) if (item === arr[i]) return i;
+    return -1;
+};
+
 Amm.ObservableArray.arrayChangeEvents = {
     appendItems: 'outAppendItems',
     insertItem: 'outInsertItem',
@@ -45,6 +52,8 @@ Amm.ObservableArray.prototype = {
     
     _update: 0,
     
+    _noTrigger: 0,
+    
     _preUpdateItems: null,
     
     _evCache: null,
@@ -54,9 +63,10 @@ Amm.ObservableArray.prototype = {
     // array compat
     
     push: function(element, _) {
-        var items = Array.prototype.slice.apply(arguments), l = items.length;
-        if (!l) return this.length;
+        var items = Array.prototype.slice.apply(arguments);
         if (this._unique) this._checkDuplicates("push()", items);
+        var l = items.length;
+        if (!l) return this.length;
         for (var i = 0; i < l; i++) {
             this[this.length++] = items[i];
         }
@@ -88,7 +98,10 @@ Amm.ObservableArray.prototype = {
     
     // triggers rerderItems event for all items if order of any item was
     // changed because of sorting 
-    sort: function(fn) {
+    sort: function(fn, outChanged) {
+        
+        outChanged = outChanged || {};
+        outChanged.changed = false;
         
         if (this.length <= 1) return this; // nothing to do
         
@@ -117,12 +130,14 @@ Amm.ObservableArray.prototype = {
                 }
             }
         }
-        if (changed) 
+        if (changed) {
             this.outReorderItems(0, this.length, oldItems);
+            outChanged.changed = true;
+        }
         return this;
     },
     
-    // triggers rerderItems event
+    // triggers reorderItems event
     reverse: function() {
         
         if (this.length <= 1) return this; // nothing to do
@@ -297,7 +312,7 @@ Amm.ObservableArray.prototype = {
         var res = -1;
         if (this._comparison) {
             for (var i = start, l = this.length; i < l; i++) {
-                if (!this._comparison.call(item, this[i])) {
+                if (!this._comparison(item, this[i])) {
                     res = i;
                     break;
                 }
@@ -330,7 +345,7 @@ Amm.ObservableArray.prototype = {
         if (
             this[index] 
             &&  this._comparison? 
-                !this._comparison.call(this[index], item): this[index] === item
+                !this._comparison(this[index], item): this[index] === item
         )
             return; 
         if (this._unique) this._checkDuplicates("setItem()", [item], index, 1);
@@ -553,6 +568,7 @@ Amm.ObservableArray.prototype = {
     },
     
     _outChain: function(events) {
+        if (!this._noTrigger) return;
         if (!this._evCache) this._buildEvCache();
         if (!this._evCache.length) return;
         var ev = [], evName, spl, args;
@@ -641,6 +657,7 @@ Amm.ObservableArray.prototype = {
     },
     
     outMoveItem: function(oldIndex, newIndex, item) {
+        if (this._noTrigger) return;
         var old, offset, l;
         if (oldIndex < newIndex) {
             offset = oldIndex, l = newIndex - oldIndex + 1;
@@ -678,6 +695,8 @@ Amm.ObservableArray.prototype = {
     
     // detects boundaries and transform them into more atomic events
     _outSmartSplice: function(start, cut, insert) {
+        if (this._noTrigger) return;
+        
         if (!cut.length && !insert.length) return; // nothing changed
 
         // clear
@@ -752,7 +771,6 @@ Amm.ObservableArray.prototype = {
         }
             
         if (d[0] === 'reorder') {
-            console.log(d);
             return this.outReorderItems(d[1], d[2], d[3]);
         }
     },
@@ -1022,7 +1040,7 @@ Amm.ObservableArray.arrayDiff = function(a, b, comparisonFn) {
  * 
  * Returns [[aIdx1, aIdx2, aIdx3...], ...] where aIdx1, aIdx2, ... - indexes 
  * of found duplicates of the same items (aIdx is an index of first occurance,
- * etc)
+ * etc) -- note that aIdx1 < aIdx2 < aIdx3
  * 
  * {onlyFirst} - bool - return after locating second instance of any item 
  * (result array will have at most 1 element with 2 items) instead of thoroughly
