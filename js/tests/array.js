@@ -1,15 +1,15 @@
 (function() {
 
-    QUnit.module("Observable Array");
+    QUnit.module("Amm.Array");
 
     var currAssert;
 
     /* global Amm */
     /* global Ajs_Util */
 
-    QUnit.test("ObservableArray.equal", function(assert) {
+    QUnit.test("Amm.Array.equal", function(assert) {
        
-        var eq = Amm.ObservableArray.equal;
+        var eq = Amm.Array.equal;
         assert.ok(eq([1, 2, 3, 4], [1, 2, 3, 4]));
         assert.ok(eq([], []));
         assert.ok(eq([], [1, 2, 3, 4], 0, 4));
@@ -27,12 +27,12 @@
     });
 
 
-    QUnit.test("ObservableArray.diff", function(assert) {
+    QUnit.test("Amm.Array.diff", function(assert) {
 
-        var arrayDiff = Amm.ObservableArray.arrayDiff;
-        var symmetricDiff = Amm.ObservableArray.symmetricDiff;
+        var arrayDiff = Amm.Array.arrayDiff;
+        var symmetricDiff = Amm.Array.symmetricDiff;
 
-        var f = Amm.ObservableArray._optArrayDiff;
+        var f = Amm.Array._optArrayDiff;
 
         var cmp = function(a, b) { return a !== b };
         var appCmpFn = null;
@@ -45,7 +45,7 @@
 
         for (var i = 0; i < plan.length; i++) {
 
-            Amm.ObservableArray._optArrayDiff = plan[i][0], appCmpFn = plan[i][1];
+            Amm.Array._optArrayDiff = plan[i][0], appCmpFn = plan[i][1];
 
             var a = [1, 1, 2, 2, 3];
             var b = [3, 2, 1, 3];
@@ -63,9 +63,9 @@
 
     });
 
-    QUnit.test("ObservableArray.smartDiff.noComparisonFn", function(assert) {
+    QUnit.test("Amm.Array.smartDiff.noComparisonFn", function(assert) {
 
-        var smartDiff = Amm.ObservableArray.smartDiff;
+        var smartDiff = Amm.Array.smartDiff;
 
         var a, b;
 
@@ -160,9 +160,9 @@
 
     });
 
-    QUnit.test("ObservableArray.smartDiff.withComparisonFn", function(assert) {
+    QUnit.test("Amm.Array.smartDiff.withComparisonFn", function(assert) {
 
-        var smartDiff = Amm.ObservableArray.smartDiff;
+        var smartDiff = Amm.Array.smartDiff;
 
         var cmp = function(a, b) { return a != b; };
 
@@ -241,24 +241,24 @@
 
     var testArrayCompat = function(items, method, arg_) {
         var a, b;
-        if (items instanceof Amm.ObservableArray) {
+        if (items instanceof Amm.Array) {
             a = items;
             b = items.getItems();
         } else if (items instanceof Array) {
-            a = new Amm.ObservableArray;
+            a = new Amm.Array;
             a.push.apply(a, items);
             b = items;
-        } else throw "WTF: `items` must be an Array or an Amm.ObservableArray!";
+        } else throw "WTF: `items` must be an Array or an Amm.Array!";
         var args = args = Array.prototype.slice.call(arguments, 2);
         var desc = descCall(b, method, args);
         var r1 = a[method].apply(a, args);
         var r2 = b[method].apply(b, args);
-        if (r1 instanceof Amm.ObservableArray) r1 = r1.getItems();
+        if (r1 instanceof Amm.Array) r1 = r1.getItems();
         currAssert.deepEqual(r1, r2, desc + ' [result]');
         currAssert.deepEqual(a.getItems(), b, desc + ' [state]');
     };
 
-    QUnit.test("ObservableArray.arrayCompat", function(assert) {
+    QUnit.test("Amm.Array.arrayCompat", function(assert) {
         currAssert = assert;
 
         testArrayCompat([], 'push', 4, 5, 6, 7);
@@ -295,20 +295,20 @@
         delete a[7];
         delete a[4];
         delete a[2];
-        var ob = new Amm.ObservableArray({items: a, sparse: true});
+        var ob = new Amm.Array({items: a, sparse: true});
         testArrayCompat(ob, 'reverse');
     });
     
     var testArrayManipulation = function(items, method, args, resItems, result) {
         var a, b;
-        if (items instanceof Amm.ObservableArray) {
+        if (items instanceof Amm.Array) {
             a = items;
             b = items.getItems();
         } else if (items instanceof Array) {
-            a = new Amm.ObservableArray;
+            a = new Amm.Array;
             a.push.apply(a, items);
             b = items;
-        } else throw "WTF: `items` must be an Array or an Amm.ObservableArray!";
+        } else throw "WTF: `items` must be an Array or an Amm.Array!";
         var desc = descCall(b, method, args);
         var r1 = a[method].apply(a, args);
         currAssert.deepEqual(a.getItems(), resItems, desc + ' [state]');
@@ -316,7 +316,7 @@
         return a;
     };
     
-    QUnit.test("ObservableArray.arrayManipulation", function(assert) {
+    QUnit.test("Amm.Array.arrayManipulation", function(assert) {
         currAssert = assert;
         
         var a = ['a', 'b', 'c'];
@@ -343,15 +343,15 @@
 
         
         
-        // "sparse" argument has no effect if ObservableArray._sparse === false
+        // "sparse" argument has no effect if Array._sparse === false
         testArrayManipulation(a, 'removeAtIndex', [1, true], ['a', 'c'], true);
         
         // sparse
-        testArrayManipulation(new Amm.ObservableArray(a, {sparse: true}), 
+        testArrayManipulation(new Amm.Array(a, {sparse: true}), 
             'setItem', [4, 'z'], ['a', 'b', 'c', undefined, 'z'], 4);
-        testArrayManipulation(new Amm.ObservableArray(a, {sparse: true}), 
+        testArrayManipulation(new Amm.Array(a, {sparse: true}), 
             'removeAtIndex', [1, true], ['a', undefined, 'c'], true);
-        testArrayManipulation(new Amm.ObservableArray(a, {sparse: true}), 
+        testArrayManipulation(new Amm.Array(a, {sparse: true}), 
             'removeAtIndex', [a.length, true], a, false);
         
         testArrayManipulation(a, 'insertItem', ['*'], ['a', 'b', 'c', '*'], 3);
@@ -370,7 +370,7 @@
         testArrayManipulation(a, 'insertItemBefore', ['x', 'c'], ['a', 'b', 'x', 'c'], 2);
         testArrayManipulation(a, 'insertItemBefore', ['x'], ['a', 'b', 'c', 'x'], 3);
         assert.throws(function() {
-            var oa = new Amm.ObservableArray(a);
+            var oa = new Amm.Array(a);
             oa.insertItemBefore('x', 'nonExistent');
         });
         
@@ -381,9 +381,9 @@
                
     });
     
-    QUnit.test("ObservableArray.arrayManipulation", function(assert) {
+    QUnit.test("Amm.Array.arrayManipulation", function(assert) {
         
-        var findDuplicates = Amm.ObservableArray.findDuplicates;
+        var findDuplicates = Amm.Array.findDuplicates;
         var cmp = function(a, b) { return a != b; };
         
         //       0  1  2  3  4  5  6  7
@@ -407,9 +407,9 @@
         
     });
     
-    QUnit.test("ObservableArray.arrayUnique", function(assert) {
+    QUnit.test("Amm.Array.arrayUnique", function(assert) {
         
-        var OA = Amm.ObservableArray;
+        var OA = Amm.Array;
         var a = [1, 2, 3, 4, 5, '5', 6];
         var b = [1, 2, 3, 4, 5, 6, 1];
         var cmp = function(x, y) { return x != y };
@@ -495,17 +495,17 @@
         return currAssert.deepEqual(found, expected, desc);
     };
     
-    QUnit.test("ObservableArray.events", function(assert) {
+    QUnit.test("Amm.Array.events", function(assert) {
         currAssert = assert;
         var allEv = [], i;
-        for (var i in Amm.ObservableArray.arrayChangeEvents) {
-            if (Amm.ObservableArray.arrayChangeEvents.hasOwnProperty(i)) {
+        for (var i in Amm.Array.arrayChangeEvents) {
+            if (Amm.Array.arrayChangeEvents.hasOwnProperty(i)) {
                 allEv.push(i);
             }
         }
         
         var orig = [1, 2, 3, 4, 5, 6];
-        var a = new Amm.ObservableArray();
+        var a = new Amm.Array();
         var allLog = [];
         var specLog = [];
         var allEvents = new EvReceiver('allEvents', allEv, a, allLog), 
@@ -772,11 +772,11 @@
         );
     }); 
     
-    QUnit.test("ObservableArray.sort", function(assert) {
+    QUnit.test("Amm.Array.sort", function(assert) {
         currAssert = assert;
         var allEv = [], i;
-        for (var i in Amm.ObservableArray.arrayChangeEvents) {
-            if (Amm.ObservableArray.arrayChangeEvents.hasOwnProperty(i)) {
+        for (var i in Amm.Array.arrayChangeEvents) {
+            if (Amm.Array.arrayChangeEvents.hasOwnProperty(i)) {
                 allEv.push(i);
             }
         }
@@ -785,7 +785,7 @@
         var rev = function(a, b) {
             return b - a;
         };
-        var a = new Amm.ObservableArray(orig);
+        var a = new Amm.Array(orig);
         var allLog = [];
         var allEvents = new EvReceiver('allEvents', 
             ['reorderItems', 'itemsChange'], a, allLog);

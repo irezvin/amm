@@ -9,7 +9,7 @@ Amm.Collection = function(options) {
         return t._implSortWithProperties(a, b);
     };
     this._itemUpdateQueue = [];
-    Amm.ObservableArray.call(this, options);
+    Amm.Array.call(this, options);
 };
 
 Amm.Collection.ERR_NOT_AN_OBJECT = "Not an object.";
@@ -23,7 +23,7 @@ Amm.Collection.ERR_DUPLICATE_UPDATE_NOT_ALLOWED = "Duplicate; update not allowed
  * using binary search with some tricks (checks if item < start or if item > end,
  * only then dives deeper).
  * 
- * @param {Array} arr (or ObservableArray) to search in. Must be sorted 
+ * @param {Array} arr (or Amm.Array) to search in. Must be sorted 
  *      using `sortFunc` (or using javascript array.prototype.sort if no
  *      `sortFunc` is provided) to search properly.
  * @param {mixed} item Item which position we search for
@@ -153,12 +153,12 @@ Amm.Collection.prototype = {
     
     setUnique: function(unique) {
         if (!unique) throw "setUnique(false) is never supported by Amm.Collection";
-        return Amm.ObservableArray.prototype.setUnique.call(this, unique);
+        return Amm.Array.prototype.setUnique.call(this, unique);
     },
     
     setSparse: function(sparse) {
         if (sparse) throw "setSparse(true) is never supported by Amm.Collection";
-        return Amm.ObservableArray.prototype.setSparse.call(this, sparse);
+        return Amm.Array.prototype.setSparse.call(this, sparse);
     },
 
     /**
@@ -280,7 +280,7 @@ Amm.Collection.prototype = {
             }
         }
         // check if there are duplicates in the added aray
-        var dupes = Amm.ObservableArray.findDuplicates(long, false, this._comparison);
+        var dupes = Amm.Array.findDuplicates(long, false, this._comparison);
         if (!dupes.length) { // great, no matches
             return [[].concat(items), [], [], [], toDelete, [].concat(items)];
         }
@@ -488,11 +488,11 @@ Amm.Collection.prototype = {
     
     hasItem: function(item, nonStrictCompare) {
         if (nonStrictCompare) return this.indexOf(item) > 0;
-        return Amm.ObservableArray.indexOf(item, this) > 0;
+        return Amm.Array.indexOf(item, this) > 0;
     },
     
     strictIndexOf: function(item) {
-        return Amm.ObservableArray.indexOf(item, this);
+        return Amm.Array.indexOf(item, this);
     },
     
     /**
@@ -510,7 +510,7 @@ Amm.Collection.prototype = {
             throw "`groups` must be an Array (or falseable value)";
         if (!items.length) return []; // nothing to do
         var long = items.concat(this.getItems());
-        var dups = Amm.ObservableArray.findDuplicates(long, false, strict? null : this._comparison, items.length);
+        var dups = Amm.Array.findDuplicates(long, false, strict? null : this._comparison, items.length);
         var res = [];
         for (var j = 0, l = dups.length; j < l; j ++) {
             // start from 1 because first instance will always be be within
@@ -637,7 +637,7 @@ Amm.Collection.prototype = {
         if (this._sorted)
             throw "Cannot reverse() on sorted Collection. Check with getIsSorted() next time";
         var oldItems = this.getItems(),
-            res = Amm.ObservableArray.prototype.reverse.apply(this);
+            res = Amm.Array.prototype.reverse.apply(this);
         if (this._indexProperty) this._reportIndexes(oldItems);
     },
     
@@ -663,7 +663,7 @@ Amm.Collection.prototype = {
             low = newIndex;
             high = index;
         }
-        var res = Amm.ObservableArray.prototype.moveItem(index, newIndex);
+        var res = Amm.Array.prototype.moveItem(index, newIndex);
         if (this._indexProperty) this._reportIndexes(null, low, high + 1);
         return res;        
     },
@@ -807,7 +807,7 @@ Amm.Collection.prototype = {
         if (oldChangeEvents === changeEvents) return;
         
         if (this._changeEvents && changeEvents && 
-            !Amm.ObservableArray.arrayDiff(changeEvents, this._changeEvents).length
+            !Amm.Array.arrayDiff(changeEvents, this._changeEvents).length
         ) return; // same events
         
         if (oldChangeEvents) { // unsubscribe from old events...
@@ -832,7 +832,7 @@ Amm.Collection.prototype = {
     _reportItemChangeEvent: function() { 
         var item = Amm.event.origin;
         if (this._itemUpdateLevel) {
-            if (Amm.ObservableArray.indexOf(item, this._itemUpdateQueue) < 0) {
+            if (Amm.Array.indexOf(item, this._itemUpdateQueue) < 0) {
                 this._itemUpdateQueue.push(item);
             }
         } else {
@@ -885,7 +885,7 @@ Amm.Collection.prototype = {
         var oldComparisonProperties = this._comparisonProperties;
         if (oldComparisonProperties === comparisonProperties) return;
         if (oldComparisonProperties && comparisonProperties 
-            && !Amm.ObservableArray.arrayDiff(
+            && !Amm.Array.arrayDiff(
                 oldComparisonProperties, comparisonProperties
             ).length) return; // same content of arrays - order doesn't matter
         var tmp = this._comparisonProperties;
@@ -961,7 +961,7 @@ Amm.Collection.prototype = {
         var oldSortProperties = this._sortProperties;
         if (oldSortProperties === sortProperties) return;
         if (oldSortProperties && sortProperties 
-            && Amm.ObservableArray.equal(oldSortProperties, sortProperties))
+            && Amm.Array.equal(oldSortProperties, sortProperties))
             return; // same arrays
         this._sortProperties = sortProperties;
         this._sorted = this._sortFn || this._sortProperties;
@@ -1012,7 +1012,7 @@ Amm.Collection.prototype = {
         }
         var changed = {}, old;
         if (this._indexProperty) old = this.getItems();
-        var res = Amm.ObservableArray.prototype.sort.call(this, fn, changed);
+        var res = Amm.Array.prototype.sort.call(this, fn, changed);
         if (this._indexProperty && changed.changed && old) this._reportIndexes(old);
         return res;
     },
@@ -1032,7 +1032,7 @@ Amm.Collection.prototype = {
         }
         var changed = {}, old;
         if (this._indexProperty) old = this.getItems();
-        Amm.ObservableArray.prototype.sort.call(this, this._sortWithProps, changed);
+        Amm.Array.prototype.sort.call(this, this._sortWithProps, changed);
         if (this._indexProperty && changed.changed && old) this._reportIndexes(old);
         return changed.changed;
     },
@@ -1182,5 +1182,5 @@ Amm.Collection.prototype = {
 
 };
 
-Amm.extend(Amm.Collection, Amm.ObservableArray);
+Amm.extend(Amm.Collection, Amm.Array);
 

@@ -1,11 +1,11 @@
 /* global Amm */
 
-Amm.ObservableArray = function(options) {
+Amm.Array = function(options) {
     var a = arguments, val;
     if (a[0] instanceof Array) {
         val = a[0];
         options = a[1];
-    } else if(a[0] instanceof Amm.ObservableArray) {
+    } else if(a[0] instanceof Amm.Array) {
         val = a[0].getItems();
         options = a[1];
     }
@@ -13,14 +13,14 @@ Amm.ObservableArray = function(options) {
     if (val !== undefined) this.setItems(val);
 };
 
-Amm.ObservableArray.indexOf = function(item, arr, start) {
+Amm.Array.indexOf = function(item, arr, start) {
     start = start || 0;
     if (arr instanceof Array && arr.indexOf) return arr.indexOf(item, start);
     for (var i = start, l = arr.length; i < l; i++) if (item === arr[i]) return i;
     return -1;
 };
 
-Amm.ObservableArray.arrayChangeEvents = {
+Amm.Array.arrayChangeEvents = {
     appendItems: 'outAppendItems',
     insertItem: 'outInsertItem',
     deleteItem: 'outDeleteItem',
@@ -32,9 +32,9 @@ Amm.ObservableArray.arrayChangeEvents = {
     itemsChange: 'outItemsChange'
 };
 
-Amm.ObservableArray.prototype = {
+Amm.Array.prototype = {
 
-    'Amm.ObservableArray': '__CLASS__', 
+    'Amm.Array': '__CLASS__', 
 
     // whether an array must have unique items. Attempt to insert same value for the second time will trigger an exception
     _unique: false,
@@ -205,7 +205,7 @@ Amm.ObservableArray.prototype = {
      * check duplicates both in `insert` and this.getItems() arrays
      * 
      * {method} - name of method to add to an exception message
-     * {insert} - array - items to be inserted into this ObservableArray
+     * {insert} - array - items to be inserted into this Array
      * {ignoreStart}, {ignoreLength} - interval to be NOT checked while
      *      duplicate hunt (i.e. if we're going to splice them out)
      * {checkOwn} - check own items for duplicates too (i.e. if we try to 
@@ -219,7 +219,7 @@ Amm.ObservableArray.prototype = {
         var o = this.getItems();
         if (ignoreLength) o.splice(ignoreStart, ignoreLength);
         var c = insert.concat(o), 
-            d = Amm.ObservableArray.findDuplicates(
+            d = Amm.Array.findDuplicates(
                 c, true, comparison, checkOwn? null : insert.length
             );
         if (d.length) {
@@ -543,7 +543,7 @@ Amm.ObservableArray.prototype = {
                 this._subscribers.hasOwnProperty(ev) 
         
                 // only for events that are handled specially
-                && Amm.ObservableArray.arrayChangeEvents[ev]
+                && Amm.Array.arrayChangeEvents[ev]
             ) {
                 var l = this._subscribers[ev].length, hdl, i, idx;
                 for (i = 0; i < l; i++) {
@@ -568,7 +568,7 @@ Amm.ObservableArray.prototype = {
     },
     
     _outChain: function(events) {
-        if (!this._noTrigger) return;
+        if (this._noTrigger) return;
         if (!this._evCache) this._buildEvCache();
         if (!this._evCache.length) return;
         var ev = [], evName, spl, args;
@@ -728,20 +728,20 @@ Amm.ObservableArray.prototype = {
         if (cut.length === insert.length) {
             var l1 = cut.length - 1;
             // same?
-            if (Amm.ObservableArray.equal(cut, insert, undefined, undefined, undefined, this._comparison)) {
+            if (Amm.Array.equal(cut, insert, undefined, undefined, undefined, this._comparison)) {
                 return; // nothing changed
                 
             // move first spliced element to end of splice
             } else if (this._comparison? !this._comparsion(cut[0], insert[l1]) : cut[0] === insert[l1]) { // move fwd?
-                if (Amm.ObservableArray.equal(cut, insert, 1, 0, l1, this._comparison))
+                if (Amm.Array.equal(cut, insert, 1, 0, l1, this._comparison))
                     return this.outMoveItem(start, start + l1, cut[0]);
             // move last spliced element to beginning of splice
             } else if (this._comparison? !this._comparsion(cut[l1], insert[0]) : cut[l1] === insert[0]) {
-                if (Amm.ObservableArray.equal(cut, insert, 0, 1, l1, this._comparison))
+                if (Amm.Array.equal(cut, insert, 0, 1, l1, this._comparison))
                     return this.outMoveItem(start + l1, start, cut[l1]);
             }
             // same elements, different order?
-            if (!Amm.ObservableArray.symmetricDiff(cut, insert, this._comparison).length) {
+            if (!Amm.Array.symmetricDiff(cut, insert, this._comparison).length) {
                 return this.outReorderItems(start, cut.length, cut);
             }
         }
@@ -753,7 +753,7 @@ Amm.ObservableArray.prototype = {
     _doDiff: function(oldItems, items) {
         oldItems = oldItems || this._preUpdateItems;
         items = items || this.getItems();
-        var d = Amm.ObservableArray.smartDiff(oldItems, items);
+        var d = Amm.Array.smartDiff(oldItems, items);
         
         // * a) ['splice', start, length, elements[]]
         // * b) ['move', oldIndex, newIndex] - element was moved from `oldIndex` to `newIndex`, that's all
@@ -799,13 +799,13 @@ Amm.ObservableArray.prototype = {
     
 };
 
-Amm.extend(Amm.ObservableArray, Amm.WithEvents);
+Amm.extend(Amm.Array, Amm.WithEvents);
 
 /**
  * returns TRUE when a.slice(aOffset, aOffset + length) === b.slice(bOffset, bOffset+length)
  * Offset defaults to 0. Ommitting length will check if arrays are equal.
  */
-Amm.ObservableArray.equal = function(a, b, aOffset, bOffset, length, comparisonFn) {
+Amm.Array.equal = function(a, b, aOffset, bOffset, length, comparisonFn) {
     // shortcut
     if (!aOffset && !bOffset && length === undefined) {
         if (a.length !== b.length) return false;
@@ -869,7 +869,7 @@ Amm.ObservableArray.equal = function(a, b, aOffset, bOffset, length, comparisonF
  * c) ['reorder', start, length, oldItems] - `length` elements starting from `start` have different order, otherwise the same array
  * d) null - nothing changed
  */
-Amm.ObservableArray.smartDiff = function(a, b, comparisonFn) {
+Amm.Array.smartDiff = function(a, b, comparisonFn) {
     
     var al = a.length, bl = b.length, 
             delta = bl - al,
@@ -945,7 +945,7 @@ Amm.ObservableArray.smartDiff = function(a, b, comparisonFn) {
                 else return ['move', dEnd - 1, dEnd - cutSize];
             }
         }
-        if (!Amm.ObservableArray.symmetricDiff(cut, insert, comparisonFn).length) return ['reorder', dBegin, cutSize, cut];
+        if (!Amm.Array.symmetricDiff(cut, insert, comparisonFn).length) return ['reorder', dBegin, cutSize, cut];
     }
     
     return ['splice', dBegin, cutSize, insert];
@@ -953,11 +953,11 @@ Amm.ObservableArray.smartDiff = function(a, b, comparisonFn) {
 };
 
 // disable to always use slow arrayDiff version
-Amm.ObservableArray._optArrayDiff = true;
+Amm.Array._optArrayDiff = true;
 
 
 // returns elements in A that are not in B, each instance is compared only once
-Amm.ObservableArray.symmetricDiff = function(a, b, comparisonFn) {
+Amm.Array.symmetricDiff = function(a, b, comparisonFn) {
     if (!a.length || !b.length) return [].concat(a);
     
     var al = a.length, bl = b.length, bb = [].concat(b), r, i, j;
@@ -975,7 +975,7 @@ Amm.ObservableArray.symmetricDiff = function(a, b, comparisonFn) {
         }
     } else {
         // quick version for .indexOf-enabled browsers
-        if (a.filter && bb.indexOf && Amm.ObservableArray._optArrayDiff) {
+        if (a.filter && bb.indexOf && Amm.Array._optArrayDiff) {
             r = a.filter(function(v) {
                 var idx = bb.indexOf(v);
                 if (idx >= 0) {
@@ -1003,7 +1003,7 @@ Amm.ObservableArray.symmetricDiff = function(a, b, comparisonFn) {
 
 
 // returns elements in A that are not in B
-Amm.ObservableArray.arrayDiff = function(a, b, comparisonFn) {
+Amm.Array.arrayDiff = function(a, b, comparisonFn) {
     if (!a.length || !b.length) return [].concat(a);
     
     var al = a.length, bl = b.length, r, i, j;
@@ -1019,7 +1019,7 @@ Amm.ObservableArray.arrayDiff = function(a, b, comparisonFn) {
         }
     } else {
         // quick version for .indexOf-enabled browsers
-        if (a.filter && b.indexOf && Amm.ObservableArray._optArrayDiff) {
+        if (a.filter && b.indexOf && Amm.Array._optArrayDiff) {
             r = a.filter(function(v) {return b.indexOf(v) < 0;});
         } else {
             r = [];
@@ -1050,7 +1050,7 @@ Amm.ObservableArray.arrayDiff = function(a, b, comparisonFn) {
  * to have NO duplicates, and routine will stop after searching duplicate
  * instances of items with indexes betetween 0 <= idx < stopSearchIdx.
  */
-Amm.ObservableArray.findDuplicates = function(array, onlyFirst, comparisonFn, stopSearchIdx) {
+Amm.Array.findDuplicates = function(array, onlyFirst, comparisonFn, stopSearchIdx) {
     var l = array.length, res = [], fnd, rr, same;
     if (!stopSearchIdx) stopSearchIdx = l - 1;
     for (var i = 0; i < stopSearchIdx; i++) {
