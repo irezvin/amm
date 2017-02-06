@@ -25,6 +25,10 @@
         
         _tag: null,
         
+        aCount: 0,
+        
+        dCount: 0,
+        
         getInfo: function() {
             return {
                 name: this._name,
@@ -99,7 +103,8 @@
             var oldParent = this._parent;
             if (oldParent === parent) return;
             this._parent = parent;
-
+            if (parent) this.aCount++;
+                else this.dCount++;
             this.outParentChange(parent, oldParent);
             return true;
         },
@@ -347,9 +352,229 @@
         assert.equal(c.length, 0, 'Zero length after all elements deleted');
         
     });
+
+    QUnit.test("Collection - sorted", function(assert) {
+
+        // Let's test this freaky freak
+        
+        var ia = new Item('A', 'a item', '2016-01-01');
+        var ib = new Item('B', 'b item', '2015-02-02');
+        var ic = new Item('C', 'c item', '2014-03-03');
+        var id = new Item('D', 'd item', '2013-04-04');
+        var ie = new Item('E', 'e item', '2012-05-05');
+        var i_f = new Item('F', 'f item', '2011-08-08');
+
+        var ia_first = new Item('A', 'A first', '2011-06-06');
+        var ib_before_d = new Item('B', 'B before D', '2013-04-01');
+        var ic_samepos = new Item('C', 'C updated', '2014-03-03');
+        
+        var c = new Amm.Collection({
+            requirements: [Item],
+            comparisonProperties: ['name'],
+            updateProperties: ['descr', 'date'],
+            sortProperties: ['date'],
+            indexProperty: 'index',
+            assocProperty: 'parent',
+            changeEvents: ['nameChange', 'descrChange', 'dateChange', 'tagChange']
+        });
+        
+        assert.throws(function() { c.accept(ia, 1); }, 
+            /`index` must not be used with sorted Collection/, 
+            '`index` must not be used with sorted Collection'
+        );
+
+        assert.throws(function() { c.acceptMany([ia], 1); }, 
+            /`index` must not be used with sorted Collection/, 
+            '`index` must not be used with sorted Collection'
+        );
+        
+        var r = c.acceptMany([ib, id]);
+        
+        assert.ok(r[0] === ib && r[1] === id, 'acceptMany() returned new elements in original order');
+        
+        assert.ok(c[0] === id && c[1] === ib, 'elements took their places according to sort order');
+        
+        c.accept(ic);
+        c.accept(ia);
+        c.accept(ie);
+        
+        assert.deepEqual(c.getItems(), [ie, id, ic, ib, ia], 'elements in proper order');
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'index'), [0, 1, 2, 3, 4], 'indexes are properly reported');
+        
+        // update element a
+        
+        assert.equal(c.indexOf(ia_first), ia.getIndex(), 'Non-strict match');
+
+        c.setUpdateFn(function(myItem, updateSrc) {
+            myItem.setTag(myItem.getTag() + 1);
+        });
+        
+        ia.setTag(0);
+        
+        r = c.accept(ia_first);
+        assert.equal(r, ia, 'Updated instance is returned');
+        assert.equal(ia.getTag(), 1, 'updateFn was called');
+        c.setUpdateFn(null);
+        
+        assert.deepEqual(
+            Amm.getProperty(ia, ['descr', 'date']), 
+            Amm.getProperty(ia_first, ['descr', 'date']), 
+            'Matching element is updated'
+        );
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), 
+            ['A', 'E', 'D', 'C', 'B'], 
+            'updated element got to first place (according to the sort order)'
+        );
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'index'), [0, 1, 2, 3, 4], 'indexes are properly reported');
+        
+        ib.setDate('2010-10-10');
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), 
+            ['B', 'A', 'E', 'D', 'C'], 
+            'element that was changed and raised the event got to first place (according to the sort order)'
+        );
+
+        c.setRecheckUniqueness(true);
+        assert.throws(function() {
+            ia.setName('D');
+        }, /After the change.*duplicate\(s\) appeared/,
+        'recheckUniqueness works');
+        ia.setName('A');
+        
+        r1 = c._preAccept([ib_before_d, i_f, ic_samepos]);
+        r = c.acceptMany([ib_before_d, i_f, ic_samepos]);
+        assert.ok(r[0] === ib, 'acceptMany() result - updated instance 1');
+        assert.ok(r[1] === i_f, 'acceptMany() result - original instance');
+        assert.ok(r[2] === ic, 'acceptMany() result - updated instance 2');
+        
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), 
+            ['A', 'F', 'E', 'B', 'D', 'C'], 
+            'element that was changed and raised the event got to proper place (according to the sort order)'
+        );
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'index'), [0, 1, 2, 3, 4, 5], 'indexes are properly reported');
+        
+        assert.throws(function() {
+            c.moveItem(0, 3);
+        }, /Cannot moveItem.*sorted/,
+        'cannot moveItem() in sorted collection');
+        
+        assert.throws(function() {
+            c.reverse();
+        }, /Cannot reverse.*sorted/,
+        'cannot reverse() in sorted collection');
+        
+    });
     
+    QUnit.test("Collection - sorted - splice" , function(assert) {
+
+        var ia = new Item('A', 'a item', '2016-01-01');
+        var ib = new Item('B', 'b item', '2015-02-02');
+        var ic = new Item('C', 'c item', '2014-03-03');
+        var id = new Item('D', 'd item', '2013-04-04');
+        var ie = new Item('E', 'e item', '2012-05-05');
+
+        var ib_first = new Item('B', 'b first', '2011-01-01');
+
+        var c = new Amm.Collection({
+            requirements: [Item],
+            comparisonProperties: ['name'],
+            updateProperties: ['descr', 'date'],
+            sortProperties: ['date'],
+            indexProperty: 'index',
+            assocProperty: 'parent',
+            changeEvents: ['nameChange', 'descrChange', 'dateChange', 'tagChange'],
+            items: [ia, ib, ic, ie]
+        });
+        
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), 
+            ['E', 'C', 'B', 'A'], 
+            'proper initial order'
+        );
+
+        var pa = c._preAccept([id, ib_first], 1, 3);
+        assert.ok(pa[0].length === 1 && pa[0][0] === id, 'Re-inserted non-exact match is not considered new');
+        
+        var r = c.splice(1, 3, id, ib_first);
+        
+        assert.deepEqual(Amm.getProperty(r, 'name'), 
+            ['C', 'B', 'A'], 'proper items are returned by splice()'
+        );
+        
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'),
+            ['B', 'E', 'D'], 'proper items order after splice-with-update'
+        );
+
+        ib.setDate('2015-02-02');
+        c.setUpdateProperties(null);
+        
+        var pa = c._preAccept([ia, ib, ic], 0, c.length);
+        assert.ok(pa[4].length === 2 && pa[4][0] === ie && pa[4][1] === id, 'Proper delete detection');
+
+        c.setItems([ia, ib, ic, ie]);
+        
+        var pa = c._preAccept([id, ib], 1, 3);
+        assert.ok(pa[0].length === 1 && pa[0][0] === id, 'Re-inserted exact match is not considered new');
+        
+    });
     
-    
+    QUnit.test("Collection - unsorted", function(assert) {
+
+        var ia = new Item('A', 'a item');
+        var ib = new Item('B', 'b item');
+        var ic = new Item('C', 'c item');
+        var id = new Item('D', 'd item');
+        var ie = new Item('E', 'e item');
+        var i_f = new Item('F', 'f item');
+
+        var ia_up = new Item('A', 'A updated');
+        var ib_up = new Item('B', 'B updated');
+        var ic_up = new Item('C', 'C updated');
+        
+        var c = new Amm.Collection({
+            requirements: [Item],
+            comparisonProperties: ['name'],
+            updateProperties: ['descr'],
+            indexProperty: 'index',
+            assocProperty: 'parent',
+            changeEvents: ['nameChange', 'descrChange', 'tagChange']
+        });
+        
+        var r = c.acceptMany([ib, ie]);
+        
+        assert.ok(r[0] === ib && r[1] === ie, 'acceptMany() returned new elements in original order');
+        assert.ok(c[0] === ib && c[1] === ie, 'elements took their places according to provided order');
+        
+        var r = c.accept(ia, 0);
+        assert.ok(r === ia, 'accept() returns new element');
+        assert.equal(ia.getIndex(), 0, 'item is placed where asked');
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'index'), [0, 1, 2], 'indexes are properly reported');        
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), ['A', 'B', 'E'], 'items are in places');
+        
+        var r = c.acceptMany([ia_up, ic, id], 2);
+        assert.ok(r[0] === ia, r[1] === ic, r[2] === id, 'mixed matching vs new returned');
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), ['A', 'B', 'C', 'D', 'E'], 'items are in places');
+        assert.equal(ia.getDescr(), 'A updated', 'Matching item is updated');
+        
+        var s = c.splice(1, 3, id, ib_up);
+        assert.deepEqual(Amm.getProperty(s, 'name'), ['B', 'C', 'D'], 'splice() returned proper items');
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), ['A', 'D', 'B', 'E'], 'items after splice are in places');
+        assert.equal(id.dCount, 0, 'reinserted element is not dissociated');
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'index'), [0, 1, 2, 3], 'indexes are properly reported');        
+        assert.equal(ib.getDescr(), ib_up.getDescr(), 'element is updated');
+        assert.equal(ib.dCount, 0, 'updated element is not dissociated');
+        assert.equal(ic.dCount, 1, 'spliced, not reinserted or updated element is dissociated');
+
+        c.moveItem(0, 3);
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), ['D', 'B', 'E', 'A'], 'moveItem() works');
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'index'), [0, 1, 2, 3], 'indexes are properly reported');
+
+        c.moveItem(2, 1);
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), ['D', 'E', 'B', 'A'], 'moveItem() reverse dir/n works');
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'index'), [0, 1, 2, 3], 'indexes are properly reported');
+        
+        c.reverse();
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), ['A', 'B', 'E', 'D'], 'reverse()');
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'index'), [0, 1, 2, 3], 'indexes are properly reported');
+    });
     
 }) ();
 

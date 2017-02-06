@@ -1,13 +1,13 @@
 (function() {
 
-    QUnit.module("Amm.Array");
+    QUnit.module("Array");
 
     var currAssert;
 
     /* global Amm */
     /* global Ajs_Util */
 
-    QUnit.test("Amm.Array.equal", function(assert) {
+    QUnit.test("Array.equal", function(assert) {
        
         var eq = Amm.Array.equal;
         assert.ok(eq([1, 2, 3, 4], [1, 2, 3, 4]));
@@ -27,7 +27,7 @@
     });
 
 
-    QUnit.test("Amm.Array.diff", function(assert) {
+    QUnit.test("Array.diff", function(assert) {
 
         var arrayDiff = Amm.Array.arrayDiff;
         var symmetricDiff = Amm.Array.symmetricDiff;
@@ -63,7 +63,7 @@
 
     });
 
-    QUnit.test("Amm.Array.smartDiff.noComparisonFn", function(assert) {
+    QUnit.test("Array.smartDiff.noComparisonFn", function(assert) {
 
         var smartDiff = Amm.Array.smartDiff;
 
@@ -160,7 +160,7 @@
 
     });
 
-    QUnit.test("Amm.Array.smartDiff.withComparisonFn", function(assert) {
+    QUnit.test("Array.smartDiff.withComparisonFn", function(assert) {
 
         var smartDiff = Amm.Array.smartDiff;
 
@@ -258,7 +258,7 @@
         currAssert.deepEqual(a.getItems(), b, desc + ' [state]');
     };
 
-    QUnit.test("Amm.Array.arrayCompat", function(assert) {
+    QUnit.test("Array.arrayCompat", function(assert) {
         currAssert = assert;
 
         testArrayCompat([], 'push', 4, 5, 6, 7);
@@ -316,7 +316,7 @@
         return a;
     };
     
-    QUnit.test("Amm.Array.arrayManipulation", function(assert) {
+    QUnit.test("Array.arrayManipulation", function(assert) {
         currAssert = assert;
         
         var a = ['a', 'b', 'c'];
@@ -381,7 +381,7 @@
                
     });
     
-    QUnit.test("Amm.Array.arrayManipulation", function(assert) {
+    QUnit.test("Array.arrayManipulation", function(assert) {
         
         var findDuplicates = Amm.Array.findDuplicates;
         var cmp = function(a, b) { return a != b; };
@@ -407,7 +407,7 @@
         
     });
     
-    QUnit.test("Amm.Array.arrayUnique", function(assert) {
+    QUnit.test("Array.arrayUnique", function(assert) {
         
         var OA = Amm.Array;
         var a = [1, 2, 3, 4, 5, '5', 6];
@@ -495,7 +495,7 @@
         return currAssert.deepEqual(found, expected, desc);
     };
     
-    QUnit.test("Amm.Array.events", function(assert) {
+    QUnit.test("Array.events", function(assert) {
         currAssert = assert;
         var allEv = [], i;
         for (var i in Amm.Array.arrayChangeEvents) {
@@ -772,7 +772,7 @@
         );
     }); 
     
-    QUnit.test("Amm.Array.sort", function(assert) {
+    QUnit.test("Array.sort", function(assert) {
         currAssert = assert;
         var allEv = [], i;
         for (var i in Amm.Array.arrayChangeEvents) {

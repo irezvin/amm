@@ -65,7 +65,6 @@ Amm.Collection.binSearch = function(arr, item, sortFunc, left, right) {
 
     var lCmp, rCmp, mCmp;
     
-    
     // check if we are 'lefter' than left
     lCmp = sortFunc? sortFunc(item, arr[leftIdx]) : -(item < arr[leftIdx]) || (item !== arr[leftIdx] | 0);
     if (lCmp === 0) return [leftIdx, true]; // idx is left
@@ -121,7 +120,7 @@ Amm.Collection.prototype = {
 
     // whether we should re-check items' uniqueness on item change
     // (will make no sense if we don't have comparisonProperties/comparisonFn)
-    _recheckUniqueness: null,
+    _recheckUniqueness: false,
 
     // this._comparison is used when _comparisonProperties are used
     // thus we store value provided by setComparison() to _custComparison
@@ -238,13 +237,13 @@ Amm.Collection.prototype = {
     
     /**
      * Checks if can accept items; returns SIX arrays:
-     * 1. Items that are not added yet - excluding ones that have matches
-     * 3. Subset of `items` that have matches
+     * 0. Items that are not added yet - excluding ones that have matches
+     * 1. Subset of `items` that have matches
      * 2. Subset of `this` that is matches of those items (including exact duplicates)
-     * 4. Indexes of original `items` that have matches (to re-create mapping later)
-     * 5. Items within [deleteStart..deleteStart+deleteCount) that will be removed 
+     * 3. Indexes of original `items` that have matches (to re-create mapping later)
+     * 4. Items within [deleteStart..deleteStart+deleteCount) that will be removed 
      *    from collection and not re-inserted - to support splice operation.
-     * 6. Combined array with new and re-inserted items
+     * 5. Combined array with new and re-inserted items
      *    
      * Note on how "delete interval" (DI) works.
      * - items within DI that have exact matches in `items` will 
@@ -291,7 +290,7 @@ Amm.Collection.prototype = {
             newItems = [].concat(items),
             numNotNew = 0,
             indexes = [], 
-            newAndReInserted = [];
+            newAndReInserted = [].concat(items);
         
         for (i = 0; i < dl; i++) {
             var idx = dupes[i];
@@ -310,7 +309,7 @@ Amm.Collection.prototype = {
                     + this._describeIdx(idx[1], items.length);
             
             if (idx[1] < items.length)
-                throw "WTF: we found two duplicates in `items`: " 
+                throw "There are at least two duplicates in `items`: " 
                     + this._describeIdx(idx[0], items.length) 
                     + (exact? ' === ' : ' ~= ') 
                     + this._describeIdx(idx[1], items.length);
@@ -341,7 +340,7 @@ Amm.Collection.prototype = {
             }
                 
             if (reinsert) {
-                toDelete.splice(thisIdx - deleteStart - numNotDeleted, 1);
+                toDelete.splice(thisIdx - deleteStart, 1);
                 numNotDeleted++;
             }
             
@@ -350,10 +349,10 @@ Amm.Collection.prototype = {
             // Since we splice it from front to the end, we need to adjust index 
             // every time according to the number of already deleted items
             if (!reinsert) {
-                newItems.splice(idx[0] - numNotNew, 1); 
-                numNotNew++;
+                newAndReInserted.splice(idx[0] - itemsWithMatches.length, 1); 
             }
-            newAndReInserted.splice(idx[0] - itemsWithMatches.length, 1); 
+            newItems.splice(idx[0] - numNotNew, 1); 
+            numNotNew++;
             
             // checked everything
             indexes.push(idx[0]);
@@ -386,9 +385,9 @@ Amm.Collection.prototype = {
         var sorted = [].concat(newItems);
         var idx = this._locateManyItemIndexesInSortedArray(sorted);
         for (var i = 0; i < idx.length; i++) {
-            if (idx < this.length) {
-                this._rotate(idx, 1);
-                this[idx] = sorted[i];
+            if (idx[i] < this.length) {
+                this._rotate(idx[i], 1);
+                this[idx[i]] = sorted[i];
             } else {
                 this[this.length++] = sorted[i];
             }
@@ -398,13 +397,20 @@ Amm.Collection.prototype = {
 
     // accepts item. Returns added item (same or one that was updated)
     // TODO: add idx and use in array-ish methods below
-    accept: function(item) {
+    accept: function(item, index) {
         var pa = this._preAccept([item]);
         var res;
+        if (this._sorted && index !== undefined) {
+            throw "`index` must not be used with sorted Collection - check for getIsSorted() next time";
+        }
+        if (index === undefined) index = this.length;
+        if (index < 0) index = this.length + index;
+        if (index > this.length) index = this.length;
         if (pa[0].length) { // new item
             var sorted = this._sorted;
             var idx = sorted? 
-                this._locateItemIndexInSortedArray(item) : this.length;
+                this._locateItemIndexInSortedArray(item) : index;
+            if (idx < 0) idx = 0;
             res = item;
             if (idx < this.length) {
                 this._rotate(idx, 1);
@@ -455,15 +461,14 @@ Amm.Collection.prototype = {
                 minIdx = _sortIdx[1][0];
             } else {
                 if (index < 0) index = this.length + index;
-                if (index >= this.length) index = this.length - 1;
+                if (index === undefined || index > this.length) index = this.length;
                 minIdx = index;
                 this._addNew(pa[0], index);
-                var offset = this.length - pa[0].length;
                 for (i = 0; i < pa[0].length; i++) {
-                    this._associate(pa[0][i], offset + i);
+                    this._associate(pa[0][i], index + i);
                 }
                 // trigger the array-change event
-                this._outSmartSplice(offset, [], pa[0]);
+                this._outSmartSplice(index, [], pa[0]);
             }
             // subscribe to added items' change events
             for (i = 0; i < pa[0].length; i++) {
@@ -478,7 +483,7 @@ Amm.Collection.prototype = {
         
         for (var i = 0; i < pa[1].length; i++) {
             // update matching object with the object of `items` 
-            this._update(pa[2][i], pa[1][i]); 
+            this._update(pa[2][i], pa[1][i]);
             // add matching object to the proper place of res using the 
             // previously-saved index
             res.splice(pa[3][i], 0, pa[2][i]);
@@ -594,7 +599,9 @@ Amm.Collection.prototype = {
             // _sortIdx[0] is pa[0], but sorted
             // _sortIdx[1] is indexes of matching elements in _sortIdx[0]
             for (i = 0; i < _sortIdx[0].length; i++) {
-                this._associate(_sortIdx[0][i], _sortIdx[1][i]);
+                var idx = _sortIdx[1][i];
+                //if (idx < 0) idx = 0;
+                this._associate(_sortIdx[0][i], idx);
             }
             this._outFragmentedInsert(_sortIdx[0], _sortIdx[1]);
         } else {
@@ -621,7 +628,7 @@ Amm.Collection.prototype = {
         if (this._indexProperty) this._reportIndexes(oldItems);
         
         for (var i = 0; i < pa[1].length; i++) {
-            this._update(pa[2][i], pa[1][i]); 
+            if (pa[2][i] !== pa[1][i]) this._update(pa[2][i], pa[1][i]); 
         }
         
         return cut;
@@ -663,7 +670,7 @@ Amm.Collection.prototype = {
             low = newIndex;
             high = index;
         }
-        var res = Amm.Array.prototype.moveItem(index, newIndex);
+        var res = Amm.Array.prototype.moveItem.call(this, index, newIndex);
         if (this._indexProperty) this._reportIndexes(null, low, high + 1);
         return res;        
     },
@@ -672,7 +679,7 @@ Amm.Collection.prototype = {
         var fragments = []; // [offset, items]
         var currentFragment = [sortedIndexes[0], [sortedItems[0]]];
         for (var i = 1, l = sortedItems.length; i < l; i++) {
-            if (sortedIndexes[i] === currentFragment[0] + currentFragment[1].length) {
+            if (sortedIndexes[i] === (currentFragment[0] + currentFragment[1].length)) {
                 currentFragment[1].push(sortedItems[i]);
             } else {
                 fragments.push(currentFragment);
@@ -680,7 +687,7 @@ Amm.Collection.prototype = {
             }
         }
         fragments.push(currentFragment);
-        for (var j = 0; j < fragments.length; i++) {
+        for (var j = 0; j < fragments.length; j++) {
             this._outSmartSplice(fragments[j][0], [], fragments[j][1]);
         }
     },
@@ -692,6 +699,7 @@ Amm.Collection.prototype = {
     // Does NOT subscribe to item change events
     _associate: function(item, index, alsoSubscribe) {
         if (this[index] !== item) {
+            console.trace();
             throw "WTF - this[`index`] !== `item`";
         }
         if (this._assocProperty) {
@@ -837,8 +845,9 @@ Amm.Collection.prototype = {
             }
         } else {
             if (this._recheckUniqueness) this._performRecheckUniqueness(item);
-            
-            // TODO: if sorted, check if item index changed due to sort rules
+            if (this._sorted) {
+                this._checkItemPosition(item);
+            }
             this.outItemChange(item);
         }
     },
@@ -977,11 +986,11 @@ Amm.Collection.prototype = {
     
     _implSortWithProperties: function(a, b) {
         if (a === b) return 0; // exact match
-        if (this.sortProperties) {
-            for (var i = 0, l = this.sortProperties.length; i < l; i++) {
-                var p = this.sortProperties[i];
-                var pA = Amm.getProperty(a, pA);
-                var pB = Amm.getProperty(b, pB);
+        if (this._sortProperties) {
+            for (var i = 0, l = this._sortProperties.length; i < l; i++) {
+                var p = this._sortProperties[i];
+                var pA = Amm.getProperty(a, p);
+                var pB = Amm.getProperty(b, p);
                 if (pA < pB) return -1;
                 else if (pA > pB) return 1;
             }
@@ -1130,6 +1139,54 @@ Amm.Collection.prototype = {
             this._itemUpdateQueue = [];
         }
         this._endItemsUpdateLock = false;
+        if (this._sorted) this._sort(); // re-sort items
+    },
+    
+    // check item position in sorted array; updates it if needed
+    _checkItemPosition: function(item, index) {
+        if (index === undefined) {
+            if (this._indexProperty) {
+                // try to get index from an item
+                index = Amm.getProperty(item, this._indexProperty);
+                if (typeof index === 'number' && this[index] !== item)
+                    index = this.strictIndexOf(item);
+            } else {
+                index = this.strictIndexOf(item);
+            }
+            if (index < 0) throw "WTF: `item` not found in this";
+        }
+        if (this[index] !== item) throw "WTF: this[`index`] !== `item`";
+        var newIndex = undefined, sortError = false, low, high;
+
+        // check left-side inversion
+        if (index > 0 && this._sortWithProps(this[index - 1], item) > 0) { 
+            var newPos = Amm.Collection.binSearch(this, item, this._sortWithProps, 0, index - 1);
+            if (newPos[0] + 1 >= index) { // cannot find new position - need to sort whole collection
+                sortError = true;
+            } else {
+                // move to the left
+                newIndex = low = newPos[0] + 1;
+                high = index;
+            }
+        }
+        
+        // check right-side inversion
+        if (index < this.length - 1 && this._sortWithProps(item, this[index + 1]) > 0) {
+            var newPos = Amm.Collection.binSearch(this, item, this._sortWithProps, index + 1, this.length - 1);
+            if (newPos[0] + 1 <= index) { // cannot find new position - need to sort whole collection
+                sortError = true;
+            } else {
+                // move to the left
+                newIndex = high = newPos[0] + 1;
+                low = index;
+            }
+        }
+        if (sortError) this._sort();
+        else if (newIndex !== undefined) {
+            Amm.Array.prototype.moveItem.call(this, index, newIndex);
+            if (high >= this.length) high = this.length - 1;
+            if (this._indexProperty) this._reportIndexes(null, low, high);
+        }
     },
     
     _performRecheckUniqueness: function(item, many) {
@@ -1146,13 +1203,15 @@ Amm.Collection.prototype = {
             var idx = -1, dp = [], ownIdx = null;
             do {
                 idx = this.indexOf(items[i], idx + 1);
-                if (idx >= 0 && items[i] !== this[idx]) {
-                    dp.push([idx]);
-                } else {
-                    ownIdx = idx;
+                if (idx >= 0) {
+                    if (items[i] !== this[idx]) {
+                        dp.push(idx);
+                    } else {
+                        ownIdx = idx;
+                    }
                 }
             } while(idx >= 0);
-            if (!ownIdx)
+            if (ownIdx === null)
                 console.warn("Item that was changed is no more in the collection");
             if (!dp.length) continue;
             // I don't know how under what circumstances this can happen
@@ -1163,11 +1222,12 @@ Amm.Collection.prototype = {
                     + " is still unique.");
             } else {
                 throw "After the change of this[" + ownIdx + "]," + 
-                    " duplicate(s) appeared: " + dp.join(", ");
+                    " duplicate(s) appeared: this[" + dp.join("], this[") + ']';
             }
         }
     },
 
+    // @param {function} updateFn - function(myUpdatedItem, externalItem)
     setUpdateFn: function(updateFn) {
         if (updateFn && typeof updateFn !== 'function') 
             throw "updateFn must be a function";

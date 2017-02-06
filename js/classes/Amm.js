@@ -393,6 +393,20 @@ Amm = {
     },
     
     getProperty: function(element, property, defaultValue) {
+        if (element instanceof Array) {
+            var r = [];
+            for (var i = 0; i < element.length; i++) {
+                r.push(this.getProperty(element[i], property, defaultValue));
+            }
+            return r;
+        }
+        if (property instanceof Array) {
+            var r = {};
+            for (var i = 0; i < property.length; i++) {
+                r[property[i]] = (this.getProperty(element, property[i], defaultValue));
+            }
+            return r;
+        }
         var P = ('' + property)[0].toUpperCase() + property.slice(1), getterName = 'get' + P;
         if (typeof element[getterName] === 'function') res = element[getterName]();
         else if (property in element) res = element[property];
