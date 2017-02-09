@@ -3,10 +3,10 @@
 Amm.Collection = function(options) {
     var t = this;
     this._compareWithProps = function(a, b) {
-        return t._implComparison(a, b);
+        return t._implCompareWithProps(a, b);
     };
     this._sortWithProps = function(a, b) {
-        return t._implSortWithProperties(a, b);
+        return t._implSortWithProps(a, b);
     };
     this._itemUpdateQueue = [];
     Amm.Array.call(this, options);
@@ -133,6 +133,8 @@ Amm.Collection.prototype = {
     _sortWithProps: null,
     
     _sortProperties: null,
+    
+    _sortReverse: false,
 
     _sortFn: null,
     
@@ -641,11 +643,15 @@ Amm.Collection.prototype = {
     },
     
     reverse: function() {
-        if (this._sorted)
-            throw "Cannot reverse() on sorted Collection. Check with getIsSorted() next time";
-        var oldItems = this.getItems(),
+        if (this._sorted) {
+            this.setSortReverse(!this.getSortReverse());
+            return this.getItems();
+        } else {
+            var oldItems = this.getItems(), res;
             res = Amm.Array.prototype.reverse.apply(this);
-        if (this._indexProperty) this._reportIndexes(oldItems);
+            if (this._indexProperty) this._reportIndexes(oldItems);
+            return res;
+        }
     },
     
     setItem: function(index, item) {
@@ -864,8 +870,8 @@ Amm.Collection.prototype = {
         var tmp = this._custComparison;
         var tmp1 = this._comparison;
         this._custComparison = comparison;
-        this._onlyStrict = this._comparisonProperties || comparison;
-        if (this._onlyStrict) {
+        this._onlyStrict = !(this._comparisonProperties || comparison);
+        if (!this._onlyStrict) {
             this._comparison = this._compareWithProps;
         } else {
             this._comparison = null;
@@ -944,7 +950,7 @@ Amm.Collection.prototype = {
 
     getRecheckUniqueness: function() { return this._recheckUniqueness; },
     
-    _implComparison: function(a, b) {
+    _implCompareWithProps: function(a, b) {
         if (a === b) return 0; // exact match
         if (this._comparisonProperties) {
             for (var i = 0, l = this._comparisonProperties.length; i < l; i++) {
@@ -973,7 +979,7 @@ Amm.Collection.prototype = {
             && Amm.Array.equal(oldSortProperties, sortProperties))
             return; // same arrays
         this._sortProperties = sortProperties;
-        this._sorted = this._sortFn || this._sortProperties;
+        this._sorted = !!(this._sortFn || this._sortProperties);
         if (this._sorted)
             this._sort();
         return true;
@@ -984,25 +990,38 @@ Amm.Collection.prototype = {
         return this._sortProperties; 
     },
     
-    _implSortWithProperties: function(a, b) {
+    setSortReverse: function(sortReverse) {
+        sortReverse = !!sortReverse;
+        var oldSortReverse = this._sortReverse;
+        if (oldSortReverse === sortReverse) return;
+        this._sortReverse = sortReverse;
+        if (this._sorted)
+            this._sort();
+        return true;
+    },
+
+    getSortReverse: function() { return this._sortReverse; },
+
+    _implSortWithProps: function(a, b) {
         if (a === b) return 0; // exact match
+        var r = this._sortReverse? -1 : 1;
         if (this._sortProperties) {
             for (var i = 0, l = this._sortProperties.length; i < l; i++) {
                 var p = this._sortProperties[i];
                 var pA = Amm.getProperty(a, p);
                 var pB = Amm.getProperty(b, p);
-                if (pA < pB) return -1;
-                else if (pA > pB) return 1;
+                if (pA < pB) return -1*r;
+                else if (pA > pB) return 1*r;
             }
         }
-        if (this._sortFn) return this.sortFn(a, b);
+        if (this._sortFn) return this.sortFn(a, b)*r;
     },
 
     setSortFn: function(sortFn) {
         var oldSortFn = this._sortFn;
         if (oldSortFn === sortFn) return;
         this._sortFn = sortFn;
-        this._sorted = this._sortFn || this._sortProperties;
+        this._sorted = !!(this._sortFn || this._sortProperties);
         if (this._sorted)
             this._sort();
         return true;

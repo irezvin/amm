@@ -456,11 +456,8 @@
             c.moveItem(0, 3);
         }, /Cannot moveItem.*sorted/,
         'cannot moveItem() in sorted collection');
-        
-        assert.throws(function() {
-            c.reverse();
-        }, /Cannot reverse.*sorted/,
-        'cannot reverse() in sorted collection');
+
+        assert.deepEqual(c.reverse(), [ic, id, ib, ie, i_f, ia], 'revese() works on sorted collection');
         
     });
     
