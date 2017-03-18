@@ -11,7 +11,6 @@
 Amm.View.Abstract = function(options) {
     Amm.ElementBound.call(this, options);
     Amm.init(this, options, ['element', 'elementPath']);
-    this._requireInterfaces('Annotated');
 };
 
 Amm.View.Abstract.prototype = {
@@ -26,9 +25,11 @@ Amm.View.Abstract.prototype = {
     // _canObserve() will return true.
     _presentationProperty: null,
     
+    _observing: null,
+    
     _doElementChange: function(element, oldElement) {
+        if (this._observing) this._stopObserving();
         Amm.ElementBound.prototype._doElementChange.call(this, element, oldElement);
-        if (oldElement) oldElement.unsubscribe(undefined, undefined, this);
         this._observeElementIfPossible();
     },
     
@@ -37,8 +38,17 @@ Amm.View.Abstract.prototype = {
         return !!(this._element && this[this._presentationProperty]);
     },
     
+    _stopObserving: function() {
+        this._observing = false;
+        if (this._element) this._element.unsubscribe(undefined, undefined, this);        
+    },
+    
     _observeElementIfPossible: function() {
-        if (!this._canObserve()) return;
+        var can = this._canObserve();
+        if (!can) {
+            if (this._observing) this._stopObserving();
+            return;
+        }
         this._acquireResources();
         var bindList = [];
         for (var i in this) {
@@ -55,6 +65,7 @@ Amm.View.Abstract.prototype = {
                 }
             }
         }
+        this._observing = true;
         this._initProperties(bindList);
         return true;
     },

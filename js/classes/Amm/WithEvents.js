@@ -126,7 +126,11 @@ Amm.WithEvents.prototype = {
      * @returns {String} Empty string if there is no such out event, or function name to produce the event
      */
     hasEvent: function(eventName) {
-        var res = '', n = 'out' + eventName.charAt(0).toUpperCase() + eventName.slice(1);
+        var c = eventName.charAt(0), cu = c.toUpperCase();
+        if (c === cu) { // event name cannot begin from upper-case letter
+            return null;
+        }
+        var res = '', n = 'out' + cu + eventName.slice(1);
         if (typeof this[n] === 'function') res = n;
         return res;
     },

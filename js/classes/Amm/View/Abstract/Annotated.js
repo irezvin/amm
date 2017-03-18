@@ -3,6 +3,7 @@
 Amm.View.Abstract.Annotated = function(options) {
     this._childViews = [];
     Amm.View.Abstract.call(this, options);
+    this._requireInterfaces('Annotated');
 };
 
 Amm.View.Abstract.Annotated.prototype = {

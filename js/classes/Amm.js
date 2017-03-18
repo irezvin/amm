@@ -182,7 +182,7 @@ Amm = {
         var r;
         if (all) r = [];
         for (var i in object) {
-            if (object[i] === '__CLASS__') {
+            if (object[i] === '__CLASS__' || (all && object[i] === '__PARENT__')) {
                 if (all) r.push(i); 
                     else return i;
             }
@@ -322,6 +322,10 @@ Amm = {
         if (!optToSet) return;
         for (var i in optToSet) if (optToSet.hasOwnProperty(i)) {
             if (i[0] === '_') throw "Use of pseudo-private identifiers is prohibited in `optToSet`, encountered: '" + i + "'";
+            if (i in object && typeof object[i] === 'function') {
+                if (typeof optToSet[i] === 'function') object[i] = optToSet[i];
+                else throw "Only function is allowed to override the function (`" + i +"` provided is " + (typeof optToSet[i]) + ")";
+            } 
             var v = optToSet[i], s = 'set' + ('' + i).slice(0, 1).toUpperCase() + ('' + i).slice(1);
             if (typeof object[s] === 'function') object[s](v);
             else if (i in object) object[i] = v;
@@ -431,8 +435,34 @@ Amm = {
         } else {
             throw "`decorator` must be either function or an object with .decorate() method";
         }
-    }
+    },
     
+    override: function(modifiedObject, overrider, noOverwrite) {
+        if (typeof modifiedObject !== 'object' || typeof overrider !== 'object')
+            throw 'Both modifiedObject and overrider must be objects';
+
+        for (var i in overrider) if (overrider.hasOwnProperty(i)) {
+            if (modifiedObject[i] instanceof Array && overrider[i] instanceof Array) {
+                modifiedObject[i] = modifiedObject[i].concat(overrider[i]);
+            } else if (typeof modifiedObject[i] === 'object' && typeof overrider[i] === 'object')  {
+                this.override(modifiedObject[i], overrider[i], noOverwrite);
+            } else if (!noOverwrite || !(i in modifiedObject)) {
+                modifiedObject[i] = overrider[i];
+            }
+        };
+        return modifiedObject;
+    },
+    
+    cleanup: function(itemOrItems) {
+        if (typeof itemOrItems.cleanup === 'function') itemOrItems.cleanup();
+        else if (itemOrItems instanceof Array) {
+            for (var i = 0, l = itemOrItems.length; i < l; i++)
+                this.cleanup(itemOrItems[i]);
+        } else {
+            console.log(itemOrItems);
+            throw '`itemOrItems` must be either an object with .cleanup() method or an Array';
+        }
+    }
 };
 
 Amm.event = null;

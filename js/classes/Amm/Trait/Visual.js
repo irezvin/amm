@@ -33,10 +33,19 @@ Amm.Trait.Visual.prototype = {
     },
 
     setDisplayParent: function(displayParent) {
+        if (displayParent) Amm.is(displayParent, 'DisplayParent', 'displayParent');
+        else displayParent = null;
         var oldDisplayParent = this._displayParent;
         if (oldDisplayParent === displayParent) return;
         this._displayParent = displayParent;
- 
+        if (oldDisplayParent) {
+            var idx = oldDisplayParent.displayChildren.strictIndexOf(this);
+            if (idx >= 0) oldDisplayParent.displayChildren.removeAtIndex(idx);
+        }
+        if (displayParent) {
+            var idxNew = displayParent.displayChildren.strictIndexOf(this);
+            if (idxNew < 0) displayParent.displayChildren.accept(this);
+        }
         this.outDisplayParentChange(displayParent, oldDisplayParent);
         return true;
     },
@@ -51,7 +60,6 @@ Amm.Trait.Visual.prototype = {
         var oldDisplayOrder = this._displayOrder;
         if (oldDisplayOrder === displayOrder) return;
         this._displayOrder = displayOrder;
- 
         this.outDisplayOrderChange(displayOrder, oldDisplayOrder);
         return true;
     },

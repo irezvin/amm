@@ -5,6 +5,7 @@
         <meta charset='utf-8'>
         <script src="../js/vendor/jquery-3.1.1.js"></script>
         <script src="../js/vendor/avancore/util.js"></script>
+        <!--link rel="stylesheet" type="text/css" href="qunit/qunit-dark.css" /-->
         <link rel="stylesheet" type="text/css" href="qunit/qunit-2.0.1.css" />
 <?php 
         require_once(dirname(__FILE__).'/list.php');

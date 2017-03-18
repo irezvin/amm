@@ -104,8 +104,14 @@ Amm.Collection.prototype = {
     _requirements: null,
 
     _assocProperty: null,
+    
+    _assocInstance: null,
 
     _indexProperty: null,
+
+    _observeIndexProperty: true,
+    
+    _indexPropertyIsWatched: false,
 
     _defaults: null,
 
@@ -151,6 +157,10 @@ Amm.Collection.prototype = {
     _updateFn: null,
     
     _allowUpdate: false,
+    
+    _suppressDeleteEvent: 0,
+    
+    _suppressIndexEvents: 0,
     
     setUnique: function(unique) {
         if (!unique) throw "setUnique(false) is never supported by Amm.Collection";
@@ -246,6 +256,7 @@ Amm.Collection.prototype = {
      * 4. Items within [deleteStart..deleteStart+deleteCount) that will be removed 
      *    from collection and not re-inserted - to support splice operation.
      * 5. Combined array with new and re-inserted items
+     * 6. Indexes of items in ##4
      *    
      * Note on how "delete interval" (DI) works.
      * - items within DI that have exact matches in `items` will 
@@ -269,9 +280,13 @@ Amm.Collection.prototype = {
             deleteCount = 0;
         }
         
-        var long = items.concat(this.getItems()), l = this.length, i,
+        var long = items.concat(this.getItems()), l = this.length, i, n,
             toDelete = deleteCount? this.slice(deleteStart, deleteEnd) : [],
+            toDeleteIdx = [],
             numNotDeleted = 0;
+    
+        for (var i = deleteStart; i < deleteEnd; i++)
+            toDeleteIdx.push(i);
     
         // check requirements for each item
         for (i = 0, n = items.length; i < n; i++) {
@@ -283,7 +298,8 @@ Amm.Collection.prototype = {
         // check if there are duplicates in the added aray
         var dupes = Amm.Array.findDuplicates(long, false, this._comparison);
         if (!dupes.length) { // great, no matches
-            return [[].concat(items), [], [], [], toDelete, [].concat(items)];
+            return [[].concat(items), [], [], [], 
+                toDelete, [].concat(items), toDeleteIdx];
         }
         // have to sort the matches
         var dl = dupes.length, 
@@ -343,6 +359,7 @@ Amm.Collection.prototype = {
                 
             if (reinsert) {
                 toDelete.splice(thisIdx - deleteStart, 1);
+                toDeleteIdx.splice(thisIdx - deleteStart, 1);
                 numNotDeleted++;
             }
             
@@ -362,7 +379,8 @@ Amm.Collection.prototype = {
             matches.push(long[idx[1]]); // part from this[]
         }
         
-        return [newItems, itemsWithMatches, matches, indexes, toDelete, newAndReInserted];
+        return [newItems, itemsWithMatches, matches, 
+            indexes, toDelete, newAndReInserted, toDeleteIdx];
     },
     
     // Adds new items to a non-sorted collection.
@@ -412,7 +430,7 @@ Amm.Collection.prototype = {
             var sorted = this._sorted;
             var idx = sorted? 
                 this._locateItemIndexInSortedArray(item) : index;
-            if (idx < 0) idx = 0;
+            if (idx === undefined || idx <= 0) idx = 0;
             res = item;
             if (idx < this.length) {
                 this._rotate(idx, 1);
@@ -422,7 +440,7 @@ Amm.Collection.prototype = {
             }
             // ok, we have our item in place
             this._associate(item, idx);
-            this._outSmartSplice(idx, 0, [item]);
+            this._outSmartSplice(idx, [], [item]);
             this._subscribe(item);
             if (this._indexProperty && idx < this.length - 1)
                 this._reportIndexes(null, idx + 1);
@@ -452,15 +470,15 @@ Amm.Collection.prototype = {
             // note that new items will have their indexes double-reported 
             // - don't know how to do that better
             if (sorted) {
-                var _sortIdx = this._addNewToSorted(pa[0]);
+                var sortIdx = this._addNewToSorted(pa[0]);
                 // _sortIdx[0] is pa[0], but sorted
                 // _sortIdx[1] is indexes of matching elements in _sortIdx[0]
-                for (i = 0; i < _sortIdx[0].length; i++) {
-                    this._associate(_sortIdx[0][i], _sortIdx[1][i]);
+                for (i = 0; i < sortIdx[0].length; i++) {
+                    this._associate(sortIdx[0][i], sortIdx[1][i]);
                 }
                 // trigger the array-change events
-                this._outFragmentedInsert(_sortIdx[0], _sortIdx[1]);
-                minIdx = _sortIdx[1][0];
+                this._outFragmentedInsert(this._getInsertFragments(sortIdx[0], sortIdx[1]));
+                minIdx = sortIdx[1][0];
             } else {
                 if (index < 0) index = this.length + index;
                 if (index === undefined || index > this.length) index = this.length;
@@ -548,9 +566,14 @@ Amm.Collection.prototype = {
             item = this[index];
         }
         this._rotate(index, -1);
+        var newIndex = this.strictIndexOf(item);
         this._dissociate(item);
         if (this._indexProperty && index < this.length) this._reportIndexes(null, index);
-        this.outDeleteItem(index, item);
+        
+        // we need to report this event only when reject is called
+        if (!this._suppressDeleteEvent) {
+            this.outDeleteItem(index, item);
+        }
         return item;
     },
     
@@ -565,7 +588,7 @@ Amm.Collection.prototype = {
         if (this.length) return this.reject(this.length - 1);
     },
     
-    shift: function(element, _) {
+    unshift: function(element, _) {
         var items = Array.prototype.slice.apply(arguments);
         var index = this._sorted? undefined : 0;
         if (items.length === 1) this.accept(items[0], index);
@@ -573,7 +596,7 @@ Amm.Collection.prototype = {
         return this.length;
     },
     
-    unshift: function() {
+    shift: function() {
         if (this.length) return this.reject(0);
     },
 
@@ -587,26 +610,58 @@ Amm.Collection.prototype = {
         var pa = this._preAccept(items, start, deleteCount);
         var newInstances = pa[0],
             toRemove = pa[4],
+            toRemoveIdx = pa[6],
             insert = pa[5];
             
         var i, j, l, n;
         
-        for (i = 0, l = toRemove.length; i < l; i++)
-            this.reject(toRemove[i], true);
+        var inserts, sortIdx, cuts, goodSplice;
+        
+        if (this._sorted) {
+            sortIdx = this._addNewToSorted(pa[0]);
+            
+            // adjust insert indexes according to indexes of items we're going to remove
+            for (var i = toRemoveIdx.length - 1; i >= 0; i--) {
+                for (var j = sortIdx[1].length - 1; j >= 0; j--) {
+                    if (sortIdx[1][j] > toRemoveIdx[i]) sortIdx[1][j]--;
+                    else break;
+                }
+            }
+            inserts = this._getInsertFragments(sortIdx[0], sortIdx[1]);
+            cuts = toRemove.length? this._getCutFragments(start, toRemove) : [];
+            goodSplice = this._getGoodSplice(cuts, inserts);
+        } else {
+            goodSplice = [start, cut, insert];
+        }
+        
+        // We have to check splice to be "proper" and, if it is not,
+        // split splice() event into series of delete/insert events
+        // -- even with non-sorted array
+        
+        if (goodSplice) this._suppressDeleteEvent++;
+        for (i = 0, l = toRemove.length; i < l; i++) {
+            this.reject(toRemove[i]);
+        }
+        if (goodSplice) this._suppressDeleteEvent--;
         
         var oldItems = this.getItems();
         
         if (this._sorted) { 
-            var _sortIdx = this._addNewToSorted(pa[0]);
             // _sortIdx[0] is pa[0], but sorted
             // _sortIdx[1] is indexes of matching elements in _sortIdx[0]
-            for (i = 0; i < _sortIdx[0].length; i++) {
-                var idx = _sortIdx[1][i];
+            for (i = 0; i < sortIdx[0].length; i++) {
+                var idx = sortIdx[1][i];
                 //if (idx < 0) idx = 0;
-                this._associate(_sortIdx[0][i], idx);
+                this._associate(sortIdx[0][i], idx);
             }
-            this._outFragmentedInsert(_sortIdx[0], _sortIdx[1]);
-        } else {
+            if (!goodSplice) {
+                this._outFragmentedInsert(inserts);
+            } else {
+                this._outSmartSplice(goodSplice[0], goodSplice[1], goodSplice[2]);
+            }
+            // TODO: outFragmentedDelete - cuz' splice on sorted collection
+            // produces no events 
+       } else {
             // we need to remove the re-inserted items
             // and allocate the space for new items
             var alloc = insert.length - (cut.length - toRemove.length);
@@ -681,7 +736,38 @@ Amm.Collection.prototype = {
         return res;        
     },
     
-    _outFragmentedInsert: function(sortedItems, sortedIndexes) {
+
+    /**
+     * Returns sequential cuts in form [[offset, length, items], ...]
+     * @param {type} start - start of deletion queue
+     * @param {Array} toRemove - must be subset of this and same order 
+     *      - see _preAccept(...)[4]
+     * @returns {Array}
+     */
+    _getCutFragments: function(start, toRemove) {
+        var res = [], 
+            j = 0,
+            k = start,
+            seq = 0,
+            rl = toRemove.length, 
+            l = this.length;
+        while (j < rl && k < l) {
+            if (toRemove[j] === this[k]) {
+                seq++;
+                j++;
+            }
+            else {
+                if (seq) res.push([k - seq, seq, toRemove.slice(j - seq, j)]);
+                seq = 0;
+            }
+            k++;
+        }
+        if (seq) res.push([k - seq, seq, toRemove.slice(j - seq, j)]);
+        return res;
+    },
+
+    _getInsertFragments: function(sortedItems, sortedIndexes) {
+        if (!sortedItems.length) return [];
         var fragments = []; // [offset, items]
         var currentFragment = [sortedIndexes[0], [sortedItems[0]]];
         for (var i = 1, l = sortedItems.length; i < l; i++) {
@@ -693,11 +779,46 @@ Amm.Collection.prototype = {
             }
         }
         fragments.push(currentFragment);
+        return fragments;
+    },
+    
+    /**
+     * 
+     * @param {Array} cutFragments result of _getCutFragments
+     * @param {Array} insertFragments retsult of _getInsertFragments
+     * @returns {Array} [start, cut, insert] or null
+     */
+    _getGoodSplice: function(cutFragments, insertFragments) {
+        var cl = cutFragments.length, il = insertFragments.length;
+        if (cl > 1 || il > 1) return null;
+        
+        if (!cl && !il) return null; // nothing done - WTF
+        if (!cl && il)
+            return [insertFragments[0][0], [], insertFragments[0][1]];
+        if (cl && !il) 
+            return [cutFragments[0][0], cutFragments[0][2], []];
+        
+        // TODO: check if that's always the case or there are proper
+        // good splices where it's not
+        if (cl && il && cutFragments[0][0] === insertFragments[0][0])
+            return [insertFragments[0][0], cutFragments[0][2], insertFragments[0][1]];
+        return null;
+    },
+    
+    _outFragmentedInsert: function(fragments) {
         for (var j = 0; j < fragments.length; j++) {
             this._outSmartSplice(fragments[j][0], [], fragments[j][1]);
         }
     },
-            
+    
+    insertItem: function(item, index) {
+        if (index < 0) throw "`index` must be >= 0";
+        var r;
+        if (index === undefined || index >= this.length || this._sorted) r = this.accept(item);
+        else r = this.accept(item, index);
+        return this.strictIndexOf(item);
+    },
+    
     getIsSorted: function() {
         return this._sorted;
     },
@@ -705,11 +826,10 @@ Amm.Collection.prototype = {
     // Does NOT subscribe to item change events
     _associate: function(item, index, alsoSubscribe) {
         if (this[index] !== item) {
-            console.trace();
             throw "WTF - this[`index`] !== `item`";
         }
         if (this._assocProperty) {
-            Amm.setProperty(item, this._assocProperty, this);
+            Amm.setProperty(item, this._assocProperty, this._assocInstance || this);
         }
         if (this._indexProperty) {
             Amm.setProperty(item, this._indexProperty, index);
@@ -730,14 +850,24 @@ Amm.Collection.prototype = {
                 item.subscribe(this._changeEvents[i], this._reportItemChangeEvent, this);
             }
         }
+        if (this._indexPropertyIsWatched) {
+            var event = this._indexProperty + 'Change';
+            item.subscribe(event, this._reportItemIndexPropertyChange, this);
+        }
     },
     
    _dissociate: function(item) {
         if (this._changeEvents) {
             item.unsubscribe(undefined, this._reportItemChangeEvent, this);
         }
-        if (this._assocProperty) {
+        if (this._assocProperty && Amm.getProperty(item, this._assocProperty) === (this._assocInstance || this)) {
             Amm.setProperty(item, this._assocProperty, null);
+        }
+        if (this._indexPropertyIsWatched) {
+            if (this._indexPropertyIsWatched) {
+                var event = this._indexProperty + 'Change';
+                item.unsubscribe(event, this._reportItemIndexPropertyChange, this);
+            }
         }
     },
     
@@ -765,7 +895,7 @@ Amm.Collection.prototype = {
             for (i = 0; i < l; i++) Amm.setProperty(this[i], oldAssocProperty, null);
         }
         if (assocProperty) {
-            for (i = 0; i < l; i++) Amm.setProperty(this[i], assocProperty, this);
+            for (i = 0; i < l; i++) Amm.setProperty(this[i], assocProperty, this._assocInstance || this);
         }
         
         this._endItemsUpdate();
@@ -774,23 +904,95 @@ Amm.Collection.prototype = {
     },
 
     getAssocProperty: function() { return this._assocProperty; },
+    
+    setAssocInstance: function(assocInstance) {
+        var oldAssocInstance = this._assocInstance;
+        if (oldAssocInstance === assocInstance) return;
+        this._assocInstance = assocInstance;
+        if (this._assocProperty) {
+            for (var i = 0, l = this.length; i < l; i++) Amm.setProperty(this[i], this._assocProperty, this._assocInstance || this);
+        }
+        return true;
+    },
+
+    getAssocInstance: function() { return this._assocInstance; },
 
     setIndexProperty: function(indexProperty) {
         if (!indexProperty) indexProperty = null;
         var oldIndexProperty = this._indexProperty;
         if (oldIndexProperty === indexProperty) return;
         this._indexProperty = indexProperty;
+        var tmp = this.getObserveIndexProperty();
+        if (tmp) this.setObserveIndexProperty(false);
         if (this._indexProperty) {
             for (var i = 0, l = this.length; i < l; i++) {
                 // report items their indexes
-                Amm.setProperty(this[i], i);
+                Amm.setProperty(this[i], this._indexProperty, i);
             }
         }
+        if (tmp) this.setObserveIndexProperty(tmp);
+        this._checkIndexPropertyWatched();
         return true;
     },
 
     getIndexProperty: function() { return this._indexProperty; },
+    
+    setObserveIndexProperty: function(observeIndexProperty) {
+        observeIndexProperty = !!observeIndexProperty;
+        var oldObserveIndexProperty = this._observeIndexProperty;
+        if (oldObserveIndexProperty === observeIndexProperty) return;
+        this._observeIndexProperty = observeIndexProperty;
+        this._checkIndexPropertyWatched();
+        return true;
+    },
 
+    getObserveIndexProperty: function() { return this._observeIndexProperty; },
+
+    _checkIndexPropertyWatched: function() {
+        var observe = false;
+        if (this._observeIndexProperty) {
+            observe = !this._sorted && this._indexProperty !== null;
+        }
+        if (this._indexPropertyIsWatched !== observe) {
+            var eventName = this._indexProperty + 'Change';
+            this._indexPropertyIsWatched = observe;
+            if (this._indexPropertyIsWatched) {
+                for (var i = 0, l = this.length; i < l; i++) {
+                    this[i].subscribe(eventName, 
+                        this._reportItemIndexPropertyChange, this);
+                }
+            } else {
+                for (var i = 0, l = this.length; i < l; i++) {
+                    this[i].unsubscribe(eventName, 
+                        this._reportItemIndexPropertyChange, this);
+                }
+            }
+        }
+    },
+    
+    _reportItemIndexPropertyChange: function(value, oldValue) {
+        if (this._suppressIndexEvents) {
+            return;
+        }
+        var item = Amm.event.origin;
+        // check if item property change event is suppressed
+        //if (!this._suppressIndexEvents.length && Amm.Array.indexOf(item, this._suppressIndexEvents) >= 0) return;
+        var oldPos = oldValue;
+        var newPos = value;
+        if (newPos < 0) newPos = 0;
+        else if (newPos >= this.length) newPos = this.length - 1;
+        if (this[oldPos] !== item) {
+            // quickly check if item's already at new place
+             if (this[newPos] === item) return;
+            // try to find the item
+            oldPos = this.strictIndexOf(item);
+            if (oldPos < 0) throw "WTF - received item indexProperty change event from item not belonging to this Collection";
+        }
+        if (oldPos === newPos) return;
+        // now move item to the new place
+        this.moveItem(oldPos, newPos);
+    },
+    
     // note: won't change for already accepted items
     setDefaults: function(defaults) {
         if (defaults && typeof defaults !== 'object') throw "`defaults` must be an object";
@@ -980,8 +1182,10 @@ Amm.Collection.prototype = {
             return; // same arrays
         this._sortProperties = sortProperties;
         this._sorted = !!(this._sortFn || this._sortProperties);
-        if (this._sorted)
+        this._checkIndexPropertyWatched();
+        if (this._sorted) {
             this._sort();
+        }
         return true;
     },
 
@@ -1018,10 +1222,16 @@ Amm.Collection.prototype = {
     },
 
     setSortFn: function(sortFn) {
+        if (sortFn) {
+            if (typeof sortFn !== 'function') throw "sortFn must be a function or a null";
+        } else {
+            sortFn = null;
+        }
         var oldSortFn = this._sortFn;
         if (oldSortFn === sortFn) return;
         this._sortFn = sortFn;
         this._sorted = !!(this._sortFn || this._sortProperties);
+        this._checkIndexPropertyWatched();
         if (this._sorted)
             this._sort();
         return true;
@@ -1029,9 +1239,24 @@ Amm.Collection.prototype = {
 
     getSortFn: function() { return this._sortFn; },
     
-    sort: function(fn) {
+    sort: function(fnOrProps) {
+        
+        if (fnOrProps instanceof Array) {
+            var dummyObject = {
+                _sortReverse: this._sortReverse,
+                _sortWithProps: this._implSortWithProps,
+                _sortProperties: fnOrProps,
+                _sortFn: null
+            };
+            var dummyFn = function(a, b) {
+                return dummyObject._sortWithProps(a, b);
+            };
+            var res = this.sort(dummyFn);
+            return res;
+        }
+        
         if (this._sortFn) {
-            if (fn) 
+            if (fnOrProps) 
                 throw "Cannot sort(fn) when `sortFn` is set; use sort() with no parameters";
             return this._sort();
         }
@@ -1040,18 +1265,25 @@ Amm.Collection.prototype = {
         }
         var changed = {}, old;
         if (this._indexProperty) old = this.getItems();
-        var res = Amm.Array.prototype.sort.call(this, fn, changed);
+        var res = Amm.Array.prototype.sort.call(this, fnOrProps, changed);
         if (this._indexProperty && changed.changed && old) this._reportIndexes(old);
         return res;
     },
     
     _reportIndexes: function(oldItems, start, stop) {
-        var l = stop || this.length, start = start || 0;
-        for (var i = start; i < l; i++) {
-            if (!oldItems || this[i] !== oldItems[i]) {
-                Amm.setProperty(this[i], this._indexProperty, i);
+        this._suppressIndexEvents++;
+        var l = stop || this.length, start = start || 0, e;
+        try {
+            for (var i = start; i < l; i++) {
+                if (!oldItems || this[i] !== oldItems[i]) {
+                    Amm.setProperty(this[i], this._indexProperty, i);
+                }
             }
+        } catch (e) {
+            this._suppressIndexEvents--;
+            throw e;
         }
+        this._suppressIndexEvents--;
     },
     
     _sort: function() { // re-orders current array
@@ -1067,6 +1299,7 @@ Amm.Collection.prototype = {
     
     // locates index of item to insert into sorted array using binary search
     _locateItemIndexInSortedArray: function(item) {
+        if (!this.length) return 0;
         var idx = Amm.Collection.binSearch(this, item, this._sortWithProps);
         return idx[0];
     },

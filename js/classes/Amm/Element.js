@@ -5,6 +5,7 @@
  * @constructor
  */
 Amm.Element = function(options) {
+    Amm.registerItem(this);
     if (options && options.traits) {
         if (!(options.traits instanceof Array)) options.traits = [options.traits];
         for (var i = 0; i < options.traits.length; i++) {

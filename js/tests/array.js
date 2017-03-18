@@ -564,7 +564,7 @@
         // smart splice - insert
         a.setItems([1, 2, 3, 4, 5, 6]); sepEvLog(allLog, specLog);
         a.splice(2, 0, 2.5);
-        assertReceivedEvent(allLog, null, 'insertItem', 2, 2.5);
+        assertReceivedEvent(allLog, null, 'insertItem', 2.5, 2);
 
         // smart splice - replace
         a.setItems([1, 2, 3, 4, 5, 6]); sepEvLog(allLog, specLog);
@@ -609,7 +609,7 @@
         // smart diff - insert
         a.setItems([1, 2, 3, 4, 5, 6]); sepEvLog(allLog, specLog);
         a.setItems([1, 2, 2.5, 3, 4, 5, 6]);
-        assertReceivedEvent(allLog, null, 'insertItem', 2, 2.5);
+        assertReceivedEvent(allLog, null, 'insertItem', 2.5, 2);
 
         // smart diff - replace
         a.setItems([1, 2, 3, 4, 5, 6]); sepEvLog(allLog, specLog);
@@ -716,7 +716,7 @@
         a.insertItem(2.5, 3);
         // only one event in allLog
         assert.ok(!allLog[allLog.length - 2].length);
-        assertReceivedEvent(specLog, null, 'insertItem', 3, 2.5);
+        assertReceivedEvent(specLog, null, 'insertItem', 2.5, 3);
         assertReceivedEvent(specLog, null, 'spliceItems', 3, [], [2.5]);
         assertReceivedEvent(specLog, null, 'itemsChange', 
             [0, 1, 2, 2.5, 3, 4, 5, 6],

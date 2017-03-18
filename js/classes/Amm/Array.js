@@ -360,7 +360,7 @@ Amm.Array.prototype = {
             if (!this._update) this.outReplaceItem(index, item, oldItem);
         } else {
             this[index] = item;
-            if (!this._update) this.outInsertItem(index, item);
+            if (!this._update) this.outInsertItem(item, index);
         }
         return index;
     },
@@ -399,7 +399,7 @@ Amm.Array.prototype = {
         if (index < this.length) this._rotate(index, 1);
         if (index >= this.length) this.length = index;
         this[index] = item;
-        if (!this._update) this.outInsertItem(index, item);
+        if (!this._update) this.outInsertItem(item, index);
         return index;
     },
     
@@ -452,7 +452,7 @@ Amm.Array.prototype = {
     },
             
     clearItems: function() {
-        return this.setItems([]);
+        this.setItems([]);
     },
     
     setSparse: function(sparse) {
@@ -625,9 +625,9 @@ Amm.Array.prototype = {
         });
     },
             
-    outInsertItem: function(index, newItem) {
+    outInsertItem: function(newItem, index) {
         return this._outChain({
-            insertItem: [index, newItem],
+            insertItem: [newItem, index],
             spliceItems: [index, [], [newItem]],
             itemsChange: null
         });
@@ -711,7 +711,7 @@ Amm.Array.prototype = {
         
         // insert 1
         if (!cut.length && insert.length == 1) {
-            return this.outInsertItem(start, insert[0]);
+            return this.outInsertItem(insert[0], start);
         }
 
         // replace
@@ -787,8 +787,8 @@ Amm.Array.prototype = {
             (this, outEvent, handler, scope);
     },
     
-    clear: function() {
-        var r = Amm.WithEvents.unsubscribe.call(this);
+    cleanup: function() {
+        var r = Amm.WithEvents.prototype.unsubscribe.call(this);
         this._evCache = null;
         this._update = 1;
         this.setItems([]);

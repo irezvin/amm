@@ -2,8 +2,11 @@
 <?php
 
 function mkJsProps(array $props = array(), $withSignal = false) {
+    foreach ($props as $i => $prop) {
+        $props[$i][0] = strtolower($props[$i][0]);
+    }
 ?>
-<?php foreach ($props as $prop) { $p = '_'.$prop; $u = ucfirst($prop); ?>
+<?php foreach ($props as $i => $prop) { $p = '_'.$prop; $u = ucfirst($prop); ?>
 
     <?php echo $p; ?>: null,
 <?php } ?>

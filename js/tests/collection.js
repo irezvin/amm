@@ -459,6 +459,27 @@
 
         assert.deepEqual(c.reverse(), [ic, id, ib, ie, i_f, ia], 'revese() works on sorted collection');
         
+        var c2 = new Amm.Collection({
+            requirements: [Item],
+            sortProperties: ['date'],
+            indexProperty: 'index',
+            assocProperty: 'parent'
+        });
+        c2.push(ia); // just wanna know we throw no errors
+        c2.push(ib);
+        var spl = [];
+        var ins = [];
+        c2.subscribe('spliceItems', function(index, cut, insert) {
+            spl.push([index, Amm.getProperty(cut, 'name'), Amm.getProperty(insert, 'name')]);
+        });
+        c2.subscribe('insertItem', function(item, index) {
+            ins.push([item, index]);
+        });
+        c2.clearItems();
+        assert.deepEqual(spl,
+        [[0, ['A', 'B'], []]], 'proper spliceItems is called upon sorted collecton\' clearItems()');
+        assert.deepEqual(ins, [], 'insertItems is not triggered upon sorted collecton\' clearItems()');
+        
     });
     
     QUnit.test("Collection - sorted - splice" , function(assert) {
@@ -572,6 +593,65 @@
         assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), ['A', 'B', 'E', 'D'], 'reverse()');
         assert.deepEqual(Amm.getProperty(c.getItems(), 'index'), [0, 1, 2, 3], 'indexes are properly reported');
     });
+    
+    QUnit.test("Collection.assoc", function(assert) {
+        var a = new Item;
+        var b = new Item;
+        var c = new Item;
+        var coll = new Amm.Collection({items: [a, b]});
+        var parent = {};
+        coll.setAssocProperty('parent');
+        assert.ok(a.getParent() === coll && b.getParent() === coll, 'setAssocProperty() - initial - set reference to the collection');
+        coll.setAssocProperty('tag');
+        assert.ok(a.getParent() === null && b.getParent() === null, 'setAssocProperty() - changed - set old prop to null');
+        assert.ok(a.getTag() === coll && b.getTag() === coll, 'setAssocProperty() - changed - set reference to the collection');
+        coll.setAssocInstance(parent);
+        assert.ok(a.getTag() === parent && b.getTag() === parent, 'setAssocInstance() - set item references to the provided instance');
+        coll.accept(c);
+        assert.ok(c.getTag() === parent, 'accept()\'ed instance has $assocProperty set to $assocInstance');
+    });
+    
+    QUnit.test("Collection - sort by props, non-permanently" , function(assert) {
+
+        var ia = new Item('A', 'a item', '2016-01-01');
+        var ib = new Item('B', 'b item', '2015-02-02');
+        var ic = new Item('C', 'c item', '2014-03-03');
+        var id = new Item('D', 'd item', '2013-04-04');
+        var ie = new Item('E', 'e item', '2012-05-05');
+        
+        var coll = new Amm.Collection({items: [id, ib, ia, ic, ie]});
+        coll.sort(['name']);
+        assert.deepEqual(Amm.getProperty(coll.getItems(), 'name'), ['A', 'B', 'C', 'D', 'E']);
+        coll.sort(['date']);
+        assert.deepEqual(Amm.getProperty(coll.getItems(), 'date'), 
+            ['2012-05-05', '2013-04-04', '2014-03-03', '2015-02-02', '2016-01-01']
+        );
+        coll.setSortReverse(true);
+        coll.sort(['name']);
+        assert.deepEqual(Amm.getProperty(coll.getItems(), 'name'), 
+            ['E', 'D', 'C', 'B', 'A']
+        );
+    });
+    
+    QUnit.test("Collection - observeIndexProperty" , function(assert) {
+
+        var ia = new Item('A', 'a item', '2016-01-01');
+        var ib = new Item('B', 'b item', '2015-02-02');
+        var ic = new Item('C', 'c item', '2014-03-03');
+        var id = new Item('D', 'd item', '2013-04-04');
+        var ie = new Item('E', 'e item', '2012-05-05');
+        
+        var coll = new Amm.Collection({items: [ia, ib, ic, id, ie], indexProperty: 'index', observeIndexProperty: true});
+        coll.sort(['name']);
+        assert.deepEqual(Amm.getProperty(coll.getItems(), 'index'), [0, 1, 2, 3, 4]);
+        assert.deepEqual(Amm.getProperty(coll.getItems(), 'name'), ['A', 'B', 'C', 'D', 'E']);
+        ie.setIndex(0);
+        assert.deepEqual(Amm.getProperty(coll.getItems(), 'index'), [0, 1, 2, 3, 4]);
+        assert.deepEqual(Amm.getProperty(coll.getItems(), 'name'), ['E', 'A', 'B', 'C', 'D']);
+        coll.setSortProperties('name');
+        assert.deepEqual(Amm.getProperty(coll.getItems(), 'name'), ['A', 'B', 'C', 'D', 'E']);
+    });
+    
     
 }) ();
 
