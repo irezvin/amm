@@ -426,6 +426,44 @@ Amm = {
         return res;
     },
     
+    createProperty: function(target, propName, defaultValue, onChange) {
+        
+        if (!target || typeof target !== 'object') 
+            throw "`target` must be an object";
+        
+        var 
+            sfx = propName.slice(1), 
+            u = propName[0].toUpperCase() + sfx, 
+            l = propName[0].toLowerCase() + sfx,
+            getterName = 'get' + u,
+            setterName = 'set' + u,
+            outName = 'out' + u + 'Change',
+            eventName = l + 'Change',
+            memberName = '_' + l;
+        
+        if (!(memberName in target)) target[memberName] = defaultValue;
+        if (!(getterName in target)) {
+            target[getterName] = function() { 
+                return this[memberName]; 
+            };
+        }
+        if (!(setterName in target)) {
+            target[setterName] = function(value) { 
+                var old = this[memberName];
+                if (old === value) return;
+                this[memberName] = value;
+                if (onChange) onChange.call(this, value, old);
+                this[outName](value, old);
+                return true;
+            };
+        }
+        if (!(outName in target)) {
+            target[outName] = function(value, oldValue) {
+                this._out(eventName, value, oldValue);
+            };
+        }
+    },
+    
     decorate: function(value, decorator, context) {
         if (!decorator) return value;
         else if (typeof decorator === 'function') return context? decorator.call(context, value) : decorator(value);

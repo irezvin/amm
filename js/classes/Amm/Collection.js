@@ -1383,8 +1383,7 @@ Amm.Collection.prototype = {
         if (this._recheckUniqueness && this._itemUpdateQueue.length)
             this._performRecheckUniqueness(this._itemUpdateQueue, true);
         
-        if (this._itemUpdateLevel === 1 && this._itemUpdateQueue.length) {
-            this._itemUpdateLevel--;
+        if (!this._itemUpdateLevel && this._itemUpdateQueue.length) {
             for (var i = 0; i < this._itemUpdateQueue.length; i++) {
                 this.outItemChange(this._itemUpdateQueue[i]);
             }

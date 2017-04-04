@@ -22,9 +22,9 @@
             .b { font-weight: bold }
             .cc {
                 float: left;
-                width: 100px;
+                min-width: 100px;
                 border: 1px solid silver;
-                margin-right: 1em;
+                margin: 1em 0.8em;
                 padding: 0.5em;
             }
         </style>
@@ -40,8 +40,56 @@
             <div class="cont_f">F</div>
             <div class="cont_e">E</div>
         </div>
+        <div class="cc cont_c1">
+        </div>
+        <div class="cc cont_c2">
+        </div>
         <script type='text/javascript'>
             /* global Amm */
+            
+            var It = function(options) { Amm.Element.call(this, options); };
+            It.prototype = {};
+            Amm.createProperty(It.prototype, 'name');
+            Amm.createProperty(It.prototype, 'size');
+            Amm.extend(It, Amm.Element);
+            
+            var coll1 = new Amm.Collection({
+                items: [
+                    new It({name: 'a.txt', 'size': 100}),
+                    new It({name: 'b.jpg', 'size': 102400})
+                ],
+                comparisonProperties: 'name',
+                updateProperties: 'size',
+                changeEvents: ['nameChange', 'sizeChange']
+            });
+            
+            var coll2 = new Amm.Collection({
+                items: [
+                    new It({name: 'b.com', 'size': 255}),
+                    new It({name: 'c.doc', 'size': 32000})
+                ],
+                comparisonProperties: 'name',
+                changeEvents: ['nameChange', 'sizeChange']
+            });
+            
+            var v1 = new Amm.View.Html.Collection({
+                debug: 'v1',
+                collection: coll1,
+                requiresElement: false,
+                createItemHtml: function(item) {
+                    return "<div>" + item.getName() + ": <strong>" + item.getSize() + "</strong></div>";
+                },
+                htmlElement: jQuery('.cont_c1')[0]
+            });
+            
+            var v2 = new Amm.View.Html.Collection({
+                debug: 'v2',
+                collection: coll2,
+                requiresElement: false,
+                createItemHtml: v1.createItemHtml,
+                htmlElement: jQuery('.cont_c2')[0]
+            });
+            
             var suff = ['a', 'b', 'c', 'd', 'e', 'f'];
             for (var i = 0; i < suff.length; i++) {
                 var member = 'e_' + suff[i];
@@ -67,9 +115,9 @@
             });
             window.v_dp = new Amm.View.Html.DisplayParent({
                 element: window.e_dp,
-                scanForChildren: true,
+                scanForItems: true,
                 scanForDisplayOrder: true,
-                debug: 1,
+                debug: 'dp',
                 htmlElement: jQuery('.cont_dp')[0]
             });
             Amm.registerItem(e_dp.displayChildren);
@@ -78,16 +126,9 @@
             });
             window.v_dp2 = new Amm.View.Html.DisplayParent({
                 element: window.e_dp2,
-                scanForChildren: true,
+                scanForItems: true,
                 scanForDisplayOrder: true,
-                debug: 1,
-                htmlElement: jQuery('.cont_dp2')[0]
-            });
-            window.v_dp2 = new Amm.View.Html.DisplayParent({
-                element: window.e_dp2,
-                scanForChildren: true,
-                scanForDisplayOrder: true,
-                debug: 1,
+                debug: 'dp2',
                 htmlElement: jQuery('.cont_dp2')[0]
             });
             Amm.registerItem(e_dp2.displayChildren);

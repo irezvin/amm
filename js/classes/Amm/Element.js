@@ -235,6 +235,10 @@ Amm.Element.prototype = {
     },
 
     getCleanupWithParent: function() { return this._cleanupWithParent; },
+    
+    createProperty: function(propName, defaultValue, onChange) {
+        return Amm.createSimpleProperty(this, propName, defaultValue, onChange);
+    },
 
     cleanup: function() {
         Amm.WithEvents.prototype.cleanup.call(this);
