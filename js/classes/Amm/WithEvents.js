@@ -122,8 +122,10 @@ Amm.WithEvents.prototype = {
     },
 
     /**
+     * Check if there's a "built-in" event `eventName` and returns method name to raise it 
+     * (event 'foo' is built-in if function this['outFoo'] exists, and name of that function will be returned)
      * @param {string} eventName
-     * @returns {String} Empty string if there is no such out event, or function name to produce the event
+     * @returns {String} Empty string if there is no such event, or method name to raise the event
      */
     hasEvent: function(eventName) {
         var c = eventName.charAt(0), cu = c.toUpperCase();
@@ -152,13 +154,23 @@ Amm.WithEvents.prototype = {
         scope = scope || null; // required by getSubscribers to work properly
         extra = extra || null;
         decorator = decorator || null;
-        if (this.strictEvents && !this.hasEvent(eventName))
-            throw "No such out event: '" + eventName+ "'";
+        if (this.strictEvents && !this.hasEvent(eventName)) {
+            var miss = this._handleMissingEvent(eventName, handler, scope, extra, decorator);
+            if (miss === undefined) throw "No such out event: '" + eventName+ "'";
+            if (miss === false) return true;
+        }
         if (!this._subscribers[eventName]) this._subscribers[eventName] = [];
         if (!this.getSubscribers(eventName, handler, scope, extra, decorator).length) {
             this._subscribers[eventName].push([handler, scope, extra, decorator]);
             return true;
         }
+    },
+    
+    // if returns undefined, exception "no such event" will be thrown
+    // if returns FALSE, exception by subscribe() won't be raised, but event won't be added (this allow
+    //      method to add event handler by itself)
+    // any other result will cause event to be added by standard mechanism
+    _handleMissingEvent: function(eventName, handler, scope, extra, decorator) {
     },
     
     /**

@@ -257,7 +257,7 @@ QUnit.test("Amm getFunction / registerNamespace / registerFunction", function(as
 });
 
 QUnit.test("Amm decorate", function(assert) {
-    var decF = function(val) { return '*' + val + '*'; }
+    var decF = function(val) { return '*' + val + '*'; };
     var decO = {
         char: 'x',
         decorate: function(val) { return this.char + val + this.char; }
@@ -271,3 +271,14 @@ QUnit.test("Amm decorate", function(assert) {
     assert.throws(function() { Amm.decorate('A', 'wtf') });
 });
 
+QUnit.test("Amm global events", function(assert) {
+    var r = Amm.getRoot();
+    var v;
+    var f = function(value) {
+        v = value;
+    };
+    assert.ok(Amm.is(r, "Amm.Root"), "Amm.getRoot() returns Amm.Root instance");
+    assert.ok(r.subscribe('RandomEvent', f), 'Root allows to subscribe to random events...');
+    r.raiseEvent('RandomEvent', 10);
+    assert.ok(v === 10, 'Root\'s custom events can be successfully raised by raiseEvent() method');
+});

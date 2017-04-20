@@ -241,9 +241,9 @@ Amm.Element.prototype = {
     },
 
     cleanup: function() {
-        Amm.WithEvents.prototype.cleanup.call(this);
         this.setParent(null);
         this.outCleanup();
+        Amm.WithEvents.prototype.cleanup.call(this);
     }
     
 };

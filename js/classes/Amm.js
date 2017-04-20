@@ -4,7 +4,7 @@ Amm = {
     
     id: 'amm',
     
-    domHolderAttribute: 'data-amm-id',
+    domHolderAttribute: 'data-amm-iid',
     
     _counter: 1,
     
@@ -96,7 +96,7 @@ Amm = {
     
     extend: function(subClass, parentClass) {
     	for (var i in parentClass.prototype)
-            if (!subClass.prototype[i])
+            if (!(i in subClass.prototype))
                 subClass.prototype[i] = parentClass.prototype[i];
         var c = this.getClass(parentClass.prototype);
         if (c) subClass.prototype[c] = '__PARENT__';

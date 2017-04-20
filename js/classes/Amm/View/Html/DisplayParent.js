@@ -75,7 +75,7 @@ Amm.View.Html.DisplayParent.prototype = {
         
         if (scanForItems || scanForDisplayOrder) {
             
-            var attr = Amm.domHolderAttribute; // data-amm-id usually
+            var attr = Amm.domHolderAttribute;
             var updColl = scanForItems || scanForDisplayOrder? [] : null;
 
             jQuery(this._htmlElement).children('['+ attr + ']').each(function(index, item) {

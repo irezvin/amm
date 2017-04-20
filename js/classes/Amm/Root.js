@@ -10,6 +10,11 @@ Amm.Root.prototype = {
     
     _id: '^',
     
+    // Root is allowed to have ANY events to create global events
+    strictEvents: false,
+    
+    xxx: "zzz",
+    
     getPath: function() {
         return '^';
     },
@@ -20,6 +25,11 @@ Amm.Root.prototype = {
     
     setId: function(id) {
         if (id !== '^') throw "Cannot setId() of root to anything other than '^'";
+    },
+    
+    raiseEvent: function(eventName) {
+        var args = Array.prototype.slice.call(arguments, 0);
+        return this._out.apply(this, args);
     }
     
 };
