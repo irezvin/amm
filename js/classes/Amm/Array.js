@@ -50,7 +50,7 @@ Amm.Array.prototype = {
     // (won't make much sense when `unique` is TRUE)
     _sparse: false,
     
-    _update: 0,
+    _updateLevel: 0,
     
     _noTrigger: 0,
     
@@ -70,7 +70,7 @@ Amm.Array.prototype = {
         for (var i = 0; i < l; i++) {
             this[this.length++] = items[i];
         }
-        if (!this._update) this.outAppendItems(items);
+        if (!this._updateLevel) this.outAppendItems(items);
         return this.length;
     },
     
@@ -79,7 +79,7 @@ Amm.Array.prototype = {
         --this.length;
         res = this[this.length];
         delete this[this.length];
-        if (!this._update) this.outDeleteItem(this.length, res);
+        if (!this._updateLevel) this.outDeleteItem(this.length, res);
         return res;
     },
     
@@ -131,7 +131,7 @@ Amm.Array.prototype = {
             }
         }
         if (changed) {
-            this.outReorderItems(0, this.length, oldItems);
+            if (!this._updateLevel) this.outReorderItems(0, this.length, oldItems);
             outChanged.changed = true;
         }
         return this;
@@ -164,7 +164,7 @@ Amm.Array.prototype = {
                 }
             }
         }
-        this.outReorderItems(0, this.length, items);
+        if (!this._updateLevel) this.outReorderItems(0, this.length, items);
         return this;
     },
     
@@ -277,7 +277,7 @@ Amm.Array.prototype = {
         this._rotate(start, delta);
         for (i = 0; i < insertCount; i++) this[start + i] = insert[i];
         
-        if (!this._update) this._outSmartSplice(start, res, insert);
+        if (!this._updateLevel) this._outSmartSplice(start, res, insert);
         return res;
     },
     
@@ -285,7 +285,7 @@ Amm.Array.prototype = {
         if (!this.length) return undefined;
         var res = this[0];
         this._rotate(0, -1);
-        if (!this._update) this.outDeleteItem(0, res);
+        if (!this._updateLevel) this.outDeleteItem(0, res);
         return res;
     },
     
@@ -299,7 +299,7 @@ Amm.Array.prototype = {
         for (var i = 0; i < l; i++) {
             this[i] = items[i];
         }
-        if (!this._update) this._outSmartSplice(0, [], items);
+        if (!this._updateLevel) this._outSmartSplice(0, [], items);
         return this.length;
     },
     
@@ -357,10 +357,10 @@ Amm.Array.prototype = {
         if (index in this) {
             var oldItem = this[index];
             this[index] = item;
-            if (!this._update) this.outReplaceItem(index, item, oldItem);
+            if (!this._updateLevel) this.outReplaceItem(index, item, oldItem);
         } else {
             this[index] = item;
-            if (!this._update) this.outInsertItem(item, index);
+            if (!this._updateLevel) this.outInsertItem(item, index);
         }
         return index;
     },
@@ -372,7 +372,7 @@ Amm.Array.prototype = {
         var item = this[index];
         if (!sparse) this._rotate(index, -1);
             else delete this[index];
-        if (!this._update) this.outDeleteItem(index, item);
+        if (!this._updateLevel) this.outDeleteItem(index, item);
         return true;
     },
     
@@ -387,7 +387,7 @@ Amm.Array.prototype = {
         var item = this[index], delta, start, until;
         this._innerShift(index, newIndex);
         this[newIndex] = item;
-        this.outMoveItem(index, newIndex, item);
+        if (!this._updateLevel) this.outMoveItem(index, newIndex, item);
     },
     
     insertItem: function(item, index) {
@@ -399,7 +399,7 @@ Amm.Array.prototype = {
         if (index < this.length) this._rotate(index, 1);
         if (index >= this.length) this.length = index;
         this[index] = item;
-        if (!this._update) this.outInsertItem(item, index);
+        if (!this._updateLevel) this.outInsertItem(item, index);
         return index;
     },
     
@@ -441,7 +441,7 @@ Amm.Array.prototype = {
         }
         this.length = j;
         while (j < oldLength) delete this[j++];
-        if (!this._update) {
+        if (!this._updateLevel) {
             if (this._diff) {
                 this._doDiff(oldItems, items);
             } else {
@@ -505,28 +505,28 @@ Amm.Array.prototype = {
         if (this._diff) {
             this._doDiff();
         } else {
-            if (!this._update) this.outItemsChange(this._getItems, this._preUpdateItems);
+            if (!this._updateLevel) this.outItemsChange(this._getItems, this._preUpdateItems);
         }
         this._preUpdateItems = null;
     },
     
     beginUpdate: function() { 
-        this._update++; 
-        if (this._update === 1) {
+        this._updateLevel++; 
+        if (this._updateLevel === 1) {
             this._doBeginUpdate();
         }
     },
     
     endUpdate: function() {
-        if (!this._update) throw "endUpdate() before beginUpdate()!";
-        this._update--;
-        if (this._update === 0) {
+        if (!this._updateLevel) throw "endUpdate() before beginUpdate()!";
+        this._updateLevel--;
+        if (this._updateLevel === 0) {
             this._doEndUpdate();
         }
     },
     
     getUpdateLevel: function() {
-        return this._update;
+        return this._updateLevel;
     },
     
     _buildEvCache: function() {
@@ -536,7 +536,7 @@ Amm.Array.prototype = {
             scp.indexOf = this.indexOf;
         }
         
-        // sp used to keep scopes registry
+        // scp is used to keep scopes registry
         
         for (var ev in this._subscribers) {
             if (
@@ -568,12 +568,13 @@ Amm.Array.prototype = {
     },
     
     _outChain: function(events) {
-        if (this._noTrigger) return;
+        if (this._noTrigger || this._updateLevel) return;
         if (!this._evCache) this._buildEvCache();
         if (!this._evCache.length) return;
         var ev = [], evName, spl, args;
         for (evName in events)
             if (events.hasOwnProperty(evName)) ev.push(evName);
+        // ev contains only names of events (keys from `events` argument)
         var evl = ev.length;
         for (var i = 0, l = this._evCache.length; i < l; i++) {
             for (var j = 0; j < evl; j++) {
@@ -695,7 +696,7 @@ Amm.Array.prototype = {
     
     // detects boundaries and transform them into more atomic events
     _outSmartSplice: function(start, cut, insert) {
-        if (this._noTrigger) return;
+        if (this._noTrigger || this._updateLevel) return;
         
         if (!cut.length && !insert.length) return; // nothing changed
 
@@ -732,11 +733,11 @@ Amm.Array.prototype = {
                 return; // nothing changed
                 
             // move first spliced element to end of splice
-            } else if (this._comparison? !this._comparsion(cut[0], insert[l1]) : cut[0] === insert[l1]) { // move fwd?
+            } else if (this._comparison? !this._comparison(cut[0], insert[l1]) : cut[0] === insert[l1]) { // move fwd?
                 if (Amm.Array.equal(cut, insert, 1, 0, l1, this._comparison))
                     return this.outMoveItem(start, start + l1, cut[0]);
             // move last spliced element to beginning of splice
-            } else if (this._comparison? !this._comparsion(cut[l1], insert[0]) : cut[l1] === insert[0]) {
+            } else if (this._comparison? !this._comparison(cut[l1], insert[0]) : cut[l1] === insert[0]) {
                 if (Amm.Array.equal(cut, insert, 0, 1, l1, this._comparison))
                     return this.outMoveItem(start + l1, start, cut[l1]);
             }
@@ -790,10 +791,10 @@ Amm.Array.prototype = {
     cleanup: function() {
         var r = Amm.WithEvents.prototype.unsubscribe.call(this);
         this._evCache = null;
-        this._update = 1;
+        this._updateLevel = 1;
         this.setItems([]);
         this._preUpdateItems = null;
-        this._update = 0;
+        this._updateLevel = 0;
         return r;
     }
     

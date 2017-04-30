@@ -592,6 +592,16 @@
         c.reverse();
         assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), ['A', 'B', 'E', 'D'], 'reverse()');
         assert.deepEqual(Amm.getProperty(c.getItems(), 'index'), [0, 1, 2, 3], 'indexes are properly reported');
+        
+        c.setItems([ia, ib, ic, id]);
+        c.splice(1, c.length - 1);
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'), ['A'], 'splice() with no insert deletes items');
+        
+        Amm.setProperty([ia, ib, ic, id], 'parent', null);
+        
+        c.setItems([i_f, ie]);
+        c.setItems([ia, ib, ic, id]);
+        assert.ok(ia.getParent() === c, 'parent set after setItems()');
     });
     
     QUnit.test("Collection.assoc", function(assert) {

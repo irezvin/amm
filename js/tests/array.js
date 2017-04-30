@@ -804,8 +804,33 @@
         0, 5, [1, 2, 3, 4, 5])
         assert.deepEqual(a.getItems(), [5, 4, 3, 2, 1]);
         
+    });
+    
+    QUnit.test("Array.evCache", function(assert) {
+        
+        // test for _evCache clearing regression
+        var a1 = new Amm.Array;
+        var log = [];
+        var observer = {
+            splice: function() {
+                log.push("splice");
+            },
+            reorder: function() {
+                log.push("reorder");
+            }
+        };
+        a1.setItems(['a', 'b', 'c', 'd']);
+        a1.subscribe("spliceItems", observer.splice, observer);
+        a1.reverse();
+        assert.deepEqual(log, ['splice']);
+        log.splice(0, log.length);
+        a1.subscribe("reorderItems", observer.reorder, observer);
+        a1.reverse();
+        assert.deepEqual(log, ['reorder']);
         
     });
+    
+    
     
 })();
  

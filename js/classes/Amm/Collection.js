@@ -114,6 +114,8 @@ Amm.Collection.prototype = {
     _indexPropertyIsWatched: false,
 
     _defaults: null,
+    
+    _undefaults: null,
 
     _changeEvents: null,
 
@@ -446,7 +448,7 @@ Amm.Collection.prototype = {
                 this._reportIndexes(null, idx + 1);
         } else { // existing item
             res = pa[2][0]; // match for updating
-            this._update(pa[2][0], pa[1][0]);
+            this._updateItem(pa[2][0], pa[1][0]);
         }
         return res;
     },
@@ -503,7 +505,7 @@ Amm.Collection.prototype = {
         
         for (var i = 0; i < pa[1].length; i++) {
             // update matching object with the object of `items` 
-            this._update(pa[2][i], pa[1][i]);
+            this._updateItem(pa[2][i], pa[1][i]);
             // add matching object to the proper place of res using the 
             // previously-saved index
             res.splice(pa[3][i], 0, pa[2][i]);
@@ -512,8 +514,8 @@ Amm.Collection.prototype = {
     },
     
     hasItem: function(item, nonStrictCompare) {
-        if (nonStrictCompare) return this.indexOf(item) > 0;
-        return Amm.Array.indexOf(item, this) > 0;
+        if (nonStrictCompare) return this.indexOf(item) >= 0;
+        return Amm.Array.indexOf(item, this) >= 0;
     },
     
     strictIndexOf: function(item) {
@@ -534,16 +536,16 @@ Amm.Collection.prototype = {
         if (groups && !(groups instanceof Array))
             throw "`groups` must be an Array (or falseable value)";
         if (!items.length) return []; // nothing to do
-        var long = items.concat(this.getItems());
-        var dups = Amm.Array.findDuplicates(long, false, strict? null : this._comparison, items.length);
+        var long = this.getItems().concat(items);
+        var dups = Amm.Array.findDuplicates(long, false, strict? null : this._comparison, this.length);
         var res = [];
         for (var j = 0, l = dups.length; j < l; j ++) {
             // start from 1 because first instance will always be be within
             // 0..items.length
-            for (var k = 1, ll = dups[j].length; k < ll; k++) {
-                if (dups[j][k] >= items.length) {
+            for (var k = 0, ll = dups[j].length; k < ll; k++) {
+                if (dups[j][k] < this.length) {
                     res.push(long[dups[j][k]]);
-                    if (groups) groups.push([dups[j][k] - items.length].concat(dups.slice(0, k)));
+                    if (groups) groups.push([dups[j][k]].concat(dups.slice(0, k)));
                     break;
                 }
             }
@@ -571,7 +573,7 @@ Amm.Collection.prototype = {
         if (this._indexProperty && index < this.length) this._reportIndexes(null, index);
         
         // we need to report this event only when reject is called
-        if (!this._suppressDeleteEvent) {
+        if (!this._suppressDeleteEvent && !this._updateLevel) {
             this.outDeleteItem(index, item);
         }
         return item;
@@ -672,7 +674,7 @@ Amm.Collection.prototype = {
                 // `insert` is `newInstances` with scattered re-insert items
                 while(j <= i && insert[i] !== newInstances[j]) j++;
                 this[start + i] = insert[i];
-                if (insert[i] !== newInstances[j]) {
+                if (insert[i] === newInstances[j]) {
                     this._associate(this[start + i], start + i);
                 }
             }
@@ -685,7 +687,7 @@ Amm.Collection.prototype = {
         if (this._indexProperty) this._reportIndexes(oldItems);
         
         for (var i = 0; i < pa[1].length; i++) {
-            if (pa[2][i] !== pa[1][i]) this._update(pa[2][i], pa[1][i]); 
+            if (pa[2][i] !== pa[1][i]) this._updateItem(pa[2][i], pa[1][i]); 
         }
         
         return cut;
@@ -834,13 +836,9 @@ Amm.Collection.prototype = {
         if (this._indexProperty) {
             Amm.setProperty(item, this._indexProperty, index);
         }
-        if (this._defaults) {
-            for (var i in this._defaults) {
-                if (this._defaults.hasOwnProperty(i)) {
-                    Amm.setProperty(item, i, this._defaults[i]);
-                }
-            }
-        }
+        if (this._defaults) 
+            Amm.setProperty(item, this._defaults);
+        
         if (alsoSubscribe) this._subscribe(item);
     },
 
@@ -869,6 +867,8 @@ Amm.Collection.prototype = {
                 item.unsubscribe(event, this._reportItemIndexPropertyChange, this);
             }
         }
+        if (this._undefaults)
+            Amm.setProperty(item, this._undefaults);
     },
     
     /**
@@ -1004,6 +1004,21 @@ Amm.Collection.prototype = {
     },
 
     getDefaults: function() { return this._defaults; },
+
+    /**
+     * Undefaults are properties that are set when objects are dissociated
+     * @param {object|null} undefaults
+     */
+    setUndefaults: function(undefaults) {
+        if (undefaults && typeof undefaults !== 'object') throw "`undefaults` must be an object";
+        if (!undefaults) undefaults = null;
+        var oldUndefaults = this._undefaults;
+        if (oldUndefaults === undefaults) return;
+        this._undefaults = undefaults;
+        return true;
+    },
+
+    getUndefaults: function() { return this._undefaults; },
 
     getObservesItems: function() { return !!this._changeEvents; },
 
@@ -1270,6 +1285,11 @@ Amm.Collection.prototype = {
         return res;
     },
     
+    _doEndUpdate: function() {
+        if (this._indexProperty) this._reportIndexes(this._preUpdateItems);
+        Amm.Array.prototype._doEndUpdate.call(this);
+    },
+    
     _reportIndexes: function(oldItems, start, stop) {
         this._suppressIndexEvents++;
         var l = stop || this.length, start = start || 0, e;
@@ -1349,7 +1369,7 @@ Amm.Collection.prototype = {
         return this._updateProperties; 
     },
     
-    _update: function(myItem, newItem) {
+    _updateItem: function(myItem, newItem) {
         this._beginItemsUpdate();
         try {
             if (this._updateProperties && myItem !== newItem) {
@@ -1490,8 +1510,7 @@ Amm.Collection.prototype = {
     },
 
     getUpdateFn: function() { return this._updateFn; }
-
+    
 };
 
 Amm.extend(Amm.Collection, Amm.Array);
-

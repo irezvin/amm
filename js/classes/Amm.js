@@ -419,6 +419,13 @@ Amm = {
     },
     
     setProperty: function(element, property, value, throwIfNotFound) {
+        if (value === undefined && property && (typeof property === 'object')) {
+            var res = {};
+            for (var i in property) {
+                if (property.hasOwnProperty(i)) res[i] = Amm.setProperty(element, i, property[i], throwIfNotFound);
+            }
+            return res;
+        }
         var P = ('' + property[0]).toUpperCase() + property.slice(1), setterName = 'set' + P;
         if (typeof element[setterName] === 'function') res = element[setterName](value);
         else if (property in element) element[property] = value;

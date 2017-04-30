@@ -234,6 +234,8 @@ Amm.WithEvents.prototype = {
         if (index in this._subscribers[eventName]) {
             res = [[].concat(this._subscribers[eventName][index], [eventName, index])];
             this._subscribers[eventName].splice(index, 1);
+            if (!this._subscribers[eventName])
+                delete this._subscribers[eventName];
         } else {
             res = [];
         }
@@ -259,6 +261,7 @@ Amm.WithEvents.prototype = {
         for (var i = subscribers.length - 1; i >= 0; i--) {
             var r = subscribers[i];
             this._subscribers[r[4]].splice(r[5], 1);
+            if (!this._subscribers[r[4]]) delete this._subscribers[r[4]];
         }
         return subscribers;
     },
