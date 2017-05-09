@@ -662,12 +662,12 @@ Amm.Array.prototype = {
         var old, offset, l;
         if (oldIndex < newIndex) {
             offset = oldIndex, l = newIndex - oldIndex + 1;
-            old = this.slice(offset, newIndex);
+            old = this.slice(oldIndex, newIndex);
             old.unshift(item);
         } else {
             offset = newIndex;
             l = oldIndex - newIndex + 1;
-            old = this.slice(offset + 1, offset + 1 - l);
+            old = this.slice(newIndex + 1, oldIndex + 1);
             old.push(item);
         }
         return this._outChain({
@@ -908,13 +908,6 @@ Amm.Array.smartDiff = function(a, b, comparisonFn) {
     var cutSize = dEnd - dBegin;
     var insertSize = cutSize + delta;
     
-    /*
-    console.log(a, al);
-    console.log(b, bl);
-    console.log('dBegin', dBegin, 'dEndMin', dEndMin, 'delta', delta, 'dEnd', dEnd, 
-        'cutSize', cutSize, 'insertSize', insertSize);
-    */
-    
     if (insertSize) insert = b.slice(dBegin, dBegin + insertSize);
         else insert = [];
         
@@ -1010,8 +1003,8 @@ Amm.Array.arrayDiff = function(a, b, comparisonFn) {
     var al = a.length, bl = b.length, r, i, j;
     
     if (comparisonFn) {
+        r = [];
         for (i = 0; i < al; i++) {
-            r = [];
             var v = a[i];
             for (j = 0; j < bl; j++) {
                 if (!comparisonFn(v, b[j])) break;

@@ -38,7 +38,13 @@ Amm.Selection.prototype = {
             this._unobserveCollection();
         }
         this._collection = collection;
-        this.setValue(undefined); // clear the value
+        if (this._selectedProperty) {
+            items = this._findSelectedItems();
+        } else {
+            items = [];
+        }
+        if (!this._multiple) items.splice(1, items.length);
+        this.setItems(items); // clear the value
         this.outCollectionChange(collection, oldCollection); 
         if (collection) {
             this._observeCollection();
@@ -123,7 +129,7 @@ Amm.Selection.prototype = {
         var items;
         if (empty) items = [];
         else items = this._findItemsWithValue(value);
-        this.setItems(items);
+        this.setItems(items);        
     },
     
     getValue: function(recalc) { 
@@ -133,7 +139,7 @@ Amm.Selection.prototype = {
             res = this.getItems();
         } else {
             if (!this._cacheValue || recalc || this._value === undefined) {
-                res = this._value = this._collectValueProperty();
+                res = this._value = this._collectValueProperty(this, true);
             } else {
                 res = this._value;
             }
@@ -291,7 +297,6 @@ Amm.Selection.prototype = {
     },
 
     _handleCollectionSpliceItems: function(index, cutItems, insertItems) {
-        
         // exclude duplicates from both sets - we are interested 
         // in real cut/insert items only
         var cut = Amm.Array.symmetricDiff(cutItems, insertItems);
@@ -451,7 +456,12 @@ Amm.Selection.prototype = {
         var item = Amm.event.origin;
         var hasItem = this.hasItem(item);
         if (hasItem && !value) this.reject(item);
-        else if (!hasItem && value) this.accept(item);
+        else if (!hasItem && value) {
+            if (this._multiple)
+                this.accept(item);
+            else
+                this.setItems([item]);
+        }
     },
     
     subscribe: function(eventName, handler, scope, extra, decorator) {
@@ -460,7 +470,7 @@ Amm.Selection.prototype = {
         res = Amm.Collection.prototype.subscribe.call(this, eventName, handler, scope, extra, decorator);
         if (!hasValueChange && this._subscribers.valueChange) { // appeared
             // need to cache this
-            if (this._valueProperty) this._value = this._collectValueProperty(this.getItems());
+            if (this._valueProperty) this._value = this._collectValueProperty(this.getItems(), true);
             this._selfSubscribed = true;
             this.subscribe('itemsChange', this._handleSelfItemsChange, this);
         }
@@ -494,7 +504,7 @@ Amm.Selection.prototype = {
             } else {
                 o = this._collectValueProperty(oldItems, true);
             }
-            this._value = n = this._collectValueProperty(items);
+            this._value = n = this._collectValueProperty(items, true);
         }
         this.outValueChange(n, o);
     },

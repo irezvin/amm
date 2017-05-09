@@ -18,6 +18,8 @@ Amm.Trait.Field.prototype = {
     _value: undefined,
     
     _locked: false,
+    
+    _focusedView: null,
 
     setValue: function(value) {
         var oldValue = this._value;
@@ -48,20 +50,37 @@ Amm.Trait.Field.prototype = {
     outReadOnlyChange: function(readOnly, oldReadOnly) {
         this._out('readOnlyChange', readOnly, oldReadOnly);
     },
-
+    
     setFocused: function(focused) {
+        focused = !!focused;
         var old = this._focused;
         if (old === focused) return;
         this._focused = focused;
- 
         this.outFocusedChange(focused, old);
         return true;
     },
 
     getFocused: function() { return this._focused; },
- 
+    
     outFocusedChange: function(focused, oldFocused) {
         this._out('focusedChange', focused, oldFocused);
+    },
+
+    setFocusedView: function(focusedView) {
+        if (!focusedView) focusedView = null;
+        var oldFocusedView = this._focusedView;
+        if (oldFocusedView === focusedView) return;
+        this._focusedView = focusedView;        
+        if (focusedView === null) this.setFocused(false); 
+            else if (!this._focused) this.setFocused(true);
+        this.outFocusedViewChange(focusedView, oldFocusedView);
+        return true;
+    },
+
+    getFocusedView: function() { return this._focusedView; },
+
+    outFocusedViewChange: function(focusedView, oldFocusedView) {
+        this._out('focusedViewChange', focusedView, oldFocusedView);
     },
 
     setEnabled: function(enabled) {

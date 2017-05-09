@@ -268,6 +268,7 @@ Amm.WithEvents.prototype = {
     
     cleanup: function() {
         this._subscribers = {};
+        Amm.unregisterItem(this);
     }
     
 };

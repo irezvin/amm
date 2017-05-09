@@ -52,7 +52,10 @@ Amm.View.Html.Collection.prototype = {
         }
         return node;
     },
-    
+
+    /**
+     * Fully rebuilds HTML container content by purging it and then re-creating every item' HTML
+     */
     rebuild: function() { return this._rebuild(); },
     
     _createAndBindHtmlNode: function(item) {
@@ -126,7 +129,22 @@ Amm.View.Html.Collection.prototype = {
         }
     },
     
-    _handleCollectionItemChange: function(item) {
+    /**
+     * Calls refreshItem() on event item
+     */
+    refreshAllItems: function() {
+        if (!this._collection || !this._htmlElement) return;
+        for (var i = 0, l = this._collection.length; i < l; i++) {
+            this.refreshItem(this._collection[i]);
+        }
+    },
+    
+    /**
+     * Refreshes item by calling this.updateItemHtml() for that item. Usually this is called on item
+     * change event
+     */
+    refreshItem: function(item) {
+        if (!this._collection || !this._htmlElement) return;
         var p = this._mappingProp, htmlElement = item[p], up = this.updateItemHtml(item, htmlElement);
         if (!up) return;
         var r = jQuery(up)[0];
@@ -145,6 +163,10 @@ Amm.View.Html.Collection.prototype = {
             htmlElement[p] = null;
             item[p] = r;
         }
+    },
+    
+    _handleCollectionItemChange: function(item) {
+        this.refreshItem(item);
     },
     
     _handleCollectionSpliceItems: function(index, cut, insert) {

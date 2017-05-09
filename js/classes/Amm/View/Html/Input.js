@@ -6,7 +6,8 @@
  * Element to JQuery: value, focus, readOnly, enabled
  */
 Amm.View.Html.Input = function(options) {
-    this._handler = jQuery.proxy(this._receiveEvent, this);
+    var t = this;
+    this._handler = function(event) { return t._receiveEvent(event, this); };
     Amm.View.Abstract.Field.call(this, options);
     Amm.DomHolder.call(this);
     Amm.JQueryListener.call(this, {});
@@ -22,6 +23,8 @@ Amm.View.Html.Input.prototype = {
     
     _htmlElement: null,
     
+    _blurTimeoutHandler: null,
+    
     _receiveEvent: function(event) {
         if (!this._element) return;
         if (event.type === 'change') {
@@ -30,26 +33,33 @@ Amm.View.Html.Input.prototype = {
             }
             return true;
         } else if (event.type === 'focus') {
-            if (this._element.getEnabled()) {
-                this._element.setFocused(true);
-            }
+            this._element.setFocusedView(this);
             return true;
         } else if (event.type === 'blur') {
-            this._element.setFocused(false);
+            var t = this;
+            // in browser, focus switching from one element to another fires first 'blur' event, 
+            // then 'focus'. Timeout is added to avoid flapping of `focused` propety when focus
+            // is switched to another view of the same element.
+            if (!this._blurTimeoutHandler) this._blurTimeoutHandler = function() { 
+                if (t._element.getFocusedView() === t)
+                    t._element.setFocusedView(null);
+            };
+            window.setTimeout(this._blurTimeoutHandler, 1);
             return true;
         }
     },
     
-    setVFocused: function(focus) {
-        var q = jQuery(this._htmlElement);
+    setVFocusedView: function(value) {
+        var focused = (value === this);
+        var q = jQuery(this._htmlElement);        
         if (q[0]) {
-            if (focus && !q.is(':focus')) q.focus();
-            else if (!focus && q.is(':focus')) q.blur();
+            if (focused && !q.is(':focus')) q.focus();
+            else if (!focused && q.is(':focus')) q.blur();
         }
     },
-    getVFocused: function() { 
-        var e = jQuery(this._htmlElement)[0];
-        if (e) return jQuery(this._htmlElement).is(':focus'); 
+    
+    getVFocusedView: function() { 
+        if (jQuery(this._htmlElement).is(':focus')) return this;
     },
     
     setVReadOnly: function(readOnly) {

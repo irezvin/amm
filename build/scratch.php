@@ -18,14 +18,29 @@
                 font-weight: normal;
                 text-shadow: 0px 2px darkred;
             }
-            html { min-height: 100%; background: linear-gradient(to top, #c1c1c1 0%,#515151 100%); color: gold; line-height: 1.5em }
+            html { 
+                min-height: 100%; 
+                background: linear-gradient(to top, #c1c1c1 0%,#515151 100%); 
+                color: gold; 
+                line-height: 1.5em 
+            }
             .b { font-weight: bold }
-            .cc {
-                float: left;
+            .cc, .d {
                 min-width: 100px;
                 border: 1px solid silver;
                 margin: 1em 0.8em;
                 padding: 0.5em;
+            }
+            .cc {
+                float: left;
+            }
+            select {
+                border: 3px solid silver;
+                padding: 3px;
+            }
+            select:focus {
+                margin: 0;
+                border: 3px solid orange;
             }
         </style>
     </head>
@@ -44,8 +59,32 @@
         </div>
         <div class="cc cont_c2">
         </div>
+        <hr style="clear: both" />
+        <div class="d">
+            <select id="s" size="7" multiple="multiple" style="width: 150px">
+                <option value="a">A option</option>
+                <option value="b">B option</option>
+                <option value="c" selected="selected">C option</option>
+                <option value="d" disabled="disabled">D option</option>
+                <option value="e" selected="selected">E option</option>
+                <option value="f">F option</option>
+            </select>
+            <select id="s2" size="9"></select>
+            <select id="s3" size="5" style="width: 100px">
+                <option value="q">Q option</option>
+                <option value="w">W option</option>
+                <option value="e" selected="selected">E option</option>
+            </select>
+        </div>
         <script type='text/javascript'>
             /* global Amm */
+            
+            var s = new Amm.Element({traits: [Amm.Trait.Select]});
+            var vs = new Amm.View.Html.Select({element: s, htmlElement: document.getElementById('s')});
+            var vs2 = new Amm.View.Html.Select({element: s, htmlElement: document.getElementById('s2')});
+            
+            var s3 = new Amm.Element({traits: [Amm.Trait.Select]});
+            var vs3 = new Amm.View.Html.Select({element: s3, htmlElement: document.getElementById('s3')});
             
             var It = function(options) { Amm.Element.call(this, options); };
             It.prototype = {};

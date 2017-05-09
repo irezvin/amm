@@ -116,16 +116,17 @@ Amm.View.Abstract.Collection.prototype = {
     },
     
     _checkCollectionProperty: function(force) {
-        if (this._element || force) {
-            var collection = null;
+        if (!this._element && !force) return;
+        var collection = null;
+        if (this._element) {
             if (this._collectionProperty) {
                 collection = Amm.getProperty(this._element, this._collectionProperty);
             }
             else if (Amm.is(this._element, 'Amm.Collection')) {
                 collection = this._element;
             }
-            this.setCollection(collection);
         }
+        this.setCollection(collection);
     },
 
     getCollectionProperty: function() { return this._collectionProperty; },

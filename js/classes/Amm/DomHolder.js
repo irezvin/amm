@@ -62,7 +62,7 @@ Amm.DomHolder.prototype = {
         jQuery(selector).each(function(i, domNode) {
             if (domNode.hasAttribute(att)) {
                 var v = domNode.getAttribute(att).replace(id, '');
-                if (v.length) domNode.setAttribute(v);
+                if (v.length) domNode.setAttribute(att, v);
                     else domNode.removeAttribute(v);
             }
         });

@@ -5,6 +5,8 @@
  * @constructor
  */
 Amm.Element = function(options) {
+    this._beginInit();
+    this._cleanupList = [];
     Amm.registerItem(this);
     if (options && options.traits) {
         if (!(options.traits instanceof Array)) options.traits = [options.traits];
@@ -16,6 +18,7 @@ Amm.Element = function(options) {
     Amm.WithEvents.call(this, {});
     Amm.init(this, options, ['id']);
     Amm.init(this, options);
+    this._endInit();
 };
 
 Amm.Element.prototype = {
@@ -30,6 +33,8 @@ Amm.Element.prototype = {
     
     _parent: null,
     
+    _cleanupList: null,
+    
     // null means "check parent cleanupChildren value", true and false - specific action on parent cleanup event
     _cleanupWithParent: null,
     
@@ -39,6 +44,33 @@ Amm.Element.prototype = {
     _deferredParentPath: null,
     
     defaultProperty: null,
+    
+    _init: null,
+    
+    _initLevel: 0,
+    
+    _beginInit: function() {
+        this._initLevel++;
+        this._init = this._init || {};
+    },
+            
+    _endInit: function() {
+        if (this._initLevel > 0) {
+            this._initLevel--;
+        };
+        if (this._initLevel) return;
+        if (this._init) {
+            ii = [];
+            for (var i in this._init) {
+                if (this._init.hasOwnProperty(i) && (typeof (this._init[i]) === 'function')) {
+                    ii.push(i);
+                }
+            }
+            ii.sort();
+            for (var i = 0, l = ii.length; i < l; ii++) this._init[ii[i]]();
+        }
+        this._init = null;
+    },
     
     setId: function(id) {
         if (this._id === id) return;
@@ -218,6 +250,9 @@ Amm.Element.prototype = {
     
     outCleanup: function() {
         this._out('cleanup', this);
+        for (var i = this._cleanupList.length - 1; i >= 0; i--) {
+            if (typeof this._cleanupList[i].cleanup === 'function') this._cleanupList[i].cleanup();
+        }
     },
 
     _handleParentCleanup: function() {

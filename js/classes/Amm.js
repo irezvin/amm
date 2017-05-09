@@ -53,12 +53,14 @@ Amm = {
     },
     
     unregisterItem: function(item) {
+        if (!item._amm_id) return; // no work
         if (typeof item === 'string') item = this._items[item];
-        if (!item._amm_id || this._items[item._amm_id] !== item)
-            throw "Item not found";
+        if (item._amm_id && this._items[item._amm_id] !== item) {
+            throw "Mismatch of _amm_id detected during the item de-registration";
+        }
         if (typeof item.getPath === 'function') {
             var p = item.getPath();
-            if (p[0] === '^') {
+            if (p && p[0] === '^') {
                 delete this._byPaths[p];
             }
         }
@@ -94,10 +96,11 @@ Amm = {
         this.unregisterItem(item);
     },
     
-    extend: function(subClass, parentClass) {
+    extend: function(subClass, parentClass, dontIndicateParent) {
     	for (var i in parentClass.prototype)
             if (!(i in subClass.prototype))
                 subClass.prototype[i] = parentClass.prototype[i];
+        if (dontIndicateParent) return;
         var c = this.getClass(parentClass.prototype);
         if (c) subClass.prototype[c] = '__PARENT__';
     },

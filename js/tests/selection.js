@@ -60,24 +60,27 @@
         selA.setMultiple(false);
         assert.equal(selA.getValue(), 'd',
             'After setMultiple is set to FALSE, only first item remains');
+        c.setSelected(true);
         assert.equal(selA.length, 1,
             'After setMultiple is set to FALSE, other items are rejected');
         selA.setMultiple(true);
-        assert.deepEqual(selA.getValue(), ['d'],
+        assert.equal(selA.getValue(), 'c',
+            'getMultiple(false): after item setSelected, value changes; only one item is selected');
+        assert.deepEqual(selA.getValue(), ['c'],
             'After setMultiple(TRUE), getValue() returns arrays');
         assert.deepEqual(Amm.getProperty([a, b, c, d, e, f], 'selected'), 
-            [false, false, false, true, false, false],
+            [false, false, true, false, false, false],
             'Non-selected items have their selectedProperty set to FALSE, and selected one has TRUE');
         selA.push(e, f);
-        assert.deepEqual(values(selA), ['d', 'e', 'f']);
+        assert.deepEqual(values(selA), ['c', 'e', 'f']);
         coll.reject(e);
-        assert.deepEqual(values(selA), ['d', 'f'],
+        assert.deepEqual(values(selA), ['c', 'f'],
             'Items that are deleted from collection are rejected from the selection');
         e.setSelected(true);
-        assert.deepEqual(values(selA), ['d', 'f'],
+        assert.deepEqual(values(selA), ['c', 'f'],
             '...and not observed anymore');
         coll.accept(e);
-        assert.deepEqual(values(selA), ['d', 'f', 'e'],
+        assert.deepEqual(values(selA), ['c', 'f', 'e'],
             'but added if they have selectedProperty === TRUE and added back to the collection');
         selA.clearItems();
         assert.deepEqual(selA.getValue(), [],
@@ -265,6 +268,38 @@
         selA.setMultiple(false);
         assert.deepEqual(selA.getValue(), null,
             'After clearItems() w/o valueProperty and multiple === FALSE, getValue() returns NULL');
+    });
+    
+    QUnit.test("Selection with pre-set selected property", function(assert) {
+        var a = new Item('Item A', 'a');
+        var b = new Item('Item B', 'b');
+        var c = new Item('Item C', 'c');
+        var d = new Item('Item D', 'd');
+        var e = new Item('Item E', 'e');
+        var f = new Item('Item F', 'f');
+        var g = new Item('Item G', 'g');
+        
+        a.setSelected(true);
+        b.setSelected(true);
+        
+        var coll = new Amm.Collection({
+            items: [a, b, c, d, e, f]
+        });
+        var selA = new Amm.Selection({
+            valueProperty: 'value',
+            selectedProperty: 'selected',
+            collection: coll
+        });
+        assert.deepEqual(selA.getValue(), ['a', 'b'],
+            'When objects in collection have selectedProperty set, Selection will have them selected');
+        var selB = new Amm.Selection({
+            valueProperty: 'value',
+            selectedProperty: 'selected',
+            collection: coll,
+            multiple: false
+        });
+        assert.deepEqual(selB.getValue(), 'a',
+            'init with item having setSelected(true) - reports proper value');
     });
     
     

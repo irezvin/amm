@@ -164,6 +164,8 @@ Amm.Collection.prototype = {
     
     _suppressIndexEvents: 0,
     
+    _cleanupOnDissociate: false,
+    
     setUnique: function(unique) {
         if (!unique) throw "setUnique(false) is never supported by Amm.Collection";
         return Amm.Array.prototype.setUnique.call(this, unique);
@@ -568,7 +570,6 @@ Amm.Collection.prototype = {
             item = this[index];
         }
         this._rotate(index, -1);
-        var newIndex = this.strictIndexOf(item);
         this._dissociate(item);
         if (this._indexProperty && index < this.length) this._reportIndexes(null, index);
         
@@ -840,6 +841,12 @@ Amm.Collection.prototype = {
             Amm.setProperty(item, this._defaults);
         
         if (alsoSubscribe) this._subscribe(item);
+        
+        this.outOnAssociate(item, index);
+    },
+    
+    outOnAssociate: function(item, index) {
+        return this._out('onAssociate', item, index);
     },
 
     _subscribe: function(item) {
@@ -867,9 +874,19 @@ Amm.Collection.prototype = {
                 item.unsubscribe(event, this._reportItemIndexPropertyChange, this);
             }
         }
-        if (this._undefaults)
+        if (this._undefaults) {
             Amm.setProperty(item, this._undefaults);
+        }
+        this.outOnDissociate(item);
+        if (this._cleanupOnDissociate && typeof (item.cleanup === 'function')) {
+            item.cleanup();
+        }
     },
+    
+    outOnDissociate: function(item) {
+        return this._out('onDissociate', item);
+    },
+    
     
     /**
      * Error handlers should fill problem.error if item cannot be accepted.
@@ -1509,7 +1526,17 @@ Amm.Collection.prototype = {
         return true;
     },
 
-    getUpdateFn: function() { return this._updateFn; }
+    getUpdateFn: function() { return this._updateFn; },
+
+    setCleanupOnDissociate: function(cleanupOnDissociate) {
+        cleanupOnDissociate = !!cleanupOnDissociate;
+        var oldCleanupOnDissociate = this._cleanupOnDissociate;
+        if (oldCleanupOnDissociate === cleanupOnDissociate) return;
+        this._cleanupOnDissociate = cleanupOnDissociate;
+        return true;
+    },
+
+    getCleanupOnDissociate: function() { return this._cleanupOnDissociate; },
     
 };
 

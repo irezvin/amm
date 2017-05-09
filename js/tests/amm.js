@@ -35,9 +35,6 @@ QUnit.test("Amm get/set/destroy Item", function(assert) {
     var id = item._amm_id;
     a.destroyItem(itemNoCleanup);
     assert.equal(a.getItem(id), undefined);
-    assert.throws(function() {
-        a.destroyItem(item);
-    }, "destroy not registered item");
 });
 
 QUnit.test("Amm object inheritance support", function(assert) {
