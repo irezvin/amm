@@ -87,8 +87,6 @@
         sel1.getOptionsCollection().push(new Amm.Trait.Select.Option({value: 'x', caption: 'X option'}));
         assert.deepEqual(s(fx.find('#sel1')), s(sel1), 'collection mutations are synced');
         
-        
-        v1._collectionView.debug = 'v1';
         sel1.getOptionsCollection().reject(0);
         
         assert.deepEqual(s(fx.find('#sel1')), s(sel1));

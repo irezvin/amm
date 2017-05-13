@@ -50,12 +50,16 @@ Amm.View.Abstract.prototype = {
             return;
         }
         this._acquireResources();
-        var bindList = [];
+        var bindList = [], props = {};
         for (var i in this) {
             if (typeof this[i] === 'function') {
-                if (('' + i).slice(0, 4) === 'setV') {
+                var px = ('' + i).slice(0, 4);
+                if (px === 'setV' || px === 'getV') {
                     var prop = i[4].toLowerCase() + i.slice(5);
-                    this._observeProp(prop, i, bindList);
+                    if (!props[prop]) {
+                        props[prop] = true;
+                        this._observeProp(prop, 'setV' + i.slice(4), bindList);
+                    }
                 } else {
                     if (('' + i).slice(0, 14) === '_handleElement') {
                         var ev = i[14].toLowerCase() + i.slice(15);
@@ -76,9 +80,10 @@ Amm.View.Abstract.prototype = {
     _observeProp: function(propName, setterName, bindList) {
         var caps = {};
         Amm.detectProperty(this._element, propName, caps);
-        
-        // fooChanged -> adpSetFoo(v)
-        if (caps.eventName) this._element.subscribe(caps.eventName, setterName, this);
+        if (this[setterName]) {
+            // fooChanged -> setVFoo(v)
+            if (caps.eventName) this._element.subscribe(caps.eventName, setterName, this);
+        }
         
         if (caps.getterName) {
             caps.propName = propName;

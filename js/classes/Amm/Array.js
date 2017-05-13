@@ -20,6 +20,12 @@ Amm.Array.indexOf = function(item, arr, start) {
     return -1;
 };
 
+Amm.Array.nonStrictIndexOf = function(item, arr, start) {
+    start = start || 0;
+    for (var i = start, l = arr.length; i < l; i++) if (item == arr[i]) return i;
+    return -1;
+};
+
 Amm.Array.arrayChangeEvents = {
     appendItems: 'outAppendItems',
     insertItem: 'outInsertItem',

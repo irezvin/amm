@@ -21,6 +21,12 @@ Amm.Element = function(options) {
     this._endInit();
 };
 
+Amm.Element.regInit = function(element, key, fn) {
+    if (element._initLevel === false) fn.call(element);
+    element._init = element._init || {};
+    element._init[key] = fn;
+};
+
 Amm.Element.prototype = {
 
     'Amm.Element': '__CLASS__',
@@ -50,16 +56,21 @@ Amm.Element.prototype = {
     _initLevel: 0,
     
     _beginInit: function() {
+        if (this._initLevel === false)
+            return false;
         this._initLevel++;
         this._init = this._init || {};
     },
             
     _endInit: function() {
+        if (this._initLevel === false)
+            return false;
         if (this._initLevel > 0) {
             this._initLevel--;
         };
         if (this._initLevel) return;
         if (this._init) {
+            this._initLevel = false;
             ii = [];
             for (var i in this._init) {
                 if (this._init.hasOwnProperty(i) && (typeof (this._init[i]) === 'function')) {
@@ -67,7 +78,7 @@ Amm.Element.prototype = {
                 }
             }
             ii.sort();
-            for (var i = 0, l = ii.length; i < l; ii++) this._init[ii[i]]();
+            for (var i = 0, l = ii.length; i < l; i++) this._init[ii[i]].call(this);
         }
         this._init = null;
     },

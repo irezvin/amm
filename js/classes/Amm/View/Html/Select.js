@@ -71,7 +71,7 @@ Amm.View.Html.Select.prototype = {
             updateItemHtml: function(item, node) {
                 var selected = !!item.getSelected();
                 node.selected = selected;
-                node.disabled = t._element.getReadOnly && !selected || !!item.getDisabled();
+                node.disabled = t._element.getReadOnly() && !selected || !!item.getDisabled();
                 node.value = item.getValue();
                 jQuery(node).html(item.getCaption());
             }

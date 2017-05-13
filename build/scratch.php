@@ -75,9 +75,22 @@
                 <option value="w">W option</option>
                 <option value="e" selected="selected">E option</option>
             </select>
+            <input type='checkbox' name='prop[]' id='cb-a' value='a' checked='checked' readonly='readonly' /> a
+            <input type='checkbox' name='prop[]' id='cb-b' value='b' checked='checked' /> b
+            <input type='checkbox' name='prop[]' id='cb-c' value='c' /> c
+            <input type='radio' name='prop[]' id='cb-d' value='d' readonly='readonly' /> d
+            <input type='radio' name='prop[]' id='cb-e' value='e' checked='checked' /> e
+            <input type='radio' name='prop[]' id='cb-f' value='f' /> f
         </div>
         <script type='text/javascript'>
             /* global Amm */
+
+            jQuery("input[name='prop[]']").each(function(index, item) {
+                var e = 't_' + item.value;
+                var v = 'vt_' + item.value;
+                window[e] = new Amm.Element({traits: [Amm.Trait.Toggle]});
+                window[v] = new Amm.View.Html.Toggle({element: window[e], htmlElement: item});
+            });
             
             var s = new Amm.Element({traits: [Amm.Trait.Select]});
             var vs = new Amm.View.Html.Select({element: s, htmlElement: document.getElementById('s')});

@@ -5,18 +5,20 @@ Amm.Trait.Select = function() {
 };
 
 // compares two values. Order doesn't matter. Multiple occurances of same value are same as one.
-// comparison is non-strict (items are converted to strings)
+// comparison is non-strict
 Amm.Trait.Select.valuesAreSame = function(a, b) {
     if (a === b) return true;
     if (a && a['Amm.Array']) a = a.getItems();
     if (b && b['Amm.Array']) b = b.getItems();
-    var cmp = function(a, b) { return ('' + a) === ('' + b)? 0 : 1; };
+    var cmp = function(a, b) { return a == b? 0 : 1; };
     if (a instanceof Array) {
          if (!(b instanceof Array)) return false;         
          if (!(Amm.Array.arrayDiff(a, b, cmp).length) && !(Amm.Array.arrayDiff(b, a, cmp).length)) {
              return true;
          }
          return false;
+    } else {
+        if (b instanceof Array) return false;
     }
     return !cmp(a, b);
 };
