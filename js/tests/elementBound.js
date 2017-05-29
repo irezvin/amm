@@ -3,7 +3,7 @@
     
     QUnit.test("Amm.ElementBound", function(assert) {
         
-        var elementA = new Amm.Element.Composite({id : 'a'});
+        var elementA = new Amm.Element({traits: ['Amm.Trait.Composite'], id : 'a'});
         var elementB = new Amm.Element({
             traits: [Amm.Trait.Visual], 
             id : 'b', 
@@ -15,7 +15,7 @@
         assert.ok(pathBound.getElement() === elementB, 
             'elementBound received element when its\' path appeared' );
             
-        var rqComposite = new Amm.ElementBound({requiredElementClass: 'Amm.Element.Composite'});
+        var rqComposite = new Amm.ElementBound({requiredElementClass: 'Composite'});
         var rqVisual = new Amm.ElementBound({requiredElementInterfaces: ['Visual']});
         assert.throws(
             function() { rqComposite.setElement(elementB); },

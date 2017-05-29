@@ -125,7 +125,7 @@ Amm = {
                 throw "Cannot augment: `instance` already implements same interfaces as the `traitInstance`: "
                     + conflicts.join(', ') + ")";
             for (var i in traitInstance) if (i.slice(0, 2) !== '__') {
-                if (instance[i] === undefined) 
+                if (instance[i] === undefined || typeof instance[i] === 'function') 
                     instance[i] = traitInstance[i];
             }
             if (typeof traitInstance.__augment === 'function') {
@@ -332,6 +332,7 @@ Amm = {
             var v = optToSet[i], s = 'set' + ('' + i).slice(0, 1).toUpperCase() + ('' + i).slice(1);
             if (typeof object[s] === 'function') object[s](v);
             else if (i in object) object[i] = v;
+            else if (typeof v === 'function') object[i] = v;
             else {
                 throw "No such property: '" + i + "' in " + (this.getClass(object) || '`object`');
             }

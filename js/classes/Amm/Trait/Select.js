@@ -27,7 +27,7 @@ Amm.Trait.Select.prototype = {
 
     'Select': '__INTERFACE__',
     
-    _optionsCollection: null,
+    options: null,
     
     _selectionCollection: null,
     
@@ -64,12 +64,12 @@ Amm.Trait.Select.prototype = {
     },
     
     getOptions: function() {
-        if (!this._optionsCollection) return undefined;
+        if (!this.options) return undefined;
         return this.getOptionsCollection().getItems();
     },
     
     getOptionsCollection: function() {
-        if (this._optionsCollection) return this._optionsCollection;
+        if (this.options) return this.options;
         var proto = {
             changeEvents: ['captionChange', 'valueChange', 'disabledChange'],
             requirements: ['Amm.Trait.Select.Option'],
@@ -77,9 +77,9 @@ Amm.Trait.Select.prototype = {
             observeIndexProperty: true,
             cleanupOnDissociate: true
         };
-        this._optionsCollection = new Amm.Collection(proto);
-        if (this._cleanupList) this._cleanupList.push(this._optionsCollection);
-        return this._optionsCollection;
+        this.options = new Amm.Collection(proto);
+        if (this._cleanupList) this._cleanupList.push(this.options);
+        return this.options;
     },
     
     getSelectionCollection: function() {

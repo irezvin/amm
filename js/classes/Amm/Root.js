@@ -1,7 +1,8 @@
 /* global Amm */
 
 Amm.Root = function(options) {
-    Amm.Element.Composite.call(this, options);
+    Amm.augment(this, Amm.Trait.Composite);
+    Amm.Element.call(this, options);
 };
 
 Amm.Root.prototype = {
@@ -12,8 +13,6 @@ Amm.Root.prototype = {
     
     // Root is allowed to have ANY events to create global events
     strictEvents: false,
-    
-    xxx: "zzz",
     
     getPath: function() {
         return '^';
@@ -34,4 +33,4 @@ Amm.Root.prototype = {
     
 };
 
-Amm.extend(Amm.Root, Amm.Element.Composite);
+Amm.extend(Amm.Root, Amm.Element);

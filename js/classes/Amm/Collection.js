@@ -284,7 +284,7 @@ Amm.Collection.prototype = {
             deleteCount = 0;
         }
         
-        var long = items.concat(this.getItems()), l = this.length, i, n,
+        var long = items.concat(this.getItems()), i, n,
             toDelete = deleteCount? this.slice(deleteStart, deleteEnd) : [],
             toDeleteIdx = [],
             numNotDeleted = 0;
@@ -539,7 +539,7 @@ Amm.Collection.prototype = {
             throw "`groups` must be an Array (or falseable value)";
         if (!items.length) return []; // nothing to do
         var long = this.getItems().concat(items);
-        var dups = Amm.Array.findDuplicates(long, false, strict? null : this._comparison, this.length);
+        var dups = Amm.Array.findDuplicates(long, false, strict? null : this._comparison, this.length, true);
         var res = [];
         for (var j = 0, l = dups.length; j < l; j ++) {
             // start from 1 because first instance will always be be within

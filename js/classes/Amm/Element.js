@@ -31,7 +31,7 @@ Amm.Element.prototype = {
 
     'Amm.Element': '__CLASS__',
     
-    _requiredParentClass: 'Amm.Element.Composite',
+    _requiredParentClass: 'Composite',
     
     _id: null,
     
@@ -54,6 +54,11 @@ Amm.Element.prototype = {
     _init: null,
     
     _initLevel: 0,
+
+    _component: null,
+    
+    // will reference `this` if `this` is component
+    _closestComponent: null,
     
     _beginInit: function() {
         if (this._initLevel === false)
@@ -261,9 +266,6 @@ Amm.Element.prototype = {
     
     outCleanup: function() {
         this._out('cleanup', this);
-        for (var i = this._cleanupList.length - 1; i >= 0; i--) {
-            if (typeof this._cleanupList[i].cleanup === 'function') this._cleanupList[i].cleanup();
-        }
     },
 
     _handleParentCleanup: function() {
@@ -288,8 +290,81 @@ Amm.Element.prototype = {
 
     cleanup: function() {
         this.setParent(null);
+        this.setComponent(null);
+        this._callOwnMethods('_cleanup_');
+        for (var i = this._cleanupList.length - 1; i >= 0; i--) {
+            if (typeof this._cleanupList[i].cleanup === 'function') this._cleanupList[i].cleanup();
+        }
         this.outCleanup();
         Amm.WithEvents.prototype.cleanup.call(this);
+    },
+    
+    // calls all methods that start with prefix (useful for asking Traits which cannot have methods with the same name)
+    // returns result of every method
+    _callOwnMethods: function(prefix /*, ...*/) {
+        var rx = prefix instanceof RegExp, aa, res = {};
+        for (var i in this) {
+            if (typeof this[i] === 'function' && (rx? i.match(rx) : i.indexOf(prefix) === 0)) {
+                aa = aa || Array.prototype.slice.call(arguments, 1);
+                res[i] = this[i].apply(this, aa);
+            }
+        }
+        return res;
+    },
+
+    setComponent: function(component) {
+        if (!component) component = null;
+        if (component) Amm.is(component, 'Component', 'component');
+        var oldComponent = this._component;
+        if (oldComponent === component) return;
+        this._component = component;
+        if (component) component.acceptElements([this]);
+        this._callOwnMethods('_setComponent_', component, oldComponent);
+        this._setClosestComponent();
+        this.outComponentChange(component, oldComponent);
+        return true;
+    },
+
+    getComponent: function() { return this._component; },
+
+    outComponentChange: function(component, oldComponent) {
+        this._out('componentChange', component, oldComponent);
+    },
+        
+    _getClosestComponent: function() {
+        return this._component;
+    },
+    
+    _setClosestComponent: function() {
+        var old = this._closestComponent;
+        this._closestComponent = this._getClosestComponent();
+        if (old !== this._closestComponent) {
+            this._callOwnMethods('_setClosestComponent_', this._closestComponent, old);
+            this.outClosestComponentChange(this._closestComponent, old);
+        }
+    },
+    
+    outClosestComponentChange: function(closestComponent, oldClosestComponent) {
+        return this._out('closestComponentChange', closestComponent, oldClosestComponent);
+    },
+
+    _findChildElementsRecursive: function(items) {
+        var res = [];
+        for (var i = 0, l = items.length; i < l; i++) {
+            var item = items[i];
+            // we don't descend into the other components
+            if (item.Component && item.getIsComponent()) continue;
+            res = res.concat(item.findChildElements(true));
+        }
+        return res;
+        
+    },
+    
+    findChildElements: function(recursive) {
+        var items = [];
+        this._callOwnMethods('_findChildElements_', items);
+        if (recursive) items = items.concat(this._findChildElementsRecursive(items));
+        return items;
     }
     
 };

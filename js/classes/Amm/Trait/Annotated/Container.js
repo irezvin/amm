@@ -2,8 +2,9 @@
 
 Amm.Trait.Annotated.Container = function(options) {
     this._requireInterfaces('Annotated'); // our element must support annotated interface
+    Amm.augment(this, Amm.Trait.Composite);
     Amm.ElementBound.call(this);
-    Amm.Element.Composite.call(this, options);
+    Amm.Element.call(this, options);
 };
 
 Amm.Trait.Annotated.Container.prototype = {
@@ -49,6 +50,6 @@ Amm.Trait.Annotated.Container.prototype = {
     
 };
 
-Amm.extend(Amm.Trait.Annotated.Container, Amm.Element.Composite);
+Amm.extend(Amm.Trait.Annotated.Container, Amm.Element);
 Amm.extend(Amm.Trait.Annotated.Container, Amm.ElementBound);
 

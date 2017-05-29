@@ -1,21 +1,23 @@
 /* global Amm */
 
-Amm.Element.Composite = function(options) {
+Amm.Trait.Composite = function() {
     this._children = {};
-    Amm.Element.call(this, options);
 };
 
-Amm.Element.Composite.prototype = {
+Amm.Trait.Composite.prototype = {
     
-    'Amm.Element.Composite': '__CLASS__',
+    'Composite': '__INTERFACE__',
     
     _requiredChildClass: 'Amm.Element',
     
     _children: null,
     
     _cleanupChildren: false,
+    
+    _passChildrenToComponent: true,
 
     _autoId: function(child) {
+        if (!child._amm_id) Amm.registerItem(child);
         return (Amm.getClass(child) || '__auto__') + child._amm_id;
     },
     
@@ -36,6 +38,9 @@ Amm.Element.Composite.prototype = {
         child.setParent(this);
         this._children[id] = child;
         this._subscribeChild(child);
+        if (this._passChildrenToComponent && this._closestComponent) {
+            this._closestComponent.acceptElements([child]);
+        }
         this.outChildAdded(child);
         return true;
     },
@@ -46,7 +51,15 @@ Amm.Element.Composite.prototype = {
             delete this._children[child.getId()];
             this._unsubscribeChild(child);
         }
-        if (isParent) child.setParent(null);
+        if (isParent) {
+            child.setParent(null);
+            if (this._passChildrenToComponent 
+                && this._closestComponent 
+                && child.getComponent() === this._closestComponent) 
+            {
+                child.setComponent(null);
+            }
+        }
         this.outChildRemoved(child);
     },
     
@@ -108,6 +121,16 @@ Amm.Element.Composite.prototype = {
         return this._children[id];
     },
     
+    getChildren: function() {
+        var res = [];
+        for (var i in this._children) {
+            if (this._children.hasOwnProperty(i)) {
+                res.push(this._children[i]);
+            }
+        }
+        return res;
+    },
+    
     setCleanupChildren: function(cleanupChildren) {
         var oldCleanupChildren = this._cleanupChildren;
         if (oldCleanupChildren === cleanupChildren) return;
@@ -115,8 +138,40 @@ Amm.Element.Composite.prototype = {
         return true;
     },
 
-    getCleanupChildren: function() { return this._cleanupChildren; }
+    getCleanupChildren: function() { return this._cleanupChildren; },
+
+    setPassChildrenToComponent: function(passChildrenToComponent) {
+        passChildrenToComponent = !!passChildrenToComponent;
+        var oldPassChildrenToComponent = this._passChildrenToComponent;
+        if (oldPassChildrenToComponent === passChildrenToComponent) return;
+        this._passChildrenToComponent = passChildrenToComponent;
+        if (this._closestComponent) {
+            if (!this._passChildrenToComponent) {
+                Amm.Trait.Component.changeComponent(this.getChildren(), null, this._closestComponent);
+            } else {
+                Amm.Trait.Component.changeComponent(this.getChildren(), this._closestComponent, null);
+            }
+        }
+        this.outPassChildrenToComponentChange(passChildrenToComponent, oldPassChildrenToComponent);
+        return true;
+    },
+
+    getPassChildrenToComponent: function() { return this._passChildrenToComponent; },
+
+    outPassChildrenToComponentChange: function(passChildrenToComponent, oldPassChildrenToComponent) {
+        this._out('passChildrenToComponentChange', passChildrenToComponent, oldPassChildrenToComponent);
+    },
+    
+    _findChildElements_Composite: function(items) {
+        if (this._passChildrenToComponent) {
+            items.push.apply(items, this.getChildren());
+        }
+    },
+    
+    _setClosestComponent_Composite: function(component, oldComponent) {
+        if (this._passChildrenToComponent) {
+            Amm.Trait.Component.changeComponent(this.getChildren(), component, oldComponent);
+        }
+    }
     
 };
-
-Amm.extend(Amm.Element.Composite, Amm.Element);

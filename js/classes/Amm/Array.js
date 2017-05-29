@@ -1049,12 +1049,20 @@ Amm.Array.arrayDiff = function(a, b, comparisonFn) {
  * {stopSearchIdx} - int - if non-zero, the items after this index are assumed
  * to have NO duplicates, and routine will stop after searching duplicate
  * instances of items with indexes betetween 0 <= idx < stopSearchIdx.
+ * 
+ * {startAtStop} - bool - will assume items between 0 and stopSearchIdx 
+ *      don't have duplicates, but search duplicates between two sets - 
+ *      [0..stopSearchIdx) and [stopSearchIdx..array.length)
  */
-Amm.Array.findDuplicates = function(array, onlyFirst, comparisonFn, stopSearchIdx) {
+Amm.Array.findDuplicates = function(array, onlyFirst, comparisonFn, stopSearchIdx, startAtStop) {
     var l = array.length, res = [], fnd, rr, same;
-    if (!stopSearchIdx) stopSearchIdx = l - 1;
+    if (!stopSearchIdx || stopSearchIdx < 0 || stopSearchIdx > l)
+        stopSearchIdx = l;
+    if (startAtStop && (stopSearchIdx >= l)) {
+        return [];
+    }
     for (var i = 0; i < stopSearchIdx; i++) {
-        for (var j = i + 1; j < l; j++) {
+        for (var j = (startAtStop? stopSearchIdx : i + 1); j < l; j++) {
             if (comparisonFn) same = !comparisonFn(array[i], array[j]);
             else same = (array[i] === array[j]);
             if (same) {
@@ -1083,6 +1091,24 @@ Amm.Array.findDuplicates = function(array, onlyFirst, comparisonFn, stopSearchId
         if (rr) {
             res.push(rr);
             rr = null;
+        }
+    }
+    return res;
+};
+
+Amm.Array.intersect = function(a, b, comparisonFn) {
+    if (!(a instanceof Array || a['Amm.Array'])) throw "`a` must be an Array";
+    if (!(b instanceof Array || b['Amm.Array'])) throw "`b` must be an Array";
+    if (!a.length || !b.length) return []; // nothing to do
+    var long = [].concat(a).concat(b);
+    var dups = Amm.Array.findDuplicates(long, false, comparisonFn, a.length, true);
+    var res = [];
+    for (var j = 0, l = dups.length; j < l; j ++) {
+        for (var k = 0, ll = dups[j].length; k < ll; k++) {
+            if (dups[j][k] < a.length) {
+                res.push(long[dups[j][k]]);
+                break;
+            }
         }
     }
     return res;
