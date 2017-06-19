@@ -503,13 +503,16 @@ Amm = {
     },
     
     cleanup: function(itemOrItems) {
-        if (typeof itemOrItems.cleanup === 'function') itemOrItems.cleanup();
-        else if (itemOrItems instanceof Array) {
-            for (var i = 0, l = itemOrItems.length; i < l; i++)
-                this.cleanup(itemOrItems[i]);
-        } else {
-            console.log(itemOrItems);
-            throw '`itemOrItems` must be either an object with .cleanup() method or an Array';
+        for (var j = 0, al = arguments.length; j < al; j++) {
+            itemOrItems = arguments[j];
+            if (typeof itemOrItems.cleanup === 'function') itemOrItems.cleanup();
+            else if (itemOrItems instanceof Array) {
+                for (var i = 0, l = itemOrItems.length; i < l; i++)
+                    this.cleanup(itemOrItems[i]);
+            } else {
+                console.log(itemOrItems);
+                throw '`itemOrItems` must be either an object with .cleanup() method or an Array';
+            }
         }
     }
 };

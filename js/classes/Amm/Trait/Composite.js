@@ -71,8 +71,8 @@ Amm.Trait.Composite.prototype = {
         this._out('childRemoved', child);
     },
     
-    outChildIdChanged: function(child, id, oldId) {
-        this._out('childIdChanged', child, id, oldId);
+    outChildRenamed: function(child, id, oldId) {
+        this._out('childRenamed', child, id, oldId);
     },
     
     _subscribeChild: function(child) {
@@ -93,7 +93,7 @@ Amm.Trait.Composite.prototype = {
             console.warn("Wtf: childIdChange notification received, but child not found with child id");
         }
         this._children[newId] = child;
-        this.outChildIdChanged(child, newId, oldId);
+        this.outChildRenamed(child, newId, oldId);
     },
     
     hasChild: function(child) {

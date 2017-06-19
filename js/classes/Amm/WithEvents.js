@@ -159,7 +159,15 @@ Amm.WithEvents.prototype = {
             if (miss === undefined) throw "No such out event: '" + eventName+ "'";
             if (miss === false) return true;
         }
-        if (!this._subscribers[eventName]) this._subscribers[eventName] = [];
+        var isFirst = false;
+        if (!this._subscribers[eventName]) {
+            this._subscribers[eventName] = [];
+            isFirst = true;
+            if (isFirst) {
+                var fn = '_subscribeFirst_' + eventName;
+                if (this[fn] && typeof this[fn] === 'function') this[fn]();
+            }
+        }
         if (!this.getSubscribers(eventName, handler, scope, extra, decorator).length) {
             this._subscribers[eventName].push([handler, scope, extra, decorator]);
             return true;
@@ -234,8 +242,11 @@ Amm.WithEvents.prototype = {
         if (index in this._subscribers[eventName]) {
             res = [[].concat(this._subscribers[eventName][index], [eventName, index])];
             this._subscribers[eventName].splice(index, 1);
-            if (!this._subscribers[eventName])
+            if (!this._subscribers[eventName].length) {
                 delete this._subscribers[eventName];
+                var fn = '_unsubscribeLast_' + eventName;
+                if (this[fn] && typeof this[fn] === 'function') this[fn]();
+            }
         } else {
             res = [];
         }
@@ -261,7 +272,11 @@ Amm.WithEvents.prototype = {
         for (var i = subscribers.length - 1; i >= 0; i--) {
             var r = subscribers[i];
             this._subscribers[r[4]].splice(r[5], 1);
-            if (!this._subscribers[r[4]]) delete this._subscribers[r[4]];
+            if (!this._subscribers[r[4]].length) {
+                delete this._subscribers[r[4]];
+                var fn = '_unsubscribeLast_' + eventName;
+                if (this[fn] && typeof this[fn] === 'function') this[fn]();
+            }
         }
         return subscribers;
     },

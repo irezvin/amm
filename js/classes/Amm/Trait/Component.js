@@ -2,6 +2,7 @@
 Amm.Trait.Component = function() {
     this._namedElements = {};
     this._elements = [];
+    this._components = [];
 };
 
 Amm.Trait.Component.changeComponent = function(items, component, oldComponent) {
@@ -36,12 +37,16 @@ Amm.Trait.Component.prototype = {
     
     _elements: null,
     
+    _components: null,
+    
     setInternalId: function(internalId) {
         var oldInternalId = this._internalId;
         if (oldInternalId === internalId) return;
         this._internalId = internalId;
  
         this.outInternalIdChange(internalId, oldInternalId);
+        this.outRenamedElement(this, internalId, oldInternalId);
+        this.outRenamedInScope(this, this, internalId, oldInternalId);
         return true;
     },
 
@@ -51,7 +56,7 @@ Amm.Trait.Component.prototype = {
         this._out('internalIdChange', internalId, oldInternalId);
     },
     
-    _getClosestComponent: function() {
+    getClosestComponent: function() {
         return this._isComponent? this: this._component;
     },
     
@@ -164,6 +169,18 @@ Amm.Trait.Component.prototype = {
             this._namedElements[id].push(element);
             this._subscribeElement(element, true, undefined);
         }
+        this.outRenamedElement(element, id, oldId);
+        this.outRenamedInScope(this, element, id, oldId);
+    },
+    
+    handle__isComponentChange: function(isComponent, oldIsComponent) {
+        var component = Amm.event.origin;
+        if (isComponent) this._registerComponent(component);
+            else this._unregisterComponent(component);
+    },
+    
+    outRenamedElement: function(element, id, oldId) {
+        this._out('renamedElement', element, id, oldId);
     },
     
     handle__cleanup: function() {
@@ -270,10 +287,25 @@ Amm.Trait.Component.prototype = {
                 }
                 this._namedElements[id].push(ee[i]);
             }
-            if (ee[i].setComponent(this));
+            if (ee[i].Component === '__INTERFACE__' && ee[i].getIsComponent()) {
+                this._registerComponent(ee[i]);
+            }
+            ee[i].setComponent(this);
             res.push(ee[i]);
         }
+        if (res.length) {
+            this.outAcceptedElements(res);
+            this.outAcceptedInScope(this, res);
+        }
         return res;
+    },
+    
+    _registerComponent: function(component) {
+        this._components.push(component);
+    },
+    
+    outAcceptedElements: function(elements) {
+        return this._out('acceptedElements', elements);
     },
     
     _deleteNamedElementEntry: function(element, id) {
@@ -310,23 +342,51 @@ Amm.Trait.Component.prototype = {
                 // because we've already unsubscribed
                 element.setComponent(null);                
             }
-            res.push(element);
+            if (ee[i].Component === '__INTERFACE__' && ee[i].getIsComponent()) {
+                this._unregisterComponent[ee[i]];
+            }
+            res.unshift(element); // don't push but unshift 'cause we reject them in reverse order!
+        }
+        if (res.length) {
+            this.outRejectedElements(res);
+            this.outRejectedInScope(this, res);
         }
         return res;
+    },
+    
+    _unregisterComponent: function(component) {
+        for (var j = 0, l = this._components.length; j < l; j++) {
+            if (this._components[j] === component) {
+                this._components.splice(j, 1);
+                break;
+            }
+        }
+    },
+    
+    outRejectedElements: function(elements) {
+        return this._out('rejectedElements', elements);
     },
     
     getElements: function() {
         return [].concat(this._elements);
     },
     
-    callElements: function(methodName, _) {
-        var res = [], args = Array.prototype.slice.call(arguments, 1);
-        for (var i = 0, l = this._elements.length; i < l; i++) {
-            var e = this._elements[i];
+    _listCall: function(list, methodName, args) {
+        var res = [];
+        for (var i = 0, l = list.length; i < l; i++) {
+            var e = list[i];
             if (typeof methodName === 'function') res.push([e, methodName.apply(e, args)]);
             else if (typeof e[methodName] === 'function') res.push([e, e[methodName].apply(e, args)]);
         }
         return res;
+    },
+    
+    callElements: function(methodName, _) {
+        return this._listCall(this._elements, methodName, Array.prototype.slice.call(arguments, 1));
+    },
+    
+    callComponents: function(methodName, _) {
+        return this._listCall(this._components, methodName, Array.prototype.slice.call(arguments, 1));
     },
     
     _cleanup_Component: function() {
@@ -337,6 +397,24 @@ Amm.Trait.Component.prototype = {
             this._unsubscribeElement(ee[i]);
             ee[i].setComponent(null);
         }
+    },
+    
+    outAcceptedInScope: function(component, elements) {
+        var res = this._out('acceptedInScope', component, elements);
+        this.callComponents('outAcceptedInScope', component, elements);
+        return res;
+    },
+    
+    outRejectedInScope: function(component, elements) {
+        var res = this._out('rejectedInScope', component, elements);
+        this.callComponents('outRejectedInScope', component, elements);
+        return res;
+    },
+    
+    outRenamedInScope: function(component, element, oldId, id) {
+        var res = this._out('renamedInScope', component, element, oldId, id);
+        this.callComponents('outRenamedInScope', component, element, oldId, id);
+        return res;
     }
     
 };

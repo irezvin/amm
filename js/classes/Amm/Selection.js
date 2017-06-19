@@ -464,28 +464,16 @@ Amm.Selection.prototype = {
         }
     },
     
-    subscribe: function(eventName, handler, scope, extra, decorator) {
-        var res, hasValueChange;
-        hasValueChange = this._subscribers.valueChange;
-        res = Amm.Collection.prototype.subscribe.call(this, eventName, handler, scope, extra, decorator);
-        if (!hasValueChange && this._subscribers.valueChange) { // appeared
-            // need to cache this
-            if (this._valueProperty) this._value = this._collectValueProperty(this.getItems(), true);
-            this._selfSubscribed = true;
-            this.subscribe('itemsChange', this._handleSelfItemsChange, this);
-        }
-        return res;
+    _subscribeFirst_valueChange: function() {
+        // need to cache this
+        if (this._valueProperty) this._value = this._collectValueProperty(this.getItems(), true);
+        this._selfSubscribed = true;
+        this.subscribe('itemsChange', this._handleSelfItemsChange, this);
     },
     
-    unsubscribe: function(eventName, handler, scope, extra, decorator) {
-        var res, hasValueChange;
-        hasValueChange = this._subscribers.valueChange;
-        res = Amm.Collection.prototype.subscribe.call(this, eventName, handler, scope, extra, decorator);
-        if (hasValueChange && !this._subscribers.valueChange) { // removed
-            this._selfSubscribed = false;
-            this.unsubscribe('itemsChange', this._handleSelfItemsChange, this);
-        }
-        return res;
+    _unsubscribeLast_valueChange: function() {
+        this._selfSubscribed = false;
+        this.unsubscribe('itemsChange', this._handleSelfItemsChange, this);
     },
     
     _handleSelfItemsChange: function(items, oldItems) {

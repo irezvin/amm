@@ -257,13 +257,6 @@ Amm.Element.prototype = {
         return this._parent;
     },
 
-    /**
-     * Locates child element by id. Returns NULL if specific child element isn't find
-     * @return {Amm.Element}
-     */
-    getChild: function(id) {
-    },
-    
     outCleanup: function() {
         this._out('cleanup', this);
     },
@@ -331,13 +324,13 @@ Amm.Element.prototype = {
         this._out('componentChange', component, oldComponent);
     },
         
-    _getClosestComponent: function() {
+    getClosestComponent: function() {
         return this._component;
     },
     
     _setClosestComponent: function() {
         var old = this._closestComponent;
-        this._closestComponent = this._getClosestComponent();
+        this._closestComponent = this.getClosestComponent();
         if (old !== this._closestComponent) {
             this._callOwnMethods('_setClosestComponent_', this._closestComponent, old);
             this.outClosestComponentChange(this._closestComponent, old);

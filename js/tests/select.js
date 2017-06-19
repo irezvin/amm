@@ -46,7 +46,7 @@
     
     QUnit.module("Select");
     
-    QUnit.test("Amm.Trait.Select", function(assert) {
+    QUnit.test("Trait.Select", function(assert) {
        
         fx.html(
             "<select id='sel1'>"

@@ -614,6 +614,23 @@ Amm.Array.prototype = {
                 }
             }
         }
+        this._checkLengthChange();
+    },
+    
+    _checkLengthChange: function() {
+        if (this._oldLength !== this.length) {
+            var o = this._oldLength;
+            this._oldLength = this.length;
+            this.outLengthChange(this.length, o);
+        }
+    },
+    
+    getLength: function() {
+        return this.length;
+    },
+    
+    outLengthChange: function(newLength, oldLength) {
+        return this._out('lengthChange', newLength, oldLength);
     },
     
     outClearItems: function(oldItems) {
@@ -717,17 +734,17 @@ Amm.Array.prototype = {
         }
         
         // insert 1
-        if (!cut.length && insert.length == 1) {
+        if (!cut.length && insert.length === 1) {
             return this.outInsertItem(insert[0], start);
         }
 
         // replace
-        if (cut.length == 1 && insert.length == 1) {
+        if (cut.length === 1 && insert.length === 1) {
             return this.outReplaceItem(start, insert[0], cut[0]);
         }
         
         // delete
-        if (cut.length == 1 && !insert.length) {
+        if (cut.length === 1 && !insert.length) {
             return this.outDeleteItem(start, cut[0]);
         }
 

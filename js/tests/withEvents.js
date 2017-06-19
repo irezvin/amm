@@ -147,7 +147,8 @@ QUnit.module("WithEvents");
        
         e.outEventA = function(val) { this._out('eventA', val); };
         e.outEventB = function(val) { this._out('eventB', val); };
-        e.getByPath = function(path) { return this[path]; }
+        e.getByPath = function(path) { return this[path]; };
+        
         e.sub1path = sub1;
         
         assert.deepEqual(e.listEvents(), ['eventA', 'eventB']);
@@ -209,7 +210,7 @@ QUnit.module("WithEvents");
         
         assert.deepEqual(e.getSubscribers('eventA', handlerFn), 
         [
-            [handlerFn, null, null, null, 'eventA', 0],
+            [handlerFn, null, null, null, 'eventA', 0]
         ], 'getSubscribers(event, handler)');
         
         
@@ -279,4 +280,32 @@ QUnit.module("WithEvents");
         assert.deepEqual(e.unsubscribe(sub), sub, 'unsub /w getSubscribers() res.');
         assert.deepEqual(e.getSubscribers(), []);
     });
+    
+    QUnit.test("WithEvents subFirstLast", function(assert) {
+        // Event handler invocation was tested in Amm.WithEvents.invokeHandlers.
+        // Here we test only event handler' management
+        
+        var e = new Amm.WithEvents(), l = [];
+       
+        e.outEventA = function(val) { this._out('eventA', val); };
+        e._subscribeFirst_eventA = function() { l.push('sub'); };
+        e._unsubscribeLast_eventA = function() { l.push('unsub'); };
+        
+        var h1 = function() {};
+        var h2 = function() {};
+        
+        e.subscribe('eventA', h1);
+        assert.deepEqual(l, ['sub']);
+        e.subscribe('eventA', h2);
+        e.unsubscribe('eventA', h1);
+        e.unsubscribe('eventA', h2);
+        assert.deepEqual(l, ['sub', 'unsub']);
+        e.subscribe('eventA', h1);
+        assert.deepEqual(l, ['sub', 'unsub', 'sub']);
+        e.unsubscribeByIndex('eventA', 0);
+        assert.deepEqual(l, ['sub', 'unsub', 'sub', 'unsub']);
+        
+        
+    });
+    
 }) ();

@@ -830,6 +830,25 @@
         
     });
     
+    QUnit.test("Array.length", function(assert) {
+        
+        var a1 = new Amm.Array;
+        var l = null;
+        a1.subscribe('lengthChange', function(length) {l = length;});
+        a1.setItems([0, 1, 2, 3]);
+        assert.equal(l, a1.length);
+        a1.splice(2, 2);
+        assert.equal(l, a1.length);
+        a1.push(['x', 'y']);
+        assert.equal(l, a1.length);
+        a1.pop();
+        a1.splice(2, 0, 'm', 'k');
+        assert.equal(l, a1.length);
+        a1.clearItems();
+        assert.equal(l, a1.length);
+        
+    });
+    
     
     
 })();

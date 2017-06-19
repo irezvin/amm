@@ -1,12 +1,25 @@
 /* global Amm */
 
 (function() { 
-    QUnit.module("Amm.Trait.Component");
+    QUnit.module("Trait.Component");
     
     var ids = function(items) {
         var res = Amm.getProperty(items, 'id');
         res.sort();
         return res;
+    };
+    
+    var softIds = function(items) {
+        if (typeof items === 'object') {
+            if (items instanceof Array || items.getItems) {
+                var res = [];
+                for (var i = 0, l = items.length; i < l; i++)
+                    res.push(softIds(items[i]));
+                return res;
+            }
+            if (items.getId) return items.getId();
+        }
+        return items;
     };
     
     var byIds = function(items) {
@@ -21,6 +34,23 @@
     };
     
     var log = [];
+        
+    var hasInLog = function(log, item) {
+        for (var i = 0, l = log.length; i < l; i++) {
+            var ok = true;
+            for (var ii = 0, ll = item.length; ii < ll; ii++) {
+                var eq = false;
+                if (log[i][ii] instanceof Array && item[ii] instanceof Array) eq = Amm.Array.equal(log[i][ii], item[ii]);
+                else eq = (log[i][ii] === item[ii]);
+                if (!eq) { 
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) return true;
+        }
+        return false;
+    };
     
     var rep = function(v) {
         return function() {
@@ -102,10 +132,9 @@
         
     };
     
-    QUnit.test("Amm.Trait.Component basics", function(assert) {
+    QUnit.test("Trait.Component basics", function(assert) {
        var tsa = createTestStructure();
-       t = byIds(tsa);
-       window.ids = ids;
+       var t = byIds(tsa);
        assert.deepEqual(revIds(tsa), {
            'null': ['a'],
            'a': ['a1', 'a2', 'a3', 'ac', 'adp'],
@@ -188,6 +217,87 @@
        assert.ok(t.adp.getAllNamedElements('component', true)[1] === t.ac);
        assert.ok(t.adp.getAllNamedElements('component', true)[2] === t.a);
     });
+    
+    QUnit.test("Trait.Component events", function(assert) {
+       var tsa = createTestStructure();
+       var t = byIds(tsa);
+       
+       var adpc = new Amm.Element({
+           id: 'adpc', traits: ['Amm.Trait.Composite', 'Amm.Trait.Component', 'Amm.Trait.Visual'], 
+           displayParent: t.adp
+       });
+       var adpc1 = new Amm.Element({id: 'adpc1', traits: ['Amm.Trait.Field'], 
+           parent: adpc});
+       var adpc2 = new Amm.Element({id: 'adpc2', traits: ['Amm.Trait.Field'],
+           parent: adpc});
+       var adpc3 = new Amm.Element({id: 'adpc3', traits: ['Amm.Trait.Field'],
+           parent: adpc});
+       
+        tsa.push(adpc, adpc1, adpc2, adpc3);
+        
+        t = byIds(tsa);
+        
+        var evlog = [];
+        
+        var hdl = function() {
+            var args = [Amm.event.name, Amm.event.origin].concat(Array.prototype.slice.apply(arguments));
+            evlog.push(softIds(args));
+        };
+        
+        var evs = ['renamedElement', 'acceptedElements', 'rejectedElements', 
+            'renamedInScope', 'acceptedInScope', 'rejectedInScope'];
+        for (var i = 0, l = tsa.length; i < l; i++) {
+            if (tsa[i].Component === '__INTERFACE__') {
+                for (var ii = 0, ll = evs.length; ii < ll; ii++)  {
+                    tsa[i].subscribe(evs[ii], hdl);
+                }
+            }
+        }
+        
+        evlog = [];
+        t.a.rejectElements([t.a1, t.a2]);
+        assert.ok(hasInLog(evlog, ['rejectedElements', 'a', ['a1', 'a2']]));
+        assert.ok(hasInLog(evlog, ['rejectedInScope', 'a', 'a', ['a1', 'a2']]));
+        assert.ok(hasInLog(evlog, ['rejectedInScope', 'ac', 'a', ['a1', 'a2']]));
+        assert.ok(hasInLog(evlog, ['rejectedInScope', 'adp', 'a', ['a1', 'a2']]));
+        assert.ok(hasInLog(evlog, ['rejectedInScope', 'adpc', 'a', ['a1', 'a2']]));
+        
+        evlog = [];
+        t.a.acceptElements([t.a1, t.a2]);
+        assert.ok(hasInLog(evlog, ['acceptedElements', 'a', ['a1', 'a2']]));
+        assert.ok(hasInLog(evlog, ['acceptedInScope', 'a', 'a', ['a1', 'a2']]));
+        assert.ok(hasInLog(evlog, ['acceptedInScope', 'ac', 'a', ['a1', 'a2']]));
+        assert.ok(hasInLog(evlog, ['acceptedInScope', 'adp', 'a', ['a1', 'a2']]));
+        assert.ok(hasInLog(evlog, ['acceptedInScope', 'adpc', 'a', ['a1', 'a2']]));
+        
+        evlog = [];
+        t.a1.setId('ax');
+        assert.ok(hasInLog(evlog, ['renamedElement', 'a', 'ax', 'ax', 'a1']));
+        assert.ok(hasInLog(evlog, ['renamedInScope', 'a', 'a', 'ax', 'ax', 'a1']));
+        assert.ok(hasInLog(evlog, ['renamedInScope', 'ac', 'a', 'ax', 'ax', 'a1']));
+        assert.ok(hasInLog(evlog, ['renamedInScope', 'adp', 'a', 'ax', 'ax', 'a1']));
+        assert.ok(hasInLog(evlog, ['renamedInScope', 'adpc', 'a', 'ax', 'ax', 'a1']));
+        
+        t.ac.setIsComponent(false);
+        evlog = [];
+        t.a1.setId('a1');
+        t.a.rejectElements([t.a1, t.a2]);
+        t.a.acceptElements([t.a1, t.a2]);
+        assert.notOk(hasInLog(evlog, ['rejectedInScope', 'ac', 'a', ['a1', 'a2']]));
+        assert.notOk(hasInLog(evlog, ['acceptedInScope', 'ac', 'a', ['a1', 'a2']]));
+        assert.notOk(hasInLog(evlog, ['renamedInScope', 'ac', 'a', 'a1', 'a1', 'ax']));
+        
+        t.a1.setId('ax');
+        t.ac.setIsComponent(true);
+        evlog = [];
+        t.a1.setId('a1');
+        t.a.rejectElements([t.a1, t.a2]);
+        t.a.acceptElements([t.a1, t.a2]);
+        assert.ok(hasInLog(evlog, ['rejectedInScope', 'ac', 'a', ['a1', 'a2']]));
+        assert.ok(hasInLog(evlog, ['acceptedInScope', 'ac', 'a', ['a1', 'a2']]));
+        assert.ok(hasInLog(evlog, ['renamedInScope', 'ac', 'a', 'a1', 'a1', 'ax']));
+        
+   });
     
     
 }) ();

@@ -4,9 +4,9 @@
     
     var fx = jQuery("#qunit-fixture");
     
-    QUnit.module("Toggle");
+    QUnit.module("Trait.Toggle");
     
-    QUnit.test("Amm.Trait.Toggle", function(assert) {
+    QUnit.test("Trait.Toggle", function(assert) {
         
         fx.html("<form>"
             + "<input type='checkbox' name='prop[]' id='cb-a' value='a' checked='checked' readonly='readonly' /> a"
