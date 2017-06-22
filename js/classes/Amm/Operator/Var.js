@@ -47,8 +47,8 @@ Amm.Operator.Var.prototype = {
         this._setWExpression(this.getExpression());
     },
     
-    _doEvaluate: function() {
-        var varName = this._getOperandValue('varName');
+    _doEvaluate: function(again) {
+        var varName = this._getOperandValue('varName', again);
         if (!varName) return; // no variable
         if (!this._wExpression) {
             var x = this.getExpression();

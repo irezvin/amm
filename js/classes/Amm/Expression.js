@@ -67,8 +67,8 @@ Amm.Expression.prototype = {
         return readonly;
     },
     
-    _doEvaluate: function() {
-        return this._getOperandValue('a');
+    _doEvaluate: function(again) {
+        return this._getOperandValue('a', again);
     },
     
     toFunction: function() {

@@ -29,6 +29,10 @@ Amm.Operator.prototype = {
     
     _hasNonCacheable: 0,
     
+    /* Whether we should compare array results for identity and return reference to old value 
+       if they contain same items */
+    _checkArrayChange: false,
+    
     OPERANDS: [],
     
     // whether such operator can be used on the left side of an assignment
@@ -84,7 +88,7 @@ Amm.Operator.prototype = {
     },
     
     getValue: function(again) {
-        if (again || !this._hasValue) this.evaluate();
+        if (again || !this._hasValue) this.evaluate(again);
         return this._value;
     },
     
@@ -112,7 +116,7 @@ Amm.Operator.prototype = {
     },
     
     // evaluates the expression
-    _doEvaluate: function() {
+    _doEvaluate: function(again) {
         throw "Call to abstract method _doEvaluate";
     },
     
@@ -157,14 +161,23 @@ Amm.Operator.prototype = {
             this.evaluate();
     },
     
-    evaluate: function() {
+    evaluate: function(again) {
         this._isEvaluating++;
         this._evaluated++;
         this._hasValue = true; // do if before, allowing _doEvaluate to change _hasValue 
         var 
-            v = this._doEvaluate(),
+            v = this._doEvaluate(again),
             oldValue = this._value,
             changed = this._hasValue && this._value !== v;
+    
+        // _checkArrayChange? compare arrays item-by-item and update our value only if they're different
+        if (changed && this._checkArrayChange && v instanceof Array && this._value instanceof Array) {
+            if (Amm.Array.equal(this._value, v)) {
+                changed = false;
+                v = this._value;
+            }
+        }
+        
         this._value = v;
         if (changed) this._reportChange();
         this._isEvaluating--;

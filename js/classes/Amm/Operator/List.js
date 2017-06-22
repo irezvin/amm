@@ -39,10 +39,10 @@ Amm.Operator.List.prototype = {
         this._isEvaluating--;
     },
     
-    _doEvaluate: function() {
+    _doEvaluate: function(again) {
         var res = [];
         for (var i = 0; i < this._length; i++)
-            res.push(this._getOperandValue(i));
+            res.push(this._getOperandValue(i, again));
         return res;
     },
     

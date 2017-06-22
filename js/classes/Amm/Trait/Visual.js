@@ -6,7 +6,7 @@ Amm.Trait.Visual = function() {
 Amm.Trait.Visual.prototype = {
 
     'Visual': '__INTERFACE__',
-    'Classes': '__INTERFACE__',
+    'ClassName': '__INTERFACE__',
     'DisplayChild': '__INTERFACE__',
 
     _visible: undefined,
@@ -15,7 +15,7 @@ Amm.Trait.Visual.prototype = {
 
     _displayOrder: undefined,
 
-    _classes: undefined,
+    _className: undefined,
 
     setVisible: function(visible) {
         var oldVisible = this._visible;
@@ -70,19 +70,42 @@ Amm.Trait.Visual.prototype = {
         this._out('displayOrderChange', displayOrder, oldDisplayOrder);
     },
 
-    setClasses: function(classes) {
-        var oldClasses = this._classes;
-        if (oldClasses === classes) return;
-        this._classes = classes;
- 
-        this.outClassesChange(classes, oldClasses);
+    /**
+     * A: setClassName('foo bar')
+     * B: setClassName(true, 'foo') - will add 'foo' to class name
+     * C: setClassName(false, 'foo') - will remove 'foo' from class name
+     */
+    setClassName: function(classNameOrToggle, part) {
+        var oldClassName = this._className;
+        var className;
+        if (part) {
+            var rx = new RegExp('\\s*\\b' + Amm.Util.regexEscape(part) + '\\b\\s*', 'g');
+            if (!classNameOrToggle) {
+                className = this._className.replace(rx, ' ').replace(/ {2,}/g, ' ');
+                if (className[0] === ' ') className = className.slice(1);
+                if (className[className.length - 1] === ' ') className = className.slice(0, -1);
+            } else {
+                if (!rx.exec(this._className)) 
+                    className = this._className + ' ' + part;
+                else className = this._className;
+            }
+        } else {
+            className = classNameOrToggle;
+        }
+        if (className === oldClassName) return;
+        this._className = className;
+        this.outClassNameChange(className, oldClassName);
         return true;
     },
 
-    getClasses: function() { return this._classes; },
+    getClassName: function(part) { 
+        if (!part) 
+            return this._className; 
+        return (' ' + this._className + ' ').indexOf(' ' + part + ' ') >= 0;
+    },
  
-    outClassesChange: function(classes, oldClasses) {
-        this._out('classesChange', classes, oldClasses);
+    outClassNameChange: function(className, oldClassName) {
+        this._out('classNameChange', className, oldClassName);
     }
 
 };

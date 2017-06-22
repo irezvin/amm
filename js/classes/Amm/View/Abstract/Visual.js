@@ -2,7 +2,7 @@
 
 Amm.View.Abstract.Visual = function(options) {
     Amm.View.Abstract.call(this, options);
-    this._requireInterfaces('Visual', 'Classes');
+    this._requireInterfaces('Visual', 'ClassName');
 };
 
 Amm.View.Abstract.Visual.prototype = {
@@ -27,10 +27,10 @@ Amm.View.Abstract.Visual.prototype = {
     getVDisplayOrder: function() { 
     },
  
-    setVClasses: function(classes) {
+    setVClassName: function(className) {
     },
 
-    getVClasses: function() { 
+    getVClassName: function() { 
     }
  
 };

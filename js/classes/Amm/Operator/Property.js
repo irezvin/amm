@@ -87,21 +87,21 @@ Amm.Operator.Property.prototype = {
         this._subToProp(property);
     },
     
-    _doEvaluate: function() {
+    _doEvaluate: function(again) {
         
-        var property = this._getOperandValue('property');
+        var property = this._getOperandValue('property', again);
         
         if (!property && property !== 0) return; 
         property = '' + property;
         
-        var object = this._getOperandValue('object');
+        var object = this._getOperandValue('object', again);
         if (!object) return;
         
         var getter = 'get' + property[0].toUpperCase() + property.slice(1);
 
         if (typeof object[getter] !== 'function') return object[property];
 
-        var args = this._getOperandValue('arguments');
+        var args = this._getOperandValue('arguments', again);
 
         if (args === null || args === undefined) {
 

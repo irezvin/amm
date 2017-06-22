@@ -177,6 +177,8 @@ Amm.Trait.Component.prototype = {
         var component = Amm.event.origin;
         if (isComponent) this._registerComponent(component);
             else this._unregisterComponent(component);
+        this.outChildComponentStatusChange(component, isComponent);
+        this.outChildComponentStatusChangeInScope(this, component, isComponent);
     },
     
     outRenamedElement: function(element, id, oldId) {
@@ -216,7 +218,7 @@ Amm.Trait.Component.prototype = {
             // AA - bubble - include parent component' elements with same name, but excluding this
             if (bubble && this._component) {
                 var p = this._component.getAllNamedElements(name, bubble);
-                if (this._id === name) {
+                if (this._internalId === name) {
                     for (var i = 0, l = p.length; i < l; i++) {
                         if (p[i] === this) {
                             p.splice(i, 1);
@@ -343,7 +345,7 @@ Amm.Trait.Component.prototype = {
                 element.setComponent(null);                
             }
             if (ee[i].Component === '__INTERFACE__' && ee[i].getIsComponent()) {
-                this._unregisterComponent[ee[i]];
+                this._unregisterComponent(ee[i]);
             }
             res.unshift(element); // don't push but unshift 'cause we reject them in reverse order!
         }
@@ -411,9 +413,19 @@ Amm.Trait.Component.prototype = {
         return res;
     },
     
-    outRenamedInScope: function(component, element, oldId, id) {
-        var res = this._out('renamedInScope', component, element, oldId, id);
-        this.callComponents('outRenamedInScope', component, element, oldId, id);
+    outRenamedInScope: function(component, element, id, oldId) {
+        var res = this._out('renamedInScope', component, element, id, oldId);
+        this.callComponents('outRenamedInScope', component, element, id, oldId);
+        return res;
+    },
+    
+    outChildComponentStatusChange: function(component, status) {
+        return this._out('childComponentStatusChange', component, status);
+    },
+    
+    outChildComponentStatusChangeInScope: function(parentComponent, component, status) {
+        var res = this._out('childComponentStatusChangeInScope', parentComponent, component, status);
+        this.callComponents('outChildComponentStatusChangeInScope', parentComponent, component, status);
         return res;
     }
     

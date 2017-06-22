@@ -60,11 +60,11 @@ Amm.View.Html.Visual.prototype = {
         return jQuery(this._htmlElement).hasClass(className);
     },
     
-    setVClasses: function(classes) {
-        jQuery(this._htmlElement).attr('class', classes);
+    setVClassName: function(className) {
+        jQuery(this._htmlElement).attr('class', className);
     },
 
-    getVClasses: function() {
+    getVClassName: function() {
         return jQuery(this._htmlElement).attr('class');
     },
     
