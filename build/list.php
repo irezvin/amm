@@ -12,6 +12,7 @@ function listTests($dir = null) {
         $jsName = str_replace(DIRECTORY_SEPARATOR, '.', substr($f, strlen($dir) + 1));
         $res[] = $jsName;
     }
+    sort($res);
     return $res;
 }
 

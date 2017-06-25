@@ -245,7 +245,9 @@
         };
         
         var evs = ['renamedElement', 'acceptedElements', 'rejectedElements', 
-            'renamedInScope', 'acceptedInScope', 'rejectedInScope'];
+            'renamedInScope', 'acceptedInScope', 'rejectedInScope', 'childComponentStatusChange', 
+            'childComponentStatusChangeInScope'
+        ];
         for (var i = 0, l = tsa.length; i < l; i++) {
             if (tsa[i].Component === '__INTERFACE__') {
                 for (var ii = 0, ll = evs.length; ii < ll; ii++)  {
@@ -279,6 +281,9 @@
         assert.ok(hasInLog(evlog, ['renamedInScope', 'adpc', 'a', 'ax', 'ax', 'a1']));
         
         t.ac.setIsComponent(false);
+        assert.ok(hasInLog(evlog, ['childComponentStatusChange', 'a', 'ac', false]));
+        assert.ok(hasInLog(evlog, ['childComponentStatusChangeInScope', 'a', 'a', 'ac', false]));
+        assert.ok(hasInLog(evlog, ['childComponentStatusChangeInScope', 'adp', 'a', 'ac', false]));
         evlog = [];
         t.a1.setId('a1');
         t.a.rejectElements([t.a1, t.a2]);
@@ -289,6 +294,10 @@
         
         t.a1.setId('ax');
         t.ac.setIsComponent(true);
+        assert.ok(hasInLog(evlog, ['childComponentStatusChange', 'a', 'ac', true]));
+        assert.ok(hasInLog(evlog, ['childComponentStatusChangeInScope', 'a', 'a', 'ac', true]));
+        assert.ok(hasInLog(evlog, ['childComponentStatusChangeInScope', 'adp', 'a', 'ac', true]));
+        assert.ok(hasInLog(evlog, ['childComponentStatusChangeInScope', 'ac', 'a', 'ac', true]));
         evlog = [];
         t.a1.setId('a1');
         t.a.rejectElements([t.a1, t.a2]);
