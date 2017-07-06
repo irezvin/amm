@@ -83,13 +83,13 @@ Amm.View.Html.Collection.prototype = {
     _clearContainer: function() {
         var qe = jQuery(this._htmlElement);
         var p = this._mappingProp;
-        qe.children().each(function(i, node) {
+        qe.contents().each(function(i, node) {
             if (node[p]) {
                 if (node[p][p] === node) delete node[p][p];
                 delete node[p];
             }
+            qe[0].removeChild(node);
         });
-        qe.html('');
     },
     
     _rebuild: function() {

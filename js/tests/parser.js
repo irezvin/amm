@@ -1,0 +1,190 @@
+/* global Amm */
+(function() { 
+    QUnit.module("Parser");
+    
+    var WHITESPACE = Amm.Expression.Token.Type.WHITESPACE;
+    var WORD = Amm.Expression.Token.Type.WORD;
+    var INTEGER = Amm.Expression.Token.Type.INTEGER;
+    var FLOAT = Amm.Expression.Token.Type.FLOAT;
+    var SYMBOL = Amm.Expression.Token.Type.SYMBOL;
+    var ILLEGAL = Amm.Expression.Token.Type.ILLEGAL;
+    var SINGLE_QUOTED_STRING = Amm.Expression.Token.Type.SINGLE_QUOTED_STRING;
+    var DOUBLE_QUOTED_STRING = Amm.Expression.Token.Type.DOUBLE_QUOTED_STRING;
+    var REGEXP = Amm.Expression.Token.Type.REGEXP;
+    
+    QUnit.test("Tokenizer", function(assert) {
+        var parser = new Amm.Expression.Parser();
+        var tokens = parser.getAllTokens(
+            "foo 0.3  blah + / foo ( \[ [ / ] ] \] ) /g -  $baz   12 0x10 017 'quux\\'mo\\non\"Щ\\zЙЫom' { mm \"m\\\"\\nm\" !==10e5===10.2e-3 == ee} Б xx"
+        );
+        var arrs = [];
+        for (var i = 0; i < tokens.length; i++) arrs.push(tokens[i].toArray());
+        var u = undefined;
+        assert.deepEqual(arrs, [
+            ['foo', WORD, u],
+            [' ', WHITESPACE, u],
+            ['0.3', FLOAT, 0.3],
+            ['  ', WHITESPACE, u],
+            ['blah', WORD, u],
+            [' ', WHITESPACE, u],
+            ['+', SYMBOL, u],
+            [' ', WHITESPACE, u],
+            ['/ foo ( \[ [ / ] ] \] ) /g', REGEXP, / foo ( [ [ / ] ] ] ) /g],
+            [' ', WHITESPACE, u],
+            ['-', SYMBOL, u],
+            ['  ', WHITESPACE, u],
+            ['$', SYMBOL, u],
+            ['baz', WORD, u],
+            ['   ', WHITESPACE, u],
+            ['12', FLOAT, 12],
+            [' ', WHITESPACE, u],
+            ['0x10', INTEGER, 0x10],
+            [' ', WHITESPACE, u],
+            ['017', INTEGER, 017],
+            [' ', WHITESPACE, u],
+            ["'quux\\'mo\\non\"Щ\\zЙЫom'", SINGLE_QUOTED_STRING, "quux'mo\non\"ЩzЙЫom"],
+            [' ', WHITESPACE, u],
+            ['{', SYMBOL, u],
+            [' ', WHITESPACE, u],
+            ['mm', WORD, u],
+            [' ', WHITESPACE, u],
+            ["\"m\\\"\\nm\"", DOUBLE_QUOTED_STRING, "m\"\nm"],
+            [' ', WHITESPACE, u],
+            ['!==', SYMBOL, u],
+            ['10e5', FLOAT, 10e5],
+            ['===', SYMBOL, u],
+            ['10.2e-3', FLOAT, 10.2e-3],
+            [' ', WHITESPACE, u],
+            ['==', SYMBOL, u],
+            [' ', WHITESPACE, u],
+            ['ee', WORD, u],
+            ['}', SYMBOL, u],
+            [' ', WHITESPACE, u],
+            ['Б', ILLEGAL, u],
+            [' ', WHITESPACE, u],
+            ['xx', WORD, u]
+        ]);
+    });
+    
+    QUnit.test("Parser", function(assert) {
+        var s;
+        var p = new Amm.Expression.Parser();
+        p.genFn = function() {
+            var a = Array.prototype.slice.apply(arguments);
+            for (var i = 0; i < a.length; i++) {
+                if (a[i] instanceof Amm.Expression.Token) {
+                    a[i] = a[i].value === undefined? a[i].string : a[i].value;
+                }
+            }
+            return a;
+        };
+        assert.deepEqual(p.parse('a'), ['Identifier', 'a']);
+        assert.deepEqual(p.parse('$foo + 10'), [
+            'Binary', 
+                        ['Variable', 'foo'], 
+                '+', 
+                        ['Constant', 10]
+        ]);
+        var r;
+        assert.deepEqual(r = p.parse("2 + 3*4"),
+            ['Binary', 
+                    ['Constant', 2],
+                '+',
+                    [ 'Binary', ['Constant', 3], '*', ['Constant', 4] ]
+            ]
+        );
+        assert.deepEqual(r = p.parse("-3"),
+            [ 'Unary', '-', ['Constant', 3]]
+        );
+        assert.deepEqual(r = p.parse("2 + - 3"),
+            ['Binary', 
+                    ['Constant', 2],
+                '+',
+                    [ 'Unary', '-', ['Constant', 3]]
+            ]
+        );
+        assert.deepEqual(r = p.parse("$a + 10*20 && 30 != 40"),
+        [
+            'Binary',
+                ['Binary', 
+                        ['Variable', 'a'],
+                    '+',
+                        [ 'Binary', ['Constant', 10], '*', ['Constant', 20] ]
+                ],
+            '&&',
+                ['Binary', ['Constant', 30], '!=', ['Constant', 40] ]
+        ]);
+        s = "$a + 10 - (!$b && $c >= 10 || $d   ? (15 * 14) : bar) / -12";
+        assert.deepEqual(p.parse(s), [
+            "Binary", 
+                ["Variable", "a"], 
+            "+", 
+                ["Binary", 
+                    ["Constant", 10], 
+                "-",
+                    ["Binary", 
+                        ["Parenthesis", 
+                            ["Conditional", 
+                                ["Binary", // condition
+                                    ["Binary", 
+                                        ["Unary", "!", 
+                                            ["Variable", "b"]
+                                        ], 
+                                    "&&",
+                                        ["Binary", 
+                                            ["Variable", "c"], 
+                                        ">=", 
+                                            ["Constant", 10]
+                                        ]
+                                    ], 
+                                "||", 
+                                    ["Variable", "d"]
+                                ], 
+                                ["Parenthesis", ["Binary", ["Constant", 15], "*", ["Constant", 14]]],  // true-value
+                                ["Identifier", "bar"] // false-value
+                            ]
+                        ], 
+                    "/", 
+                        ["Unary", "-", ["Constant", 12]]
+                    ]
+                ]
+        ]);
+        
+        var ss = {
+            "a.b.c":  
+                ["PropertyAccess",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false],["Constant","c"],null,false],
+        
+            "a->b->c": 
+                ["ElementAccess",["ElementAccess",["Identifier","a"],["Constant","b"],null],["Constant","c"],null],
+        
+            "a->>b->>c": 
+                ["ChildAccess",["ChildAccess",["Identifier","a"],["Constant","b"],null],["Constant","c"],null],
+    
+            "a['foo']('m', $n + 15).baz":
+                ["PropertyAccess",["FunctionCall",["PropertyAccess",["Identifier","a"],["Subexpression",["Constant","foo"]],null,true],["List",[["Constant","m"],["Binary",["Variable","n"],"+",["Constant",15]]]]],["Constant","baz"],null,false],
+
+            "a['foo']::bar":
+                ["PropertyAccess",["Identifier","a"],["Subexpression",["Constant","foo"]],["PropertyArgs",[["Constant","bar"]],false],true],
+
+            "a[$b]::{m.n, $z}":
+                ["PropertyAccess",["Identifier","a"],["Subexpression",["Variable","b"]],["PropertyArgs",["List",[["PropertyAccess",["Identifier","m"],["Constant","n"],null,false],["Variable","z"]],undefined],true],true],
+
+            "a.b::x.c::y":
+                ["PropertyAccess",["PropertyAccess",["Identifier","a"],["Constant","b"],["PropertyArgs",[["Constant","x"]],false],false],["Constant","c"],["PropertyArgs",[["Constant","y"]],false],false],
+
+            "a.b{0..3}":
+                ["RangeAccess",["Range","Slice",["Constant",0],["Constant",3]]],
+
+            "a.b{item.x && !item.y}":
+                ["RangeAccess",["Range","Expression",["Binary",["PropertyAccess",["Identifier","item"],["Constant","x"],null,false],"&&",["Unary","!",["PropertyAccess",["Identifier","item"],["Constant","y"],null,false]]],null]],
+
+            "/^([a-z])[a-z0-9]+$/i.exec($z)[1]":
+                ["PropertyAccess",["FunctionCall",["PropertyAccess",["Constant",/^([a-z])[a-z0-9]+$/i],["Constant","exec"],null,false],["List",[["Variable","z"]]]],["Subexpression",["Constant",1]],null,true]
+        };
+        for (var i in ss) if (ss.hasOwnProperty(i)) {
+            assert.deepEqual(p.parse(i), ss[i], "Parse " + i);
+        }
+    });
+    
+}) ();
+

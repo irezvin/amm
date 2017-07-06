@@ -201,8 +201,9 @@
         var nDp2 = fx.find('.cont_dp2');
 
         var dp = newDp(nDp[0]);
+        
         var dp2 = newDp(nDp2[0]);
-
+        
         assert.equal(nDp2.text(), '', 'Display Parent\'s HTML container ' +
             'is cleared upon init when no child items are found');
         
@@ -226,9 +227,10 @@
         assert.equal(nDp2.text(), '', 'Nodes are deleted from HTML element ' +
             'when display children collection is cleared'
         );
-
+        
         dp.displayChildren.unshift(newNode('x'));
         dp.displayChildren.splice(2, 0, newNode('y'));
+        
         dp.displayChildren.push(newNode('z'));
         assert.equal(nDp.text(), 'xaybcdz', 'Add items dynamically');
         dp.displayChildren[0].setDisplayOrder(3);
