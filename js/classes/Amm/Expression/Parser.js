@@ -14,7 +14,7 @@ Amm.Expression.Parser.prototype = {
      * 3 - number
      * 4 - tokens
      */
-    tokensRx: /^(?:(\s+)|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(\.\.|::|->>|->|&&|\|\||!==|!=|===|==|>=|<=|[-+\{\}$?!.,:\[\]()'"*/])|(.))/,
+    tokensRx: /^(?:(\s+)|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(!!|\?\?|\.\.|::|->>|->|&&|\|\||!==|!=|===|==|>=|<=|=>|[-+\{\}$?!.,:\[\]()'"*/])|(.))/,
     
     regexTokens: /^(?:(\.)|([[\]()\/])|([^\\\[\]()\/]+))/,
     
@@ -290,7 +290,7 @@ Amm.Expression.Parser.prototype = {
             op = token;
             right = this.parseBinary(level);
             if (!right) throw "Expected: binary " + this._binaryPriority[level].join(", ") + " operand";
-            return this.genOp('Binary', left, op, right);
+            return this.genOp('Binary', left, op.string, right);
         }
         this.unfetch();
         return left;
@@ -302,7 +302,7 @@ Amm.Expression.Parser.prototype = {
         if (token.isSymbol('!', '-')) {
             var expr = this.parseUnary();
             if (!expr) throw "Expected: unary";
-            return this.genOp('Unary', token, expr);
+            return this.genOp('Unary', token.string, expr);
         } else {
             this.unfetch();
             return this.parseItem();
@@ -356,17 +356,19 @@ Amm.Expression.Parser.prototype = {
             this.unfetch();
             return;
         }
-        var args = this.parseList() || null;
+        var args = this.parseList() || [];
         token = this.fetch();
         if (!token || !token.isSymbol(')')) throw "Expected: ')'";
-        return this.genFn('FunctionCall', value, args);
+        var cacheability = this.parseCacheabilityModifier();
+        return this.genOp('FunctionCall', value, args, cacheability === undefined? null : cacheability);
     },
     
     parsePropertyAccess: function(value) {
         var token = this.fetch();
         var prop;
         var brackets = false;
-        var args = false;
+        var args = null;
+        var cacheability = null;
         if (!token) return;
         if (token.isSymbol('.')) {
             var token = this.fetch();
@@ -382,7 +384,15 @@ Amm.Expression.Parser.prototype = {
             else return;
         }
         args = this.parsePropertyArgs();
-        return this.genOp('PropertyAccess', value, prop || null, args || null, brackets);
+        cacheability = this.parseCacheabilityModifier();
+        return this.genOp('PropertyAccess', value, prop || null, args || null, brackets, cacheability || null);
+    },
+    
+    parseCacheabilityModifier: function() {
+         var token = this.fetch();
+         if (!token) return;
+         if (token.isSymbol('!!', '??')) return this.genOp('CacheabilityModifier', token.string);
+         this.unfetch();
     },
     
     parseSubexpression: function() {
@@ -461,6 +471,29 @@ Amm.Expression.Parser.prototype = {
         if (range) return this.genOp('RangeAccess', range);
         return;
     },
+
+    // parses [$key =>] $value: construct for ranges
+    parseLoopIdentifiers: function() {
+        var varName = this.parseVariable();
+        var keyName = this.parseVariable();
+        if (!varName) return;
+        var token = this.fetch();
+        if (!token) return;
+        if (token.isSymbol('=>')) {
+            keyName = varName;
+            varName = this.parseVariable();
+            if (!varName) throw "Expected: variable";
+            token = this.fetch();
+            if (!token || !token.isSymbol(':')) throw "Expected: ':'";
+            return this.genOp('LoopIdentifiers', varName, keyName);
+        } else if (token.isSymbol(':')) {
+            return this.genOp('LoopIdentifiers', varName, null);
+        } else {
+            this.unfetch();
+        }
+        
+        
+    },
     
     parseRange: function() {
         var token = this.fetch();
@@ -481,33 +514,47 @@ Amm.Expression.Parser.prototype = {
             arg1 = token;
         } else {
             this.unfetch();
+            var loopId = this.parseLoopIdentifiers();
             var arg1 = this.parseExpression();
             if (!arg1) throw "Expected: expression";
-            token = this.fetch();
-            if (token.isSymbol('..')) {
-                rangeType = 'Slice';
-                arg2 = this.parseExpression();
+            if (!loopId) {
+                token = this.fetch();
+                if (token.isSymbol('..')) {
+                    rangeType = 'Slice';
+                    arg2 = this.parseExpression();
+                } else {
+                    this.unfetch();
+                    rangeType = 'Expression';
+                }
             } else {
-                this.unfetch();
                 rangeType = 'Expression';
+                arg2 = loopId;
             }
         }
         token = this.fetch();
         if (!token || !token.isSymbol('}')) throw "Expected: '}'";
         return this.genOp('Range', rangeType, arg1, arg2);
     },
-    
-    parseValue: function() {
+
+    parseVariable: function() {
         var token = this.fetch();
         if (!token) return;
         if (token.isSymbol('$')) { // the variable
             token = this.fetch();
             if (token && token.isIdentifier()) {
-                return this.genOp('Variable', token);
+                return this.genOp('Variable', token.string);
             } else {
                 throw "Expected: identifier";
             }
+        } else {
+            this.unfetch();
         }
+    },
+    
+    parseValue: function() {
+        var variable = this.parseVariable();
+        if (variable) return variable;
+        var token = this.fetch();
         if (token.isSymbol('(')) { // the sub-expression
             var exp = this.parseExpression();
             if (!exp) throw "Expected: expression";
@@ -516,10 +563,15 @@ Amm.Expression.Parser.prototype = {
             return this.genOp('Parenthesis', exp);
         }
         if (token.isConstant()) { // constant
-            return this.genOp('Constant', token);
+            return this.genOp('Constant', token.value);
         }
         if (token.isIdentifier()) { // identifier
-            return this.genOp('Identifier', token);
+            var l = token.string.toLowerCase();
+            if (l === 'true') return this.genOp('Constant', true);
+            if (l === 'false') return this.genOp('Constant', false);
+            if (l === 'null') return this.genOp('Constant', null);
+            if (l === 'undefined') return this.genOp('Constant', undefined);
+            return this.genOp('Identifier', token.string);
         }
         this.unfetch();
     },

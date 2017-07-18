@@ -481,6 +481,90 @@
         assert.ok(xe3_1.getValue() === undefined);
         assert.ok(xe3_1fn() === undefined);
         
+    });
+
+    QUnit.test("Expression valueChange event", function(assert) {
+        
+        var e = new Amm.Element();
+        e.createProperty('foo', 10);
+        e.createProperty('bar', 20);
+        e.createProperty('prop', 'foo');
+        var e2 = new Amm.Element();
+        e2.createProperty('foo', 30);
+        e2.createProperty('bar', 40);
+        e2.createProperty('prop', 'foo');
+        var exp = new Amm.Expression({
+            vars: {
+                el: e
+            },
+            src: "$el[$el.prop] + $el[$el.prop]" // el[el.prop] * num
+        }, e);
+        var num = 2;
+        var changes = 0;
+        var val;
+        exp.subscribe('valueChange', function(v) { changes++; val = v; });
+        assert.equal(exp.getValue(), e.getFoo() * num);
+        changes = 0;
+        e.setFoo(5);
+        assert.equal(exp.getValue(), e.getFoo() * num, 'property value change - right result');
+        assert.equal(changes, 1, 'property value change - valueChange triggered once');
+        assert.equal(val, e.getFoo() * num, 'property value change - valueChange triggered with right argument');
+        changes = 0;
+        e.setProp('bar');
+        assert.equal(exp.getValue(), e.getBar() * num, 'property name change - right result');
+        assert.equal(changes, 1, 'property name change - valueChange triggered once');
+        assert.equal(val, e.getBar() * num, 'property name change - valueChange triggered with right argument');
+        changes = 0;
+        exp.setVars(e2, 'el');
+        assert.equal(exp.getValue(), e2.getFoo() * num, 'property owner, name and value change - right result');
+        assert.equal(changes, 1, 'property owner, name and value change - valueChange triggered once');
+        assert.equal(val, e2.getFoo() * num, 'property owner, name and value change - valueChange triggered with right argument');
+    });
+    
+    QUnit.test("Expression.destinationChangeEvent", function(assert) {
+        var e = new Amm.Element;
+        e.createProperty('foo', 10);
+        e.createProperty('bar', 20);
+        e.createProperty('propName', 'foo');
+        var e1 = new Amm.Element;
+        e1.createProperty('moo', 30);
+        e1.createProperty('propName', 'moo');
+        var exp = new Amm.Expression({
+            src: "$e[$e.propName]",
+            vars: {
+                e: e
+            }
+        });
+        var c = 0;
+        exp.subscribe("writeDestinationChanged", function() {
+            c++;
+        });
+        assert.equal(exp.getValue(), 10);
+        assert.equal(c, 0);
+        e.setPropName('bar');
+        assert.equal(exp.getValue(), 20);
+        assert.equal(c, 1);
+        exp.setVars(e1, 'e');
+        assert.equal(exp.getValue(), 30);
+        assert.equal(c, 2);
+    });
+    
+    QUnit.test("Expression.writeProperty", function(assert) {
+        
+        var a = new Amm.Element();
+        a.createProperty('prop', 5);
+        a.createProperty('prop2', 0);
+        var b = new Amm.Element();
+        b.createProperty('prop', 0);
+        var exp = new Amm.Expression('this.prop + 10', a, 'prop2');
+        assert.equal(a.getProp2(), 15);
+        a.setProp(10);
+        assert.equal(a.getProp2(), 20);
+        var writeExp = new Amm.Expression('this.prop', b);
+        var exp2 = new Amm.Expression('this.prop + 10', a, writeExp);
+        assert.equal(b.getProp(), 20);
+        a.setProp(15);
+        assert.equal(b.getProp(), 25);
         
     });
 

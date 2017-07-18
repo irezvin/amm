@@ -29,6 +29,10 @@ Amm.Operator.prototype = {
     
     _hasNonCacheable: 0,
     
+    _destChanged: 0,
+    
+    _level: null,
+    
     /* Whether we should compare array results for identity and return reference to old value 
        if they contain same items */
     _checkArrayChange: false,
@@ -38,48 +42,84 @@ Amm.Operator.prototype = {
     // whether such operator can be used on the left side of an assignment
     supportsAssign: false,
     
+    _defSub: null,
+    
     setExpression: function(expression) {
-        if (!expression) expression = null;
-        if (expression) Amm.is(expression, 'Amm.Expression', 'Expression');
-        var oldExpression = this._expression;
-        if (oldExpression === expression) return;
+        Amm.is(expression, 'Amm.Expression', 'Expression');
+        if (this._expression === expression) return;
+        else if (this._expression) throw "Can setExpression() only once";
         this._expression = expression;
+        for (var i = 0, l = this.OPERANDS.length; i < l; i++) {        
+            var o = this['_' + this.OPERANDS[i] + 'Operator'];
+            if (o) o.setExpression(expression);
+        }
+        if (this._defSub) {
+            for (var j = 0; j < this._defSub.length; j++) {
+                this._sub(this._defSub[j][0], this._defSub[j][1], this._defSub[j][2]);
+            }
+            this._defSub = null;
+        }
         return true;
     },
 
     getExpression: function() { 
-        if (this._expression) return this._expression;
-        if (this._parent) return this._parent.getExpression();
-        return null;
+        return this._expression;
     },
 
     setParent: function(parent, operand) {
         this._parent = parent;
         if (operand !== undefined) this._parentOperand = operand;
+        var e = parent.getExpression();
+        if (e) this.setExpression(e);
     },
 
     getParent: function() { return this._parent; },
 
     getParentOperand: function() { return this._parentOperand; },
     
+    getLevel: function() {
+        if (this._level === null && this._parent)
+            this._level = this._parent? this._parent.getLevel() + 1 : 0;
+        return this._level;
+    },
+    
     _sub: function(object, map, noCheck) {
+        var exp = this._expression;
+        if (!exp) {
+            if (!this._defSub) this._defSub = [];
+            this._defSub.push([object, map, noCheck]);
+            return;
+        }
         if (Amm.Array.indexOf(this._subs, object) < 0) this._subs.push(object);
         if (typeof map === 'string') map = [map];
         if (map instanceof Array) {
             for (var i = 0, l = map.length; i < l; i++) {
-                if (noCheck || object.hasEvent(map[i])) object.subscribe(map[i], this._defaultHandler, this);
+                if (noCheck || object.hasEvent(map[i])) {
+                    exp.subscribeOperator(object, map[i], this._defaultHandler, this);
+                    //object.subscribe(map[i], this._defaultHandler, this);
+                }
             }
         } else {
             for (var i in map) if (map.hasOwnProperty(i)) {
-                object.subscribe(i, map[i], this);
+                exp.subscribeOperator(object, i, map[i], this);
+                //object.subscribe(i, map[i], this);
             }
         }
     },
     
     _unsub: function(object) {
-        object.unsubscribe(undefined, undefined, this);
-        var idx = Amm.Array.indexOf(this._subs, object);
-        if (idx >= 0) this._subs.splice(idx, 1);
+        if (this._defSub) {
+            for (var i = this._defSub.length - 1; i >= 0; i--) {
+                if (this._defSub[i][0] === object) this._defSub.splice(i, 1);
+            }
+        } else {
+            var exp = this._expression;
+            if (!exp) return;
+            exp.unsubscribeOperator(object, undefined, this);
+            //object.unsubscribe(undefined, undefined, this);
+            var idx = Amm.Array.indexOf(this._subs, object);
+            if (idx >= 0) this._subs.splice(idx, 1);
+        }
     },
     
     notifyOperandChanged: function(operand, value, oldValue, operator) {
@@ -180,12 +220,20 @@ Amm.Operator.prototype = {
         
         this._value = v;
         if (changed) this._reportChange();
+        if (this._destChanged) {
+            this._destChanged = false;
+            this._parent.notifyWriteDestinationChanged(this);
+        }
         this._isEvaluating--;
         return this._value;
     },
     
     _defaultHandler: function() {
         this.evaluate();
+    },
+
+    hasOperand: function(operand) {
+        return !!(this['_' + operand + 'Exists'] || this['_' + operand + 'Operator']);
     },
 
     _setOperand: function(operand, value) {
@@ -231,7 +279,7 @@ Amm.Operator.prototype = {
         
         this._setOperandValue(operand, realValue);
     },
-            
+        
     _setOperandValue: function(operand, value) {
         var valueVar = '_' + operand + 'Value';
         var hasValueVar = '_' + operand + 'Exists';
@@ -249,9 +297,23 @@ Amm.Operator.prototype = {
         this[valueVar] = value;
         if (valueWithEvents || oldWithEvents) this[eventsMethod](valueWithEvents, oldWithEvents);
         if (changed) {
+            if (this.supportsAssign && this._parent && this._parent['Amm.Expression']) {
+                this._destChanged = true;
+            }
             if (this[changeMethod]) this[changeMethod](value, oldValue, hadValue);
-            if (!this._isEvaluating) this.evaluate();
+            if (!this._isEvaluating) {
+                var exp = this._expression;
+                if (exp && exp.getUpdateLevel()) {
+                    exp.queueUpdate(this);
+                } else {
+                    this.evaluate();
+                }
+            }
         }
+    },
+    
+    finishUpdate: function() {
+        this.evaluate();
     },
     
     _getOperandValue: function(operand, again) {
@@ -274,7 +336,7 @@ Amm.Operator.prototype = {
             else this._setHasNonCacheable(this._hasNonCacheable - 1);
         return true;
     },
-
+    
     getNonCacheable: function() { return this._nonCacheable; },
 
     _setHasNonCacheable: function(hasNonCacheable) {

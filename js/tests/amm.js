@@ -128,6 +128,8 @@ QUnit.test("Amm init() and detect/get/set Property", function(assert) {
         _foo: null,
 
         _bar: null,
+        
+        _etc: 0,
 
         setFoo: function(foo) {
             var oldFoo = this._foo;
@@ -154,6 +156,14 @@ QUnit.test("Amm init() and detect/get/set Property", function(assert) {
         getBaz: function() {
             return 'baz';
         }, 
+        
+        getEtc: function(arg) {
+            return this._etc + (arg || 0);
+        },
+        
+        setEtc: function(quux, arg) {
+            this._etc = quux + (arg || 0);
+        },
         
         quux: undefined,
         
@@ -228,6 +238,9 @@ QUnit.test("Amm init() and detect/get/set Property", function(assert) {
     Amm.setProperty(x, 'foo', 'fooValue2');
     assert.equal(x.getFoo(), 'fooValue2');
     
+    Amm.setProperty(x, 'etc', 5, false, 10);
+    assert.equal(x._etc, 15);
+    assert.equal(Amm.getProperty(x, 'etc', undefined, 5), 20);
 });
 
 QUnit.test("Amm getFunction / registerNamespace / registerFunction", function(assert) {

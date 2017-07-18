@@ -400,7 +400,7 @@ Amm = {
         return res;
     },
     
-    getProperty: function(element, property, defaultValue) {
+    getProperty: function(element, property, defaultValue, args) {
         if (element instanceof Array) {
             var r = [];
             for (var i = 0; i < element.length; i++) {
@@ -416,13 +416,18 @@ Amm = {
             return r;
         }
         var P = ('' + property)[0].toUpperCase() + property.slice(1), getterName = 'get' + P;
-        if (typeof element[getterName] === 'function') res = element[getterName]();
+        if (args !== undefined && args !== null) {
+            if (!(args instanceof Array)) args = [args];
+        }
+        if (typeof element[getterName] === 'function') {
+            res = args? element[getterName].apply(element, args) : element[getterName]();
+        }
         else if (property in element) res = element[property];
         else res = defaultValue;
         return res;
     },
     
-    setProperty: function(element, property, value, throwIfNotFound) {
+    setProperty: function(element, property, value, throwIfNotFound, args) {
         if (value === undefined && property && (typeof property === 'object')) {
             var res = {};
             for (var i in property) {
@@ -431,7 +436,13 @@ Amm = {
             return res;
         }
         var P = ('' + property[0]).toUpperCase() + property.slice(1), setterName = 'set' + P;
-        if (typeof element[setterName] === 'function') res = element[setterName](value);
+        if (args !== undefined && args !== null) {
+            if (!(args instanceof Array)) args = [args];
+            args.unshift(value);
+        }
+        if (typeof element[setterName] === 'function') {
+            res = args? element[setterName].apply(element, args) : element[setterName](value);
+        }
         else if (property in element) element[property] = value;
         else if (throwIfNotFound) throw "No setter for property: `" + property + "`";
         return res;
