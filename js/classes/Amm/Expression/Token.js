@@ -1,9 +1,10 @@
 /* global Amm */
 
-Amm.Expression.Token = function(string, type, value) {
+Amm.Expression.Token = function(string, type, value, offset) {
     this.string = string;
     this.type = type;
     this.value = value;
+    this.offset = offset;
 };
 
 Amm.Expression.Token.Type = {
@@ -19,12 +20,14 @@ Amm.Expression.Token.Type = {
 };
 
 Amm.Expression.Token.prototype = {
-    
+
     string: undefined,
     
     type: undefined,
     
     value: undefined,
+    
+    offset: undefined,
     
     toArray: function() {
         return [this.string, this.type, this.value];

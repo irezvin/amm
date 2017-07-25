@@ -16,6 +16,13 @@ Amm.Operator.Builder.prototype = {
         return this[method].apply(this, args);
     },
     
+    decorate: function(subject, beginPos, endPos, src, tokens) {
+        if (subject && subject['Amm.Operator']) {
+            subject.beginPos = beginPos;
+            subject.endPos = endPos;
+        }
+    },
+    
     const: function(value) {
         if (value && value.Const) return value;
         return {'Const': true, const: value};

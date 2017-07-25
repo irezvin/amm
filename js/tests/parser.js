@@ -14,9 +14,8 @@
     
     QUnit.test("Tokenizer", function(assert) {
         var parser = new Amm.Expression.Parser();
-        var tokens = parser.getAllTokens(
-            "foo 0.3  blah + / foo ( \[ [ / ] ] \] ) /g -  $baz   12 0x10 017 'quux\\'mo\\non\"Щ\\zЙЫom' { mm \"m\\\"\\nm\" !==10e5===10.2e-3 == ee} Б xx"
-        );
+        var src = "foo 0.3  blah + / foo ( \[ [ / ] ] \] ) /g -  $baz   12 0x10 017 'quux\\'mo\\non\"Щ\\zЙЫom' { mm \"m\\\"\\nm\" !==10e5===10.2e-3 == ee} Б xx";
+        var tokens = parser.getAllTokens(src);
         var arrs = [];
         for (var i = 0; i < tokens.length; i++) arrs.push(tokens[i].toArray());
         var u = undefined;
@@ -64,12 +63,34 @@
             [' ', WHITESPACE, u],
             ['xx', WORD, u]
         ]);
+        var at = [];
+        for (var i = 0; i < tokens.length; i++) {
+            at.push(src.slice(tokens[i].offset, tokens[i].offset + tokens[i].string.length));
+        }
+        assert.equal(at.join(""), src, "Tokens have proper `offset`");
     });
     
     QUnit.test("Parser", function(assert) {
         var s;
         var p = new Amm.Expression.Parser();
-        p.genFn = function() {
+        var tt = function(t) {
+            var r = '';
+            for (var i = 0; i < t.length; i++) {
+                r += t[i].string;
+            }
+            return r;
+        };
+        
+        // change to TRUE when debugging getSrc()
+        var showSourcesInConsole = false;
+        
+        if (showSourcesInConsole) {
+            p.decorateFn = function(result, beginPos, endPos, src, tokens) {
+                console.log(result, '"' + src.slice(beginPos, endPos) + '"', '"' + tt(tokens) + '"');
+            };
+        }
+        
+        p.genFn = function() {;
             var a = Array.prototype.slice.apply(arguments);
             for (var i = 0; i < a.length; i++) {
                 if (a[i] instanceof Amm.Expression.Token) {
@@ -300,6 +321,17 @@
         assert.equal(exp8.getValue(), 10);
         assert.ok(exp8.getIsCacheable(), 'property value is cacheable because of modifier');
         
+    });
+    
+    QUnit.test("Operator.getSrc()", function(assert) {
+        var s = "!this.foo + this.bar*this.e1.baz";
+        var exp = new Amm.Expression(s);
+        assert.equal(exp.getOperator().getSrc(), s);
+        assert.equal(exp.getOperator(0, 0).getSrc(), '!this.foo');
+        assert.equal(exp.getOperator(0, 1).getSrc(), "this.bar*this.e1.baz");
+        assert.equal(exp.getOperator(0, 1, 0).getSrc(), "this.bar");
+        assert.equal(exp.getOperator(0, 1, 1).getSrc(), "this.e1.baz");
+        assert.equal(exp.getOperator(0, 1, 1, 0).getSrc(), "this.e1");
     });
     
 }) ();

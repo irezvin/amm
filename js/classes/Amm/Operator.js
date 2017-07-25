@@ -44,6 +44,10 @@ Amm.Operator.prototype = {
     
     _defSub: null,
     
+    beginPos: null,
+    
+    endPos: null,
+    
     setExpression: function(expression) {
         Amm.is(expression, 'Amm.Expression', 'Expression');
         if (this._expression === expression) return;
@@ -362,6 +366,19 @@ Amm.Operator.prototype = {
 
     getHasNonCacheable: function() { return this._hasNonCacheable; },
     
+    getOperator: function(operand) {
+        if (!operand) operand = this.OPERANDS[0];
+        else if (typeof operand === 'number') operand = this.OPERANDS[operand];
+        var op = '_' + operand + 'Operator';
+        if (!(op in this)) throw "No such operand: '" + operand + "' in '" + Amm.getClass(this);
+        var res;
+        res = this[op];
+        if (res && arguments.length > 1) {
+            return res.getOperator.apply(res, Array.prototype.slice.call(arguments, 1));
+        }
+        return res;
+    },
+    
     cleanup: function() {
         this._parent = null;
         this._expression = null;
@@ -379,6 +396,12 @@ Amm.Operator.prototype = {
                 this[operatorVar] = null;
             }
         }
+    },
+    
+    getSrc: function() {
+        if (!this._expression) return;
+        if (this.beginPos == null) return;
+        return this._expression.getSrc(this.beginPos, this.endPos);
     }
     
 };

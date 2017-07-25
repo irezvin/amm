@@ -16,7 +16,7 @@ Amm.Expression.Parser.prototype = {
      */
     tokensRx: /^(?:(\s+)|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(!!|\?\?|\.\.|::|->>|->|&&|\|\||!==|!=|===|==|>=|<=|=>|[-+\{\}$?!.,:\[\]()'"*/])|(.))/,
     
-    regexTokens: /^(?:(\.)|([[\]()\/])|([^\\\[\]()\/]+))/,
+    regexTokens: /^(?:(\.)|([[\]()\/])|([^\\\[n\]()\/]+))/,
     
     regexFlags: /^[a-zA-Z]+/,
     
@@ -36,9 +36,21 @@ Amm.Expression.Parser.prototype = {
         "\\\\": '\\'
     },
     
+    genFn: null,
+    
+    genObj: null,
+    
+    decorateFn: null,
+    
+    decorateObj: null,
+    
+    src: null,
+    
     _lastNonWhitespace: null,
     
     _tokens: undefined,
+
+    _oldPos: 0,    
     
     _pos: 0,
     
@@ -73,7 +85,8 @@ Amm.Expression.Parser.prototype = {
     },
     
     /**
-     * @returns array token [stringRx, Amm.Expression.Token.Type.Regex
+     * @returns {Amm.Expression.Token} 
+     * string: regex definition; type: REGEXP; value: {RegExp}
      */
     getRegex: function(string) {
         var brackets = false; // we're in square brackets
@@ -192,13 +205,16 @@ Amm.Expression.Parser.prototype = {
     },
     
     getAllTokens: function(string) {
+        var _offset = 0;
         var buf = '' + string, res = [];
         this._lastNonWhitespace = null;
         while (buf.length) {
             try {
                 var token = this.getToken(buf);
+                token.offset = _offset;
                 if (!token.string.length) throw "WTF";
                 buf = buf.slice(token.string.length);
+                _offset += token.string.length;
                 res.push(token);
                 if (token.type !== Amm.Expression.Token.Type.WHITESPACE) {
                     this._lastNonWhitespace = token;
@@ -235,37 +251,51 @@ Amm.Expression.Parser.prototype = {
         ['*', '/']
     ],
     
-    genFn: null,
-    
-    genObj: null,
-    
     genOp: function(opType, _) {
         var a = Array.prototype.slice.apply(arguments);
         if (this.genFn) {
-            return this.genFn.apply(this.genObj || this, a);
+            res = this.genFn.apply(this.genObj || this, a);
         } else {
-            return a;
+            res = a;
         }
+        if (this.decorateFn) {
+            var _o = this._oldPos + 1;
+            var tokens = this._tokens.slice(_o, this._pos + 1);
+            if (tokens.length) {
+                var lastToken = tokens[tokens.length - 1];
+                var i = 0;
+                if (this._ignoreWhitespace) {
+                    while (tokens[i].type === Amm.Expression.Token.Type.WHITESPACE) {
+                        i++;
+                    }
+                }
+                var firstToken = tokens[i];
+                var beginPos = firstToken.offset;
+                var endPos = lastToken.offset + lastToken.string.length;
+                this.decorateFn.call(this.decorateObj || this, res, beginPos, endPos, this.src, tokens.slice(i));
+            }
+        }
+        return res;
     },
     
     parseExpression: function() {
-        return this.parseConditional();
+        return this.parsePart('Conditional');
     },
     
     parseConditional: function() {
         var condition, trueOp, falseOp;
         
-        condition = this.parseBinary();
+        condition = this.parsePart('Binary');
         
         if (!condition) return;
         
         var token = this.fetch();
         if (token && token.isSymbol('?')) {
-            trueOp = this.parseExpression();
+            trueOp = this.parsePart('Expression');
             if (!trueOp) throw "Expected: expression";
             token = this.fetch();
             if (token && token.isSymbol(':')) {
-                falseOp = this.parseExpression();
+                falseOp = this.parsePart('Expression');
                 if (!falseOp) throw "Expected: expression";
                 return this.genOp('Conditional', condition, trueOp, falseOp);
             } else {
@@ -280,15 +310,15 @@ Amm.Expression.Parser.prototype = {
     parseBinary: function(level) {
         if (!level) level = 0;
         if (level >= this._binaryPriority.length) {
-            return this.parseUnary();
+            return this.parsePart('Unary');
         }
         var left, op, right;
-        left = this.parseBinary(level + 1);
+        left = this.parsePart('Binary', level + 1);
         token = this.fetch();
         if (!token) return left;
         if (token.isSymbol(this._binaryPriority[level])) {
             op = token;
-            right = this.parseBinary(level);
+            right = this.parsePart('Binary', level);
             if (!right) throw "Expected: binary " + this._binaryPriority[level].join(", ") + " operand";
             return this.genOp('Binary', left, op.string, right);
         }
@@ -300,24 +330,24 @@ Amm.Expression.Parser.prototype = {
         var token = this.fetch();
         if (!token) return;
         if (token.isSymbol('!', '-')) {
-            var expr = this.parseUnary();
+            var expr = this.parsePart('Unary');
             if (!expr) throw "Expected: unary";
             return this.genOp('Unary', token.string, expr);
         } else {
             this.unfetch();
-            return this.parseItem();
+            return this.parsePart('Item');
         }
     },
     
     parseList: function() {
         var exps = [];
-        exp = this.parseExpression();
+        exp = this.parsePart('Expression');
         if (!exp) return;
         exps.push(exp);
         do {
             var token = this.fetch();
             if (token.isSymbol(',')) {
-                exp = this.parseExpression();
+                exp = this.parsePart('Expression');
                 if (!exp) throw "Expected: expression";
                 exps.push(exp);
             } else {
@@ -329,8 +359,8 @@ Amm.Expression.Parser.prototype = {
     },
     
     parseItem: function() {
-        var value = this.parseValue();
-        var op = this.parseAccessOperator(value);
+        var value = this.parsePart(true, 'Value');
+        var op = this.parsePart(true, 'AccessOperator', value);
         if (op) return op;
         return value;
     },
@@ -338,12 +368,12 @@ Amm.Expression.Parser.prototype = {
     parseAccessOperator: function(value) {
         var sub;
         sub = 
-                    this.parseFunctionCall(value)
-                ||  this.parsePropertyAccess(value) 
-                ||  this.parseElementOrChildAccess(value) 
-                ||  this.parseRangeAccess(value);
+                    this.parsePart(true, 'FunctionCall', value)
+                ||  this.parsePart(true, 'PropertyAccess', value) 
+                ||  this.parsePart(true, 'ElementOrChildAccess', value) 
+                ||  this.parsePart(true, 'RangeAccess', value);
         if (sub) {
-            var right = this.parseAccessOperator(sub);
+            var right = this.parsePart(true, 'AccessOperator', sub);
             if (right) return right;
             return sub;
         }
@@ -356,10 +386,10 @@ Amm.Expression.Parser.prototype = {
             this.unfetch();
             return;
         }
-        var args = this.parseList() || [];
+        var args = this.parsePart('List') || [];
         token = this.fetch();
         if (!token || !token.isSymbol(')')) throw "Expected: ')'";
-        var cacheability = this.parseCacheabilityModifier();
+        var cacheability = this.parsePart('CacheabilityModifier');
         return this.genOp('FunctionCall', value, args, cacheability === undefined? null : cacheability);
     },
     
@@ -371,20 +401,24 @@ Amm.Expression.Parser.prototype = {
         var cacheability = null;
         if (!token) return;
         if (token.isSymbol('.')) {
+            var tmp = this._oldPos;
+            this._oldPos = this._pos;
             var token = this.fetch();
             if (token && token.isIdentifier()) {
                 prop = this.genOp('Constant', token.string); // use identifier as constant property name
             } else {
+                this._oldPos = tmp;
                 throw "Expected: identifier";
             }
+            this._oldPos = tmp;
         } else {
             this.unfetch();
-            prop = this.parseSubexpression();
+            prop = this.parsePart('Subexpression');
             if (prop) brackets = true;
             else return;
         }
-        args = this.parsePropertyArgs();
-        cacheability = this.parseCacheabilityModifier();
+        args = this.parsePart('PropertyArgs');
+        cacheability = this.parsePart('CacheabilityModifier');
         return this.genOp('PropertyAccess', value, prop || null, args || null, brackets, cacheability || null);
     },
     
@@ -402,7 +436,7 @@ Amm.Expression.Parser.prototype = {
             this.unfetch();
             return;
         }
-        var expr = this.parseExpression();
+        var expr = this.parsePart('Expression');
         if (!expr) throw "Expected: expression";
         var token = this.fetch();
         if (!token || !token.isSymbol(']')) throw "Expected: ']'";
@@ -422,7 +456,7 @@ Amm.Expression.Parser.prototype = {
             token = this.fetch();
             if (!token) break;
             if (token.isSymbol('{')) {
-                args = this.parseList();
+                args = this.parsePart('List');
                 if (!args) throw "Expected: list";
                 token = this.fetch();
                 if (!token || !token.isSymbol('}')) throw "Expected: '}'";
@@ -459,29 +493,29 @@ Amm.Expression.Parser.prototype = {
             specifier = this.genOp('Constant', token.string);
         } else {
             this.unfetch();
-            if (!rangeOnly) specifier = this.parseSubexpression();
+            if (!rangeOnly) specifier = this.parsePart('Subexpression');
             if (!specifier) throw "Expected: subexpression";
         }
-        range = this.parseRange();
+        range = this.parsePart('Range');
         return this.genOp(isChild? 'ChildAccess' : 'ElementAccess', value, specifier, range || null);
     },
     
     parseRangeAccess: function(value) {
-        var range = this.parseRange();
+        var range = this.parsePart('Range');
         if (range) return this.genOp('RangeAccess', range);
         return;
     },
 
     // parses [$key =>] $value: construct for ranges
     parseLoopIdentifiers: function() {
-        var varName = this.parseVariable();
-        var keyName = this.parseVariable();
+        var varName = this.parsePart('Variable');
+        var keyName = this.parsePart('Variable');
         if (!varName) return;
         var token = this.fetch();
         if (!token) return;
         if (token.isSymbol('=>')) {
             keyName = varName;
-            varName = this.parseVariable();
+            varName = this.parsePart('Variable');
             if (!varName) throw "Expected: variable";
             token = this.fetch();
             if (!token || !token.isSymbol(':')) throw "Expected: ':'";
@@ -514,14 +548,14 @@ Amm.Expression.Parser.prototype = {
             arg1 = token;
         } else {
             this.unfetch();
-            var loopId = this.parseLoopIdentifiers();
-            var arg1 = this.parseExpression();
+            var loopId = this.parsePart('LoopIdentifiers');
+            var arg1 = this.parsePart('Expression');
             if (!arg1) throw "Expected: expression";
             if (!loopId) {
                 token = this.fetch();
                 if (token.isSymbol('..')) {
                     rangeType = 'Slice';
-                    arg2 = this.parseExpression();
+                    arg2 = this.parsePart('Expression');
                 } else {
                     this.unfetch();
                     rangeType = 'Expression';
@@ -552,11 +586,11 @@ Amm.Expression.Parser.prototype = {
     },
     
     parseValue: function() {
-        var variable = this.parseVariable();
+        var variable = this.parsePart('Variable');
         if (variable) return variable;
         var token = this.fetch();
         if (token.isSymbol('(')) { // the sub-expression
-            var exp = this.parseExpression();
+            var exp = this.parsePart('Expression');
             if (!exp) throw "Expected: expression";
             token = this.fetch();
             if (!token || !token.isSymbol(')')) throw "Expected: ')'";
@@ -593,11 +627,37 @@ Amm.Expression.Parser.prototype = {
         if ((res || reverse) && !noAdvance) this._pos = p;
         return res;
     },
+
+    // Has optional first argument "true" - don't save offset
+    parsePart: function(part, args_) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        var dontSaveOffset = false;
+        if (part === true) {
+            dontSaveOffset = true;
+            part = args.shift();
+        }
+        if (!part) throw "`part` is required to be non-empty string";
+        var method = 'parse' + part;
+        if (typeof this[method] !== 'function') throw "Amm.Expression.Parser: no such method: '" + method + "'";
+        if (part === 'Part') throw "WTF";
+        var tmp = this._oldPos;
+        if (!dontSaveOffset) this._oldPos = this._pos;
+        if (!args.length) {
+            res = this[method]();
+        } else if (args.length === 1) {
+            res = this[method](args[0]);
+        } else {
+            res = this[method].apply(this, args);
+        }
+        if (!dontSaveOffset) this._oldPos = tmp;
+        return res;
+    },
     
     parse: function(string) {
-        var res;
+        this.src = string;
+        this._oldPos = 0;
         this.begin(string);
-        res = this.parseExpression();
+        res = this.parsePart('Expression');
         var token = this.fetch();
         if (token) throw "Expected: eof";
         return res;

@@ -156,10 +156,6 @@ Amm.Expression.prototype = {
         }
     },
     
-    getOperator: function() {
-        return this._operatorOperator;
-    },
-    
     _doSetValue: function(value, checkOnly) {
         if (!checkOnly) this._operatorOperator._doSetValue(value);
         var readonly = this._operatorOperator.getReadonly();
@@ -238,7 +234,9 @@ Amm.Expression.prototype = {
         this.parse(src);
     },
     
-    getSrc: function() {
+    getSrc: function(beginPos, endPos) {
+        if (arguments.length && this._src)
+            return this._src.slice(beginPos, endPos);
         return this._src;
     },
     
@@ -249,6 +247,8 @@ Amm.Expression.prototype = {
         var b = new Amm.Operator.Builder(this);
         p.genFn = b.build;
         p.genObj = b;
+        p.decorateFn = b.decorate;
+        p.decorateObj = b;
         this.setOperator(b.unConst(p.parse(string)));
     },
     
