@@ -81,13 +81,18 @@ Amm.Expression.prototype = {
     },
     
     setWriteProperty: function(writeProperty, writeObject, writeArgs) {
+        if (arguments.length === 1 && writeProperty instanceof Array) {
+            writeProperty = arguments[0][0];
+            writeObject = arguments[0][1];
+            writeArgs = arguments[0][2];
+        }
         if (this._writeProperty) throw "Can setWriteProperty() only once";
         if (!writeProperty) throw "writeProperty must be non-falseable";
         if (writeProperty['Amm.Expression']) {
             if (writeObject || writeArgs) throw "When Amm.Expression is used as writeProperty, don't specify writeObject/writeArgs";
             writeObject = writeProperty;
             writeProperty = 'value';
-            writeObject.subscribe('valueChange', this._write, this);
+            writeObject.subscribe('writeDestinationChanged', this._write, this);
         }
         if (writeArgs === null || writeArgs === undefined) {
             writeArgs = null;

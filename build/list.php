@@ -62,7 +62,9 @@ function getDeps($file, $allFiles, $stack = array()) {
             preg_match_all('/\b(Amm(\.[A-Z]\w+)*)(\.[A-Z]\w+)\.prototype\b/u', $cnt, $matches);
             $deps = array_merge($deps, $matches[1]);
             preg_match_all('/\bAmm\.extend\s*\(\s*[\w.]+\s*,\s*([\w.]+)/u', $cnt, $matches);
-            $deps = array_merge($deps, $matches[1]);
+            if ($matches) {
+                $deps = array_merge($deps, $matches[1]);
+            }
             $deps = array_unique($deps);
             if ($d = array_diff($deps, array_keys($allFiles))) {
                 throw new Exception("Unknown class(es): ".implode(", ", $d)." in ".$file);

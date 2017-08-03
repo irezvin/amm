@@ -16,7 +16,7 @@ Amm.Element = function(options) {
         delete options.traits;
     }
     Amm.WithEvents.call(this, {});
-    Amm.init(this, options, ['id']);
+    Amm.init(this, options, ['id', 'properties']);
     Amm.init(this, options);
     this._endInit();
 };
@@ -358,6 +358,21 @@ Amm.Element.prototype = {
         this._callOwnMethods('_findChildElements_', items);
         if (recursive) items = items.concat(this._findChildElementsRecursive(items));
         return items;
+    },
+    
+    setProperties: function(properties) {
+        if (!properties || typeof properties !== 'object') {
+            throw "`properties` must be an object";
+        }
+        for (var i in properties) if (properties.hasOwnProperty(i)) {
+            var defaultValue = properties[i], onChange;
+            if (defaultValue && typeof defaultValue === 'object'
+              && ('onChange' in defaultValue || 'defaultValue' in defaultValue)) {
+                onChange = defaultValue.onChange;
+                defaultValue = defaultValue.defaultValue;
+            }
+            Amm.createProperty(this, i, defaultValue, onChange);
+        }
     }
     
 };
