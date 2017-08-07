@@ -80,6 +80,9 @@ Amm.Expression.FunctionHandler.prototype = {
         if (typeof thisObject !== 'object' || !thisObject)
             throw "thisObject must be a non-null object";
         this._thisObject = thisObject;
+        if (thisObject['Amm.WithEvents'] && thisObject.hasEvent('cleanup')) {
+            thisObject.subscribe('cleanup', this.cleanup, this);
+        }
         return true;
     },
 
@@ -141,6 +144,9 @@ Amm.Expression.FunctionHandler.prototype = {
         }
         this._writeProperty = writeProperty;
         this._writeObject = writeObject;
+        if (writeObject && writeObject['Amm.WithEvents'] && writeObject.hasEvent('cleanup')) {
+            writeObject.subscribe('cleanup', this.cleanup, this);
+        }
         this._writeArgs = writeArgs;
         this._write();
     },
@@ -219,7 +225,7 @@ Amm.Expression.FunctionHandler.prototype = {
     cleanup: function() {
         this._cleanExpressions(true);
         if (this._writeObject && this._writeObject['Amm.Expression']) {
-            this._writeObject.unsubscribe(undefined, undefined, this);
+            this._writeObject.cleanup();
         }
         Amm.WithEvents.prototype.cleanup.call(this);
     }

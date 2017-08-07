@@ -74,6 +74,9 @@ Amm.Expression.prototype = {
     setThisObject: function(thisObject) {
         if (this._thisObject) throw "Can setThisObject() only once";
         this._thisObject = thisObject;
+        if (thisObject['Amm.WithEvents'] && thisObject.hasEvent('cleanup')) {
+            thisObject.subscribe('cleanup', this.cleanup, this);
+        }
     },
     
     getThisObject: function() {
@@ -104,6 +107,9 @@ Amm.Expression.prototype = {
         }
         this._writeProperty = writeProperty;
         this._writeObject = writeObject;
+        if (writeObject && writeObject['Amm.WithEvents'] && writeObject.hasEvent('cleanup')) {
+            writeObject.subscribe('cleanup', this.cleanup, this);
+        }
         this._writeArgs = writeArgs;
         this._write();
     },
@@ -223,8 +229,8 @@ Amm.Expression.prototype = {
     cleanup: function() {
         Amm.WithEvents.prototype.cleanup.call(this);
         Amm.Operator.prototype.cleanup.call(this);
-        if (this._writeProperty && this._writeProperty['Amm.Expression']) {
-            this._writeProperty.cleanup();
+        if (this._writeObject && this._writeObject['Amm.Expression']) {
+            this._writeObject.cleanup();
         }
         if (this._hasNonCacheable) {
             Amm.getRoot().unsubscribe('interval', this.checkForChanges, this);
