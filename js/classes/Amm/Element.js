@@ -13,11 +13,25 @@ Amm.Element = function(options) {
         for (var i = 0; i < options.traits.length; i++) {
             Amm.augment(this, options.traits[i]);
         }
-        delete options.traits;
+        delete options.traits;    
+    }
+    var hh = [], extraProps;
+    // create function handlers and expressions
+    for (var i in options) if (options.hasOwnProperty(i)) { 
+        if (i[0] === 'i' && i.slice(0, 4) === 'in__') {
+            hh.push([i.slice(4), options[i]]);
+            delete options[i];
+        } else if (i[0] === 'p' && i.slice(0, 6) === 'prop__') {
+            extraProps = extraProps || {};
+            extraProps[i.slice(6)] = options[i];
+            delete options[i];
+        }
     }
     Amm.WithEvents.call(this, {});
     Amm.init(this, options, ['id', 'properties']);
     Amm.init(this, options);
+    if (hh.length) this._initInProperties(hh);
+    if (extraProps) this.setProperties(extraProps);
     this._endInit();
 };
 
@@ -364,15 +378,84 @@ Amm.Element.prototype = {
         if (!properties || typeof properties !== 'object') {
             throw "`properties` must be an object";
         }
+        var hh = [];
         for (var i in properties) if (properties.hasOwnProperty(i)) {
-            var defaultValue = properties[i], onChange;
-            if (defaultValue && typeof defaultValue === 'object'
-              && ('onChange' in defaultValue || 'defaultValue' in defaultValue)) {
+            var defaultValue = properties[i], onChange = undefined;
+            if (i.slice(0, 4) === 'in__') {
+                i = i.slice(4);
+                hh.push([i, defaultValue]);
+                defaultValue = undefined;
+            } else if (defaultValue && typeof defaultValue === 'object'
+              && ('onChange' in defaultValue || 'defaultValue' in defaultValue || 'in__' in defaultValue)) {
+                if ('in__' in defaultValue) {
+                    hh.push([i, defaultValue.in__]);
+                }
                 onChange = defaultValue.onChange;
                 defaultValue = defaultValue.defaultValue;
             }
             Amm.createProperty(this, i, defaultValue, onChange);
         }
+        if (hh.length) this._initInProperties(hh);
+    },
+    
+    _initInProperties: function(arrPropsValues) {
+        for (var i = 0, l = arrPropsValues.length; i < l; i++) {
+            var p = arrPropsValues[i][0], h = arrPropsValues[i][1];
+            // in__class__foo <- write arg
+            var args = p.split('__');
+            if (args.length > 1) {
+                p = args[0];
+                args = args.slice(1);
+            } else {
+                args = undefined;
+            }
+            var fn, han;
+            if (typeof h === 'string') { // expression?
+                if (h.slice(0, 11) === 'javascript:') {
+                    var body = this._prepareFunctionHandlerBody(h.slice(11));
+                    fn = Function('g', 's', body);
+                } else {
+                    han = new Amm.Expression(h, this, p, undefined, args);
+                }
+            } else if (typeof h === 'function') {
+                fn = h;
+            } else {
+                throw "in__<property> must be a string or a function";
+            }
+            if (fn) {
+                han = new Amm.Expression.FunctionHandler(fn, this, p, undefined, args);
+            }
+            if (!han) throw "Assertion";
+        }
+    },
+    
+    /** 
+     * replaces structures like 
+     *      "(2 + {: a['xx'] :}) / 3" 
+     * with 
+     *      "(2 + this.g(' a[\'xx\'] ')) / 3"
+     */
+    _prepareFunctionHandlerBody: function(template) {
+        var inside = false, buf = '';
+        var rep = function(match) {
+            if (match === '{:') {
+                if (inside) throw "Cannot nest {: in function template";
+                inside = true;
+                return '';
+            } else if (match === ':}') {
+                if (!inside) throw ":} without opening {: in function template";
+                inside = false;
+                var res = "g('" + buf.replace(/(['"\\])/g, '\\$1') + "')";
+                buf = '';
+                return res;
+            } else if (inside) {
+                buf += match;
+                return '';
+            }
+            return match;
+        };
+        var res = template.replace(/([{]:|:[}]|:|[{}]|[^:{}]+)/g, rep);
+        return res;
     }
     
 };
