@@ -256,10 +256,7 @@ Amm.Expression.prototype = {
         this._src = string;
         var p = new Amm.Expression.Parser();
         var b = new Amm.Operator.Builder(this);
-        p.genFn = b.build;
-        p.genObj = b;
-        p.decorateFn = b.decorate;
-        p.decorateObj = b;
+        b.configureParser(p);
         this.setOperator(b.unConst(p.parse(string)));
     },
     

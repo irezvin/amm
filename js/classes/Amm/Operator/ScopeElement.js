@@ -159,6 +159,7 @@ Amm.Operator.ScopeElement._eval = function(origin, id, range, componentOnly) {
     var multi = range === '*';
     var def = multi? [] : undefined;
     if (!origin || !origin['Amm.Element']) return def;
+    if (!id) return def;
     var closestComponent = origin.getClosestComponent();
     if (!closestComponent) return def;
     if (componentOnly) {

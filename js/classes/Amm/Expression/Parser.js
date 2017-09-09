@@ -14,7 +14,7 @@ Amm.Expression.Parser.prototype = {
      * 3 - number
      * 4 - tokens
      */
-    tokensRx: /^(?:(\s+)|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(!!|\?\?|\.\.|::|->>|->|&&|\|\||!==|!=|===|==|>=|<=|=>|[-+\{\}$?!.,:\[\]()'"*/])|(.))/,
+    tokensRx: /^(?:(\s+)|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(!!|\?\?|\.\.|::|->>|->|&&|\|\||!==|!=|===|==|>=|<=|=>|[-+\{\}$?!.,:\[\]()'"%*/])|(.))/,
     
     regexTokens: /^(?:(\.)|([[\]()\/])|([^\\\[n\]()\/]+))/,
     
@@ -248,7 +248,7 @@ Amm.Expression.Parser.prototype = {
         ['!==', '===', '!=', '=='],
         ['>', '<', '>=', '<='],
         ['+', '-'],
-        ['*', '/']
+        ['*', '/', '%']
     ],
     
     genOp: function(opType, _) {
@@ -370,7 +370,7 @@ Amm.Expression.Parser.prototype = {
         sub = 
                     this.parsePart(true, 'FunctionCall', value)
                 ||  this.parsePart(true, 'PropertyAccess', value) 
-                ||  this.parsePart(true, 'ElementOrChildAccess', value) 
+                ||  this.parsePart(true, 'ElementOrChildElement', value) 
                 ||  this.parsePart(true, 'RangeAccess', value);
         if (sub) {
             var right = this.parsePart(true, 'AccessOperator', sub);
@@ -474,8 +474,8 @@ Amm.Expression.Parser.prototype = {
         if (!isList && !args.length) args = [undefined];
         return this.genOp('PropertyArgs', args, isList);
     },
-    
-    parseElementOrChildAccess: function(value) {    
+
+    parseElementOrChildElement: function(value) {    
         var token = this.fetch();
         if (!token) return;
         if (!token.isSymbol('->', '->>')) {
@@ -497,7 +497,7 @@ Amm.Expression.Parser.prototype = {
             if (!specifier) throw "Expected: subexpression";
         }
         range = this.parsePart('Range');
-        return this.genOp(isChild? 'ChildAccess' : 'ElementAccess', value, specifier, range || null);
+        return this.genOp(isChild? 'ChildElement' : 'ElementAccess', value, specifier, range || null);
     },
     
     parseRangeAccess: function(value) {
@@ -525,8 +525,6 @@ Amm.Expression.Parser.prototype = {
         } else {
             this.unfetch();
         }
-        
-        
     },
     
     parseRange: function() {

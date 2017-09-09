@@ -15,6 +15,9 @@ Amm.Operator.prototype = {
     
     _subs: null,
     
+    // deferred subscriptions (until setExpression)
+    _defSub: null,
+    
     _value: undefined,
     
     _hasValue: false,
@@ -41,8 +44,6 @@ Amm.Operator.prototype = {
     
     // whether such operator can be used on the left side of an assignment
     supportsAssign: false,
-    
-    _defSub: null,
     
     beginPos: null,
     
@@ -277,6 +278,10 @@ Amm.Operator.prototype = {
                 realValue = this[operatorVar].getValue();
                 this._lockChange--;
             }
+            var operandFn = operand + 'OperatorChange';
+            if (typeof this[operandFn] === 'function') {
+                this[operandFn](this[operatorVar]);
+            }
         } else {
             realValue = value;
         }
@@ -292,7 +297,7 @@ Amm.Operator.prototype = {
         var oldValue = this[valueVar];
         var hadValue = this[hasValueVar];
         var changed = !hadValue || this[valueVar] !== value;
-        var valueWithEvents, oldWithEvents, shouldFireEventsMethod;
+        var valueWithEvents, oldWithEvents;
         if (this[eventsMethod]) {
             valueWithEvents = value && value['Amm.WithEvents']? value : null;
             oldWithEvents = this[hasValueVar] && this[valueVar] && this[valueVar]['Amm.WithEvents']? this[valueVar] : null;
@@ -400,7 +405,7 @@ Amm.Operator.prototype = {
     
     getSrc: function() {
         if (!this._expression) return;
-        if (this.beginPos == null) return;
+        if (this.beginPos === null) return;
         return this._expression.getSrc(this.beginPos, this.endPos);
     }
     

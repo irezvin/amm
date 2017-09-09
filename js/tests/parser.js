@@ -179,7 +179,7 @@
                 ["ElementAccess",["ElementAccess",["Identifier","a"],["Constant","b"],null],["Constant","c"],null],
         
             "a->>b->>c": 
-                ["ChildAccess",["ChildAccess",["Identifier","a"],["Constant","b"],null],["Constant","c"],null],
+                ["ChildElement",["ChildElement",["Identifier","a"],["Constant","b"],null],["Constant","c"],null],
     
             "a['foo']('m', $n + 15).baz":
                 ["PropertyAccess",["FunctionCall",["PropertyAccess",["Identifier","a"],["Subexpression",["Constant","foo"]],null,true,null],["List",[["Constant","m"],["Binary",["Variable","n"],"+",["Constant",15]]]],null],["Constant","baz"],null,false,null],
@@ -252,8 +252,8 @@
         e.setE1(e1);
         
         var exp;
-        exp = new Amm.Expression("10 + 20 + -5*2 + !0");
-        assert.equal(exp.getValue(), 10 + 20 + -5*2 + !0);
+        exp = new Amm.Expression("10 + 20 % 2 + -5*2 + !0");
+        assert.equal(exp.getValue(), 10 + 20 % 2 + -5*2 + !0);
         exp = new Amm.Expression("2*(10 + 20*2/4)");
         assert.equal(exp.getValue(), 2*(10 + 20*2/4));
         exp = new Amm.Expression("23 + 'px'");

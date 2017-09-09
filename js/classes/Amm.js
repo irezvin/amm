@@ -97,6 +97,12 @@ Amm = {
     },
     
     extend: function(subClass, parentClass, dontIndicateParent) {
+        if (typeof subClass !== 'function') {
+            throw "Amm.extend: `subClass` is not a function";
+        };
+        if (typeof parentClass !== 'function') {
+            throw "Amm.extend: `parentClass` is not a function";
+        };
     	for (var i in parentClass.prototype)
             if (!(i in subClass.prototype))
                 subClass.prototype[i] = parentClass.prototype[i];

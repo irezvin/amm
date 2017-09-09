@@ -22,6 +22,13 @@ Amm.Operator.Builder.prototype = {
             subject.endPos = endPos;
         }
     },
+
+    configureParser: function(parser) {
+        parser.genFn = this.build;
+        parser.genObj = this;
+        parser.decorateFn = this.decorate;
+        parser.decorateObj = this;
+    },
     
     const: function(value) {
         if (value && value.Const) return value;
@@ -69,6 +76,7 @@ Amm.Operator.Builder.prototype = {
             case '-':   return left - right;
             case '*':   return left * right;
             case '/':   return left / right;
+            case '%':   return left % right;
             case '>':   return left > right;
             case '<':   return left < right;
             case '<=':  return left <= right;
@@ -154,6 +162,13 @@ Amm.Operator.Builder.prototype = {
             this.unConst(component), 
             this.unConst(specifier),
             this.unConst(range)
+        );
+    },
+    
+    ChildElement: function(element, id) {
+        return new Amm.Operator.ChildElement(
+            this.unConst(element), 
+            this.unConst(id)
         );
     }
     
