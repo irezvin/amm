@@ -606,6 +606,52 @@
         assert.ok(v_cc === bb);
         assert.ok(f_cc() === bb);
     });
+    
+    QUnit.test("Expression.Operator.contentChanged", function(assert) {
+        var arr = ['a', 'b', 'c'];
+        var exp = new Amm.Expression({
+            src: "$arr.join(', ')",
+            vars: {
+                arr: arr
+            }
+        });
+        assert.equal(exp.getValue(), 'a, b, c', "Initial array value");
+        assert.equal(!!exp.getIsCacheable(), false, 'Expression that observers native Array is non cacheable');
+        var expV = null;
+        exp.subscribe('valueChange', function(v) {expV = v;});
+        arr.push('z');
+        Amm.getRoot().outInterval();
+        assert.equal(expV, 'a, b, c, z', "Change in native Array detected (first time)");
+        arr.push('x');
+        Amm.getRoot().outInterval();
+        assert.equal(expV, 'a, b, c, z, x', "Change in native Array detected (second time)");
+        exp.cleanup();
+        
+        var arr2 = new Amm.Array(['a', 'b', 'c']);
+        var exp2 = new Amm.Expression({
+            src: "$arr2.getItems()!!.join(', ')",
+            vars: {
+                arr2: arr2
+            }
+        });
+        assert.equal(exp2.getValue(), 'a, b, c', 'Initial Amm.Array value');
+        var expV2 = null;
+        exp2.subscribe('valueChange', function(v) {expV2 = v;});
+        assert.equal(exp2.getIsCacheable(), true, 'Expression that observers Amm.Array is cacheable');
+        arr2.push('z');
+        assert.equal(expV2, 'a, b, c, z', 'Change in Amm.Array detected (first time)');
+        arr2.push('x');
+        assert.equal(expV2, 'a, b, c, z, x', 'Change in Amm.Array detected (second time)');
+        exp2.cleanup();
+        arr2.cleanup();
+        
+        var arr3 = new Amm.Array(['a', 'b', 'c']);
+        var exp3 = new Amm.Expression({operator: arr3});
+        var expV3 = null;
+        exp3.subscribe('valueChange', function(v, o, c) {expV3 = v;});
+        arr3.push('x');
+        
+    });
 
     
 }) ();

@@ -32,7 +32,7 @@ Amm.Operator.Var.prototype = {
 
     setExpression: function(expression) {
         Amm.Operator.prototype.setExpression.call(this, expression);
-        this._sub(expression, {varsChange: '_onExpressionVarsChange'});
+        this._sub(expression, 'varsChange', '_onExpressionVarsChange', null, true);
     },
     
     _doEvaluate: function(again) {

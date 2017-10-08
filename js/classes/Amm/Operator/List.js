@@ -16,6 +16,13 @@ Amm.Operator.List.prototype = {
     
     OPERANDS: null,
     
+    getReportsContentChanged: function() {
+        // actually we won't report any content changes because
+        // that's not possible for list content to change without
+        // assigning new array
+        return true;
+    },
+    
     setItems: function(items) {
         if (!(items instanceof Array)) throw "items must be an Array";
         var oldLength = this._length,

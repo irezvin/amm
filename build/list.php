@@ -51,34 +51,34 @@ function listAmmFiles($dir = null, $cacheFile = null) {
 }
 
 function getDeps($file, $allFiles, $stack = array()) {
-        static $cache = array();
-        if (isset($cache[$file])) {
-            $deps = $cache[$file];
-        } else {
-            if (in_array($file, $stack)) throw new Exception("Ciruclar reference found: ".implode(" -> ", $stack));
-            array_push($stack, $file);
-            $cnt = file_get_contents($file);
-            $deps = array();
-            preg_match_all('/\b(Amm(\.[A-Z]\w+)*)(\.[A-Z]\w+)\.prototype\b/u', $cnt, $matches);
+    static $cache = array();
+    if (isset($cache[$file])) {
+        $deps = $cache[$file];
+    } else {
+        if (in_array($file, $stack)) throw new Exception("Ciruclar reference found: ".implode(" -> ", $stack));
+        array_push($stack, $file);
+        $cnt = file_get_contents($file);
+        $deps = array();
+        preg_match_all('/\b(Amm(\.[A-Z]\w+)*)(\.[A-Z]\w+)\.prototype\b/u', $cnt, $matches);
+        $deps = array_merge($deps, $matches[1]);
+        preg_match_all('/\bAmm\.extend\s*\(\s*[\w.]+\s*,\s*([\w.]+)/u', $cnt, $matches);
+        if ($matches) {
             $deps = array_merge($deps, $matches[1]);
-            preg_match_all('/\bAmm\.extend\s*\(\s*[\w.]+\s*,\s*([\w.]+)/u', $cnt, $matches);
-            if ($matches) {
-                $deps = array_merge($deps, $matches[1]);
-            }
-            $deps = array_unique($deps);
-            if ($d = array_diff($deps, array_keys($allFiles))) {
-                throw new Exception("Unknown class(es): ".implode(", ", $d)." in ".$file);
-            }
-            $cache[$file] = $deps;
         }
-        $res = array();
-        foreach ($deps as $dep) {
-            $file = $allFiles[$dep];
-            foreach (array_merge(getDeps($file, $allFiles, $stack), array($file)) as $f) {
-                if (!in_array($f, $res)) $res[] = $f;
-            }
+        $deps = array_unique($deps);
+        if ($d = array_diff($deps, array_keys($allFiles))) {
+            throw new Exception("Unknown class(es): ".implode(", ", $d)." in ".$file);
         }
-        return $res;
+        $cache[$file] = $deps;
+    }
+    $res = array();
+    foreach ($deps as $dep) {
+        $file = $allFiles[$dep];
+        foreach (array_merge(getDeps($file, $allFiles, $stack), array($file)) as $f) {
+            if (!in_array($f, $res)) $res[] = $f;
+        }
+    }
+    return $res;
 }
 
 

@@ -885,6 +885,7 @@ Amm.Array.equal = function(a, b, aOffset, bOffset, length, comparisonFn) {
  * {a} - old version of array. 
  * {b} - new version of array.
  * {comparisonFn} - function that returns 0 if elements are equal (=== is used by default)
+ * {spliceOnly} - don't try to detect move/reorder events, always return splice info in case of any changes
  * 
  * returns Array:
  * 
@@ -893,7 +894,7 @@ Amm.Array.equal = function(a, b, aOffset, bOffset, length, comparisonFn) {
  * c) ['reorder', start, length, oldItems] - `length` elements starting from `start` have different order, otherwise the same array
  * d) null - nothing changed
  */
-Amm.Array.smartDiff = function(a, b, comparisonFn) {
+Amm.Array.smartDiff = function(a, b, comparisonFn, spliceOnly) {
     
     var al = a.length, bl = b.length, 
             delta = bl - al,
@@ -937,7 +938,7 @@ Amm.Array.smartDiff = function(a, b, comparisonFn) {
     if (!cutSize && !insertSize) return null; // same
         
     // check 1-element move or reorder
-    if (cutSize === insertSize) {
+    if (cutSize === insertSize && !spliceOnly) {
         var cut = a.slice(dBegin, dBegin + cutSize), 
             dCut = 0, 
             dIns = 0,

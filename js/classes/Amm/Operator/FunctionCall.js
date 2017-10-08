@@ -4,8 +4,9 @@ Amm.Operator.FunctionCall = function(func, args, cacheability) {
     Amm.Operator.call(this);
     if (func !== undefined) this._setOperand('func', func);
     if (args !== undefined) this._setOperand('args', args);
+    this._cacheability = !!cacheability;
     if (cacheability !== undefined && cacheability !== null && !cacheability) {
-        this._setNonCacheable(true);
+        this._setNonCacheable(Amm.Operator.NON_CACHEABLE_VALUE);
     }
 };
 
@@ -27,7 +28,13 @@ Amm.Operator.FunctionCall.prototype = {
     
     _argsExists: null,
     
+    _cacheability: null,
+    
     OPERANDS: ['func', 'args'],
+    
+    getReportsContentChanged: function() {
+        return this._cacheability;
+    },
     
     _doEvaluate: function(again) {
         var func = this._getOperandValue('func', again);

@@ -61,13 +61,15 @@ Amm.Expression.prototype = {
     _updateLevel: 0,
     
     /**
-     *  contains operators that need to be recalculated when one event introduces changes to many parts of Expression
+     *  contains operators that need to be recalculated when one event intoduces changes to many parts of Expression
      *  i.e. "$foo + $foo + $foo + $foo" or "$bar[$bar.baz]" - we need to re-calculate each changing Operator only once
      *  do avoid excessive re-calculations
      */
     _updateQueue: null,
     
     _updateQueueSorted: false,
+    
+    _currChangeInfo: null,
     
     OPERANDS: ['operator'],
     
@@ -203,9 +205,26 @@ Amm.Expression.prototype = {
     },
     
     _reportChange: function(oldValue) {
+        this._currChangeInfo = null;
         Amm.Operator.prototype._reportChange.call(this, oldValue);
         this.outValueChange(this._value, oldValue);
         if (this._writeProperty) this._write();
+    },
+    
+    notifyOperandContentChanged: function(operand, changeInfo, internal) {
+        
+        this._currChangeInfo = changeInfo;
+        
+        var evaluated = Amm.Operator.prototype.notifyOperandContentChanged.call(this, operand, changeInfo, internal);
+        
+        if (this._currChangeInfo) {
+            // report change wasn't called...
+            this.outValueChange(this._value, this._value, changeInfo);
+            this._currChangeInfo = null;
+        }
+        
+        
+        return evaluated;
     },
     
     _reportNonCacheabilityChanged: function(nonCacheability) {
@@ -222,8 +241,8 @@ Amm.Expression.prototype = {
         this._out('writeDestinationChanged');
     },
     
-    outValueChange: function(value, oldValue) {
-        this._out('valueChange', value, oldValue);
+    outValueChange: function(value, oldValue, changeInfo) {
+        this._out('valueChange', value, oldValue, changeInfo);
     },
     
     cleanup: function() {
@@ -260,12 +279,13 @@ Amm.Expression.prototype = {
         this.setOperator(b.unConst(p.parse(string)));
     },
     
-    subscribeOperator: function(target, eventName, operator, method) {
+    subscribeOperator: function(target, eventName, operator, method, extra) {
+        if (extra === undefined) extra = null;
         var op = target.getSubscribers(eventName, 'dispatchEvent', this);
         // queue is stored as Extra arg. Since it is stored and passed by reference, we can edit it later
         var queue;
         if (!op.length) { 
-            queue = [[operator, method]];
+            queue = [[method, operator]];
             queue.eventName = eventName;
             target.subscribe(eventName, 'dispatchEvent', this, queue);
             return;
@@ -276,36 +296,48 @@ Amm.Expression.prototype = {
             throw "Assertion: we found wrong queue array";
         }
         for (var i = 0, l = queue.length; i < l; i++) {
-            if (queue[i][0] === operator && queue[i][1] === method) return; // already subscribed
+            if (queue[i][0] === operator && queue[i][1] === method && queue[i][2] === extra) return; // already subscribed
         }
-        queue.push([operator, method]);
+        queue.push([method, operator]);
     },
     
-    unsubscribeOperator: function(target, eventName, operator, method) {
+    
+    // `operator` is required arg
+    unsubscribeOperator: function(target, eventName, operator, method, extra) {
+        if (extra === undefined && arguments.length < 5) extra = null;
         var op = target.getSubscribers(eventName, 'dispatchEvent', this);
-        if (!op.length) return; // not subscribed
+        var opCount = 0; //number of remaining events to dispatch to operator `operator`
+        if (!op.length) return 0; // not subscribed
         for (var j = 0; j < op.length; j++) {
             var queue = op[j][2];
             if (!queue || !queue.eventName || (eventName && queue.eventName !== eventName)) throw "Assertion: we found wrong queue array";
             for (var i = queue.length - 1; i >= 0; i--) {
-                if (queue[i][0] === operator && (method === undefined || queue[i][1] === method)) {
+                if (queue[i][0] !== operator) continue; 
+                if ((method === undefined || queue[i][1] === method) && (extra === undefined || queue[i][2] === extra)) {
                     queue.splice(i, 1);
                     if (!queue.length) target.unsubscribeByIndex(op[j][5]);
-                    if (method !== undefined) return;
+                } else {
+                    opCount++;
                 }
             }
         }
+        return opCount;
     },
     
     dispatchEvent: function() {
         var queue = arguments[arguments.length - 1], args = Array.prototype.slice.call(arguments, 0, -1);
         if (!queue.eventName)
             throw "Queue array (extra) not provided to Amm.Expression._dispatchIncomingEvent method";
+        
         if (queue.length > 1) {
             this._beginUpdate();
         }
+        
         Amm.WithEvents.invokeHandlers(queue.eventName, args, queue);
-        if (queue.length > 1) this._endUpdate();
+        
+        if (queue.length > 1) {
+            this._endUpdate();
+        }
     },
     
     getUpdateLevel: function() {

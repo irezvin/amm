@@ -87,30 +87,41 @@ Amm.Operator.Property.prototype = {
     _objectEvents: function(object, oldObject) {
         if (oldObject) this._unsub(oldObject);
         if (!object) {
-            this._setNonCacheable(false); // always-null cacheable value
+            this._setNonCacheable(this._nonCacheable & ~Amm.Operator.NON_CACHEABLE_VALUE); // always-null cacheable value
         } else if (this._isCall || (object && !object['Amm.WithEvents'])) {
             // we don't watch for properties that return method calls
             var cacheability = this._cacheability;
             if (cacheability === null) cacheability = this._isCall;
-            this._setNonCacheable(!cacheability); // cannot subscribe. So we're non-cacheable
+            if (cacheability) {
+                 this._setNonCacheable(this._nonCaacheable & ~Amm.Operator.NON_CACHEABLE_VALUE);
+            } else {
+                 this._setNonCacheable(this._nonCaacheable | Amm.Operator.NON_CACHEABLE_VALUE);
+            }
         } else {
             this._subToProp(this._propertyValue);
             if (object.outCleanup) object.subscribe('cleanup', this._handleObjectCleanup, this);
         }
     },
     
+    getReportsContentChanged: function() {
+        return this._cacheability;
+    },
+    
     _subToProp: function(property) {
-        if (!property && property !== 0) {
-            if (this._nonCacheable) this._setNonCacheable(false); //become cacheable
+        if (!property && property !== 0 || (this._objectValue['Amm.Array'] && parseInt(property) == property)) {
+            // become cacheable
+            // Also we don't need to observe Amm.Array because it is done by Amm.Operator
+            if (this._nonCacheable) this._setNonCacheable(this._nonCacheable & ~Amm.Operator.NON_CACHEABLE_VALUE); 
             return;
         }
-        if (this._objectValue['Amm.Array'] && parseInt(property) == property) e = 'spliceItems';
-        else {
-            e = property + 'Change';
-            if (!this._objectValue.hasEvent(e)) e = null;
+        e = property + 'Change';
+        if (!this._objectValue.hasEvent(e)) e = null;
+        if (e) {
+            this._sub(this._objectValue, e, undefined, undefined, true);
+            this._setNonCacheable(this._nonCaacheable & ~Amm.Operator.NON_CACHEABLE_VALUE);
+        } else {
+            this._setNonCacheable(this._nonCaacheable | Amm.Operator.NON_CACHEABLE_VALUE);
         }
-        if (e) this._sub(this._objectValue, e, true);
-        this._setNonCacheable(!e); // we're non-cacheable if we aren't subscribed to anything
         this._eventName = e;
     },
     
@@ -123,7 +134,11 @@ Amm.Operator.Property.prototype = {
         } else {
             var cacheability = this._cacheability;
             if (cacheability === null) cacheability = true;
-            this._setNonCacheable(!cacheability); // cannot subscribe. So we're non-cacheable
+            if (cacheability) {
+                 this._setNonCacheable(this._nonCaacheable & ~Amm.Operator.NON_CACHEABLE_VALUE);
+            } else {
+                 this._setNonCacheable(this._nonCaacheable | Amm.Operator.NON_CACHEABLE_VALUE);
+            }
         }
     },
     
