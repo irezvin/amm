@@ -456,6 +456,11 @@ Amm.Operator.prototype = {
     },
     
     _defaultHandler: function() {
+        var exp = this._expression;
+        if (exp && exp.getUpdateLevel()) {
+            exp.queueUpdate(this);
+            return;
+        }
         this.evaluate();
     },
 

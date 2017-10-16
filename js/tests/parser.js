@@ -267,7 +267,7 @@
         exp = new Amm.Expression("!this.foo + this.bar*this.e1.baz", e);
         exp.subscribe('valueChange', function(v) { exp_val = v; });
         assert.equal(exp.getValue(), !e.getFoo() + e.getBar()*e.getE1().getBaz());
-        e.setFoo(2);
+        e.setBar(1);
         assert.equal(exp_val, !e.getFoo() + e.getBar()*e.getE1().getBaz());
         e.setE1(e1);
         assert.equal(exp_val, !e.getFoo() + e.getBar()*e.getE1().getBaz());

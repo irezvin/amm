@@ -1,14 +1,11 @@
 /* global Amm */
 /* Amm.Extend (Amm.Operator.Builder, Amm.Operator) */
 
-Amm.Operator.Builder = function(expression) {
-    this._expression = expression;
+Amm.Operator.Builder = function() {
 };
 
 Amm.Operator.Builder.prototype = {
 
-    _expression: undefined,
-    
     build: function(lexType, _) {
         var args = Array.prototype.slice.call(arguments, 1);
         var method = lexType;
@@ -50,10 +47,10 @@ Amm.Operator.Builder.prototype = {
     Identifier: function(ident) {
         // TODO: support keywords like 'this'
         if (ident === 'this') {
-            return this._expression.getThisObject();
+            return new Amm.Operator.ExpressionThis;
         }
         return new Amm.Operator.ScopeElement(
-            this._expression.getThisObject(), 
+            new Amm.Operator.ExpressionThis,
             this.unConst(ident)
         );   
     },

@@ -1,11 +1,15 @@
 /* global Amm */
 
 /**
- * Provides vars data for child Operator; 
+ * Provides variables for child Operator. 
+ * Provides high-level methods to access value of operator and subscribe 
+ * to its' events. Acts as event dispatcher between child operators 
+ * and monitored objects to prevent excessive changes' triggering. 
+ * Allows to parse operator from string definition.
  */
-Amm.Expression = function(options, thisObject, writeProperty, writeObject, writeArgs) {
+Amm.Expression = function(options, expressionThis, writeProperty, writeObject, writeArgs) {
     this._vars = {};
-    if (thisObject) this.setThisObject(thisObject);
+    if (expressionThis) this._expressionThis = expressionThis;
     if (options && typeof options === 'string') {
         options = {src: options};
     }
@@ -46,7 +50,7 @@ Amm.Expression.prototype = {
     
     _vars: null,
     
-    _thisObject: null,
+    _expressionThis: null,
     
     _writeProperty: null,
     
@@ -73,16 +77,25 @@ Amm.Expression.prototype = {
     
     OPERANDS: ['operator'],
     
-    setThisObject: function(thisObject) {
-        if (this._thisObject) throw "Can setThisObject() only once";
-        this._thisObject = thisObject;
-        if (thisObject['Amm.WithEvents'] && thisObject.hasEvent('cleanup')) {
-            thisObject.subscribe('cleanup', this.cleanup, this);
+    setExpressionThis: function(expressionThis) {
+        var oldExpressionThis = this._expressionThis;
+        if (oldExpressionThis === expressionThis) return;
+        if (oldExpressionThis && oldExpressionThis['Amm.WithEvents'] && oldExpressionThis.hasEvent('cleanup')) {
+            oldExpressionThis.unsubscribe('cleanup', this.cleanup, this);
         }
+        this._expressionThis = expressionThis;
+        if (expressionThis && expressionThis['Amm.WithEvents'] && expressionThis.hasEvent('cleanup')) {
+            expressionThis.subscribe('cleanup', this.cleanup, this);
+        }
+ 
+        this.outExpressionThisChange(expressionThis, oldExpressionThis);
+        return true;
     },
-    
-    getThisObject: function() {
-        return this._thisObject;
+
+    getExpressionThis: function() { return this._expressionThis; },
+
+    outExpressionThisChange: function(expressionThis, oldExpressionThis) {
+        this._out('expressionThisChange', expressionThis, oldExpressionThis);
     },
     
     setWriteProperty: function(writeProperty, writeObject, writeArgs) {
@@ -104,8 +117,8 @@ Amm.Expression.prototype = {
         } else if (!(writeArgs instanceof Array)) {
             writeArgs = [writeArgs];
         }
-        if (!writeObject && !this._thisObject) {
-            throw "setThisObject() or provide writeObject when setting writeProperty";
+        if (!writeObject && !this._expressionThis) {
+            throw "setExpressionThis() or provide writeObject when setting writeProperty";
         }
         this._writeProperty = writeProperty;
         this._writeObject = writeObject;
@@ -119,7 +132,7 @@ Amm.Expression.prototype = {
     _write: function() {
         if (this._lockWrite) return;
         this._lockWrite++;
-        var wo = this._writeObject || this._thisObject;
+        var wo = this._writeObject || this._expressionThis;
         Amm.setProperty(wo, this._writeProperty, this.getValue(), false, this._writeArgs);
         this._lockWrite--;
     },
@@ -273,10 +286,12 @@ Amm.Expression.prototype = {
     parse: function(string) {
         if (this._src) throw "Already parsed";
         this._src = string;
-        var p = new Amm.Expression.Parser();
-        var b = new Amm.Operator.Builder(this);
-        b.configureParser(p);
-        this.setOperator(b.unConst(p.parse(string)));
+        if (!Amm.Expression._builder) {
+            Amm.Expression._parser = new Amm.Expression.Parser();
+            Amm.Expression._builder = new Amm.Operator.Builder();
+            Amm.Expression._builder.configureParser(Amm.Expression._parser);
+        }
+        this.setOperator(Amm.Expression._builder.unConst(Amm.Expression._parser.parse(string)));
     },
     
     subscribeOperator: function(target, eventName, operator, method, extra) {
@@ -385,6 +400,9 @@ Amm.Expression.prototype = {
     }
     
 };
+
+Amm.Expression._bulder = null;
+Amm.Expression._parser = null;
 
 Amm.extend(Amm.Expression, Amm.Operator);
 Amm.extend(Amm.Expression, Amm.WithEvents);

@@ -652,6 +652,28 @@
         arr3.push('x');
         
     });
+    
+    QUnit.test("Expression.expressionThis changeable", function(assert) {
+        var foo = new Amm.Element({
+            prop__a: 10,
+            prop__b: 20
+        });
+        var bar = new Amm.Element({
+            prop__a: 1,
+            prop__b: 2
+        });
+        var changeCount = 0, val;
+        var exp = new Amm.Expression("this.a + this.b");
+        assert.ok(isNaN(exp.getValue()));
+        exp.subscribe('valueChange', function(v) { changeCount++; val = v; } );
+        exp.setExpressionThis(foo);
+        assert.equal(changeCount, 1);
+        assert.equal(val, 30);
+        exp.setExpressionThis(bar);
+        assert.equal(changeCount, 2);
+        assert.equal(val, 3);
+        
+    });
 
     
 }) ();
