@@ -114,7 +114,7 @@ Amm.Operator.Property.prototype = {
             if (this._nonCacheable) this._setNonCacheable(this._nonCacheable & ~Amm.Operator.NON_CACHEABLE_VALUE); 
             return;
         }
-        e = property + 'Change';
+        var e = property + 'Change';
         if (!this._objectValue.hasEvent(e)) e = null;
         if (e) {
             this._sub(this._objectValue, e, undefined, undefined, true);

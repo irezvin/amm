@@ -83,7 +83,7 @@ Amm.Array.prototype = {
     pop: function() {
         if (!this.length) return undefined;
         --this.length;
-        res = this[this.length];
+        var res = this[this.length];
         delete this[this.length];
         if (!this._updateLevel) this.outDeleteItem(this.length, res);
         return res;
@@ -931,6 +931,7 @@ Amm.Array.smartDiff = function(a, b, comparisonFn, spliceOnly) {
     
     var cutSize = dEnd - dBegin;
     var insertSize = cutSize + delta;
+    var insert;
     
     if (insertSize) insert = b.slice(dBegin, dBegin + insertSize);
         else insert = [];

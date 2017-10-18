@@ -333,7 +333,7 @@ Amm.Trait.Component.prototype = {
         // include all children...
         var ee = this._includeAllChildren(elements), el = this._elements.length;
         var dups = Amm.Array.findDuplicates(this._elements.concat(ee), false, null, el, true);
-        for (i = dups.length - 1; i >= 0; i--) {
+        for (var i = dups.length - 1; i >= 0; i--) {
             if (dups[i][0] >= el) continue;  // not likely though
             var element = this._elements[dups[i][0]], id = element.getId();
             if (id) this._deleteNamedElementEntry(element, id);

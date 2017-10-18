@@ -440,7 +440,7 @@
         'recheckUniqueness works');
         ia.setName('A');
         
-        r1 = c._preAccept([ib_before_d, i_f, ic_samepos]);
+        var r1 = c._preAccept([ib_before_d, i_f, ic_samepos]);
         r = c.acceptMany([ib_before_d, i_f, ic_samepos]);
         assert.ok(r[0] === ib, 'acceptMany() result - updated instance 1');
         assert.ok(r[1] === i_f, 'acceptMany() result - original instance');

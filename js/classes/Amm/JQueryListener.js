@@ -38,6 +38,7 @@ Amm.JQueryListener.prototype = {
     _htmlRoot: null,
     
     setEventName: function(eventName) {
+        var o;
         if ((o = this._eventName) === eventName) return;
         this._eventName = eventName;
         this._bind();
@@ -46,6 +47,7 @@ Amm.JQueryListener.prototype = {
     getEventName: function() { return this._eventName; },
     
     setSelector: function(selector) {
+        var o;
         if ((o = this._selector) === selector) return;
         this._selector = selector;
         this._bind();
@@ -54,6 +56,7 @@ Amm.JQueryListener.prototype = {
     getSelector: function() { return this._selector; },
     
     setDelegateSelector: function(delegateSelector) {
+        var o;
         if ((o = this._delegateSelector) === delegateSelector) return;
         this._delegateSelector = delegateSelector;
         this._bind();
@@ -62,6 +65,7 @@ Amm.JQueryListener.prototype = {
     getDelegateSelector: function() { return this._delegateSelector; },
     
     setHtmlRoot: function(htmlRoot) {
+        var o;
         if ((o = this._htmlRoot) === htmlRoot) return;
         this._htmlRoot = htmlRoot;
         this._bind();

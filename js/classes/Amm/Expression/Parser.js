@@ -207,6 +207,7 @@ Amm.Expression.Parser.prototype = {
     getAllTokens: function(string) {
         var _offset = 0;
         var buf = '' + string, res = [];
+        var e;
         this._lastNonWhitespace = null;
         while (buf.length) {
             try {
@@ -253,6 +254,7 @@ Amm.Expression.Parser.prototype = {
     
     genOp: function(opType, _) {
         var a = Array.prototype.slice.apply(arguments);
+        var res;
         if (this.genFn) {
             res = this.genFn.apply(this.genObj || this, a);
         } else {
@@ -314,7 +316,7 @@ Amm.Expression.Parser.prototype = {
         }
         var left, op, right;
         left = this.parsePart('Binary', level + 1);
-        token = this.fetch();
+        var token = this.fetch();
         if (!token) return left;
         if (token.isSymbol(this._binaryPriority[level])) {
             op = token;
@@ -340,7 +342,7 @@ Amm.Expression.Parser.prototype = {
     },
     
     parseList: function() {
-        var exps = [];
+        var exps = [], exp;
         exp = this.parsePart('Expression');
         if (!exp) return;
         exps.push(exp);
@@ -496,7 +498,7 @@ Amm.Expression.Parser.prototype = {
             if (!rangeOnly) specifier = this.parsePart('Subexpression');
             if (!specifier) throw "Expected: subexpression";
         }
-        range = this.parsePart('Range');
+        var range = this.parsePart('Range');
         return this.genOp(isChild? 'ChildElement' : 'ElementAccess', value, specifier, range || null);
     },
     
@@ -629,6 +631,7 @@ Amm.Expression.Parser.prototype = {
     // Has optional first argument "true" - don't save offset
     parsePart: function(part, args_) {
         var args = Array.prototype.slice.call(arguments, 1);
+        var res;
         var dontSaveOffset = false;
         if (part === true) {
             dontSaveOffset = true;
@@ -652,6 +655,7 @@ Amm.Expression.Parser.prototype = {
     },
     
     parse: function(string) {
+        var res;
         this.src = string;
         this._oldPos = 0;
         this.begin(string);

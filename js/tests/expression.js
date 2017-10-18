@@ -35,6 +35,8 @@
     
     QUnit.test("Operator.Property", function(assert) {
 
+        var res;
+
         var simplePath = function(root, path, fn, scope) {
             var segments = path.split('.');
             var top = root;
@@ -305,8 +307,6 @@
         exp.setVars('fooValue2', 'foo');
         assert.deepEqual(exp_val, ['xx', 'fooValue2', 'barValue', 'zz'], 'List item change triggers expression change');
         
-        window.listOp = listOp;
-        
     });
     
     QUnit.test("Operator.ScopeElement", function(assert) {
@@ -421,11 +421,6 @@
         assert.ok(xec2.getValue() === c2);
         assert.ok(xec2value === c2);
         assert.ok(xec2fn() === c2);
-        
-        window.e211 = e211;
-        window.c2 = c2;
-        window.xec2 = xec2;
-        
     });
     
     QUnit.test("Operator.ComponentElement", function(assert) {

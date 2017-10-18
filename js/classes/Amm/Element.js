@@ -90,7 +90,7 @@ Amm.Element.prototype = {
         if (this._initLevel) return;
         if (this._init) {
             this._initLevel = false;
-            ii = [];
+            var ii = [];
             for (var i in this._init) {
                 if (this._init.hasOwnProperty(i) && (typeof (this._init[i]) === 'function')) {
                     ii.push(i);

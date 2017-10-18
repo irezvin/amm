@@ -96,7 +96,7 @@ QUnit.test("Amm object inheritance support", function(assert) {
         Amm.is(c, 'nonExistentClass', true); // throwIfNot := true
     });
     
-    c1 = new ClassC;
+    var c1 = new ClassC;
     Amm.augment(c1, new traitX);
     Amm.augment(c1, new traitY);
     assert.ok(Amm.hasInterfaces(c1, 'traitX'));

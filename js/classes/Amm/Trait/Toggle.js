@@ -202,7 +202,7 @@
             }
         }
         var groupValue = this._getGroupValue();
-        group = this.findGroupItems();
+        var group = this.findGroupItems();
         for (var i = 0, l = group.length; i < l; i++) {
             group[i]._receiveGroupNotification(groupValue, this);
         }

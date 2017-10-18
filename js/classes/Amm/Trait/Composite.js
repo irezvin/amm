@@ -84,7 +84,7 @@ Amm.Trait.Composite.prototype = {
     },
     
     _childIdChange: function(newId, oldId) {
-        child = Amm.event.origin;
+        var child = Amm.event.origin;
         if (this._children[newId] && this._children[newId] !== child)
             throw "Cannot handle _childIdChange to id that is already busy ('" + newId + "')";
         if (this._children[oldId] === child) {

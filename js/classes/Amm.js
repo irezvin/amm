@@ -290,6 +290,7 @@ Amm = {
     stopWaiting: function(elementPath, fn, scope, extra) {
         elementPath = elementPath || null;
         fn = fn || null;
+        var kk;
         if (elementPath === null) kk = this._waitList;
         else kk = { elementPath : true };
         for (var i in kk) if (this._waitList.hasOwnProperty(i)) {
@@ -407,6 +408,7 @@ Amm = {
     },
     
     getProperty: function(element, property, defaultValue, args) {
+        var res;
         if (element instanceof Array) {
             var r = [];
             for (var i = 0; i < element.length; i++) {

@@ -33,6 +33,7 @@ Amm.Selection.prototype = {
      */
     setCollection: function(collection) {
         var oldCollection = this._collection;
+        var items;
         if (oldCollection === collection) return;
         if (oldCollection) {
             this._unobserveCollection();
