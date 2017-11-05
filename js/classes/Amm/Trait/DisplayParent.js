@@ -31,7 +31,7 @@ Amm.Trait.DisplayParent.prototype = {
         };
         
         if (this._displayChildrenPrototype) {
-            Amm.override(proto, this._displayChildrenPrototype);
+            Amm.overrideRecursive(proto, this._displayChildrenPrototype);
         }
         
         this.displayChildren = new Amm.Collection(proto);

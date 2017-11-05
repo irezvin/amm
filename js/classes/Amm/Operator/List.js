@@ -47,9 +47,19 @@ Amm.Operator.List.prototype = {
     },
     
     _doEvaluate: function(again) {
-        var res = [];
-        for (var i = 0; i < this._length; i++)
-            res.push(this._getOperandValue(i, again));
+        var res = [], 
+            same = !!this._value && this._length === this._value.length, 
+            v;
+        
+        for (var i = 0; i < this._length; i++) {
+            res.push(v = this._getOperandValue(i, again));
+            same = (same && this._value[i] !== v);
+        }
+        
+        if (same) {
+            return this._value; // otherwise change event will be triggered
+        }
+        
         return res;
     },
     

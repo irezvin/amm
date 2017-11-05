@@ -17,11 +17,14 @@ Amm.Operator.Var.prototype = {
     
     _varNameExists: null,
     
+    _varsProvider: null,
+    
     OPERANDS: ['varName'],
     
     supportsAssign: true,
 
-    _onExpressionVarsChange: function(value, oldValue, name) {
+    _onProviderVarsChange: function(value, oldValue, name, provider) {
+        if (provider !== this._varsProvider) return;
         if (this._varNameValue && name && this._varNameValue !== name) return;
         if (this._expression && this._expression.getUpdateLevel()) {
             this._expression.queueUpdate(this);
@@ -32,17 +35,24 @@ Amm.Operator.Var.prototype = {
 
     setExpression: function(expression) {
         Amm.Operator.prototype.setExpression.call(this, expression);
-        this._sub(expression, 'varsChange', '_onExpressionVarsChange', null, true);
+        this._varsProvider = expression;
+        for (var p = this._parent; p; p = p._parent) {
+            if (p['Amm.Operator.VarsProvider']) {
+                this._varsProvider = p;
+                break;
+            }
+        }
+        this._sub(this.expression, 'varsChange', '_onProviderVarsChange', null, true);
     },
     
     _doEvaluate: function(again) {
         var varName = this._getOperandValue('varName', again);
         if (!varName) return; // no variable
-        if (!this._expression) {
+        if (!this._varsProvider) {
             this._hasValue = false;
             return;
         } 
-        var res = this._expression.getVars(varName);
+        var res = this._varsProvider.getVars(varName);
         return res;
     },
     

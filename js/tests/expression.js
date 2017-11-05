@@ -669,6 +669,130 @@
         assert.equal(val, 3);
         
     });
+    
+    QUnit.test("Operator.varsProvider", function(assert) {
+        // we need to create dummy varsProvider class 
+        // that will return something
+        
+        var vp1, vp2;
+        var xp = new Amm.Expression({
+            vars: {
+                a: 'a',
+                b: 'b',
+                c: 'c',
+                d: 'd'
+            },
+            operator: new Amm.Operator.List([
+                new Amm.Operator.Var('a'),
+                new Amm.Operator.Var('b'),
+                new Amm.Operator.Var('c'),
+                new Amm.Operator.Var('d'),
+                vp1 = new Amm.Operator.VarsProvider(
+                    new Amm.Operator.List([
+                        new Amm.Operator.Var('a'),
+                        new Amm.Operator.Var('b'),
+                        new Amm.Operator.Var('c'),
+                        new Amm.Operator.Var('d'),
+                        new Amm.Operator.Var('e'),
+                        vp2 = new Amm.Operator.VarsProvider(
+                            new Amm.Operator.List([
+                                new Amm.Operator.Var('a'),
+                                new Amm.Operator.Var('b'),
+                                new Amm.Operator.Var('c'),
+                                new Amm.Operator.Var('d'),
+                                new Amm.Operator.Var('e'),
+                                new Amm.Operator.Var('f')
+                            ]),
+                            {
+                                b: 'b2',
+                                e: 'e2',
+                                f: 'f2'
+                            }
+                        )
+                    ]),
+                    {
+                        a: 'a1',
+                        e: 'e1'
+                    }
+                )
+            ])
+        });
+        
+        var vxp, numC = 0;
+        
+        xp.subscribe("valueChange", function(v) { vxp = v; numC++; });
+        
+        assert.deepEqual(xp.getValue(), [
+            'a', 'b', 'c', 'd', [
+                'a1', 'b', 'c', 'd', 'e1', 
+                [ 'a1', 'b2', 'c', 'd', 'e2', 'f2' ]
+            ]
+        ]);
+        
+        numC = 0;
+        
+        xp.setVars('a0', 'a');
+        
+        assert.equal(numC, 1);
+        assert.deepEqual(vxp, [
+            'a0', 'b', 'c', 'd', [
+                'a1', 'b', 'c', 'd', 'e1', 
+                [ 'a1', 'b2', 'c', 'd', 'e2', 'f2' ]
+            ]
+        ]);
+
+        xp.setVars({a: 'a', b: 'b0', c: 'c', d: 'd0'});
+        assert.equal(numC, 2, 'change of variable that was referenced '
+                + 'in several places of Expression triggered only one '
+                + 'outside valueChange event');
+        assert.deepEqual(vxp, [
+            'a', 'b0', 'c', 'd0', [
+                'a1', 'b0', 'c', 'd0', 'e1', 
+                [ 'a1', 'b2', 'c', 'd0', 'e2', 'f2' ]
+            ]
+        ]);
+        
+        vp1.setVars('a11', 'a');
+        
+        assert.equal(numC, 3);
+        assert.deepEqual(vxp, [
+            'a', 'b0', 'c', 'd0', [
+                'a11', 'b0', 'c', 'd0', 'e1', 
+                [ 'a11', 'b2', 'c', 'd0', 'e2', 'f2' ]
+            ]
+        ]);
+        
+        vp1.setVars({a: 'a1', e: 'e11'});
+        
+        assert.equal(numC, 4);
+        assert.deepEqual(vxp, [
+            'a', 'b0', 'c', 'd0', [
+                'a1', 'b0', 'c', 'd0', 'e11', 
+                [ 'a1', 'b2', 'c', 'd0', 'e2', 'f2' ]
+            ]
+        ]);
+        
+        vp2.setVars('a21', 'a');
+        
+        assert.equal(numC, 5);
+        assert.deepEqual(vxp, [
+            'a', 'b0', 'c', 'd0', [
+                'a1', 'b0', 'c', 'd0', 'e11', 
+                [ 'a21', 'b2', 'c', 'd0', 'e2', 'f2' ]
+            ]
+        ]);
+        
+        vp2.setVars({});
+        
+        assert.equal(numC, 6);
+        assert.deepEqual(vxp, [
+            'a', 'b0', 'c', 'd0', [
+                'a1', 'b0', 'c', 'd0', 'e11', 
+                [ 'a1', 'b0', 'c', 'd0', 'e11', undefined ]
+            ]
+        ]);
+        
+    });
 
     
 }) ();

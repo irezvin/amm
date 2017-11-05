@@ -1,22 +1,22 @@
 /* global Amm */
 
 /**
- * Provides variables for child Operator. 
  * Provides high-level methods to access value of operator and subscribe 
  * to its' events. Acts as event dispatcher between child operators 
  * and monitored objects to prevent excessive changes' triggering. 
  * Allows to parse operator from string definition.
  */
 Amm.Expression = function(options, expressionThis, writeProperty, writeObject, writeArgs) {
-    this._vars = {};
     if (expressionThis) this._expressionThis = expressionThis;
     if (options && typeof options === 'string') {
         options = {src: options};
     }
+    var operator;
     if (options && options['Amm.Operator']) {
-        options = {operator: options};
+        operator = options;
+        options = {};
     }
-    Amm.Operator.call(this);
+    Amm.Operator.VarsProvider.call(this, operator);
     Amm.WithEvents.call(this);
     if (options.writeProperty) {
         writeProperty = options.writeProperty;
@@ -42,14 +42,6 @@ Amm.Expression.prototype = {
     
     'Amm.Expression': '__CLASS__',
     
-    _operatorOperator: null,
-    
-    _operatorValue: null,
-    
-    _operatorExists: null,
-    
-    _vars: null,
-    
     _expressionThis: null,
     
     _writeProperty: null,
@@ -74,8 +66,6 @@ Amm.Expression.prototype = {
     _updateQueueSorted: false,
     
     _currChangeInfo: null,
-    
-    OPERANDS: ['operator'],
     
     setExpressionThis: function(expressionThis) {
         var oldExpressionThis = this._expressionThis;
@@ -149,77 +139,42 @@ Amm.Expression.prototype = {
         return this._writeArgs;
     },
     
-    setVars: function(value, name) {
-        if (name) { // a - set item in vars
-            if (typeof name !== 'string')
-                throw "setVars(`value`, `name`): `name` must be a string";
-            var old = this._vars[name];
-            if (value === old) return; // nothing to do
-            this._vars[name] = value;
-            this.outVarsChange(value, old, name);
-        } else { // b - set whole vars
-            if (typeof value !== 'object') throw "setVars(`value`): object required";
-            var old = this._vars;
-            this._vars = value;
-            this.outVarsChange(this._vars, old);
-        }
-        return true;
+    /**
+     * This event has a difference from standard "out<Foo>Change" 
+     * because it can be triggered 
+     * 
+     * -    for one or many variables:
+     *      a)  for all variables (`name` is null)
+     *      b)  for single variable (`name` param will be provided)
+     * 
+     * -    for Expression or other variables provider
+     * 
+     *      x)  either for Expression object
+     *          (`sourceObject` === this === Amm.event.Origin)
+     *      y)  or for different `sourceObject`
+     *          (`sourceObject` !== this)
+     */
+    outVarsChange: function(value, oldValue, name, sourceObject) {
+        this._out('varsChange', value, oldValue, name, sourceObject);
     },
     
-    getVars: function(name) {
-        return name? this._vars[name] : this._vars;
-    },
-    
-    outVarsChange: function(value, oldValue, name) {
-        this._out('varsChange', value, oldValue, name);
-    },
-
     setOperator: function(operator) {
-        this._setOperand('operator', operator);
+        Amm.Operator.VarsProvider.prototype.setOperator.call(this, operator);
         if (this._operatorOperator) {
-            this.supportsAssign = this._operatorOperator.supportsAssign;
             this._operatorOperator.setExpression(this);
         }
     },
     
-    _doSetValue: function(value, checkOnly) {
-        if (!checkOnly) this._operatorOperator._doSetValue(value);
-        var readonly = this._operatorOperator.getReadonly();
-        return readonly;
-    },
-    
-    _doEvaluate: function(again) {
-        return this._getOperandValue('operator', again);
-    },
-    
-    toFunction: function() {
-        var a = this._operandFunction('operator'), t = this;
-        if (this._operatorOperator && this._operatorOperator.supportsAssign) {
-            var assign = this._operatorOperator.assignmentFunction();
-            return function(value, throwIfCant) {
-                if (arguments.length) {
-                    var res = assign(t, value);
-                    if (res && throwIfCant) throw res;
-                    return !res;
-                }
-                else return a(t);
-            };
-        }
-        return function() {
-            return a(t);
-        };
-    },
-    
-    assignmentFunction: function() {
-        if (this._operatorOperator) return this._operatorOperator.assignmentFunction();
-        return function(e, value) {
-            return "`operator` not provided";
-        };
-    },
+    _deferredValueChange: null,
     
     _reportChange: function(oldValue) {
         this._currChangeInfo = null;
-        Amm.Operator.prototype._reportChange.call(this, oldValue);
+        if (this._deferredValueChange) {
+            if (!('old' in this._deferredValueChange)) 
+                this._deferredValueChange['old'] = oldValue;
+                return;
+        }
+        Amm.Operator.VarsProvider.prototype._reportChange.call(this, oldValue);
         this.outValueChange(this._value, oldValue);
         if (this._writeProperty) this._write();
     },
@@ -228,7 +183,7 @@ Amm.Expression.prototype = {
         
         this._currChangeInfo = changeInfo;
         
-        var evaluated = Amm.Operator.prototype.notifyOperandContentChanged.call(this, operand, changeInfo, internal);
+        var evaluated = Amm.Operator.VarsProvider.prototype.notifyOperandContentChanged.call(this, operand, changeInfo, internal);
         
         if (this._currChangeInfo) {
             // report change wasn't called...
@@ -241,7 +196,7 @@ Amm.Expression.prototype = {
     },
     
     _reportNonCacheabilityChanged: function(nonCacheability) {
-        Amm.Operator.prototype._reportNonCacheabilityChanged.call(this, nonCacheability);
+        Amm.Operator.VarsProvider.prototype._reportNonCacheabilityChanged.call(this, nonCacheability);
         if (nonCacheability) Amm.getRoot().subscribe('interval', this.checkForChanges, this);
             else Amm.getRoot().unsubscribe('interval', this.checkForChanges, this);
     },
@@ -260,7 +215,7 @@ Amm.Expression.prototype = {
     
     cleanup: function() {
         Amm.WithEvents.prototype.cleanup.call(this);
-        Amm.Operator.prototype.cleanup.call(this);
+        Amm.Operator.VarsProvider.prototype.cleanup.call(this);
         if (this._writeObject && this._writeObject['Amm.Expression']) {
             this._writeObject.cleanup();
         }
@@ -381,17 +336,24 @@ Amm.Expression.prototype = {
         if (!this._updateLevel) {
             throw "Amm.Expression: _endUpdate() without _beginUpdate!";
         }
-        var newUpdateLevel = this._updateLevel - 1;
-        if (!newUpdateLevel) {
-            // process update queue
-            for (var i = 0; i < this._updateQueue.length; i++) {
-                this._updateQueue[i].finishUpdate();
-                if (!this._updateQueueSorted) {
-                    this._sortUpdateQueue(i + 1);
-                }
+        if (this._updateLevel > 1) {
+            this._updateLevel--;
+            return;
+        }
+        this._deferredValueChange = {};
+        // process update queue
+        for (var i = 0; i < this._updateQueue.length; i++) {
+            this._updateQueue[i].finishUpdate();
+            if (!this._updateQueueSorted) {
+                this._sortUpdateQueue(i + 1);
             }
         }
-        this._updateLevel = newUpdateLevel;
+        this._updateLevel = 0;
+        if ('old' in this._deferredValueChange) {
+            var o = this._deferredValueChange['old'];
+            this._deferredValueChange = null;
+            this._reportChange(o);
+        }
     },
     
     queueUpdate: function(operator) {
@@ -401,8 +363,8 @@ Amm.Expression.prototype = {
     
 };
 
-Amm.Expression._bulder = null;
+Amm.Expression._builder = null;
 Amm.Expression._parser = null;
 
-Amm.extend(Amm.Expression, Amm.Operator);
+Amm.extend(Amm.Expression, Amm.Operator.VarsProvider);
 Amm.extend(Amm.Expression, Amm.WithEvents);

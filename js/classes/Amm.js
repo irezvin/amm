@@ -141,6 +141,34 @@ Amm = {
     },
     
     /**
+     * can specify any number of overriders
+     */
+    override: function(object, overrider, _) {
+        for (var a = 0, l = arguments.length; a < l; a++) {
+            for (var i in arguments[a]) {
+                if (arguments[a].hasOwnProperty(i)) object[i] = arguments[a][i];
+            }
+        }
+        return object;
+    },
+    
+    overrideRecursive: function(modifiedObject, overrider, noOverwrite) {
+        if (typeof modifiedObject !== 'object' || typeof overrider !== 'object')
+            throw 'Both modifiedObject and overrider must be objects';
+
+        for (var i in overrider) if (overrider.hasOwnProperty(i)) {
+            if (modifiedObject[i] instanceof Array && overrider[i] instanceof Array) {
+                modifiedObject[i] = modifiedObject[i].concat(overrider[i]);
+            } else if (typeof modifiedObject[i] === 'object' && typeof overrider[i] === 'object')  {
+                this.overrideRecursive(modifiedObject[i], overrider[i], noOverwrite);
+            } else if (!noOverwrite || !(i in modifiedObject)) {
+                modifiedObject[i] = overrider[i];
+            }
+        };
+        return modifiedObject;
+    },
+    
+    /**
      * Checks if object matches any of sets of classes, interfaces or methods in the {requirements}
      * Requirements are [[AND, AND] OR [AND, AND]] and so on.
      * Example:
@@ -503,22 +531,6 @@ Amm = {
         } else {
             throw "`decorator` must be either function or an object with .decorate() method";
         }
-    },
-    
-    override: function(modifiedObject, overrider, noOverwrite) {
-        if (typeof modifiedObject !== 'object' || typeof overrider !== 'object')
-            throw 'Both modifiedObject and overrider must be objects';
-
-        for (var i in overrider) if (overrider.hasOwnProperty(i)) {
-            if (modifiedObject[i] instanceof Array && overrider[i] instanceof Array) {
-                modifiedObject[i] = modifiedObject[i].concat(overrider[i]);
-            } else if (typeof modifiedObject[i] === 'object' && typeof overrider[i] === 'object')  {
-                this.override(modifiedObject[i], overrider[i], noOverwrite);
-            } else if (!noOverwrite || !(i in modifiedObject)) {
-                modifiedObject[i] = overrider[i];
-            }
-        };
-        return modifiedObject;
     },
     
     cleanup: function(itemOrItems) {

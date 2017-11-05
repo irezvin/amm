@@ -76,7 +76,10 @@ Amm.Operator.prototype = {
         }
         if (this._defSub) {
             for (var j = 0; j < this._defSub.length; j++) {
-                this._expression.subscribeOperator(this._defSub[j][0], this._defSub[j][1], this, this._defSub[j][2]);
+                this._expression.subscribeOperator(
+                    this._defSub[j][0] || this._expression, 
+                    this._defSub[j][1], this, this._defSub[j][2]
+                );
             }
             this._defSub = null;
         }
@@ -106,12 +109,18 @@ Amm.Operator.prototype = {
     
     /**
      * map: A - event; B - [event, event...]; C - {event: method, event: method...}
+     * object === null: sub to this._expression
      */
     _sub: function(object, map, method, extra, noCheck) {
         var exp = this._expression;
         if (!exp && !this._defSub) this._defSub = [];
-        var idx = Amm.Array.indexOf(this._subs, object);
-        if (idx < 0) this._subs.push(object);
+        if (object) {
+            var idx = Amm.Array.indexOf(this._subs, object);
+            if (idx < 0) this._subs.push(object);
+        } else {
+            object = exp || null;
+            if (!exp) noCheck = true;
+        }
         extra = extra || null;
         method = method || this._defaultHandler;
         if (typeof map === 'string') {
@@ -134,7 +143,9 @@ Amm.Operator.prototype = {
                 }
             }
         } else {
-            for (var i in map) if (map.hasOwnProperty(i)) {
+            for (var i in map) {
+                if (!map.hasOwnProperty(i) || !noCheck && !object.hasEvent(i)) 
+                    continue; // not an event or non-existing event
                 if (exp) {
                     exp.subscribeOperator(object, i, this, map[i], extra);
                 } else {
@@ -144,8 +155,12 @@ Amm.Operator.prototype = {
         }
     },
     
+    /**
+     *  object === null: unsub. from this._expression
+     */
     _unsub: function(object, event, method, extra) {
         if (extra === undefined && arguments.length < 4) extra = null;
+        if (!object) object = null;
         if (this._defSub) {
             for (var i = this._defSub.length - 1; i >= 0; i--) {
                 if (this._defSub[i][0] === object 
