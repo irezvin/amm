@@ -51,8 +51,9 @@ Amm.WithEvents.invokeHandler = function(eventName, args, handler, scope, extra, 
  * -    subscribers[i][1] is {scope}
  * -    subscribers[i][2] is {extra}
  * -    subscribers[i][3] is {decorator}
+ * {defaultDecorator} used to specify decorator when handler doesn't have one
  */
-Amm.WithEvents.invokeHandlers = function(eventName, args, subscribers, dontPush) {
+Amm.WithEvents.invokeHandlers = function(eventName, args, subscribers, dontPush, defaultDecorator) {
     if (!dontPush) {
         Amm.pushEvent({
             origin: this,
@@ -67,7 +68,7 @@ Amm.WithEvents.invokeHandlers = function(eventName, args, subscribers, dontPush)
                 handler = subscribers[i][0] || null,
                 scope = subscribers[i][1] || this,
                 extra = subscribers[i][2] || undefined,
-                decorator = subscribers[i][3] || null;
+                decorator = subscribers[i][3] || defaultDecorator || null;
             
             if (typeof scope === 'string') { // this is an Element
                 if (typeof this.getByPath === 'function') scope = this.getByPath(scope);

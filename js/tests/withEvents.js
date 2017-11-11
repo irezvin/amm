@@ -136,6 +136,22 @@ QUnit.module("WithEvents");
             [[handlerFn, null, 'extra2', decoratorFnB]]);
         assert.deepEqual(globLog, [['extra2', 'arg2', 'arg1']],
             'decorator function that calls handler directly');
+            
+        clearLogs();
+        
+        Amm.WithEvents.invokeHandlers.call(thisObj, 'fooEvent', ['arg1', 'arg2'],
+            [
+                [handlerFn, null, 'extra1'],
+                [handlerFn, null, 'extra2']
+            ], 
+        false, decoratorFnB);
+        
+        assert.deepEqual(globLog, 
+            [
+                ['extra1', 'arg2', 'arg1'],
+                ['extra2', 'arg2', 'arg1']
+            ],  'defaultDecorator works too'
+        );
         
     });
     
@@ -304,8 +320,6 @@ QUnit.module("WithEvents");
         assert.deepEqual(l, ['sub', 'unsub', 'sub']);
         e.unsubscribeByIndex('eventA', 0);
         assert.deepEqual(l, ['sub', 'unsub', 'sub', 'unsub']);
-        
-        
     });
     
 }) ();
