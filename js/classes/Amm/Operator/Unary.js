@@ -31,6 +31,11 @@ Amm.Operator.Unary.prototype = {
 
     OPERANDS: ['operand'],
     
+    STATE_SHARED: {
+        _operator: true,
+        _operatorFn: true
+    },
+    
     supportsAssign: false,
     
     _setOperator: function(operator) {

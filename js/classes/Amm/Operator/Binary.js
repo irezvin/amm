@@ -49,6 +49,11 @@ Amm.Operator.Binary.prototype = {
     
     OPERANDS: ['left', 'right'],
     
+    STATE_SHARED: {
+        _operator: true,
+        _operatorFn: true
+    },
+    
     supportsAssign: false,
     
     _setOperator: function(operator) {

@@ -103,12 +103,21 @@ Amm = {
         if (typeof parentClass !== 'function') {
             throw "Amm.extend: `parentClass` is not a function";
         };
-    	for (var i in parentClass.prototype)
-            if (!(i in subClass.prototype))
-                subClass.prototype[i] = parentClass.prototype[i];
-        if (dontIndicateParent) return;
-        var c = this.getClass(parentClass.prototype);
-        if (c) subClass.prototype[c] = '__PARENT__';
+        var skip = false;
+        if (typeof parentClass.beforeExtend === 'function') {
+            skip = parentClass.beforeExtend(subClass, parentClass, dontIndicateParent);
+        }
+    	if (!skip) {
+            for (var i in parentClass.prototype) {
+                if (!(i in subClass.prototype))
+                    subClass.prototype[i] = parentClass.prototype[i];
+                    if (!dontIndicateParent && subClass.prototype[i] === '__CLASS__')
+                        subClass.prototype[i] = '__PARENT__';
+            }
+        }
+        if (typeof parentClass.afterExtend === 'function') {
+            parentClass.afterExtend(subClass, parentClass, dontIndicateParent);
+        }
     },
     
     augment: function(instance, trait) {

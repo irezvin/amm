@@ -16,6 +16,22 @@ Amm.Operator.List.prototype = {
     
     OPERANDS: null,
     
+    STATE_SHARED: {
+        _length: true
+    },
+    
+    _getContextState: function() {
+        var res = Amm.Operator.prototype._getContextState.call(this);
+        for (var i = 0; i < this._length; i++) {
+            var v = '_' + i + 'Value', o = '_' + i + 'Operator', x = '_' + i + 'Exists', ob = '_' + i + 'Observe';
+            res[v] = this[v];
+            res[0] = this[o];
+            res[x] = this[x];
+            res[ob] = this[ob];
+        }
+        return res;
+    },
+    
     getReportsContentChanged: function() {
         // actually we won't report any content changes because
         // that's not possible for list content to change without
@@ -30,11 +46,12 @@ Amm.Operator.List.prototype = {
     
         // remove extraneous items
         for (var i = newLength; i < oldLength; i++) {
-            var v = '_' + i + 'Value', o = '_' + i + 'Operator', x = '_' + i + 'Exists';
+            var v = '_' + i + 'Value', o = '_' + i + 'Operator', x = '_' + i + 'Exists', ob = '_' + i + 'Observe';
             if (this[o]) this[o].cleanup();
             delete this[o];
             delete this[v];
             delete this[x];
+            delete this[ob];
         }
         this._isEvaluating++;
         this.OPERANDS = [];

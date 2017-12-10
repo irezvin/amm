@@ -39,6 +39,10 @@ Amm.Operator.ComponentElement.prototype = {
     
     OPERANDS: ['component', 'id', 'range'],
     
+    STATE_SHARED: {
+        _componentOnly: true
+    },
+    
     supportsAssign: false,
 
     _componentEvents: function(component, oldComponent) {

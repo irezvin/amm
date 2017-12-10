@@ -50,6 +50,12 @@ Amm.Operator.Property.prototype = {
     
     OPERANDS: ['object', 'property', 'arguments'],
     
+    STATE_SHARED: {
+        _isCall: true,
+        _cacheability: true,
+        supportsAssign: true
+    },
+    
     setObject: function(object) {
         this._setOperand('object', object);
     },
@@ -84,6 +90,12 @@ Amm.Operator.Property.prototype = {
         this._setOperandValue('object', null);
     },
     
+    _objectChange: function(object, oldObject) {
+        if (object && !object['Amm.WithEvents'] && !this._isCall && this._cacheability === null) {
+            this._setNonCacheable(this._nonCacheable | Amm.Operator.NON_CACHEABLE_VALUE);
+        }
+    },
+    
     _objectEvents: function(object, oldObject) {
         if (oldObject) this._unsub(oldObject);
         if (!object) {
@@ -93,13 +105,13 @@ Amm.Operator.Property.prototype = {
             var cacheability = this._cacheability;
             if (cacheability === null) cacheability = this._isCall;
             if (cacheability) {
-                 this._setNonCacheable(this._nonCaacheable & ~Amm.Operator.NON_CACHEABLE_VALUE);
+                 this._setNonCacheable(this._nonCacheable & ~Amm.Operator.NON_CACHEABLE_CONTENT);
             } else {
-                 this._setNonCacheable(this._nonCaacheable | Amm.Operator.NON_CACHEABLE_VALUE);
+                 this._setNonCacheable(this._nonCacheable | Amm.Operator.NON_CACHEABLE_CONTENT);
             }
         } else {
             this._subToProp(this._propertyValue);
-            if (object.outCleanup) object.subscribe('cleanup', this._handleObjectCleanup, this);
+            if (object.outCleanup) this._sub(object, 'cleanup', this._handleObjectCleanup, undefined, true);
         }
     },
     
@@ -118,9 +130,9 @@ Amm.Operator.Property.prototype = {
         if (!this._objectValue.hasEvent(e)) e = null;
         if (e) {
             this._sub(this._objectValue, e, undefined, undefined, true);
-            this._setNonCacheable(this._nonCaacheable & ~Amm.Operator.NON_CACHEABLE_VALUE);
+            this._setNonCacheable(this._nonCacheable & ~Amm.Operator.NON_CACHEABLE_VALUE);
         } else {
-            this._setNonCacheable(this._nonCaacheable | Amm.Operator.NON_CACHEABLE_VALUE);
+            this._setNonCacheable(this._nonCacheable | Amm.Operator.NON_CACHEABLE_VALUE);
         }
         this._eventName = e;
     },
@@ -128,16 +140,16 @@ Amm.Operator.Property.prototype = {
     _propertyChange: function(property, oldProperty) {
         if (!this._objectValue || !this._objectValue['Amm.WithEvents']) return;
         if (this._eventName === 'spliceItems' && parseInt(property) == property) return; // index changed - ok than
-        if (this._eventName) this._objectValue.unsubscribe(this._eventName, undefined, this);
+        if (this._eventName) this._unsub(this._objectValue, this._eventName);
         if (!this._isCall) {
             this._subToProp(property);
         } else {
             var cacheability = this._cacheability;
             if (cacheability === null) cacheability = true;
             if (cacheability) {
-                 this._setNonCacheable(this._nonCaacheable & ~Amm.Operator.NON_CACHEABLE_VALUE);
+                 this._setNonCacheable(this._nonCacheable & ~Amm.Operator.NON_CACHEABLE_VALUE);
             } else {
-                 this._setNonCacheable(this._nonCaacheable | Amm.Operator.NON_CACHEABLE_VALUE);
+                 this._setNonCacheable(this._nonCacheable | Amm.Operator.NON_CACHEABLE_VALUE);
             }
         }
     },

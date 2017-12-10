@@ -20,6 +20,10 @@ Amm.Operator.Var.prototype = {
     _varsProvider: null,
     
     OPERANDS: ['varName'],
+
+    STATE_SHARED: {
+        _varsProvider: true
+    },
     
     supportsAssign: true,
 

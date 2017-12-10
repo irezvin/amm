@@ -8,6 +8,7 @@
  */
 Amm.Expression = function(options, expressionThis, writeProperty, writeObject, writeArgs) {
     if (expressionThis) this._expressionThis = expressionThis;
+    this._allSubs = [];
     if (options && typeof options === 'string') {
         options = {src: options};
     }
@@ -34,8 +35,9 @@ Amm.Expression = function(options, expressionThis, writeProperty, writeObject, w
     if (writeProperty) this.setWriteProperty(writeProperty, writeObject, writeArgs);
 };
 
-Amm.Expression.compareByLevel = function(a, b) {
-    return b.getLevel() - a.getLevel();
+Amm.Expression.compareByContextIdAndLevel = function(a, b) {
+    if (b[1] !== a[1]) return a[1] - b[1];
+    return b[0].getLevel() - a[0].getLevel();
 };
 
 Amm.Expression.prototype = {
@@ -56,6 +58,9 @@ Amm.Expression.prototype = {
     
     _updateLevel: 0,
     
+    // registry of all objects that we are subscribed to (in all contexts)
+    _allSubs: null,
+    
     /**
      *  contains operators that need to be recalculated when one event intoduces changes to many parts of Expression
      *  i.e. "$foo + $foo + $foo + $foo" or "$bar[$bar.baz]" - we need to re-calculate each changing Operator only once
@@ -67,15 +72,23 @@ Amm.Expression.prototype = {
     
     _currChangeInfo: null,
     
+    STATE_SHARED: {
+        _updateLevel: true,
+        _updateQueue: true,
+        _deferredValueChange: true,
+        _src: true,
+        _allSubs: true
+    },
+    
     setExpressionThis: function(expressionThis) {
         var oldExpressionThis = this._expressionThis;
         if (oldExpressionThis === expressionThis) return;
         if (oldExpressionThis && oldExpressionThis['Amm.WithEvents'] && oldExpressionThis.hasEvent('cleanup')) {
-            oldExpressionThis.unsubscribe('cleanup', this.cleanup, this);
+            this._unsub(oldExpressionThis, 'cleanup', this.cleanup);
         }
         this._expressionThis = expressionThis;
         if (expressionThis && expressionThis['Amm.WithEvents'] && expressionThis.hasEvent('cleanup')) {
-            expressionThis.subscribe('cleanup', this.cleanup, this);
+            this._sub(expressionThis, 'cleanup', this.cleanup, undefined, true);
         }
  
         this.outExpressionThisChange(expressionThis, oldExpressionThis);
@@ -100,7 +113,7 @@ Amm.Expression.prototype = {
             if (writeObject || writeArgs) throw "When Amm.Expression is used as writeProperty, don't specify writeObject/writeArgs";
             writeObject = writeProperty;
             writeProperty = 'value';
-            writeObject.subscribe('writeDestinationChanged', this._write, this);
+            this._sub(writeObject, 'writeDestinationChanged', this._write, undefined, true);
         }
         if (writeArgs === null || writeArgs === undefined) {
             writeArgs = null;
@@ -113,7 +126,7 @@ Amm.Expression.prototype = {
         this._writeProperty = writeProperty;
         this._writeObject = writeObject;
         if (writeObject && writeObject['Amm.WithEvents'] && writeObject.hasEvent('cleanup')) {
-            writeObject.subscribe('cleanup', this.cleanup, this);
+            this._sub(writeObject, 'cleanup', this.cleanup, undefined, true);
         }
         this._writeArgs = writeArgs;
         this._write();
@@ -168,11 +181,21 @@ Amm.Expression.prototype = {
     _deferredValueChange: null,
     
     _reportChange: function(oldValue) {
+        var k = 'ctx_' + this._contextId;
         this._currChangeInfo = null;
         if (this._deferredValueChange) {
-            if (!('old' in this._deferredValueChange)) 
-                this._deferredValueChange['old'] = oldValue;
+            if (!this._deferredValueChange[k]) {
+                this._deferredValueChange[k] = {'contextId': this._contextId};
+                if (!this._deferredValueChange.ids) {
+                    this._deferredValueChange.ids = [k];
+                } else {
+                    this._deferredValueChange['ids'].push(k);
+                }
+            }
+            if (!('old' in this._deferredValueChange[k])) {
+                this._deferredValueChange[k]['old'] = oldValue;
                 return;
+            }
         }
         Amm.Operator.VarsProvider.prototype._reportChange.call(this, oldValue);
         this.outValueChange(this._value, oldValue);
@@ -180,6 +203,11 @@ Amm.Expression.prototype = {
     },
     
     notifyOperandContentChanged: function(operand, changeInfo, internal) {
+        
+        var operator = this['_' + operand + 'Operator'];
+        if (operator && operator._contextId !== this._contextId) {
+            this._propagateContext(operand, operator);
+        }
         
         this._currChangeInfo = changeInfo;
         
@@ -197,8 +225,11 @@ Amm.Expression.prototype = {
     
     _reportNonCacheabilityChanged: function(nonCacheability) {
         Amm.Operator.VarsProvider.prototype._reportNonCacheabilityChanged.call(this, nonCacheability);
-        if (nonCacheability) Amm.getRoot().subscribe('interval', this.checkForChanges, this);
-            else Amm.getRoot().unsubscribe('interval', this.checkForChanges, this);
+        if (nonCacheability) {
+            this._sub(Amm.getRoot(), 'interval', this.checkForChanges, undefined, true);
+        } else { 
+            this._unsub(Amm.getRoot(), 'interval', this.checkForChanges);
+        }
     },
     
     notifyWriteDestinationChanged: function() {
@@ -215,13 +246,15 @@ Amm.Expression.prototype = {
     
     cleanup: function() {
         Amm.WithEvents.prototype.cleanup.call(this);
-        Amm.Operator.VarsProvider.prototype.cleanup.call(this);
+        // unsubscribe all our subscribers
+        for (var i = 0; i < this._allSubs.length; i++) {
+            this._allSubs[i].unsubscribe(undefined, this.dispatchEvent, this);
+        }
+        this._allSubs = [];
         if (this._writeObject && this._writeObject['Amm.Expression']) {
             this._writeObject.cleanup();
         }
-        if (this._hasNonCacheable) {
-            Amm.getRoot().unsubscribe('interval', this.checkForChanges, this);
-        }
+        Amm.Operator.VarsProvider.prototype.cleanup.call(this);
     },
     
     getIsCacheable: function() {
@@ -251,13 +284,16 @@ Amm.Expression.prototype = {
     
     subscribeOperator: function(target, eventName, operator, method, extra) {
         if (extra === undefined) extra = null;
-        var op = target.getSubscribers(eventName, 'dispatchEvent', this);
+        var contextId = operator._contextId;
+        var op = target.getSubscribers(eventName, this.dispatchEvent, this);
         // queue is stored as Extra arg. Since it is stored and passed by reference, we can edit it later
         var queue;
         if (!op.length) { 
-            queue = [[method, operator]];
+            // this is the first time we subscribe to this object
+            this._allSubs.push(target);
+            queue = [[operator, method, contextId, extra]];
             queue.eventName = eventName;
-            target.subscribe(eventName, 'dispatchEvent', this, queue);
+            target.subscribe(eventName, this.dispatchEvent, this, queue);
             return;
         }
         if (op.length > 1) throw "Assertion: Amm.Expression.dispatchEvent handler must be subscribed only once";
@@ -266,26 +302,47 @@ Amm.Expression.prototype = {
             throw "Assertion: we found wrong queue array";
         }
         for (var i = 0, l = queue.length; i < l; i++) {
-            if (queue[i][0] === operator && queue[i][1] === method && queue[i][2] === extra) return; // already subscribed
+            if (
+                    queue[i][0] === operator
+                    && queue[i][1] === method 
+                    && queue[i][2] === contextId 
+                    && queue[i][3] === extra
+            ) return; // already subscribed
         }
-        queue.push([method, operator]);
+        queue.push([operator, method, contextId, extra]);
     },
     
     
     // `operator` is required arg
-    unsubscribeOperator: function(target, eventName, operator, method, extra) {
+    unsubscribeOperator: function(object, eventName, operator, method, extra, allContexts) {
+        if (!object) throw "`object` parameter is required";
         if (extra === undefined && arguments.length < 5) extra = null;
-        var op = target.getSubscribers(eventName, 'dispatchEvent', this);
+        var contextId = operator._contextId;
+        var op = object.getSubscribers(eventName, this.dispatchEvent, this);
         var opCount = 0; //number of remaining events to dispatch to operator `operator`
         if (!op.length) return 0; // not subscribed
         for (var j = 0; j < op.length; j++) {
             var queue = op[j][2];
-            if (!queue || !queue.eventName || (eventName && queue.eventName !== eventName)) throw "Assertion: we found wrong queue array";
+            if (!queue || !queue.eventName || (eventName && queue.eventName !== eventName))
+                throw "Assertion: we found wrong queue array";
             for (var i = queue.length - 1; i >= 0; i--) {
                 if (queue[i][0] !== operator) continue; 
-                if ((method === undefined || queue[i][1] === method) && (extra === undefined || queue[i][2] === extra)) {
+                if (
+                        (method === undefined || queue[i][1] === method) 
+                        && (allContexts || queue[i][2] === contextId)
+                        && (extra === undefined || queue[i][3] === extra)
+                ) {
                     queue.splice(i, 1);
-                    if (!queue.length) target.unsubscribeByIndex(op[j][5]);
+                    if (!queue.length) {
+                        object.unsubscribeByIndex(op[j][4], op[j][5]);
+                        // now we need to check if we are still subscribed to other
+                        // events and remove object from _allSubs
+                        var otherSubs = object.getSubscribers(undefined, this.dispatchEvent, this);
+                        if (!otherSubs.length) {
+                            var idx = Amm.Array.indexOf(this._allSubs, object);
+                            if (idx >= 0) this._allSubs.splice(idx, 1);
+                        }
+                    }
                 } else {
                     opCount++;
                 }
@@ -299,12 +356,27 @@ Amm.Expression.prototype = {
         if (!queue.eventName)
             throw "Queue array (extra) not provided to Amm.Expression._dispatchIncomingEvent method";
         
+        
+        var ev = queue.eventName;
+        
         if (queue.length > 1) {
             this._beginUpdate();
         }
         
-        Amm.WithEvents.invokeHandlers(queue.eventName, args, queue);
+        var extraIdx = args.length;
+        args.push(null);
+        for (var i = 0, l = queue.length; i < l; i++) {
+            var 
+                operator = queue[i][0],
+                method = queue[i][1],
+                contextId = queue[i][2];
         
+            if (!method.apply) method = operator[method];
+            
+            args[extraIdx] = queue[i][3]; // extra is last one
+            if (operator._contextId !== contextId) operator.setContextId(contextId);
+            method.apply(operator, args);
+        }
         if (queue.length > 1) {
             this._endUpdate();
         }
@@ -323,12 +395,12 @@ Amm.Expression.prototype = {
     _sortUpdateQueue: function(start) {
         this._updateQueueSorted = true;
         if (!start) {
-            this._updateQueue.sort(Amm.Expression.compareByLevel);
+            this._updateQueue.sort(Amm.Expression.compareByContextIdAndLevel);
             return;
         }
         if (start >= this._updateQueue.length - 1) return; // nothing to do
         var items = this._updateQueue.splice(start, this._updateQueue.length - start);
-        items.sort(Amm.Expression.compareByLevel);
+        items.sort(Amm.Expression.compareByContextIdAndLevel);
         this._updateQueue.push.apply(this._updateQueue, items);
     },
     
@@ -343,22 +415,36 @@ Amm.Expression.prototype = {
         this._deferredValueChange = {};
         // process update queue
         for (var i = 0; i < this._updateQueue.length; i++) {
-            this._updateQueue[i].finishUpdate();
             if (!this._updateQueueSorted) {
-                this._sortUpdateQueue(i + 1);
+                this._sortUpdateQueue(i);
             }
+            var contextId = this._updateQueue[i][1];
+            var op = this._updateQueue[i][0];
+            if (op._contextId !== contextId) op.setContextId(contextId);
+            op.finishUpdate();
         }
         this._updateLevel = 0;
-        if ('old' in this._deferredValueChange) {
-            var o = this._deferredValueChange['old'];
-            this._deferredValueChange = null;
-            this._reportChange(o);
+        if (this._deferredValueChange.ids) {
+            for (var i = 0, l = this._deferredValueChange.ids.length; i < l; i++) {
+                var d = this._deferredValueChange[this._deferredValueChange.ids[i]];
+                if (this._contextId !== d.contextId) {
+                    this.setContextId(d.contextId);
+                }
+                this._reportChange(d.old);
+            }
         }
+        this._deferredValueChange = null;
     },
     
     queueUpdate: function(operator) {
-        this._updateQueue.push(operator);
+        this._updateQueue.push([operator, operator._contextId]);
         this._updateQueueSorted = false;
+    },
+    
+    _constructContextState: function() {
+        var res = Amm.Operator.VarsProvider.prototype._constructContextState.call(this);
+        res._subscribers = {};
+        return res;
     }
     
 };
@@ -366,5 +452,5 @@ Amm.Expression.prototype = {
 Amm.Expression._builder = null;
 Amm.Expression._parser = null;
 
-Amm.extend(Amm.Expression, Amm.Operator.VarsProvider);
 Amm.extend(Amm.Expression, Amm.WithEvents);
+Amm.extend(Amm.Expression, Amm.Operator.VarsProvider);

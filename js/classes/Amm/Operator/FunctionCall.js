@@ -32,6 +32,10 @@ Amm.Operator.FunctionCall.prototype = {
     
     OPERANDS: ['func', 'args'],
     
+    STATE_SHARED: {
+        _cacheability: true
+    },
+    
     getReportsContentChanged: function() {
         return this._cacheability;
     },

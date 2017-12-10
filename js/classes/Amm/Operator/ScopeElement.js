@@ -41,13 +41,19 @@ Amm.Operator.ScopeElement.prototype = {
     
     OPERANDS: ['origin', 'id', 'range'],
     
+    STATE_SHARED: {
+        _componentOnly: true
+    },
+    
     supportsAssign: false,
 
     _originEvents: function(origin, oldOrigin) {
-        if (oldOrigin && oldOrigin['Amm.Element'])
-            oldOrigin.unsubscribe('closestComponentChange', undefined, this);
-        if (origin && origin['Amm.Element'])
-            origin.subscribe('closestComponentChange', this._originComponentChange, this);
+        if (oldOrigin && oldOrigin['Amm.Element']) {
+            this._unsub(oldOrigin, 'closestComponentChange');
+        }
+        if (origin && origin['Amm.Element']) {
+            this._sub(origin, 'closestComponentChange', this._originComponentChange);
+        }
     },
     
     _originChange: function(origin) {
@@ -67,11 +73,11 @@ Amm.Operator.ScopeElement.prototype = {
         var oldComponent = this._component;
         if (oldComponent === component) return;
         if (oldComponent) {
-            oldComponent.unsubscribe('acceptedInScope', this);
-            oldComponent.unsubscribe('rejectedInScope', this);
-            oldComponent.unsubscribe('renamedInScope', this);
+            this._unsub(oldComponent, 'acceptedInScope');
+            this._unsub(oldComponent, 'rejectedInScope');
+            this._unsub(oldComponent, 'renamedInScope');
             if (this._componentOnly) {
-                oldComponent.unsubscribe('childComponentStatusChangeInScope', this);
+                this._unsub(oldComponent, 'childComponentStatusChangeInScope');
             }
         }
         this._component = component;

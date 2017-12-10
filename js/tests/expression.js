@@ -611,7 +611,7 @@
             }
         });
         assert.equal(exp.getValue(), 'a, b, c', "Initial array value");
-        assert.equal(!!exp.getIsCacheable(), false, 'Expression that observers native Array is non cacheable');
+        assert.equal(!!exp.getIsCacheable(), false, 'Expression that observes native Array is non cacheable');
         var expV = null;
         exp.subscribe('valueChange', function(v) {expV = v;});
         arr.push('z');
@@ -632,7 +632,7 @@
         assert.equal(exp2.getValue(), 'a, b, c', 'Initial Amm.Array value');
         var expV2 = null;
         exp2.subscribe('valueChange', function(v) {expV2 = v;});
-        assert.equal(exp2.getIsCacheable(), true, 'Expression that observers Amm.Array is cacheable');
+        assert.equal(exp2.getIsCacheable(), true, 'Expression that observes Amm.Array is cacheable');
         arr2.push('z');
         assert.equal(expV2, 'a, b, c, z', 'Change in Amm.Array detected (first time)');
         arr2.push('x');

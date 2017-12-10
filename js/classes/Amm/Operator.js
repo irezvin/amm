@@ -1,6 +1,7 @@
 /* global Amm */
 Amm.Operator = function()  {
     this._subs = [];
+    this.id = ++Amm.Operator._iid;
 };
 
 // for bitmask
@@ -17,9 +18,13 @@ Amm.Operator.CONTENT_PERIODICALLY_CHECKED = 2;
 // Child operand reports changes in the content and we shouldn't bother
 Amm.Operator.CONTENT_OPERAND_REPORTED = 4;
 
+Amm.Operator._iid = 0;
+
 Amm.Operator.prototype = {
 
     'Amm.Operator': '__CLASS__',
+
+    id: null,
 
     _parent: null,
     
@@ -65,25 +70,61 @@ Amm.Operator.prototype = {
     
     endPos: null,
     
+    // members that don't change between states
+    STATE_SHARED: {
+        _contextState: true,
+        _contextParent: true,
+        _context: true,
+        _contextId: true,
+        _parent: true,
+        _parentOperand: true,
+        _expression: true,
+        _level: true,
+        _instanceStateShared: true,
+        beginPos: true,
+        endPos: true,
+        STATE_SHARED: true,
+        STATE_VARS: true,
+        STATE_PROTO: true,
+        OPERANDS: true
+    },
+    
+    // link to current instance prototype
+    STATE_PROTO: {}, 
+
+    STATE_VARS: [],
+    
+    _instanceStateShared: null,
+    
+    /* object { contextId: data } */
+    _contextState: null,
+    _contextParent: null,
+    _contextId: 0,
+    _numCtx: 0,
+    
     setExpression: function(expression) {
         Amm.is(expression, 'Amm.Expression', 'Expression');
         if (this._expression === expression) return;
         else if (this._expression) throw "Can setExpression() only once";
         this._expression = expression;
-        for (var i = 0, l = this.OPERANDS.length; i < l; i++) {        
+        for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
             var o = this['_' + this.OPERANDS[i] + 'Operator'];
-            if (o) o.setExpression(expression);
-        }
-        if (this._defSub) {
-            for (var j = 0; j < this._defSub.length; j++) {
-                this._expression.subscribeOperator(
-                    this._defSub[j][0] || this._expression, 
-                    this._defSub[j][1], this, this._defSub[j][2]
-                );
+            if (o) {
+                o.setExpression(expression);
             }
-            this._defSub = null;
         }
+        if (this._defSub) this._subscribeDeferreds();
         return true;
+    },
+    
+    _subscribeDeferreds: function() {
+        for (var j = 0; j < this._defSub.length; j++) {
+            this._expression.subscribeOperator(
+                this._defSub[j][0] || this._expression, 
+                this._defSub[j][1], this, this._defSub[j][2]
+            );
+        }
+        this._defSub = null;
     },
 
     getExpression: function() { 
@@ -112,7 +153,7 @@ Amm.Operator.prototype = {
      * object === null: sub to this._expression
      */
     _sub: function(object, map, method, extra, noCheck) {
-        var exp = this._expression;
+        var exp = this._expression || (this['Amm.Expression']? this : null);
         if (!exp && !this._defSub) this._defSub = [];
         if (object) {
             var idx = Amm.Array.indexOf(this._subs, object);
@@ -170,7 +211,7 @@ Amm.Operator.prototype = {
                     this._defSub.splice(i, 1);
             }
         } else {
-            var exp = this._expression;
+            var exp = this._expression || (this['Amm.Expression']? this : null);
             if (!exp) return;
             var opCount = exp.unsubscribeOperator(object, event, this, method, extra);
             if (!opCount) { // remove object from our list
@@ -181,6 +222,7 @@ Amm.Operator.prototype = {
     },
     
     notifyOperandChanged: function(operand, value, oldValue, operator) {
+        this._propagateContext(operand, operator, false);
         if (this._lockChange) return;
         this._setOperandValue(operand, value);
     },
@@ -204,7 +246,7 @@ Amm.Operator.prototype = {
         
         if (this._isEvaluating) return;
         
-        var exp = this._expression;
+        var exp = this._expression || (this['Amm.Expression']? this : null);
         if (exp && exp.getUpdateLevel()) {
             exp.queueUpdate(this);
             return;
@@ -420,7 +462,13 @@ Amm.Operator.prototype = {
         if (this._hasNonCacheable - !!this._nonCacheable) {
             for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
                 var op = '_' + this.OPERANDS[i] + 'Operator';
-                if (this[op] && this[op]._hasNonCacheable) this[op].checkForChanges();
+                if (!this[op]) continue;
+                if (this[op]._contextId !== this._contextId) {
+                    this._propagateContext(op, this[op], true);
+                }
+                if (this[op]._hasNonCacheable) {
+                    this[op].checkForChanges();
+                }
             }
         }
         
@@ -471,7 +519,7 @@ Amm.Operator.prototype = {
     },
     
     _defaultHandler: function() {
-        var exp = this._expression;
+        var exp = this._expression || (this['Amm.Expression']? this : null);
         if (exp && exp.getUpdateLevel()) {
             exp.queueUpdate(this);
             return;
@@ -563,7 +611,7 @@ Amm.Operator.prototype = {
             }
             if (this[changeMethod]) this[changeMethod](value, oldValue, hadValue);
             if (!this._isEvaluating) {
-                var exp = this._expression;
+                var exp = this._expression || (this['Amm.Expression']? this : null);
                 if (exp && exp.getUpdateLevel()) {
                     exp.queueUpdate(this);
                 } else {
@@ -577,13 +625,23 @@ Amm.Operator.prototype = {
         this.evaluate();
     },
     
+    // changes operand context (down === true) or own context (down === false)
+    // if our context differs with operand operator' context
+    _propagateContext: function(operand, operator, down) {
+        if (down) operator.setContextId(this._contextId);
+            else this.setContextId(operator._contextId);
+    },
+    
     _getOperandValue: function(operand, again) {
         var operatorVar = '_' + operand + 'Operator', opr = this[operatorVar];
         var valueVar = '_' + operand + 'Value';
         var hasValueVar = '_' + operand + 'Exists';
+        // should - and how we should? - switch context here???
+        if (opr && opr._contextId !== this._contextId)
+            this._propagateContext(operand, opr, true);
         if (opr && (again || !this[hasValueVar] || opr._hasNonCacheable))
             this._setOperandValue(operand, opr.getValue(again));
-        if (this[hasValueVar]) 
+        if (this[hasValueVar])
             return this[valueVar];
         return undefined;
     },
@@ -611,11 +669,15 @@ Amm.Operator.prototype = {
     },
     
     _reportNonCacheabilityChanged: function(nonCacheability) {
-        if (this._parent) 
+        if (this._parent) {
             this._parent.notifyOperandNonCacheabilityChanged(this._parentOperand, nonCacheability, this);
+        }
     },
     
     notifyOperandNonCacheabilityChanged: function(operand, nonCacheability, operator) {
+        if (this._contextId !== operator._contextId) {
+            this._propagateContext(operand, operator);
+        }
         if (nonCacheability) this._setHasNonCacheable(this._hasNonCacheable + 1);
         else this._setHasNonCacheable(this._hasNonCacheable - 1);
     },
@@ -635,17 +697,31 @@ Amm.Operator.prototype = {
         return res;
     },
     
-    cleanup: function() {
-        this._parent = null;
-        var exp = this._exression;
-        this._expression = null;
+    // cleans data belonging to the CURRENT context
+    _deleteCurrentContext: function() {
+        var exp = this._expression || (this['Amm.Expression']? this : null);
         if (exp) {
             for (var i = this._subs.length - 1; i >= 0; i--) {
                 exp.unsubscribeOperator(this._subs[i], undefined, this, undefined, undefined);
             }
         }
         this._subs = [];
+        for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
+            var o = this.OPERANDS[i], opVar = '_' + o + 'Operator', op = this[opVar];
+            if (op) {
+                if (op._contextId !== this._contextId) this._propagateContext(op, o, true);
+                op._deleteCurrentContext();                
+            }
+        }
+    },
+    
+    cleanup: function() {
+        this._parent = null;
+        var exp = this._expression || (this['Amm.Expression']? this : null);
+        this._expression = null;
+        this._subs = [];
         this._defSub = null;
+        this._contextState = {};
         for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
             var operand = this.OPERANDS[i];
             var operatorVar = '_' + operand + 'Operator';
@@ -659,9 +735,200 @@ Amm.Operator.prototype = {
     },
     
     getSrc: function() {
-        if (!this._expression) return;
+        var e = this._expression;
+        if (!e) {
+            e = this._parent;
+            while(e && !e['Amm.Expression']) e = e._parent;
+        }
+        if (!e) return;
         if (this.beginPos === null) return;
-        return this._expression.getSrc(this.beginPos, this.endPos);
+        return e.getSrc(this.beginPos, this.endPos);
+    },
+
+    createContext: function(data, properties) {
+        var ctx = new Amm.Operator.Context(this, data);
+        this.setContextId(ctx.id);
+        if (properties && (typeof properties === 'object')) {
+            Amm.init(this, properties);
+        }
+        return ctx;
+    },
+    
+    setContextId: function(contextId) {
+        if (this._contextId === contextId) return;
+        if (!this._contextState) {
+            this._contextState = {};
+            this._populateInstanceStateShared();
+        }
+        this._contextState[this._contextId] = this._getContextState();
+        var newState, isNewState = false;
+        if (!this._contextState[contextId]) {
+            newState = this._constructContextState();
+            isNewState = true;
+            this._numCtx++;
+        } else {
+            newState = this._contextState[contextId];
+            delete this._contextState[contextId];
+        }
+        this._contextId = contextId;
+        this._setContextState(newState, isNewState);
+    },
+    
+    getContextId: function() {
+        return this._contextId;
+    },
+    
+    listContextIds: function() {
+        var res = [];
+        for (var i in this._contextState)
+            if (this._contextState.hasOwnProperty(i))
+                res.push(i);
+        return res;
+    },
+    
+    _getContextState: function() {
+        var res = {};
+        for (var i = 0, l = this.STATE_VARS.length; i < l; i++) {
+            var v = this.STATE_VARS[i];
+            if (!this._instanceStateShared || !this._instanceStateShared[v]) {
+                res[v] = this[v];
+            }
+        }
+        return res;
+    },
+    
+    _constructContextState: function() {
+        var res = {};
+        for (var i = 0, l = this.STATE_VARS.length; i < l; i++) {
+            var v = this.STATE_VARS[i];
+            if (this._instanceStateShared && this._instanceStateShared[v]) continue;
+            res[v] = this.STATE_PROTO[v];
+        }
+        res._subs = [];
+        return res;
+    },
+    
+    _setContextState: function(contextState, isNewState) {
+        if (isNewState && !this._allSubs) this._allSubs = [].concat(this._subs);
+        this.getExpression();
+        for (var i in contextState) if (contextState.hasOwnProperty(i)) {
+            this[i] = contextState[i];
+        }
+        if (isNewState) {
+            this._initContextState(this._contextId, true);
+        }
+        if (this._defSub && this._expression) {
+            this._subscribeDeferreds();
+        }
+    },
+    
+    _initContextState: function(contextId, own) {
+        if (!own) {
+            this.setContextId(contextId);
+            return;
+        }
+        for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
+            var op = '_' + this.OPERANDS[i], o = op + 'Operator', v = op + 'Value', x = op + 'Exists', ob = op + 'Observe';
+            if (this[x] && !this[o]) {
+                var val = this[v]; 
+                this[v] = this.STATE_PROTO[v];
+                this[x] = false;
+                this._setOperandValue(this.OPERANDS[i], val);
+            } else if (this[o]) {
+                this[o]._initContextState(contextId);
+            }
+        }
+    },
+    
+    // destroys current context. Will return to "context 0"
+    destroyContext: function() {
+        this._partialCleanup();
+        var newStateId = 0;
+        if (!(newStateId in this._contextState)) {
+            newStateId = null;
+            for (newStateId in this._contextState)
+                if (this._contextState.hasOwnProperty(newStateId))
+                    break;
+        }
+        if (newStateId !== null) 
+            this._setContextState(this._contextState[newStateId]);
+    },
+    
+    /**
+     * Populates this._instanceStateShared variable according to current
+     * operands. Makes operator operands'references (but not their values) shared
+     * along with constant operands. Should be called AFTER we received all our
+     * operands.
+     */
+    _populateInstanceStateShared: function() {
+        if (!this._instanceStateShared) {
+            this._instanceStateShared = {};
+        }
+        // suffixes: Operator, Value, Exists, Observe
+        for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
+            var operand = this.OPERANDS[i];
+            var operatorVar = '_' + operand + 'Operator';
+            var valueVar = '_' + operand + 'Value';
+            var existsVar = '_' + operand + 'Exists';
+            var observeVar = '_' + operand + 'Observe';
+            this._instanceStateShared[operatorVar] = true;
+            if (!this[operatorVar]) {
+                this._instanceStateShared[valueVar] = true;
+                this._instanceStateShared[existsVar] = true;
+                this._instanceStateShared[observeVar] = true;
+            }
+        }
     }
     
 };
+
+Amm.Operator.beforeExtend = function(subClass, parentClass, dontIndicateParent) {
+    
+    if (!subClass.prototype.STATE_SHARED)
+        subClass.prototype.STATE_SHARED = {};
+    Amm.override(subClass.prototype.STATE_SHARED || {}, this.prototype.STATE_SHARED);
+    if (!subClass.beforeExtend) subClass.beforeExtend = this.beforeExtend;
+    if (!(subClass.prototype.STATE_VARS instanceof Array)) {
+        subClass.prototype.STATE_VARS = [];
+    }
+    if (!subClass.prototype.STATE_PROTO) subClass.prototype.STATE_PROTO = {};
+};
+
+Amm.Operator.afterExtend = function(subClass, parentClass, dontIndicateParent) {
+    
+    Amm.Operator.populateStateVars(subClass);
+    if (!subClass.afterExtend) subClass.afterExtend = this.afterExtend;
+    
+};
+
+Amm.Operator.populateStateVars = function(constrFn) {
+    var p = constrFn.prototype;
+    for (var i in p) {
+        if (
+            p.hasOwnProperty(i) 
+            && !p.STATE_SHARED[i]
+            && typeof p[i] !== 'function'
+            && p[i] !== '__CLASS__'
+            && p[i] !== '__PARENT__'
+            && p[i] !== '__INTERFACE__'
+        ) {
+            p.STATE_VARS.push(i);
+            p.STATE_PROTO[i] = p[i];
+        }
+    }
+    if (p.OPERANDS instanceof Array) {
+        for (var i = 0, l = p.OPERANDS.length; i < l; i++) {
+            var operand = p.OPERANDS[i];
+            var valueVar = '_' + operand + 'Value';
+            var existsVar = '_' + operand + 'Exists';
+            var observeVar = '_' + operand + 'Observe';
+            p.STATE_VARS.push(valueVar, existsVar, observeVar);
+            p.STATE_PROTO[valueVar] = null;
+            p.STATE_PROTO[existsVar] = null;
+            p.STATE_PROTO[observeVar] = null;
+        }
+    }
+    
+};
+
+Amm.Operator.populateStateVars(Amm.Operator);

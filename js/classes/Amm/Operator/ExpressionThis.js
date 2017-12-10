@@ -16,6 +16,14 @@ Amm.Operator.ExpressionThis.prototype = {
         this._defaultHandler();
     },
     
+    _initContextState: function(contextId, own) {    
+        Amm.Operator.prototype._initContextState.call(this, contextId, own);
+        if (own && this._expression) {
+            this._sub(this._expression, 'expressionThisChange');
+            this._defaultHandler();
+        }
+    },
+    
     _doEvaluate: function(again) {
         if (!this._expression) {
             this._hasValue = false;
