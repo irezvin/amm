@@ -7,7 +7,6 @@
  * Allows to parse operator from string definition.
  */
 Amm.Expression = function(options, expressionThis, writeProperty, writeObject, writeArgs) {
-    if (expressionThis) this._expressionThis = expressionThis;
     this._allSubs = [];
     if (options && typeof options === 'string') {
         options = {src: options};
@@ -19,6 +18,7 @@ Amm.Expression = function(options, expressionThis, writeProperty, writeObject, w
     }
     Amm.Operator.VarsProvider.call(this, operator);
     Amm.WithEvents.call(this);
+    if (expressionThis) options.expressionThis = expressionThis;
     if (options.writeProperty) {
         writeProperty = options.writeProperty;
         delete options.writeProperty;
@@ -84,11 +84,11 @@ Amm.Expression.prototype = {
         var oldExpressionThis = this._expressionThis;
         if (oldExpressionThis === expressionThis) return;
         if (oldExpressionThis && oldExpressionThis['Amm.WithEvents'] && oldExpressionThis.hasEvent('cleanup')) {
-            this._unsub(oldExpressionThis, 'cleanup', this.cleanup);
+            this._unsub(oldExpressionThis, 'cleanup', this._deleteCurrentContext);
         }
         this._expressionThis = expressionThis;
         if (expressionThis && expressionThis['Amm.WithEvents'] && expressionThis.hasEvent('cleanup')) {
-            this._sub(expressionThis, 'cleanup', this.cleanup, undefined, true);
+            this._sub(expressionThis, 'cleanup', this._deleteCurrentContext, undefined, true);
         }
  
         this.outExpressionThisChange(expressionThis, oldExpressionThis);
@@ -126,7 +126,7 @@ Amm.Expression.prototype = {
         this._writeProperty = writeProperty;
         this._writeObject = writeObject;
         if (writeObject && writeObject['Amm.WithEvents'] && writeObject.hasEvent('cleanup')) {
-            this._sub(writeObject, 'cleanup', this.cleanup, undefined, true);
+            this._sub(writeObject, 'cleanup', this._deleteCurrentContext, undefined, true);
         }
         this._writeArgs = writeArgs;
         this._write();
@@ -233,6 +233,9 @@ Amm.Expression.prototype = {
     },
     
     notifyWriteDestinationChanged: function() {
+        if (this._operatorOperator._contextId !== this._contextId) {
+            this._propagateContext('operator', this._operatorOperator);
+        }
         return this.outWriteDestinationChanged();
     },
     
@@ -244,6 +247,15 @@ Amm.Expression.prototype = {
         this._out('valueChange', value, oldValue, changeInfo);
     },
     
+    deleteContext: function(id) {
+        Amm.Operator.VarsProvider.prototype.deleteContext.call(this, id);
+        if (!this._numCtx) this.cleanup();
+    },
+    
+    _deleteCurrentContext: function() {
+        this.deleteContext();
+    },
+    
     cleanup: function() {
         Amm.WithEvents.prototype.cleanup.call(this);
         // unsubscribe all our subscribers
@@ -251,6 +263,7 @@ Amm.Expression.prototype = {
             this._allSubs[i].unsubscribe(undefined, this.dispatchEvent, this);
         }
         this._allSubs = [];
+        this._numCtx = 0;
         if (this._writeObject && this._writeObject['Amm.Expression']) {
             this._writeObject.cleanup();
         }

@@ -29,6 +29,10 @@ Amm.Operator.VarsProvider.prototype = {
     _operatorExists: null,
     
     OPERANDS: ['operator'],
+    
+    STATE_SHARED: {
+        _varsProvider: true
+    },
 
     setOperator: function(operator) {
         this._setOperand('operator', operator);
@@ -154,11 +158,15 @@ Amm.Operator.VarsProvider.prototype = {
         }
         return res;
     },
-    
-    cleanup: function() {
+
+    _partialCleanup: function() {
         this._vars = {};
         this._providerVars = null;
         this._allVars = null;
+        Amm.Operator.prototype._partialCleanup.call(this);
+    },
+    
+    cleanup: function() {
         this._varsProvider = null;
         Amm.Operator.prototype.cleanup.call(this);
     }

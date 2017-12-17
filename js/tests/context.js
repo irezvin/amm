@@ -110,7 +110,6 @@ QUnit.module("Context");
         };
         
         var xp = new Amm.Expression("this.x + this.y", a);
-        window.d.xp = xp;
         
         var v1, v2, cid1, cid2;
         
@@ -148,5 +147,104 @@ QUnit.module("Context");
         xp.cleanup();
             
     });
+
+    QUnit.test("Context.nonCacheability", function(assert) {
+        
+        var a = {
+            x: 100,
+            y: 200
+        };
+        
+        var b = {
+            x: 10,
+            y: 20
+        };
+        
+        var xp = new Amm.Expression("this.x + this.y", a);
+        
+        var v1, v2, cid1, cid2;
+        
+        xp.subscribe('valueChange', function(v) { v1 = v; });
+        
+        cid1 = xp.getContextId();
+
+            assert.equal(xp.getIsCacheable(), false, 'non-cacheable object1');
+            assert.equal(xp.getValue(), a.x + a.y, 'correct value for object1');
+        
+        cid2 = xp.createContext(null, {expressionThis: b}).id;
+        
+        xp.subscribe('valueChange', function(v) { v2 = v; });
+        
+            assert.ok (xp.getExpressionThis() === b);
+            assert.equal(xp.getValue(), b.x + b.y, 'correct value of object2');
+            assert.equal(xp.getIsCacheable(), false, 'non-cacheable object2');
+
+        a.x += 20;
+        a.y += 3;
+        
+        b.x += 1;
+        b.y += 5;
+        
+        Amm.getRoot().outInterval();
+        
+            assert.equal(v1, a.x + a.y);
+            assert.equal(v2, b.x + b.y);
+            
+        xp.cleanup();
+            
+    });
+    
+    QUnit.test("Context.cleanup", function(assert) {
+        
+        var e1 = new Amm.Element({
+            properties: {
+                a: 10
+            }
+        });
+        var e2 = new Amm.Element({
+            properties: {
+                a: 20
+            }
+        });
+        var e3 = new Amm.Element({
+            properties: {
+                a: 30
+            }
+        });
+        var o = new Amm.Element({
+            properties: {
+                v3: null
+            }
+        });
+        
+        var xp = new Amm.Expression("this.a + 1", e1);
+        var cleaned = 0, oldXpCleanup = xp.cleanup;
+        
+        xp.cleanup = function() {
+            cleaned++;
+            return oldXpCleanup.call(xp);
+        };
+        
+        var ctx2 = xp.createContext(null, {expressionThis: e2});
+        assert.ok(ctx2.operator === xp, 'context references the operator');
+        var ctx3 = xp.createContext(null, {expressionThis: e3});
+        xp.setWriteProperty('v3', o);
+        
+        
+        d.e1 = e1;
+        d.xp = xp;
+        e1.cleanup();
+        o.cleanup();
+        ctx2.cleanup();
+        
+        assert.equal(e2.getSubscribers().length, 0, 
+            'Element doesn\'t have observers because context of expression is deleted');
+        assert.equal(xp.listContexts().length, 0,
+            'All contexts deleted because of expression cleanup');
+        assert.equal(cleaned, 1);
+        
+    });
+    
+    
     
 }) ();

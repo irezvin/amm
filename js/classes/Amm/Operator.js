@@ -76,6 +76,7 @@ Amm.Operator.prototype = {
         _contextParent: true,
         _context: true,
         _contextId: true,
+        _numCtx: true,
         _parent: true,
         _parentOperand: true,
         _expression: true,
@@ -100,7 +101,8 @@ Amm.Operator.prototype = {
     _contextState: null,
     _contextParent: null,
     _contextId: 0,
-    _numCtx: 0,
+    _context: false,
+    _numCtx: 1, // we have default context
     
     setExpression: function(expression) {
         Amm.is(expression, 'Amm.Expression', 'Expression');
@@ -698,28 +700,45 @@ Amm.Operator.prototype = {
     },
     
     // cleans data belonging to the CURRENT context
-    _deleteCurrentContext: function() {
+    deleteContext: function(id) {
+        if (id === undefined) id = this._contextId;
+        else if (id !== this._contextId) {
+            // we don't have such context
+            if (!this._contextState[id]) {
+                return;
+            } 
+            this.setContextId(id);
+        }
+        this._partialCleanup();
+        this._contextState[id] = null;
+        if (this._context) {
+            this._context.operator = null;
+            this._context.cleanup();
+        }
+        for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
+            var o = this.OPERANDS[i], opVar = '_' + o + 'Operator', op = this[opVar];
+            if (op) {
+                op.deleteContext(id);
+            }
+        }
+        this._numCtx--;
+    },
+    
+    _partialCleanup: function() {
+        this._subs = [];
         var exp = this._expression || (this['Amm.Expression']? this : null);
         if (exp) {
             for (var i = this._subs.length - 1; i >= 0; i--) {
                 exp.unsubscribeOperator(this._subs[i], undefined, this, undefined, undefined);
             }
         }
-        this._subs = [];
-        for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
-            var o = this.OPERANDS[i], opVar = '_' + o + 'Operator', op = this[opVar];
-            if (op) {
-                if (op._contextId !== this._contextId) this._propagateContext(op, o, true);
-                op._deleteCurrentContext();                
-            }
-        }
     },
     
     cleanup: function() {
+        this._partialCleanup();
         this._parent = null;
         var exp = this._expression || (this['Amm.Expression']? this : null);
         this._expression = null;
-        this._subs = [];
         this._defSub = null;
         this._contextState = {};
         for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
@@ -748,6 +767,7 @@ Amm.Operator.prototype = {
     createContext: function(data, properties) {
         var ctx = new Amm.Operator.Context(this, data);
         this.setContextId(ctx.id);
+        this._context = ctx;
         if (properties && (typeof properties === 'object')) {
             Amm.init(this, properties);
         }
@@ -760,15 +780,17 @@ Amm.Operator.prototype = {
             this._contextState = {};
             this._populateInstanceStateShared();
         }
+        // save current context
         this._contextState[this._contextId] = this._getContextState();
         var newState, isNewState = false;
-        if (!this._contextState[contextId]) {
+        if (contextId in this._contextState) {
+            newState = this._contextState[contextId];
+            if (newState === null)
+                throw "Attempt to setContextId() of already destroyed context";
+        } else {
             newState = this._constructContextState();
             isNewState = true;
             this._numCtx++;
-        } else {
-            newState = this._contextState[contextId];
-            delete this._contextState[contextId];
         }
         this._contextId = contextId;
         this._setContextState(newState, isNewState);
@@ -778,11 +800,12 @@ Amm.Operator.prototype = {
         return this._contextId;
     },
     
-    listContextIds: function() {
+    listContexts: function() {
         var res = [];
         for (var i in this._contextState)
-            if (this._contextState.hasOwnProperty(i))
+            if (this._contextState.hasOwnProperty(i) && this._contextState[i] !== null) {
                 res.push(i);
+            }
         return res;
     },
     
