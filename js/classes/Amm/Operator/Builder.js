@@ -167,6 +167,34 @@ Amm.Operator.Builder.prototype = {
             this.unConst(element), 
             this.unConst(id)
         );
+    },
+    
+    LoopIdentifiers: function(varName, keyName) {
+        return {keyVar: keyName, valueVar: varName};
+    },
+    
+    Range: function(rangeType, value, arg1, arg2) {
+        if (rangeType === 'All') {
+            // TODO: optimize case when value operator (scopeElement, childElement) accepts 'all' range parameter
+            return new Amm.Operator.Range.All(this.unConst(value));
+        } else if (rangeType === 'Index') {
+            // TODO: optimize case when value operator (scopeElement, childElement) accepts 'index' range parameter
+            throw "Range of type " + rangeType + " is implemented yet";
+        } else if (rangeType === 'RegExp') {
+            throw "Range of type " + rangeType + " is implemented yet";
+        } else if (rangeType === 'Slice') {
+            throw "Range of type " + rangeType + " is implemented yet";
+        } else if (rangeType === 'Expression') {
+            // TODO: fall to always-all or always-empty range in case condition (arg1) is constant
+            return new Amm.Operator.Range.Condition(
+                this.unConst(value), 
+                this.unConst(arg1), 
+                this.unConst(arg2.keyVar), 
+                this.unConst(arg2.valueVar)
+            );
+        } else {
+            throw "Uknown range type: '" + rangeType + "'";
+        }
     }
     
 };

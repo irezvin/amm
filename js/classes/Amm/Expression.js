@@ -167,8 +167,8 @@ Amm.Expression.prototype = {
      *      y)  or for different `sourceObject`
      *          (`sourceObject` !== this)
      */
-    outVarsChange: function(value, oldValue, name, sourceObject) {
-        this._out('varsChange', value, oldValue, name, sourceObject);
+    outVarsChange: function(value, oldValue, name, sourceObject, contextId) {
+        this._out('varsChange', value, oldValue, name, sourceObject, contextId);
     },
     
     setOperator: function(operator) {
@@ -183,21 +183,17 @@ Amm.Expression.prototype = {
     _reportChange: function(oldValue) {
         var k = 'ctx_' + this._contextId;
         this._currChangeInfo = null;
-        if (this._deferredValueChange) {
+        if (this._updateLevel && this._deferredValueChange) {
             if (!this._deferredValueChange[k]) {
-                this._deferredValueChange[k] = {'contextId': this._contextId};
+                this._deferredValueChange[k] = {'contextId': this._contextId, 'old': oldValue};
                 if (!this._deferredValueChange.ids) {
                     this._deferredValueChange.ids = [k];
                 } else {
                     this._deferredValueChange['ids'].push(k);
                 }
             }
-            if (!('old' in this._deferredValueChange[k])) {
-                this._deferredValueChange[k]['old'] = oldValue;
-                return;
-            }
+            return;
         }
-        Amm.Operator.VarsProvider.prototype._reportChange.call(this, oldValue);
         this.outValueChange(this._value, oldValue);
         if (this._writeProperty) this._write();
     },
@@ -378,7 +374,7 @@ Amm.Expression.prototype = {
         
         var extraIdx = args.length;
         args.push(null);
-        for (var i = 0, l = queue.length; i < l; i++) {
+        for (var i = 0; i < queue.length; i++) {
             var 
                 operator = queue[i][0],
                 method = queue[i][1],
@@ -387,7 +383,7 @@ Amm.Expression.prototype = {
             if (!method.apply) method = operator[method];
             
             args[extraIdx] = queue[i][3]; // extra is last one
-            if (operator._contextId !== contextId) operator.setContextId(contextId);
+            if (operator._contextId !== contextId) operator.setContextIdToDispatchEvent(contextId, ev, args);
             method.apply(operator, args);
         }
         if (queue.length > 1) {
@@ -437,16 +433,17 @@ Amm.Expression.prototype = {
             op.finishUpdate();
         }
         this._updateLevel = 0;
-        if (this._deferredValueChange.ids) {
-            for (var i = 0, l = this._deferredValueChange.ids.length; i < l; i++) {
-                var d = this._deferredValueChange[this._deferredValueChange.ids[i]];
+        var dv = this._deferredValueChange;
+        this._deferredValueChange = null;
+        if (dv.ids) {
+            for (var i = 0, l = dv.ids.length; i < l; i++) {
+                var d = dv[dv.ids[i]];
                 if (this._contextId !== d.contextId) {
                     this.setContextId(d.contextId);
                 }
                 this._reportChange(d.old);
             }
         }
-        this._deferredValueChange = null;
     },
     
     queueUpdate: function(operator) {

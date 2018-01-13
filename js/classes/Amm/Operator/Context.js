@@ -11,7 +11,8 @@ Amm.Operator.Context = function(operator, data) {
         }
     }
     this.operator = operator;
-    this.id = ++Amm.Operator.Context._iid;
+    // contextId must always be a string
+    this.id = '' + ++Amm.Operator.Context._iid;
     Amm.Operator.Context.instances[this.id] = this;
 };
 

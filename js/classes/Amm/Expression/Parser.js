@@ -14,7 +14,7 @@ Amm.Expression.Parser.prototype = {
      * 3 - number
      * 4 - tokens
      */
-    tokensRx: /^(?:(\s+)|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(!!|\?\?|\.\.|::|->>|->|&&|\|\||!==|!=|===|==|>=|<=|=>|[-+\{\}$?!.,:\[\]()'"%*/])|(.))/,
+    tokensRx: /^(?:(\s+)|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(!!|\?\?|\.\.|::|->>|->|&&|\|\||!==|!=|===|==|>=|<=|=>|[-&|+><\{\}$?!.,:\[\]()'"%*/])|(.))/,
     
     regexTokens: /^(?:(\.)|([[\]()\/])|([^\\\[n\]()\/]+))/,
     
@@ -373,7 +373,7 @@ Amm.Expression.Parser.prototype = {
                     this.parsePart(true, 'FunctionCall', value)
                 ||  this.parsePart(true, 'PropertyAccess', value) 
                 ||  this.parsePart(true, 'ElementOrChildElement', value) 
-                ||  this.parsePart(true, 'RangeAccess', value);
+                ||  this.parsePart(true, 'Range', value);
         if (sub) {
             var right = this.parsePart(true, 'AccessOperator', sub);
             if (right) return right;
@@ -502,25 +502,25 @@ Amm.Expression.Parser.prototype = {
         return this.genOp(isChild? 'ChildElement' : 'ElementAccess', value, specifier, range || null);
     },
     
-    parseRangeAccess: function(value) {
-        var range = this.parsePart('Range');
-        if (range) return this.genOp('RangeAccess', range);
-        return;
-    },
-
     // parses [$key =>] $value: construct for ranges
     parseLoopIdentifiers: function() {
-        var varName = this.parsePart('Variable');
-        var keyName = this.parsePart('Variable');
+        var varName = this.parsePart('Variable', true);
+        var keyName;
         if (!varName) return;
         var token = this.fetch();
         if (!token) return;
         if (token.isSymbol('=>')) {
             keyName = varName;
-            varName = this.parsePart('Variable');
-            if (!varName) throw "Expected: variable";
             token = this.fetch();
-            if (!token || !token.isSymbol(':')) throw "Expected: ':'";
+            if (token.isSymbol(':')) {
+                varName = null; // we have key name but not var name
+            } else {
+                this.unfetch();
+                varName = this.parsePart('Variable', true);
+                if (!varName) throw "Expected: variable";
+                token = this.fetch();
+                if (!token || !token.isSymbol(':')) throw "Expected: ':'";
+            }
             return this.genOp('LoopIdentifiers', varName, keyName);
         } else if (token.isSymbol(':')) {
             return this.genOp('LoopIdentifiers', varName, null);
@@ -529,7 +529,7 @@ Amm.Expression.Parser.prototype = {
         }
     },
     
-    parseRange: function() {
+    parseRange: function(value) {
         var token = this.fetch();
         if (!token) return;
         if (!token.isSymbol('{')) {
@@ -567,15 +567,16 @@ Amm.Expression.Parser.prototype = {
         }
         token = this.fetch();
         if (!token || !token.isSymbol('}')) throw "Expected: '}'";
-        return this.genOp('Range', rangeType, arg1, arg2);
+        return this.genOp('Range', rangeType, value, arg1, arg2);
     },
 
-    parseVariable: function() {
+    parseVariable: function(getNameOnly) {
         var token = this.fetch();
         if (!token) return;
         if (token.isSymbol('$')) { // the variable
             token = this.fetch();
             if (token && token.isIdentifier()) {
+                if (getNameOnly) return this.genOp('Constant', token.string);
                 return this.genOp('Variable', token.string);
             } else {
                 throw "Expected: identifier";

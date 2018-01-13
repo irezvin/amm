@@ -26,9 +26,15 @@ Amm.Operator.Var.prototype = {
     },
     
     supportsAssign: true,
+    
+    setContextIdToDispatchEvent: function(contextId, ev, args) {
+        if (ev === 'varsChange' && args[3] !== this._varsProvider && args[4] !== contextId) return;
+        if (this._varNameValue && args[2] && this._varNameValue !== args[2]) return;
+        Amm.Operator.prototype.setContextIdToDispatchEvent.call(this, contextId, ev, args);
+    },
 
-    _onProviderVarsChange: function(value, oldValue, name, provider) {
-        if (provider !== this._varsProvider) return;
+    _onProviderVarsChange: function(value, oldValue, name, provider, contextId) {
+        if (provider !== this._varsProvider || contextId !== this._contextId) return;
         if (this._varNameValue && name && this._varNameValue !== name) return;
         if (this._expression && this._expression.getUpdateLevel()) {
             this._expression.queueUpdate(this);
@@ -49,18 +55,27 @@ Amm.Operator.Var.prototype = {
         this._sub(this.expression, 'varsChange', '_onProviderVarsChange', null, true);
     },
     
+    _initContextState: function(contextId, own) {    
+        Amm.Operator.prototype._initContextState.call(this, contextId, own);
+        if (own && this._expression) {
+            this._sub(this.expression, 'varsChange', '_onProviderVarsChange', null, true);
+        }
+    },
+    
     _doEvaluate: function(again) {
         var varName = this._getOperandValue('varName', again);
         if (!varName) return; // no variable
         if (!this._varsProvider) {
             this._hasValue = false;
             return;
-        } 
+        }
+        if (this._contextId !== this._varsProvider._contextId && this._varsProvider.hasContext(this._contextId)) {
+            this._varsProvider._propagateContext(null, this, false);
+        }
         var res = this._varsProvider.getVars(varName);
         return res;
     },
-    
-    
+        
     _doSetValue: function(value, checkOnly) {
         var varName = this._getOperandValue('varName');
         if (!varName && varName !== 0) return "`varName` is empty";
@@ -88,7 +103,14 @@ Amm.Operator.Var.prototype = {
             if (!varName && varName !== 0) return "`varName` is empty";
             e.setVars(value, varName);
         };
-    }    
+    },
+    
+    _partialCleanup: function() {
+        if (this._expression && this._varsProvider) {
+            this._expression.unsubscribeOperator(this._expression, 'varsChange', this);
+        }
+        Amm.Operator.prototype._partialCleanup.call(this);
+    }
     
 };
 

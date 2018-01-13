@@ -194,16 +194,13 @@
                 ["PropertyAccess",["PropertyAccess",["Identifier","a"],["Constant","b"],["PropertyArgs",[["Constant","x"]],false],false,null],["Constant","c"],["PropertyArgs",[["Constant","y"]],false],false,null],
 
             "a.b{0..3}":
-                ["RangeAccess",["Range","Slice",["Constant",0],["Constant",3]]],
+                ["Range","Slice",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false,null],["Constant",0],["Constant",3]],
 
-            "a.b{item.x && !item.y}":
-                ["RangeAccess",["Range","Expression",["Binary",["PropertyAccess",["Identifier","item"],["Constant","x"],null,false,null],"&&",["Unary","!",["PropertyAccess",["Identifier","item"],["Constant","y"],null,false,null]]],null]],
-            
             "a.b{$v: item.x && !item.y}":
-                ["RangeAccess",["Range","Expression",["Binary",["PropertyAccess",["Identifier","item"],["Constant","x"],null,false,null],"&&",["Unary","!",["PropertyAccess",["Identifier","item"],["Constant","y"],null,false,null]]],["LoopIdentifiers",["Variable","v"],null]]],
+                ["Range","Expression",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false,null],["Binary",["PropertyAccess",["Identifier","item"],["Constant","x"],null,false,null],"&&",["Unary","!",["PropertyAccess",["Identifier","item"],["Constant","y"],null,false,null]]],["LoopIdentifiers",["Constant","v"],null]],
         
             "a.b{$k => $v: item.x && !item.y}":
-                ["RangeAccess",["Range","Expression",["Binary",["PropertyAccess",["Identifier","item"],["Constant","x"],null,false,null],"&&",["Unary","!",["PropertyAccess",["Identifier","item"],["Constant","y"],null,false,null]]],["LoopIdentifiers",["Variable","v"],["Variable","k"]]]],
+                ["Range","Expression",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false,null],["Binary",["PropertyAccess",["Identifier","item"],["Constant","x"],null,false,null],"&&",["Unary","!",["PropertyAccess",["Identifier","item"],["Constant","y"],null,false,null]]],["LoopIdentifiers",["Constant","v"],["Constant","k"]]],
             
 
             "/^([a-z])[a-z0-9]+$/i.exec($z)[1]":
@@ -212,7 +209,7 @@
         var resp;
         for (var i in ss) if (ss.hasOwnProperty(i)) {
             assert.deepEqual(resp = p.parse(i), ss[i], "Parse " + i);
-            //console.log(i, JSON.stringify(ss), JSON.stringify(resp));
+            //console.log(i, JSON.stringify(ss[i]), JSON.stringify(resp));
         }
     });
     

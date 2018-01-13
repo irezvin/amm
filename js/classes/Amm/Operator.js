@@ -100,7 +100,7 @@ Amm.Operator.prototype = {
     /* object { contextId: data } */
     _contextState: null,
     _contextParent: null,
-    _contextId: 0,
+    _contextId: '0',
     _context: false,
     _numCtx: 1, // we have default context
     
@@ -158,7 +158,7 @@ Amm.Operator.prototype = {
         var exp = this._expression || (this['Amm.Expression']? this : null);
         if (!exp && !this._defSub) this._defSub = [];
         if (object) {
-            var idx = Amm.Array.indexOf(this._subs, object);
+            var idx = Amm.Array.indexOf(object, this._subs);
             if (idx < 0) this._subs.push(object);
         } else {
             object = exp || null;
@@ -217,7 +217,7 @@ Amm.Operator.prototype = {
             if (!exp) return;
             var opCount = exp.unsubscribeOperator(object, event, this, method, extra);
             if (!opCount) { // remove object from our list
-                var idx = Amm.Array.indexOf(this._subs, object);
+                var idx = Amm.Array.indexOf(object, this._subs);
                 if (idx >= 0) this._subs.splice(idx, 1);
             }
         }
@@ -457,22 +457,26 @@ Amm.Operator.prototype = {
             this._parent.notifyOperandChanged(this._parentOperand, this._value, oldValue, this);
     },
     
+    _checkNonCacheableOperators: function() {
+        if (this._hasNonCacheable <= !!this._nonCacheable) return; // we don't have NC operators
+        for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
+            var op = '_' + this.OPERANDS[i] + 'Operator';
+            if (!this[op]) continue;
+            if (this[op]._contextId !== this._contextId) {
+                this._propagateContext(op, this[op], true);
+            }
+            if (this[op]._hasNonCacheable) {
+                this[op].checkForChanges();
+            }
+        }
+    },
+    
     // re-evaluates non-cacheable operators only
     checkForChanges: function() {
         if (!this._hasNonCacheable) return; // nothing to do
         var origEvaluated = this._evaluated;
-        if (this._hasNonCacheable - !!this._nonCacheable) {
-            for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
-                var op = '_' + this.OPERANDS[i] + 'Operator';
-                if (!this[op]) continue;
-                if (this[op]._contextId !== this._contextId) {
-                    this._propagateContext(op, this[op], true);
-                }
-                if (this[op]._hasNonCacheable) {
-                    this[op].checkForChanges();
-                }
-            }
-        }
+        
+        this._checkNonCacheableOperators();
         
         if (this._nonCacheable & Amm.Operator.NON_CACHEABLE_CONTENT) {
             this._contentChanged = 0;
@@ -509,9 +513,8 @@ Amm.Operator.prototype = {
                 v = this._value;
             }
         }
-        
         this._value = v;
-        if (changed) this._reportChange();
+        if (changed) this._reportChange(oldValue);
         if (this._destChanged) {
             this._destChanged = false;
             this._parent.notifyWriteDestinationChanged(this);
@@ -725,11 +728,12 @@ Amm.Operator.prototype = {
     },
     
     _partialCleanup: function() {
+        var s = this._subs;
         this._subs = [];
         var exp = this._expression || (this['Amm.Expression']? this : null);
         if (exp) {
-            for (var i = this._subs.length - 1; i >= 0; i--) {
-                exp.unsubscribeOperator(this._subs[i], undefined, this, undefined, undefined);
+            for (var i = s.length - 1; i >= 0; i--) {
+                exp.unsubscribeOperator(s[i], undefined, this, undefined, undefined);
             }
         }
     },
@@ -774,19 +778,29 @@ Amm.Operator.prototype = {
         return ctx;
     },
     
+    setContextIdToDispatchEvent: function(contextId, event, args) {
+        this.setContextId(contextId);
+    },
+    
     setContextId: function(contextId) {
         if (this._contextId === contextId) return;
         if (!this._contextState) {
             this._contextState = {};
             this._populateInstanceStateShared();
         }
-        // save current context
-        this._contextState[this._contextId] = this._getContextState();
+        
+        // save current context if it wasn't destroyed
+        if (this._contextState[this._contextId] !== null)
+            this._contextState[this._contextId] = this._getContextState();
+        
         var newState, isNewState = false;
         if (contextId in this._contextState) {
             newState = this._contextState[contextId];
-            if (newState === null)
+            if (newState === null) {
+                console.trace();
+                console.log(contextId);
                 throw "Attempt to setContextId() of already destroyed context";
+            }
         } else {
             newState = this._constructContextState();
             isNewState = true;
@@ -798,6 +812,10 @@ Amm.Operator.prototype = {
     
     getContextId: function() {
         return this._contextId;
+    },
+    
+    hasContext: function(contextId) {
+        return !!this._contextState[contextId];
     },
     
     listContexts: function() {

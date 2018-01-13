@@ -38,6 +38,11 @@ Amm.Array.arrayChangeEvents = {
     itemsChange: 'outItemsChange'
 };
 
+Amm.Array.costlyEvents = {
+    reorderItems: 'outReorderItems',
+    moveItem: 'outMoveItem'
+};
+
 Amm.Array.prototype = {
 
     'Amm.Array': '__CLASS__', 
@@ -63,6 +68,8 @@ Amm.Array.prototype = {
     _preUpdateItems: null,
     
     _evCache: null,
+    
+    _costlyEvents: false,
     
     length: 0,
     
@@ -777,7 +784,8 @@ Amm.Array.prototype = {
     _doDiff: function(oldItems, items) {
         oldItems = oldItems || this._preUpdateItems;
         items = items || this.getItems();
-        var d = Amm.Array.smartDiff(oldItems, items);
+        
+        var d = Amm.Array.smartDiff(oldItems, items, null, !this._costlyEvents);
         
         // * a) ['splice', start, length, elements[]]
         // * b) ['move', oldIndex, newIndex] - element was moved from `oldIndex` to `newIndex`, that's all
@@ -801,14 +809,27 @@ Amm.Array.prototype = {
 
     subscribe: function(outEvent, handler, scope, extra, decorator) {    
         this._evCache = null;
+        if (!this._costlyEvents && Amm.Array.costlyEvents[outEvent])
+            this._costlyEvents = true;
         return Amm.WithEvents.prototype.subscribe.call
             (this, outEvent, handler, scope, extra, decorator);
     },
     
     unsubscribe: function(outEvent, handler, scope) {    
         this._evCache = null;
-        return Amm.WithEvents.prototype.unsubscribe.call
+        var res = Amm.WithEvents.prototype.unsubscribe.call
             (this, outEvent, handler, scope);
+        if (this._costlyEvents && !this._subscribers[outEvent] && Amm.Array.costlyEvents[outEvent]) {
+            var hasCostly = false;
+            for (var i in this._subscribers) {
+                if (this._subscribers.hasOwnProperty(i) && Amm.Array.costlyEvents[i]) {
+                    hasCostly = true;
+                    break;
+                }
+            }
+            if (!hasCostly) this._costlyEvents = true;
+        }
+        return res;
     },
     
     cleanup: function() {
@@ -886,6 +907,8 @@ Amm.Array.equal = function(a, b, aOffset, bOffset, length, comparisonFn) {
  * {b} - new version of array.
  * {comparisonFn} - function that returns 0 if elements are equal (=== is used by default)
  * {spliceOnly} - don't try to detect move/reorder events, always return splice info in case of any changes
+ * {matches} - optional reference to Array instance to be passed to symmetricDiff function.
+ * If symmetricDiff is not called, matches.length is 0
  * 
  * returns Array:
  * 
@@ -894,13 +917,15 @@ Amm.Array.equal = function(a, b, aOffset, bOffset, length, comparisonFn) {
  * c) ['reorder', start, length, oldItems] - `length` elements starting from `start` have different order, otherwise the same array
  * d) null - nothing changed
  */
-Amm.Array.smartDiff = function(a, b, comparisonFn, spliceOnly) {
+Amm.Array.smartDiff = function(a, b, comparisonFn, spliceOnly, matches) {
     
     var al = a.length, bl = b.length, 
             delta = bl - al,
             dBeginMax = al > bl? al : bl,
             i,
             dBegin, dEnd;
+    
+    if (matches && (matches instanceof Array)) matches.length = 0;
     
     // edge cases
     if (!al && !bl) return null; // edge case - both empty, thus no changes
@@ -964,62 +989,101 @@ Amm.Array.smartDiff = function(a, b, comparisonFn, spliceOnly) {
                 else return ['move', dEnd - 1, dEnd - cutSize];
             }
         }
-        if (!Amm.Array.symmetricDiff(cut, insert, comparisonFn).length) return ['reorder', dBegin, cutSize, cut];
+        if (!Amm.Array.symmetricDiff(cut, insert, comparisonFn, matches).length) return ['reorder', dBegin, cutSize, cut];
     }
     
     return ['splice', dBegin, cutSize, insert];
 
 };
 
-// disable to always use slow arrayDiff version
+// disable to always use slow arrayDiff version, i.e. for testing
 Amm.Array._optArrayDiff = true;
 
 
-// returns elements in A that are not in B, each instance is compared only once
-Amm.Array.symmetricDiff = function(a, b, comparisonFn) {
+/** 
+ *  returns elements in A that are not in B, each instance is compared only once.
+ *  If matches is provided and is an Array, it will contain indexes of 
+ *  found indexes in `b` for same items in `a` 
+ *      (if matches[i] !== null then b[matches[i]] === a[i])
+ */
+Amm.Array.symmetricDiff = function(a, b, comparisonFn, matches) {
     if (!a.length || !b.length) return [].concat(a);
+    if (!(matches instanceof Array)) matches = [];
     
-    var al = a.length, bl = b.length, bb = [].concat(b), r, i, j;
+    // we use tmp as temporary unique object to obsoletize already found instances
+    var al = a.length, bl = b.length, r, i, j, match, tmp = {},
+        bb = [].concat(b);
+    matches.length = al;
     if (comparisonFn) {
         r = [];
         for (i = 0; i < al; i++) {
             var v = a[i];
-            for (j = 0; j < bl; j++) if (!comparisonFn(v, bb[j])) {
-                bb.splice(j, 1);
-                bl--;
-                j--;
+            match = null;
+            for (j = 0; j < bl; j++) if (bb[j] !== tmp && !comparisonFn(v, bb[j])) {
+                match = j;
+                bb[j] = tmp;
                 break;
             }
-            if (j >= bl) r.push(v);
+            if (j >= bl) {
+                r.push(v);
+            }
+            matches[i] = match;
         }
     } else {
         // quick version for .indexOf-enabled browsers
-        if (a.filter && bb.indexOf && Amm.Array._optArrayDiff) {
-            r = a.filter(function(v) {
+        if (a.filter && b.indexOf && Amm.Array._optArrayDiff) {
+            r = a.filter(function(v, ai) {
                 var idx = bb.indexOf(v);
                 if (idx >= 0) {
-                    bb.splice(idx, 1);
+                    matches[ai] = idx;
+                    bb[idx] = tmp;
                     return false;
                 }
+                matches[ai] = null;
                 return true;
             });
         } else {
             r = [];
             for (i = 0; i < al; i++) {
                 var v = a[i];
+                match = null;
                 for (j = 0; j < bl; j++) if (v === bb[j]) {
-                    bb.splice(j, 1);
-                    bl--;
-                    j--;
+                    bb[j] = tmp;
+                    match = j;
                     break;
                 }
                 if (j >= bl) r.push(v);
+                matches[i] = j;
             }
         }
     }
     return r;
 };
 
+/**
+ * Supplementary function for symmetricalDiff that takes `matches` output
+ * argument from symmetricDiff and caluclates indexes in target array that
+ * don't have matches.
+ * 
+ * Returns array with indexes of elements in target array that don't have
+ * matches in source array.
+ * 
+ * @param {Array} matchesFromSymDiff list of indexes that have matches
+ * @param {int} newLength Length of target array
+ * @param {int} offset Number to add to each result item
+ * 
+ */ 
+Amm.Array.findNonMatched = function(matchesFromSymDiff, newLength, offset) {
+    var idx = {}, res = [], i, l;
+    offset = offset || 0;
+    for (i = 0, l = matchesFromSymDiff.length; i < l; i++) {
+        idx[matchesFromSymDiff[i]] = true;
+    }
+    for (i = 0; i < newLength; i++) {
+        if (!(i in idx)) res.push(i + offset);
+    }
+    return res;
+};
 
 // returns elements in A that are not in B
 Amm.Array.arrayDiff = function(a, b, comparisonFn) {

@@ -39,6 +39,10 @@ Amm.Operator.VarsProvider.prototype = {
         if (this._operatorOperator) {
             this.supportsAssign = this._operatorOperator.supportsAssign;
         }
+        // Inherit default 'empty' value from operator to avoid unnecessary/incorrect valueChange events
+        if (!this._hasValue && !this._operatorOperator._hasValue) {
+            this._value = this._operatorOperator._value;
+        }
     },
     
     
@@ -79,8 +83,17 @@ Amm.Operator.VarsProvider.prototype = {
         };
     },
     
-    _handleProviderVarsChange: function(value, oldValue, name, object) {
-        if (object !== this._varsProvider) return; // not ours
+    setContextIdToDispatchEvent: function(contextId, ev, args) {
+        if (ev === 'varsChange' && (args[3] !== this._varsProvider || args[4] !== contextId)) {
+            return;
+        }
+        Amm.Operator.prototype.setContextIdToDispatchEvent.call(this, contextId, ev, args);
+    },
+    
+    _handleProviderVarsChange: function(value, oldValue, name, object, contextId) {
+        if (object !== this._varsProvider || contextId !== this._contextId) {
+            return; // not ours
+        }
         if (name) { // case A: single variable changed
             // nothing to do because our variables hide parent's ones
             if (this._vars && name in this._vars) return;
@@ -88,14 +101,14 @@ Amm.Operator.VarsProvider.prototype = {
             this._allVars[name] = value;
             if (this._providerVars) this._providerVars[name] = value;
             if (this._expression) {
-                this._expression.outVarsChange(value, oldValue, name, this);
+                this._expression.outVarsChange(value, oldValue, name, this, this._contextId);
             }
         } else { // case B: all parent vars changed
             old = Amm.override({}, this._allVars || this.getVars());
             this._allVars = Amm.override({}, value, this._vars);
             this._providerVars = value;
             if (this._expression) {
-                this._expression.outVarsChange(this._allVars, old, null, this);
+                this._expression.outVarsChange(this._allVars, old, null, this, this._contextId);
             }
         }
     },
@@ -107,8 +120,15 @@ Amm.Operator.VarsProvider.prototype = {
         if (!varsProvider || !varsProvider['Amm.Operator.VarsProvider'])
             throw "varsProvider must be an instance of Amm.Operator.VarsProvider";
         this._varsProvider = varsProvider;
-        this._sub(this._expression, 'varsChange', this._handleProviderVarsChange);
+        this._sub(this._expression, 'varsChange', '_handleProviderVarsChange');
         return true;
+    },
+    
+    _initContextState: function(contextId, own) {    
+        Amm.Operator.prototype._initContextState.call(this, contextId, own);
+        if (own && this._expression) {
+            this._sub(this.expression, 'varsChange', '_handleProviderVarsChange', null, true);
+        }
     },
     
     getVarsProvider: function() { return this._varsProvider; },
@@ -125,14 +145,14 @@ Amm.Operator.VarsProvider.prototype = {
                 if (!this._allVars) this.getVars();
                 this._allVars[name] = value;
             }
-            if (exp) exp.outVarsChange(value, old, name, this);
+            if (exp) exp.outVarsChange(value, old, name, this, this._contextId);
         } else { // b - set whole vars
             if (typeof value !== 'object') throw "setVars(`value`): object required";
             var old = Amm.override({}, this._allVars || this.getVars());
             if (!value) value = {}; // delete all vars
             this._vars = value;
             this._allVars = null;
-            if (exp) exp.outVarsChange(this.getVars(), old, null, this);
+            if (exp) exp.outVarsChange(this.getVars(), old, null, this, this._contextId);
         }
         return true;
     },
@@ -163,12 +183,21 @@ Amm.Operator.VarsProvider.prototype = {
         this._vars = {};
         this._providerVars = null;
         this._allVars = null;
+        if (this._expression && this._varsProvider) {
+            this._expression.unsubscribeOperator(this._expression, 'varsChange', this);
+        }
         Amm.Operator.prototype._partialCleanup.call(this);
     },
     
     cleanup: function() {
         this._varsProvider = null;
         Amm.Operator.prototype.cleanup.call(this);
+    },
+    
+    _constructContextState: function() {
+        var res = Amm.Operator.prototype._constructContextState.call(this);
+        res._vars = {};
+        return res;
     }
     
 };
