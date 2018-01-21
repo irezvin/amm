@@ -43,26 +43,8 @@ Amm.Operator.Range.Iterator.prototype = {
         var res = this._getOperandValue('operator', again);
         if (res === undefined) return res;
         return !!res;
-    },
-    
-    toFunction: function() { // converts result to boolean
-        var a = this._operandFunction('operator'), t = this;
-        if (this._operatorOperator && this._operatorOperator.supportsAssign) {
-            var assign = this._operatorOperator.assignmentFunction();
-            return function(value, throwIfCant) {
-                if (arguments.length) {
-                    var res = assign(t, value);
-                    if (res && throwIfCant) throw res;
-                    return !res;
-                }
-                else return !!a(t);
-            };
-        }
-        return function() {
-            return !!a(t);
-        };
     }
-
+    
 };
 
 Amm.extend(Amm.Operator.Range.Iterator, Amm.Operator.VarsProvider);

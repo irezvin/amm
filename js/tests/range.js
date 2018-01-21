@@ -106,10 +106,292 @@
             assert.deepEqual(changes, [[['Pup6', 'Pup7', 'Pup1'], ['Pup6', 'Pup1']]], "Non-subscribleable objects are updated after time interval passed");
         
         r1.cleanup();
-        
             assert.equal(pp[0].getSubscribers().length, 0, "Objects not observed anymore after range cleanup");
         
+    });
+    
+    
+    /**
+     * Requires $items to have boolean 'pass' property that indicates that they should be in dest range
+     * 
+     * @param {Amm.Expression} Expression (must have $items var) that's first operator is Range
+     * @param {int} offset 
+     * @param {int} cutLength
+     * @param {Array} insert Items that we will insert into $items variable
+     * @param {boolean} doReplace Replace $items with new instance of array ('c' to replace with collection)
+     * @param {boolean} needTimer 
+     * @param {function} passFn function(item) If provided, should return TRUE to check if item passes
+     * @param {function} innerFn optional function(exp) to be called after expression manipulation, but before checks
+     * @returns {string} Empty string if all ok, or error description
+     */    
+    var testRangeStateCorrectness = function(exp, offset, cutLength, insert, doReplace, needTimer, passFn, innerFn) {
         
+        if (!insert) insert = [];
+        if (!offset) offset = 0;
+        if (!cutLength) cutLength = 0;
+        
+        if (!passFn) passFn = function(e) { return Amm.getProperty(e, 'pass'); };
+        var i;
+        var op = exp.getOperator(0);
+        if (!op['Amm.Operator.Range.Condition']) throw "exp doesn't have Condition range";
+        var items = exp.getVars('items');
+        var spliceArgs = [offset, cutLength].concat(insert);
+        var valCopy = [];
+        var properResult = [];
+        var problems = [];
+        var properMap = [];
+        var iter = op._iteratorOperator;
+        var iterCtxToIdx = {};
+        var idxToIterCtx = {};
+        var opCtxId = op.getContextId();
+        var ctxId;
+        var data;
+        var numIterCtx = 0;
+        var fn = exp.toFunction();
+        
+        if (items && items.length) {
+            if (items instanceof Array) valCopy = items.concat([]);
+            else valCopy = items.getItems();
+        }
+        valCopy.splice.apply(valCopy, spliceArgs);
+        if (doReplace) {
+            if (doReplace === 'c') valCopy = new Amm.Collection(valCopy);
+            exp.setVars(valCopy, 'items');
+        } else {
+            items.splice.apply(items, spliceArgs);
+        }
+        
+        if (innerFn) innerFn(exp);
+        
+        if (needTimer) Amm.getRoot().outInterval();
+        
+        for (i = 0; i < valCopy.length; i++) {
+            if (passFn(valCopy[i]))
+                properResult.push(valCopy[i]);
+        }
+        
+        // check for bogus map items
+        
+        for (i = 0; i < valCopy.length; i++) {
+            // search for appropriate context
+            properMap.push({
+                i: i,
+                o: valCopy[i],
+                c: null
+            });
+        }
+        
+        var iterCtx = op._iteratorOperator.listContexts();
+        
+        for (i = 0; i < iterCtx.length; i++) {
+            ctxId = iterCtx[i];
+            data = iter._contextId === ctxId? iter : iter._contextState[ctxId];
+            if (data.parentContextId !== opCtxId) continue;
+            if (!iterCtxToIdx[ctxId]) {
+                iterCtxToIdx[ctxId] = [];
+            }
+            if (!idxToIterCtx[data.index]) idxToIterCtx[data.index] = [];
+                idxToIterCtx[data.index].push(ctxId);
+            iterCtxToIdx[ctxId].push(data.index);
+            if (properMap[data.index] && properMap[data.index].c === null) {
+                properMap[data.index].c = ctxId;
+            }
+            numIterCtx++;
+        }
+
+        // check for bogus contexts
+        
+        if (numIterCtx !== valCopy.length) problems.push(
+            "Number of Iterator contexts: (" + numIterCtx + ") != number of items (" + valCopy.length + ")"
+        );
+
+        for (i in idxToIterCtx) if (idxToIterCtx.hasOwnProperty(i)) {
+            if (idxToIterCtx[i].length > 1) {
+                problems.push("More than one context (" + idxToIterCtx[i].join(", ") + ") referencing same index (" + i + ")");
+            }
+        }
+        
+        // check for map and state correctness
+        
+        var map = op._map;
+        for (i = 0; i < properMap.length; i++) {
+            if (!map[i]) {
+                problems.push("Map item " + i + " missing");
+                continue;
+            }
+            if (map[i].i !== i) problems.push("Map item " + i + " index is wrong (" + map[i].i + " instead of + " + i + ")");
+            if (idxToIterCtx[i]) {
+                if (idxToIterCtx[i][0] !== map[i].c) {
+                    problems.push("Map item " + i + " is referenced by context " + idxToIterCtx[i][0] + ", but map specifies context " + map[i].c);
+                } else {
+                    ctxId = map[i].c;
+                    data = iter._contextId === ctxId? iter : iter._contextState[ctxId];
+                    if (op.keyVar !== null && data._vars[op.keyVar] !== i) {
+                        problems.push("Context " + ctxId + ": keyVar value (" + data.vars[op.keyVar] + ") doesn't match index (" + i + ")");
+                    }
+                    if (op.valueVar !== null && data._vars[op.valueVar] !== properMap[i].o) {
+                        problems.push("Context " + ctxId + ": valueVar value doesn't match proper object value");
+                    }
+                }
+            } else {
+                problems.push("Index " + i + " is not referenced by any of iterator contexts");
+            }
+            if (map[i].i !== i) problems.push("Map item " + i + " index is wrong (" + map[i].i + " instead of + " + i + ")");
+            if (map[i].o !== valCopy[i]) problems.push("Map item " + i + " referencing wrong object");
+            var data = iter._contextId === ctxId? iter : iter._contextState[ctxId];
+        }
+        
+        // check for result correctness
+        
+        var val = exp.getValue();
+        
+        if (val.length !== properResult.length) {
+            problems.push("Expression result length (" + val.length + ") doesn't match proper result length (" + properResult.length + ")");
+        } else {
+            var badResult = false;
+            for (i = 0; i < val.length; i++) {
+                if (val[i] !== properResult[i]) {
+                    badResult = true;
+                    problems.push("Expression result item #" + i + " doesn't match proper result item");
+                }
+            }
+//            if (badResult) {
+//                console.log(Amm.getProperty(val, 'name'), Amm.getProperty(properResult, 'name'));
+//            }
+        }
+        
+        var fnVal = fn();
+        if (fnVal.length !== properResult.length) {
+            problems.push("Function result length (" + fnVal.length + ") doesn't match proper result length (" + properResult.length + ")");
+        } else {
+            badResult = false;
+            for (i = 0; i < fnVal.length; i++) {
+                if (fnVal[i] !== properResult[i]) {
+                    badResult = true;
+                    problems.push("Function result item #" + i + " doesn't match proper result item");
+                }
+            }
+//            if (badResult) {
+//                console.log(Amm.getProperty(fnVal, 'name'), Amm.getProperty(properResult, 'name'));
+//            }
+        }
+        
+        
+        return problems.join("\n");
+    };
+    
+    var mkElement = function(name, pass) {
+        return new Amm.Element({
+            properties: {
+                name: name,
+                pass: pass
+            }
+        });
+    };
+    
+    QUnit.test("Range.Condition: source manipulation", function(assert) {
+        
+        var e = 0;
+        var els1 = [
+            mkElement('e1_0', true),
+            mkElement('e1_1', false),
+            mkElement('e1_2', true),
+            mkElement('e1_3', false),
+            mkElement('e1_4', true),
+            mkElement('e1_5', false),
+            mkElement('e1_6', true),
+            mkElement('e1_7', false),
+            mkElement('e1_8', false),
+            mkElement('e1_9', false)
+        ];
+        e = 0;
+        var els2 = [
+            mkElement('e2_0', true),
+            mkElement('e2_1', false),
+            mkElement('e2_2', true),
+            mkElement('e2_3', false),
+            mkElement('e2_4', true),
+            mkElement('e2_5', false),
+            mkElement('e2_6', true),
+            mkElement('e2_7', false),
+            mkElement('e2_8', false),
+            mkElement('e2_9', false)
+        ];
+        var ex = new Amm.Expression("$items{$item: $item.pass}");
+        window.d.ex = ex;
+        window.d.r = ex.getOperator(0);
+        window.d.i = ex.getOperator(0,1);
+        var probl;
+        
+        probl = testRangeStateCorrectness(ex, 0, 0, els1.slice(0, 6), 'c', false);
+        assert.equal(probl, '', 'Adding initial items');
+        
+        probl = testRangeStateCorrectness(ex, 2, 0, els2.slice(0, 3));
+        assert.equal(probl, '', 'Inserting some items');
+        
+        probl = testRangeStateCorrectness(ex, 1, 2);
+        assert.equal(probl, '', 'Deleting 2 items');
+        
+        probl = testRangeStateCorrectness(ex, 1, 2, els2.slice(3, 6));
+        assert.equal(probl, '', 'Deleting 2, inserting 3 items');
+        
+        probl = testRangeStateCorrectness(ex, 1, 3, els2.slice(6, 8));
+        assert.equal(probl, '', 'Deleting 3, inserting 2 items');
+        
+        probl = testRangeStateCorrectness(ex, 1, 2, els2.slice(8, 10));
+        assert.equal(probl, '', 'Deleting 2, inserting 2 items');
+        
+        probl = testRangeStateCorrectness(ex, 0, 10, els2.slice(0, 10), 'c');
+        assert.equal(probl, '', 'Replacing with partially matching items');
+
+        probl = testRangeStateCorrectness(ex, 0, 10, els2.slice(0, 10), 'c');
+        assert.equal(probl, '', 'Replacing with same items, different coll. instance');
+        
+        probl = testRangeStateCorrectness(ex, 0, 10, els2.slice(0, 10).reverse(), 'c');
+        assert.equal(probl, '', 'Updating with reversed items, diff. instance');
+        
+        probl = testRangeStateCorrectness(ex, 0, 10, els1.slice(0, 7), 'c');
+        assert.equal(probl, '', 'Replacing with completely diff. items & instance');
+        
+        probl = testRangeStateCorrectness(ex, 0, 7, els1.slice(0, 7));
+        assert.equal(probl, '', 'Updating with reversed items');
+        
+        Amm.cleanup(els1, els2, ex);
+    });
+    
+    QUnit.test("Range.Condition: with index", function(assert) {
+        
+        var ee = [
+            mkElement('e0', true),
+            mkElement('e1', false),
+            mkElement('e2', true),
+            mkElement('e3', false),
+            mkElement('e4', true),
+            mkElement('e5', false),
+            mkElement('e6', true),
+            mkElement('e7', false),
+            mkElement('e8', false),
+            mkElement('e9', false)
+        ];
+        
+        var c = new Amm.Collection(ee.slice(0, 7));
+        var ex = new Amm.Expression("this{$i =>: $i >= 2 && $i <= 4}", c);
+        window.d.ex = ex;
+        assert.deepEqual(Amm.getProperty(ex.getValue(), 'name'), ['e2', 'e3', 'e4'], 'correct index-based value');
+        c.unshift(ee[8]);
+        assert.deepEqual(Amm.getProperty(ex.getValue(), 'name'), ['e1', 'e2', 'e3'], 'correct value after prepending array');
+        c.splice(2, 2);
+        assert.deepEqual(Amm.getProperty(ex.getValue(), 'name'), ['e3', 'e4', 'e5'], 'correct value after splicing');
+        ex.cleanup();
+        
+        c.setItems(ee);
+        var ex2 = new Amm.Expression("this{$i => $item: $i >= 2 && $i <= 4 || $item.name === 'e9'}", c);
+        assert.deepEqual(Amm.getProperty(ex2.getValue(), 'name'), ['e2', 'e3', 'e4', 'e9'], 'correct index&content based value');
+        c[9].setName('zz');
+        assert.deepEqual(Amm.getProperty(ex2.getValue(), 'name'), ['e2', 'e3', 'e4'], 'correct index&content based value (content changed)');
+        c.moveItem(9, 2);
+        assert.deepEqual(Amm.getProperty(ex2.getValue(), 'name'), ['zz', 'e2', 'e3'], 'correct index&content based value (index changed)');
+        ex.cleanup();
     });
     
     if (0) // don't do at the time

@@ -35,7 +35,7 @@ Amm.Operator.ExpressionThis.prototype = {
     
     toFunction: function() {
         return function(e) {
-            return e.getExpressionThis();
+            return e.expressionThis;
         };
     }
     

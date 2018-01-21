@@ -239,8 +239,8 @@ QUnit.module("Context");
         
         assert.equal(e2.getSubscribers().length, 0, 
             'Element doesn\'t have observers because context of expression is deleted');
-        assert.equal(xp.listContexts().length, 0,
-            'All contexts deleted because of expression cleanup');
+        assert.ok(xp.listContexts().length === 1 && xp.listContexts()[0] === xp._contextId,
+            'All contexts deleted because of expression cleanup (except default one)');
         assert.equal(cleaned, 1);
         
     });

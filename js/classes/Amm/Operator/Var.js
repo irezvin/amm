@@ -92,7 +92,7 @@ Amm.Operator.Var.prototype = {
         return function(e) {
             var varName = f(e);
             if (!varName) return;
-            return e.getVars(varName);
+            return e.vars[varName];
         };
     },
     
@@ -101,7 +101,7 @@ Amm.Operator.Var.prototype = {
         return function(e, value) {
             var varName = f(e);
             if (!varName && varName !== 0) return "`varName` is empty";
-            e.setVars(value, varName);
+            e.vars[varName] = value;
         };
     },
     

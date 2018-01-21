@@ -455,6 +455,31 @@ Amm.Expression.prototype = {
         var res = Amm.Operator.VarsProvider.prototype._constructContextState.call(this);
         res._subscribers = {};
         return res;
+    },
+    
+    toFunction: function() {
+        var a = this._operandFunction('operator'), env = {
+            vars: this._vars,
+            expressionThis: this._expressionThis
+        };
+        var fn;
+        if (this._operatorOperator && this._operatorOperator.supportsAssign) {
+            var assign = this._operatorOperator.assignmentFunction();
+            fn = function(value, throwIfCant) {
+                if (arguments.length) {
+                    var res = assign(env, value);
+                    if (res && throwIfCant) throw res;
+                    return !res;
+                }
+                else return a(env);
+            };
+        } else {
+            fn = function() {
+                return a(env);
+            };
+        }
+        fn.env = env;
+        return fn;
     }
     
 };

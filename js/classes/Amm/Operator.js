@@ -797,8 +797,6 @@ Amm.Operator.prototype = {
         if (contextId in this._contextState) {
             newState = this._contextState[contextId];
             if (newState === null) {
-                console.trace();
-                console.log(contextId);
                 throw "Attempt to setContextId() of already destroyed context";
             }
         } else {
@@ -824,6 +822,7 @@ Amm.Operator.prototype = {
             if (this._contextState.hasOwnProperty(i) && this._contextState[i] !== null) {
                 res.push(i);
             }
+        if (!(this._contextId in this._contextState)) res.push(this._contextId);
         return res;
     },
     

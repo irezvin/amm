@@ -57,21 +57,33 @@ Amm.Operator.VarsProvider.prototype = {
     },
     
     toFunction: function() {
-        var a = this._operandFunction('operator'), t = this;
+        var op = this._operandFunction('operator');
+        var v = this._vars? this._vars : {};
+        var fn;
         if (this._operatorOperator && this._operatorOperator.supportsAssign) {
             var assign = this._operatorOperator.assignmentFunction();
-            return function(value, throwIfCant) {
-                if (arguments.length) {
-                    var res = assign(t, value);
-                    if (res && throwIfCant) throw res;
-                    return !res;
+            fn = function(e, value) {
+                var tmp = e.vars;
+                e.vars = Amm.override(e.vars, v);
+                var res;
+                if (arguments.length > 1) {
+                    res = assign(e, value);
                 }
-                else return a(t);
+                else res = op(e);
+                e.vars = tmp;
+                return res;
+            };
+        } else {
+            fn = function(e) {
+                var tmp = e.vars;
+                e.vars = Amm.override(e.vars, v);
+                var res = op(e1);
+                e.vars = tmp;
+                return res;
             };
         }
-        return function() {
-            return a(t);
-        };
+        fn.vars = v;
+        return fn;
     },
     
     assignmentFunction: function() {

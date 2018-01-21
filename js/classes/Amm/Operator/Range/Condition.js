@@ -84,9 +84,18 @@ Amm.Operator.Range.Condition.prototype = {
                 l = this._map.length;
                 i--;
             }
-            if (this._map[i].v === undefined || again) {
-                this._iteratorOperator.setContextId(this._map[i].c);
+            var cxid = this._map[i].c;
+            if (again) {
+                this._iteratorOperator.setContextId(cxid);
                 this._map[i].v = this._iteratorOperator.getValue(again);
+            } else {
+                var d = this._iteratorOperator._contextId === cxid? 
+                    this._iteratorOperator : this._iteratorOperator._contextState[cxid];
+                if (d._hasValue) this._map[i].v = d._value;
+                else {
+                    this._iteratorOperator.setContextId(cxid);
+                    this._map[i].v = this._iteratorOperator.getValue();
+                }
             }
             if (this._map[i].v) res.push(this._map[i].o);
         }
@@ -94,7 +103,24 @@ Amm.Operator.Range.Condition.prototype = {
     },
     
     toFunction: function() {
-        // TODO
+        var s = this._operandFunction('source');
+        var c = this._operandFunction('iterator');
+        var k = this.keyVar || '';
+        var v = this.valueVar || '';
+        var fn = function(e) {
+            var items = s(e), l = items.length;
+            if (!l) return [];
+            var vars = c.vars, tmp1 = vars[k], tmp2 = vars[v], res = [];
+            for (var i = 0; i < l; i++) {
+                vars[k] = i;
+                vars[v] = items[i];
+                if (c(e)) res.push(items[i]);
+            }
+            vars[k] = tmp1;
+            vars[v] = tmp2;
+            return res;
+        };
+        return fn;
     },
     
     _clearIteratorContexts: function() {
@@ -166,7 +192,7 @@ Amm.Operator.Range.Condition.prototype = {
         // shortcut 2: rebuild everything when all added
         // (either to empty array or no sym diff thus we assume all replaced)
         if ((!changeInfo.cut.length || !symDiff) && changeInfo.insert.length === items.length) { 
-            if (this._map.length) this._clearIteratorContexts;
+            if (this._map.length) this._clearIteratorContexts();
             this._buildIteratorContexts();            
             return;
         }
@@ -174,8 +200,9 @@ Amm.Operator.Range.Condition.prototype = {
         
         var offset = changeInfo.index;
 
-        var addedIdx, deletedIdx = [], 
-                movedIdx; // moved: [[oldIdx => newIdx]]
+        var addedIdx,
+            deletedIdx = [], 
+            movedIdx; // moved: [[oldIdx => newIdx]]
         
         if (symDiff) {
             var matches = [], deleted; 
@@ -211,7 +238,7 @@ Amm.Operator.Range.Condition.prototype = {
             }
         }
         
-        //console.log('sd', symDiff, 'a', addedIdx, 'd', deletedIdx, 'm', movedIdx, 'o', offset, 'dt', delta);
+        //console.log('sd', symDiff, 'a', addedIdx, 'd', deletedIdx, 'm', movedIdx, 'o', offset, 'dt', delta, 'ci', changeInfo);
         
         var iter = this._iteratorOperator;
                             
@@ -226,10 +253,11 @@ Amm.Operator.Range.Condition.prototype = {
             }
             if (this.keyVar) {
                 iter.setContextId(mmb.c);
-                if (this.keyVar) iter.setVars(mmb.i, this.keyVar);
+                iter.setVars(mmb.i, this.keyVar);
             }
         }
         var numReuse = deletedIdx.length < addedIdx.length? deletedIdx.length : addedIdx.length;
+        //console.log('nr', numReuse);
         
         // delete + create: replace item and index
         for (var i = 0; i < numReuse; i++) {
@@ -237,7 +265,7 @@ Amm.Operator.Range.Condition.prototype = {
             mmb.i = addedIdx[i] + offset;
             mmb.o = changeInfo.insert[addedIdx[i]];
             iter.setContextId(mmb.c);
-            iter.index = mmb[i];
+            iter.index = mmb.i;
             var v = {};
             if (this.keyVar) v[this.keyVar] = mmb.i;
             if (this.valueVar) v[this.valueVar] = mmb.o;
@@ -246,15 +274,16 @@ Amm.Operator.Range.Condition.prototype = {
         
         // delete (leftovers)
         for (var i = addedIdx.length; i < deletedIdx.length; i++) {
+            iter.deleteContext(m[deletedIdx[i] + offset].c);
             m[deletedIdx[i] + offset] = null; // should work
         }
         
         // create (we need new items)
         for (var i = deletedIdx.length; i < addedIdx.length; i++) {
             var v = {};
-            if (this.keyVar !== null) v[this.keyVar] = i;
-            if (this.valueVar !== null) v[this.valueVar] = items[i];
-            iter.createContext(null, {index: i, parentContextId: this._contextId, vars: v});
+            if (this.keyVar !== null) v[this.keyVar] = addedIdx[i] + offset;
+            if (this.valueVar !== null) v[this.valueVar] = changeInfo.insert[addedIdx[i]];
+            iter.createContext(null, {index: addedIdx[i] + offset, parentContextId: this._contextId, vars: v});
             m.push({
                 c: iter._contextId,
                 i: addedIdx[i] + offset,
@@ -292,8 +321,6 @@ Amm.Operator.Range.Condition.prototype = {
     },
     
     notifyOperandContentChanged: function(operand, changeInfo, internal) {
-        // todo: adjust contexts in interator (items and/or indexes) 
-        // and re-evaluate
         if (operand === 'source') {
             this._adjustIteratorContexts(changeInfo, true);
         }
