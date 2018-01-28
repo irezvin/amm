@@ -22,7 +22,7 @@ Amm.Operator.Range.All.prototype = {
     
     supportsAssign: false,
 
-    _doEvaluate: function(again) {
+    _doEvaluate: function(again) { 
         var source = this._getOperandValue('source', again);
         if (source === null) return [];
         if (source === undefined) return undefined;

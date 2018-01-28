@@ -117,7 +117,7 @@ Amm.Trait.Component.prototype = {
     
     _subscribeElement: function(element, namedOnly, handlersList, checkAgain) {
         var name = element.getId();
-        if (!name.length && namedOnly) return; // nothing to do
+        if ((!name || !name.length) && namedOnly) return; // nothing to do
         var handlersList = handlersList || this._listHandlersForElements();
         var kk = [];
         if (!namedOnly && handlersList['']) kk = handlersList[''];

@@ -713,7 +713,7 @@ Amm.Operator.prototype = {
             this.setContextId(id);
         }
         this._partialCleanup();
-        this._contextState[id] = null;
+        if (this._contextState !== null) this._contextState[id] = null;
         if (this._context) {
             this._context.operator = null;
             this._context.cleanup();

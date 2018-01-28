@@ -197,10 +197,10 @@
                 ["Range","Slice",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false,null],["Constant",0],["Constant",3]],
 
             "a.b{$v: item.x && !item.y}":
-                ["Range","Expression",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false,null],["Binary",["PropertyAccess",["Identifier","item"],["Constant","x"],null,false,null],"&&",["Unary","!",["PropertyAccess",["Identifier","item"],["Constant","y"],null,false,null]]],["LoopIdentifiers",["Constant","v"],null]],
+                ["Range","Condition",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false,null],["Binary",["PropertyAccess",["Identifier","item"],["Constant","x"],null,false,null],"&&",["Unary","!",["PropertyAccess",["Identifier","item"],["Constant","y"],null,false,null]]],["LoopIdentifiers",["Constant","v"],null]],
         
             "a.b{$k => $v: item.x && !item.y}":
-                ["Range","Expression",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false,null],["Binary",["PropertyAccess",["Identifier","item"],["Constant","x"],null,false,null],"&&",["Unary","!",["PropertyAccess",["Identifier","item"],["Constant","y"],null,false,null]]],["LoopIdentifiers",["Constant","v"],["Constant","k"]]],
+                ["Range","Condition",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false,null],["Binary",["PropertyAccess",["Identifier","item"],["Constant","x"],null,false,null],"&&",["Unary","!",["PropertyAccess",["Identifier","item"],["Constant","y"],null,false,null]]],["LoopIdentifiers",["Constant","v"],["Constant","k"]]],
             
 
             "/^([a-z])[a-z0-9]+$/i.exec($z)[1]":

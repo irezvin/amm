@@ -1,7 +1,7 @@
 /* global Amm */
 
 /**
- *  Locates elements in scope of owner component of `component` and its' parent components.
+ *  Children element(s) of `element`
  *  Range is either index or '*' (means array will be returned)
  */
 Amm.Operator.ChildElement = function(element, id, range) {

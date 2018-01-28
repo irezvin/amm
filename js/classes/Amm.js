@@ -446,6 +446,7 @@ Amm = {
     
     getProperty: function(element, property, defaultValue, args) {
         var res;
+        if (!element) return defaultValue;
         if (element instanceof Array) {
             var r = [];
             for (var i = 0; i < element.length; i++) {

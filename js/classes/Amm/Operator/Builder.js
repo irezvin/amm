@@ -162,10 +162,11 @@ Amm.Operator.Builder.prototype = {
         );
     },
     
-    ChildElement: function(element, id) {
+    ChildElement: function(element, id, range) {
         return new Amm.Operator.ChildElement(
             this.unConst(element), 
-            this.unConst(id)
+            this.unConst(id),
+            this.unConst(range)
         );
     },
     
@@ -174,19 +175,32 @@ Amm.Operator.Builder.prototype = {
     },
     
     Range: function(rangeType, value, arg1, arg2) {
+        var simpleRangeSupport = value && 
+                (value['Amm.Operator.ComponentElement'] 
+                || value['Amm.Operator.ChildElement'] 
+                || value['Amm.Operator.ScopeElement']);
+        var res;
         if (rangeType === 'All') {
-            // TODO: optimize case when value operator (scopeElement, childElement) accepts 'all' range parameter
-            return new Amm.Operator.Range.All(this.unConst(value));
+            if (simpleRangeSupport) {
+                value._setOperand('range', '*');
+                res = value;
+            } else {
+                res = new Amm.Operator.Range.All(this.unConst(value));
+            }
         } else if (rangeType === 'Index') {
-            // TODO: optimize case when value operator (scopeElement, childElement) accepts 'index' range parameter
-            throw "Range of type " + rangeType + " is implemented yet";
+            if (simpleRangeSupport) {
+                value._setOperand('range', this.unConst(arg1));
+                res = value;
+            } else {
+                res = new Amm.Operator.Range.Index(this.unConst(value), this.unConst(arg1));
+            }
         } else if (rangeType === 'RegExp') {
-            throw "Range of type " + rangeType + " is implemented yet";
+            res = new Amm.Operator.Range.RegExp(this.unConst(value), this.unConst(arg1));
         } else if (rangeType === 'Slice') {
-            throw "Range of type " + rangeType + " is implemented yet";
-        } else if (rangeType === 'Expression') {
+            res = new Amm.Operator.Range.Slice(this.unConst(value), this.unConst(arg1), this.unConst(arg2));
+        } else if (rangeType === 'Condition') {
             // TODO: fall to always-all or always-empty range in case condition (arg1) is constant
-            return new Amm.Operator.Range.Condition(
+            res = new Amm.Operator.Range.Condition(
                 this.unConst(value), 
                 this.unConst(arg1), 
                 this.unConst(arg2.keyVar), 
@@ -195,6 +209,12 @@ Amm.Operator.Builder.prototype = {
         } else {
             throw "Uknown range type: '" + rangeType + "'";
         }
+        if (simpleRangeSupport) {
+            if (!value._rangeOperator && value._rangeValue === null) {
+                value._setOperand('range', '*');
+            }
+        }
+        return res;
     }
     
 };

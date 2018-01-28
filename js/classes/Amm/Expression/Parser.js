@@ -490,16 +490,23 @@ Amm.Expression.Parser.prototype = {
         token = this.fetch();
         if (!(token && (token.isSymbol('{', '[') || token.isIdentifier()))) 
             throw "Expected: identifier, subexpression or range";
-        if (token.string === '{') rangeOnly = true;
+        if (token.string === '{') {
+            rangeOnly = true;
+        }
+        if (!token.isIdentifier()) this.unfetch();
         if (!rangeOnly && token.isIdentifier()) {
             specifier = this.genOp('Constant', token.string);
         } else {
-            this.unfetch();
-            if (!rangeOnly) specifier = this.parsePart('Subexpression');
-            if (!specifier) throw "Expected: subexpression";
+            if (!rangeOnly) {
+                specifier = this.parsePart('Subexpression');
+                if (!specifier) {
+                    throw "Expected: subexpression";
+                }
+            }
         }
-        var range = this.parsePart('Range');
-        return this.genOp(isChild? 'ChildElement' : 'ElementAccess', value, specifier, range || null);
+        var op = this.genOp(isChild? 'ChildElement' : 'ElementAccess', value, specifier, null);
+        var range = this.parsePart('Range', op);
+        return range || op;
     },
     
     // parses [$key =>] $value: construct for ranges
@@ -526,6 +533,10 @@ Amm.Expression.Parser.prototype = {
             return this.genOp('LoopIdentifiers', varName, null);
         } else {
             this.unfetch();
+            if (varName) { // un-fetch fetched variable
+                this.unfetch();
+                this.unfetch();
+            } 
         }
     },
     
@@ -542,27 +553,43 @@ Amm.Expression.Parser.prototype = {
             rangeType = 'All';
         } else if (token.isConstant() && token.type === Amm.Expression.Token.Type.INTEGER) {
             rangeType = 'Index';
-            arg1 = token;
+            arg1 = this.genOp('Constant', token.value);
         } else if (token.isConstant() && token.type === Amm.Expression.Token.Type.REGEXP) {
             rangeType = 'RegExp';
-            arg1 = token;
+            arg1 = this.genOp('Constant', token.value);
         } else {
-            this.unfetch();
-            var loopId = this.parsePart('LoopIdentifiers');
-            var arg1 = this.parsePart('Expression');
-            if (!arg1) throw "Expected: expression";
-            if (!loopId) {
+            if (token.isSymbol('..')) { // first item of range skipped
+                rangeType = 'Slice';
+                arg1 = null;
                 token = this.fetch();
-                if (token.isSymbol('..')) {
-                    rangeType = 'Slice';
-                    arg2 = this.parsePart('Expression');
+                if (token.isSymbol('}')) {
+                    arg2 = null;
+                    this.unfetch();
+                    // note: { .. } is NOT same as { * }, because { .. } returns a COPY of array contents
                 } else {
                     this.unfetch();
-                    rangeType = 'Expression';
+                    arg2 = this.parsePart('Expression');
                 }
             } else {
-                rangeType = 'Expression';
-                arg2 = loopId;
+                this.unfetch();
+                var loopId = this.parsePart('LoopIdentifiers');
+                var arg1 = this.parsePart('Expression');
+                if (!arg1) {
+                    throw "Expected: expression";
+                }
+                if (loopId) { // {loopIdentifiers expression} is Condition
+                    rangeType = 'Condition';
+                    arg2 = loopId;
+                } else {
+                    token = this.fetch();
+                    if (token.isSymbol('..')) { // {expression..}
+                        rangeType = 'Slice';
+                        arg2 = this.parsePart('Expression');
+                    } else { // {expression} is Index
+                        this.unfetch();
+                        rangeType = 'Index';
+                    }
+                }
             }
         }
         token = this.fetch();
@@ -617,7 +644,7 @@ Amm.Expression.Parser.prototype = {
     
     fetch: function(noAdvance, reverse) {
         
-        if (this._fetches++ > 1000) throw "Guard: too much fetches (TODO: remove)";
+        if (this._fetches++ > 10000) throw "Guard: too much fetches (TODO: remove)";
         
         if (!this._tokens) return null;
         var res = null, d = reverse? -1 : 1, p = this._pos;

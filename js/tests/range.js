@@ -49,7 +49,6 @@
             var vv = Amm.getProperty(value, 'name');
             var ov = oldValue? Amm.getProperty(oldValue, 'name') : oldValue;
             changes.push([vv, ov]); 
-            //console.log("range changed", vv, "old:", ov);
             lastValue = vv;
         });
         
@@ -394,84 +393,152 @@
         ex.cleanup();
     });
     
-    if (0) // don't do at the time
+    QUnit.test("Range.slice", function(assert) {
+        
+        var c = new Amm.Array(['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'a9', 'a10']);
+        var ex = new Amm.Expression("this{$a..$a+3}", c);
+        ex.setVars(1, 'a');
+        var v;
+        ex.subscribe('valueChange', function(val) { v = val; } );
+        assert.deepEqual(ex.getValue(), ['a1', 'a2', 'a3'], 'initially proper slice range');
+        c.unshift('a_');
+        assert.deepEqual(v, ['a0', 'a1', 'a2'], 'proper value after unshift');
+        c.removeItem('a1');
+        assert.deepEqual(v, ['a0', 'a2', 'a3'], 'proper value after item is deleted');
+        ex.setVars(4, 'a');
+        assert.deepEqual(v, ['a4', 'a5', 'a6'], 'proper value after index changed');
+        c.cleanup();
+        
+    });
+    
     QUnit.test("Range.parsing", function(assert) {
         
-        /*var dummyExp = new Amm.Expression();
-        dummyExp.setThisObject(new Amm.Element);
-        
-        var p = new Amm.Expression.Parser();
-        var b = new Amm.Expression.Builder(dummyExp);
-        
-        var tt = function(t) {
-            var r = '';
-            for (var i = 0; i < t.length; i++) {
-                r += t[i].string;
-            }
-            return r;
-        };*/
-        
         var c = new Amm.Collection();
+        var ee = [];
         
         // -- REGULAR ranges --
         
         // "All" range (range object shouldn't be created; instead, toArray converter should be created)
-        var r1 = new Amm.Expression("this{*}", c);
+        ee.push(new Amm.Expression("this{*}", c));
         
         // Index range (const)
-        var r2 = new Amm.Expression("this{0}", c);
+        ee.push(new Amm.Expression("this{0}", c));
         
         // Index range (var)
-        var r3 = new Amm.Expression("this{$foo}", c);
+        ee.push(new Amm.Expression("this{$foo}", c));
         
         // Index range (expr)
-        var r4 = new Amm.Expression("this{$foo + 1}", c);
+        ee.push(new Amm.Expression("this{$foo + 1}", c));
         
-        // Interval (const, a to b)
-        var r5 = new Amm.Expression("this{1..3}", c);
+        // Slice (const, a to b)
+        ee.push(new Amm.Expression("this{1..3}", c));
         
-        // Interval (const, b only)
-        var r5 = new Amm.Expression("this{..3}", c);
+        // Slice (const, b only)
+        ee.push(new Amm.Expression("this{..3}", c));
         
-        // Interval (const, a only)
-        var r6 = new Amm.Expression("this{3..}", c);
+        // Slice (const, a only)
+        ee.push(new Amm.Expression("this{3..}", c));
         
-        // Interval (both a and b are expressions)
-        var r7 = new Amm.Expression("this{$foo .. $foo + $bar}", c);
+        // Slice (both a and b are expressions)
+        ee.push(new Amm.Expression("this{$foo .. $foo + $bar}", c));
         
-        var r8 = new Amm.Expression("this{$i => : $i % 2}", c);
+        // Condition
+        ee.push(new Amm.Expression("this{$i => : $i % 2}", c));
         
-        var r9 = new Amm.Expression("this{$v: $v.visible or $v.enabled}", c);
+        // Condition
+        ee.push(new Amm.Expression("this{$v: $v.visible || $v.enabled}", c));
 
-        var r10 = new Amm.Expression("this{$i: $v: $i == 3 or !($v.visible || $v.enabled)}", c);        
+        // Condition
+        ee.push(new Amm.Expression("this{$i => $v: $i == 3 || !($v.visible || $v.enabled)}", c));        
         
-        var r11 = new Amm.Expression("this{..-5}", c);
+        // Slice
+        ee.push(new Amm.Expression("this{..-5}", c));
+
+        // Slice
+        ee.push(new Amm.Expression("this{..}", c));
         
-        // --- ELEMENT ACCESS ranges --
+        // --- ELEMENT ACCESS ranges ---
         
-        var e1 = new Amm.Expression("this->x{0}", c);
+        ee.push(new Amm.Expression("this->x{0}", c));
         
-        var e2 = new Amm.Expression("this->x{*}", c);
+        ee.push(new Amm.Expression("this->x{*}", c));
         
-        var e3 = new Amm.Expression("this->x{$foo}", c);
+        ee.push(new Amm.Expression("this->x{$foo}", c));
         
-        var e4 = new Amm.Expression("this->x{1..3}", c);
+        ee.push(new Amm.Expression("this->x{1..3}", c));
         
-        var e5 = new Amm.Expression("this->[$id]{0}", c);
+        ee.push(new Amm.Expression("this->[$id]{0}", c));
         
-        var e6 = new Amm.Expression("this->[$id]{*}", c);
-        
-        var e7 = new Amm.Expression("this->{$foo}", c);
+        ee.push(new Amm.Expression("this->[$id]{*}", c));
+
+        ee.push(new Amm.Expression("this->{$foo}", c));
         
         // every second child element
-        var e8 = new Amm.Expression("this->{$i => : $i % 2}", c);
+        ee.push(new Amm.Expression("this->{$i => : $i % 2}", c));
         
         // all children with "input" identifier, visible or enabled
-        var e9 = new Amm.Expression("this->input{$v: $v.visible or $v.enabled}", c);
+        ee.push(new Amm.Expression("this->input{$v: $v.visible || $v.enabled}", c));
 
         // third element or not visible-or-enabled item
-        var e10 = new Amm.Expression("this->x{$i: $v: $i == 3 or !($v.visible || $v.enabled)}", c);        
+        ee.push(new Amm.Expression("this->x{$i => $v: $i == 3 || !($v.visible || $v.enabled)}", c));
         
+        assert.ok(true); // everything parsed without errors
+        Amm.cleanup(ee);
         
     });
+    
+    QUnit.test("Access operator ranges", function(assert) {
+        
+        var c = new Amm.Element({traits: ['Amm.Trait.Component'], properties: {name: 'c', v: 5}});
+        var d = new Amm.Element({id: 'x', properties: {name: 'd', v: 10}, component: c});
+        var e = new Amm.Element({properties: {name: 'e', v: 5}, component: c});
+        var f = new Amm.Element({traits: ['Amm.Trait.Composite'], properties: {name: 'f', v: 10}, component: c});
+        var g = new Amm.Element({id: 'x', properties: {name: 'g', v: 5}, parent: f});
+        var h = new Amm.Element({id: 'x', properties: {name: 'h', v: 10}, component: c});
+        var i = new Amm.Element({properties: {name: 'i', v: 5}, parent: f});
+        
+        var ex = new Amm.Expression("this->x{$item: $item.v == 10}", c);
+        var v;
+        ex.subscribe('valueChange', function(val) { v = val; });
+        assert.deepEqual(Amm.getProperty(ex.getValue(), 'name'), ['d', 'h'], 'proper element access using range selector');
+        g.setV(10);
+        assert.deepEqual(Amm.getProperty(v, 'name'), ['d', 'g', 'h'], 'element access + range value changed with properties');
+        g.setV(5);
+        assert.deepEqual(Amm.getProperty(v, 'name'), ['d', 'h'], 'element access + range value changed with properties');
+        
+        var ex1 = new Amm.Expression("this->x{*}", c);
+        assert.deepEqual(Amm.getProperty(ex1.getValue(), 'name'), ['d', 'g', 'h'], 'proper element access using "all" range');
+        
+        var ex2 = new Amm.Expression("this->x{1}", c);
+        assert.deepEqual(Amm.getProperty(ex2.getValue(), 'name'), 'g', 'proper element access using "index" range');
+        
+        Amm.cleanup(c, d, e, f, g, h, ex, ex1, ex2);
+        
+    });
+    
+    QUnit.test("RegExp ranges", function(assert) {
+        
+        var r = new Amm.Array(['aaa', 'aab', 'baa', 'aac', 'bbb']);
+        
+        var ex  = new Amm.Expression("this{/^aa/}", r);
+        
+        assert.equal(Amm.getClass(ex.getOperator(0)), 'Amm.Operator.Range.RegExp');
+        
+        var v;
+        ex.subscribe('valueChange', function(val) { v = val; });
+        
+            assert.deepEqual(ex.getValue(), ['aaa', 'aab', 'aac']);
+        
+        r.push('aad');
+        
+            assert.deepEqual(v, ['aaa', 'aab', 'aac', 'aad']);
+        
+        r.unshift('aa');
+        
+            assert.deepEqual(v, ['aa', 'aaa', 'aab', 'aac', 'aad']);
+            
+        Amm.cleanup(r);
+        
+    });
+    
 }) ();

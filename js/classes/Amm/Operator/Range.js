@@ -22,15 +22,6 @@ Amm.Operator.Range.prototype = {
         this._setOperand('source', source);
     },
 
-/*    _sourceEvents: function(source, oldSource) {
-        
-        // todo: properly subscribe to Collection events
-    },
-    
-    _sourceOperatorChange: function(operator) {
-        // TODO: check if this is something subscribeable like ElementAccess or OperatorAccess
-    },
-*/    
     _doEvaluate: function(again) {
         throw "Call to abstract function";
     },
