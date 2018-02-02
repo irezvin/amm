@@ -55,7 +55,11 @@ Amm.Operator.Var.prototype = {
         this._sub(this.expression, 'varsChange', '_onProviderVarsChange', null, true);
     },
     
-    _initContextState: function(contextId, own) {    
+    _initContextState: function(contextId, own) {
+        if (contextId === null) {
+            console.log(this.getSrc());
+            console.trace();
+        }
         Amm.Operator.prototype._initContextState.call(this, contextId, own);
         if (own && this._expression) {
             this._sub(this.expression, 'varsChange', '_onProviderVarsChange', null, true);

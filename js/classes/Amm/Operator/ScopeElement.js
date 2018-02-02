@@ -4,12 +4,13 @@
  *  Locates elements in scope of owner component of `origin` and its' parent components.
  *  Range is either index or '*' (means array will be returned)
  */
-Amm.Operator.ScopeElement = function(origin, id, range, componentOnly) {
+Amm.Operator.ScopeElement = function(origin, id, range, componentOnly, allElements) {
     Amm.Operator.call(this);
     this._componentOnly = componentOnly;
     if (origin !== undefined) this._setOperand('origin', origin);
     if (id !== undefined) this._setOperand('id', id);
     if (range !== undefined) this._setOperand('range', range);
+    if (allElements !== undefined) this._allElements = !!allElements;
 };
 
 Amm.Operator.ScopeElement.prototype = {
@@ -18,6 +19,9 @@ Amm.Operator.ScopeElement.prototype = {
 
     // Searches only components
     _componentOnly: false,
+    
+    // Means if no id is provided, should return all elements
+    _allElements: false,
     
     _originOperator: null,
     
@@ -95,7 +99,12 @@ Amm.Operator.ScopeElement.prototype = {
     },
     
     _acceptedInScope: function(component, elements) {
-        if (!this._idExists || !this._idValue || this._isEvaluating) return;
+        if (this._isEvaluating) return;
+        if (this._allElements) {
+            this.evaluate();
+            return;
+        }
+        if (!this._idExists || !this._idValue) return;
         var found = false;
         // only if we have element with interesting id
         for (var i = 0, l = elements.length; i < l; i++) {
@@ -112,12 +121,22 @@ Amm.Operator.ScopeElement.prototype = {
     },
     
     _renamedInScope: function(component, element, id, oldId) {
-        if (!this._idExists || !this._idValue || this._isEvaluating) return;
+        if (this._isEvaluating) return;
+        if (this._allElements) {
+            this.evaluate();
+            return;
+        }
+        if (!this._idExists || !this._idValue) return;
         if (id === this._idValue || oldId === this._idValue) this.evaluate();
     },
     
     _childComponentStatusChangeInScope: function(originComponent, component, status) {
-        if (!this._idExists || !this._idValue || this._isEvaluating) return;
+        if (this._isEvaluating) return;
+        if (this._allElements) {
+            this.evaluate();
+            return;
+        }
+        if (!this._idExists || !this._idValue) return;
         if (component.getId() === this._idValue || component.getInternalId() === this._idValue) this.evaluate();
     },
     
@@ -131,45 +150,46 @@ Amm.Operator.ScopeElement.prototype = {
     
     _doEvaluate: function(again) {
         var range = this._getOperandValue('range', again);
-        var multi = false;
-        if (range === '*') multi = true;
-            else range = parseInt(range) || 0;
         var id = this._getOperandValue('id', again);
-        var def = multi? [] : undefined;
-        if (!id) return def;
         var origin = this._getOperandValue('origin', again);
-        return Amm.Operator.ScopeElement._eval(origin, id, range, this._componentOnly);
+        return Amm.Operator.ScopeElement._eval(origin, id, range, this._componentOnly, this._allElements);
     },
     
     toFunction: function() {
         var _origin = this._operandFunction('origin');
         var _id = this._operandFunction('id');
         var _range = this._operandFunction('range');
+        var _allElements = this._allElements;
         var componentOnly = this._componentOnly;
         return function(e) {
             var range = _range(e);
-            var multi = false;
-            if (range === '*') multi = true;
-                else range = parseInt(range) || 0;
             var id = _id(e);
-            var def = multi? [] : undefined;
-            if (!id) return def;
             var origin = _origin(e);
-            return Amm.Operator.ScopeElement._eval(origin, id, range, componentOnly);
+            return Amm.Operator.ScopeElement._eval(origin, id, range, componentOnly, _allElements);
         };
     }
     
 };
 
-Amm.Operator.ScopeElement._eval = function(origin, id, range, componentOnly) {
-    var multi = range === '*';
+Amm.Operator.ScopeElement._eval = function(origin, id, range, componentOnly, allElements) {
+    var multi = range === '*' || !id && allElements;
     var def = multi? [] : undefined;
     if (!origin || !origin['Amm.Element']) return def;
-    if (!id) return def;
+    if (!id && !allElements) return def;
     var closestComponent = origin.getClosestComponent();
     if (!closestComponent) return def;
     if (componentOnly) {
-        var items = closestComponent.getAllNamedElements(id, true), components = [];
+        var items;
+        if (!id && allElements) {
+            var h = closestComponent.getAllNamedElements();
+            items = [];
+            for (var i in h) if (h.hasOwnProperty(i)) {
+                items = items.concat(h[i]);
+            }
+        } else {
+            items = closestComponent.getAllNamedElements(id, true);
+        }
+        var components = [];
         for (var i = 0; i < items.length; i++) if (items[i]['Component'] && items[i].getIsComponent()) 
             components.push(items[i]);
         return multi? components: components[range];

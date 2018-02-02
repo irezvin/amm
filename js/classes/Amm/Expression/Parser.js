@@ -504,7 +504,7 @@ Amm.Expression.Parser.prototype = {
                 }
             }
         }
-        var op = this.genOp(isChild? 'ChildElement' : 'ElementAccess', value, specifier, null);
+        var op = this.genOp(isChild? 'ChildElement' : 'ComponentElement', value, specifier, null);
         var range = this.parsePart('Range', op);
         return range || op;
     },

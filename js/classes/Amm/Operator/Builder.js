@@ -45,7 +45,6 @@ Amm.Operator.Builder.prototype = {
     },
     
     Identifier: function(ident) {
-        // TODO: support keywords like 'this'
         if (ident === 'this') {
             return new Amm.Operator.ExpressionThis;
         }
@@ -154,11 +153,13 @@ Amm.Operator.Builder.prototype = {
         return this.unConst(args, true);
     },
     
-    ElementAccess: function(component, specifier, range) {
+    ComponentElement: function(component, specifier, range) {
         return new Amm.Operator.ComponentElement(
             this.unConst(component), 
             this.unConst(specifier),
-            this.unConst(range)
+            this.unConst(range),
+            false,
+            specifier === undefined
         );
     },
     
@@ -166,7 +167,8 @@ Amm.Operator.Builder.prototype = {
         return new Amm.Operator.ChildElement(
             this.unConst(element), 
             this.unConst(id),
-            this.unConst(range)
+            this.unConst(range),
+            id === undefined
         );
     },
     

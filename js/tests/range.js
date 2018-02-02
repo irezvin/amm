@@ -25,9 +25,6 @@
             assert.equal(r3.getOperator(0).keyVar, 'i', 'keyVar is one as provided');
             assert.equal(r3.getOperator(0).valueVar, null, 'valueVar is null when not provided');
         
-        window.d.r1 = r1;
-        window.d.r1c = r1.getOperator(0);
-        
         var pp = [
             new Amm.Element({properties: {name: 'Pup1', age: 6}}),
             new Amm.Element({properties: {name: 'Pup2', age: 7}}),
@@ -51,8 +48,6 @@
             changes.push([vv, ov]); 
             lastValue = vv;
         });
-        
-        window.d.pp = pupils;
         
             assert.deepEqual(r1.getValue(), [], "Initial range value is an empty array");
             assert.deepEqual(changes, [], "No changes upon getValue()");
@@ -317,9 +312,6 @@
             mkElement('e2_9', false)
         ];
         var ex = new Amm.Expression("$items{$item: $item.pass}");
-        window.d.ex = ex;
-        window.d.r = ex.getOperator(0);
-        window.d.i = ex.getOperator(0,1);
         var probl;
         
         probl = testRangeStateCorrectness(ex, 0, 0, els1.slice(0, 6), 'c', false);
@@ -375,7 +367,6 @@
         
         var c = new Amm.Collection(ee.slice(0, 7));
         var ex = new Amm.Expression("this{$i =>: $i >= 2 && $i <= 4}", c);
-        window.d.ex = ex;
         assert.deepEqual(Amm.getProperty(ex.getValue(), 'name'), ['e2', 'e3', 'e4'], 'correct index-based value');
         c.unshift(ee[8]);
         assert.deepEqual(Amm.getProperty(ex.getValue(), 'name'), ['e1', 'e2', 'e3'], 'correct value after prepending array');
@@ -496,6 +487,7 @@
         var g = new Amm.Element({id: 'x', properties: {name: 'g', v: 5}, parent: f});
         var h = new Amm.Element({id: 'x', properties: {name: 'h', v: 10}, component: c});
         var i = new Amm.Element({properties: {name: 'i', v: 5}, parent: f});
+        var j = new Amm.Element({properties: {name: 'j', v: 10}, component: c});
         
         var ex = new Amm.Expression("this->x{$item: $item.v == 10}", c);
         var v;
@@ -512,7 +504,17 @@
         var ex2 = new Amm.Expression("this->x{1}", c);
         assert.deepEqual(Amm.getProperty(ex2.getValue(), 'name'), 'g', 'proper element access using "index" range');
         
-        Amm.cleanup(c, d, e, f, g, h, ex, ex1, ex2);
+        var ex3 = new Amm.Expression("this->{$item: $item.v == 10}", c);
+        assert.deepEqual(Amm.getProperty(ex3.getValue(), 'name'), ['d', 'f', 'h', 'j'], 'proper element access using range w/o id');
+        
+        var v3;
+        ex3.subscribe('valueChange', function(val) { v3 = val; });
+        j.setV(5);
+        assert.deepEqual(Amm.getProperty(v3, 'name'), ['d', 'f', 'h'], 'proper element access using range w/o id > tracks changes');
+        g.setV(10);
+        assert.deepEqual(Amm.getProperty(v3, 'name'), ['d', 'f', 'g', 'h'], 'proper element access using range w/o id > tracks changes');
+        
+        Amm.cleanup(c, d, e, f, g, h, ex, ex1, ex2, ex3);
         
     });
     
@@ -538,6 +540,69 @@
             assert.deepEqual(v, ['aa', 'aaa', 'aab', 'aac', 'aad']);
             
         Amm.cleanup(r);
+        
+    });
+    
+    QUnit.test("Condition range in context", function(assert) {
+        
+        var els1 = [
+            mkElement('e1_0', true),
+            mkElement('e1_1', false),
+            mkElement('e1_2', true),
+            mkElement('e1_3', false),
+            mkElement('e1_4', true),
+            mkElement('e1_5', false),
+            mkElement('e1_6', true),
+            mkElement('e1_7', false),
+            mkElement('e1_8', false),
+            mkElement('e1_9', false)
+        ];
+        var els2 = [
+            mkElement('e2_0', true),
+            mkElement('e2_1', false),
+            mkElement('e2_2', true),
+            mkElement('e2_3', false),
+            mkElement('e2_4', true),
+            mkElement('e2_5', false),
+            mkElement('e2_6', true),
+            mkElement('e2_7', false),
+            mkElement('e2_8', false),
+            mkElement('e2_9', true)
+        ];
+        var a1 = new Amm.Array(els1);
+        var a2 = new Amm.Array(els2);
+        
+        var probl;
+        
+        var v1, v2;
+        
+        var ex = new Amm.Expression("$items{$item: $item.pass}");
+            ex.setVars(a1, 'items');
+            ex.subscribe('valueChange', function(v) { v1 = v; });
+            
+            probl = testRangeStateCorrectness(ex);
+            assert.equal(probl, '', 'Initial items - context 1');
+        
+        var cid2 = ex.createContext(null, {vars: {items: a2}});
+            ex.subscribe('valueChange', function(v) { v2 = v; });
+            probl = testRangeStateCorrectness(ex);
+            assert.equal(probl, '', 'Initial items - context 2');
+            
+        v1 = null;
+        a1.splice(3, 3);
+        assert.deepEqual(Amm.getProperty(v1, 'name'), ['e1_0', 'e1_2', 'e1_6']);
+        
+        v2 = null;
+        a2.splice(3, 4);
+        assert.deepEqual(Amm.getProperty(v2, 'name'), ['e2_0', 'e2_2', 'e2_9']);
+        
+        a1[0].setPass(false);
+        assert.deepEqual(Amm.getProperty(v1, 'name'), ['e1_2', 'e1_6']);
+        
+        a2[1].setPass(true);
+        assert.deepEqual(Amm.getProperty(v2, 'name'), ['e2_0', 'e2_1', 'e2_2', 'e2_9']);
+        
+        Amm.cleanup(ex, a1, a2);
         
     });
     

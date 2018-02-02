@@ -176,7 +176,7 @@
                 ["PropertyAccess",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false,null],["Constant","c"],null,false,null],
         
             "a->b->c": 
-                ["ElementAccess",["ElementAccess",["Identifier","a"],["Constant","b"],null],["Constant","c"],null],
+                ["ComponentElement",["ComponentElement",["Identifier","a"],["Constant","b"],null],["Constant","c"],null],
         
             "a->>b->>c": 
                 ["ChildElement",["ChildElement",["Identifier","a"],["Constant","b"],null],["Constant","c"],null],

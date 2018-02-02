@@ -136,7 +136,7 @@ Amm.Operator.Range.Condition.prototype = {
     
     notifyOperandChanged: function(operand, value, oldValue, operator) {
         if (operator === this._iteratorOperator) {
-            if (operator.parentContextId !== this._contextId)
+            if (operator.parentContextId !== null && operator.parentContextId !== this._contextId)
                 this.setContextId(operator.parentContextId);
             if (this._lockChange) return;
             var idx = operator.index;
@@ -334,10 +334,6 @@ Amm.Operator.Range.Condition.prototype = {
         res._value = [];
         res._nonCacheableIteratorContexts = {};
         return res;
-    },
-    
-    setContextId: function(contextId) {
-        return Amm.Operator.Range.prototype.setContextId(contextId);
     },
     
     _propagateContext: function(operand, operator, down) {    

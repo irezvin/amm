@@ -38,18 +38,17 @@ Amm.Operator.Range.RegExp.prototype = {
     
     toFunction: function() {
         var _source = this._operandFunction('source');
-        var _start = this._operandFunction('start');
-        var _end = this._operandFunction('end');
+        var _regexp = this._operandFunction('regexp');
         return function(e) {
             var source = _source(e);
-            var start = _start(e);
-            var end = _end(e);
-            if (!start && typeof start !== 'number') start = null;
-            if (!end && typeof end !== 'number') end = null;
-            if (source && (source instanceof Array || source['Amm.Array'])) {
-                return source.slice(start, end);
-            }        
-            return undefined;
+            var regexp = _regexp(e);
+            if (!(source && (source instanceof Array || source['Amm.Array']) && regexp instanceof RegExp))
+                return undefined;
+            var res = [];
+            for (var i = 0, l = source.length; i < l; i++) if (regexp.exec('' + source[i])) {
+                res.push(source[i]);
+            }
+            return res;
         };
     }
     
