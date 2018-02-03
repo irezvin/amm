@@ -583,7 +583,7 @@
             probl = testRangeStateCorrectness(ex);
             assert.equal(probl, '', 'Initial items - context 1');
         
-        var cid2 = ex.createContext(null, {vars: {items: a2}});
+        var cid2 = ex.createContext({vars: {items: a2}});
             ex.subscribe('valueChange', function(v) { v2 = v; });
             probl = testRangeStateCorrectness(ex);
             assert.equal(probl, '', 'Initial items - context 2');

@@ -158,7 +158,7 @@ Amm.Operator.Range.Condition.prototype = {
             var v = {};
             if (this.keyVar !== null) v[this.keyVar] = i;
             if (this.valueVar !== null) v[this.valueVar] = items[i];
-            this._iteratorOperator.createContext(null, {index: i, parentContextId: this._contextId, vars: v});
+            this._iteratorOperator.createContext({index: i, parentContextId: this._contextId, vars: v});
             this._map[i] = {
                 c: this._iteratorOperator._contextId,
                 i: i,
@@ -283,7 +283,7 @@ Amm.Operator.Range.Condition.prototype = {
             var v = {};
             if (this.keyVar !== null) v[this.keyVar] = addedIdx[i] + offset;
             if (this.valueVar !== null) v[this.valueVar] = changeInfo.insert[addedIdx[i]];
-            iter.createContext(null, {index: addedIdx[i] + offset, parentContextId: this._contextId, vars: v});
+            iter.createContext({index: addedIdx[i] + offset, parentContextId: this._contextId, vars: v});
             m.push({
                 c: iter._contextId,
                 i: addedIdx[i] + offset,

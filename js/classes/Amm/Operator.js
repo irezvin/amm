@@ -4,6 +4,12 @@ Amm.Operator = function()  {
     this.id = ++Amm.Operator._iid;
 };
 
+Amm.Operator.CONTEXT_ID = 1;
+
+Amm.Operator.getNextContextId = function() {
+    return ('' + Amm.Operator.CONTEXT_ID++);
+};
+
 // for bitmask
 
 Amm.Operator.NON_CACHEABLE_VALUE = 1;
@@ -73,8 +79,6 @@ Amm.Operator.prototype = {
     // members that don't change between states
     STATE_SHARED: {
         _contextState: true,
-        _contextParent: true,
-        _context: true,
         _contextId: true,
         _numCtx: true,
         _parent: true,
@@ -99,9 +103,7 @@ Amm.Operator.prototype = {
     
     /* object { contextId: data } */
     _contextState: null,
-    _contextParent: null,
     _contextId: '0',
-    _context: false,
     _numCtx: 1, // we have default context
     
     setExpression: function(expression) {
@@ -714,10 +716,6 @@ Amm.Operator.prototype = {
         }
         this._partialCleanup();
         if (this._contextState !== null) this._contextState[id] = null;
-        if (this._context) {
-            this._context.operator = null;
-            this._context.cleanup();
-        }
         for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
             var o = this.OPERANDS[i], opVar = '_' + o + 'Operator', op = this[opVar];
             if (op) {
@@ -768,14 +766,13 @@ Amm.Operator.prototype = {
         return e.getSrc(this.beginPos, this.endPos);
     },
 
-    createContext: function(data, properties) {
-        var ctx = new Amm.Operator.Context(this, data);
-        this.setContextId(ctx.id);
-        this._context = ctx;
+    createContext: function(properties) {
+        var id = Amm.Operator.getNextContextId();
+        this.setContextId(id);
         if (properties && (typeof properties === 'object')) {
             Amm.init(this, properties);
         }
-        return ctx;
+        return id;
     },
     
     setContextIdToDispatchEvent: function(contextId, event, args) {

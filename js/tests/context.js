@@ -120,7 +120,7 @@ QUnit.module("Context");
             assert.equal(xp.getIsCacheable(), true, 'cacheable object1');
             assert.equal(xp.getValue(), a.getX() + a.getY(), 'correct value for object1');
         
-        cid2 = xp.createContext(null, {expressionThis: b}).id;
+        cid2 = xp.createContext({expressionThis: b});
         
         xp.subscribe('valueChange', function(v) { v2 = v; });
         
@@ -171,7 +171,7 @@ QUnit.module("Context");
             assert.equal(xp.getIsCacheable(), false, 'non-cacheable object1');
             assert.equal(xp.getValue(), a.x + a.y, 'correct value for object1');
         
-        cid2 = xp.createContext(null, {expressionThis: b}).id;
+        cid2 = xp.createContext({expressionThis: b});
         
         xp.subscribe('valueChange', function(v) { v2 = v; });
         
@@ -225,9 +225,7 @@ QUnit.module("Context");
             return oldXpCleanup.call(xp);
         };
         
-        var ctx2 = xp.createContext(null, {expressionThis: e2});
-        assert.ok(ctx2.operator === xp, 'context references the operator');
-        var ctx3 = xp.createContext(null, {expressionThis: e3});
+        xp.createContext({expressionThis: e3});
         xp.setWriteProperty('v3', o);
         
         
@@ -235,10 +233,7 @@ QUnit.module("Context");
         d.xp = xp;
         e1.cleanup();
         o.cleanup();
-        ctx2.cleanup();
         
-        assert.equal(e2.getSubscribers().length, 0, 
-            'Element doesn\'t have observers because context of expression is deleted');
         assert.ok(xp.listContexts().length === 1 && xp.listContexts()[0] === xp._contextId,
             'All contexts deleted because of expression cleanup (except default one)');
         assert.equal(cleaned, 1);
