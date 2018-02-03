@@ -864,6 +864,7 @@ Amm.Operator.prototype = {
             this.setContextId(contextId);
             return;
         }
+        this._isEvaluating++;
         for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
             var op = '_' + this.OPERANDS[i], o = op + 'Operator', v = op + 'Value', x = op + 'Exists', ob = op + 'Observe';
             if (this[x] && !this[o]) {
@@ -875,6 +876,7 @@ Amm.Operator.prototype = {
                 this[o]._initContextState(contextId);
             }
         }
+        this._isEvaluating--;
     },
     
     // destroys current context. Will return to "context 0"

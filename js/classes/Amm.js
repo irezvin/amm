@@ -555,6 +555,12 @@ Amm = {
                 throw '`itemOrItems` must be either an object with .cleanup() method or an Array';
             }
         }
+    },
+    
+    keys: function(hash) {
+        var res = [];
+        for (var i in hash) if (hash.hasOwnProperty(i)) res.push(i);
+        return res;
     }
 };
 

@@ -8,7 +8,7 @@
 
         var s1, s2, s3;
         var r1 = new Amm.Expression(s1 = "$pupils{$pupil: $pupil.age > $min}");
-
+        
             assert.equal(Amm.getClass(r1.getOperator(0)), 'Amm.Operator.Range.Condition', 'Condition Range "' + s1 + '" is properly parsed');
             assert.equal(r1.getOperator(0).keyVar, null, 'keyVar is null when it is not provided');
             assert.equal(r1.getOperator(0).valueVar, 'pupil', 'valueVar is one as provided');
@@ -232,7 +232,6 @@
             }
             if (map[i].i !== i) problems.push("Map item " + i + " index is wrong (" + map[i].i + " instead of + " + i + ")");
             if (map[i].o !== valCopy[i]) problems.push("Map item " + i + " referencing wrong object");
-            var data = iter._contextId === ctxId? iter : iter._contextState[ctxId];
         }
         
         // check for result correctness
@@ -253,7 +252,7 @@
 //                console.log(Amm.getProperty(val, 'name'), Amm.getProperty(properResult, 'name'));
 //            }
         }
-        
+
         var fnVal = fn();
         if (fnVal.length !== properResult.length) {
             problems.push("Function result length (" + fnVal.length + ") doesn't match proper result length (" + properResult.length + ")");
@@ -579,10 +578,16 @@
         var ex = new Amm.Expression("$items{$item: $item.pass}");
             ex.setVars(a1, 'items');
             ex.subscribe('valueChange', function(v) { v1 = v; });
+            var vv = ex.getValue();
+            assert.deepEqual(Amm.keys(ex.getVars()), ['items'], 'no bogus vars (regular)');
+            var fn = ex.toFunction();
+            var vf = fn();
+            assert.deepEqual(Amm.getProperty(vv, 'name'), Amm.getProperty(vf, 'name'), 'function returns same result...');
+            assert.deepEqual(Amm.keys(ex.getVars()), ['items'], 'no bogus vars (function)');
             
             probl = testRangeStateCorrectness(ex);
             assert.equal(probl, '', 'Initial items - context 1');
-        
+            
         var cid2 = ex.createContext({vars: {items: a2}});
             ex.subscribe('valueChange', function(v) { v2 = v; });
             probl = testRangeStateCorrectness(ex);

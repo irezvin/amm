@@ -64,7 +64,7 @@ Amm.Operator.VarsProvider.prototype = {
             var assign = this._operatorOperator.assignmentFunction();
             fn = function(e, value) {
                 var tmp = e.vars;
-                e.vars = Amm.override(e.vars, v);
+                e.vars = Amm.override({}, e.vars, v);
                 var res;
                 if (arguments.length > 1) {
                     res = assign(e, value);
