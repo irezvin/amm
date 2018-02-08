@@ -20,13 +20,22 @@ Amm.Operator.VarsProvider.prototype = {
     
     _varsProvider: null,
     
+    _varsProviderContextId: null,
+    
     _allVars: null,
     
     _operatorOperator: null,
     
     _operatorValue: null,
-    
+     
     _operatorExists: null,
+    
+    /**
+     *  Hash: { varName: [consumers], '': [consumersForAllVars] }
+     *  where consumer is either `object` or [`object`, `contextId`];
+     *  `object` must have 'notifyProviderVarsChange' (value, oldValue, name, object) event
+     */
+    _consumers: null,
     
     OPERANDS: ['operator'],
     
@@ -76,8 +85,8 @@ Amm.Operator.VarsProvider.prototype = {
         } else {
             fn = function(e) {
                 var tmp = e.vars;
-                e.vars = Amm.override(e.vars, v);
-                var res = op(e1);
+                e.vars = Amm.override({}, e.vars, v);
+                var res = op(e);
                 e.vars = tmp;
                 return res;
             };
@@ -102,44 +111,40 @@ Amm.Operator.VarsProvider.prototype = {
         Amm.Operator.prototype.setContextIdToDispatchEvent.call(this, contextId, ev, args);
     },
     
-    _handleProviderVarsChange: function(value, oldValue, name, object, contextId) {
-        if (object !== this._varsProvider || contextId !== this._contextId) {
-            return; // not ours
-        }
+    notifyProviderVarsChange: function(value, oldValue, name, object) {
         if (name) { // case A: single variable changed
             // nothing to do because our variables hide parent's ones
             if (this._vars && name in this._vars) return;
             var old = Amm.override({}, this._allVars || this.getVars());
             this._allVars[name] = value;
             if (this._providerVars) this._providerVars[name] = value;
-            if (this._expression) {
-                this._expression.outVarsChange(value, oldValue, name, this, this._contextId);
-            }
+            if (this._consumers) this._notifyConsumers(value, oldValue, name);
         } else { // case B: all parent vars changed
             old = Amm.override({}, this._allVars || this.getVars());
             this._allVars = Amm.override({}, value, this._vars);
             this._providerVars = value;
-            if (this._expression) {
-                this._expression.outVarsChange(this._allVars, old, null, this, this._contextId);
-            }
+            if (this._consumers) this._notifyConsumers(this._allVars, old, '');
         }
     },
     
     setVarsProvider: function(varsProvider) {
         var oldVarsProvider = this._varsProvider;
-        if (oldVarsProvider === varsProvider) return;
+        var oldVarsProviderContextId = this._varsProviderContextId;
+        if (oldVarsProvider === varsProvider && oldVarsProviderContextId === this._varsProviderContextId) return;
         if (oldVarsProvider) throw "Can setVarsProvider() only once";
         if (!varsProvider || !varsProvider['Amm.Operator.VarsProvider'])
             throw "varsProvider must be an instance of Amm.Operator.VarsProvider";
         this._varsProvider = varsProvider;
-        this._sub(this._expression, 'varsChange', '_handleProviderVarsChange');
+        this._varsProviderContextId = varsProvider._contextId;
+        this._varsProvider.addConsumer(this, '');
         return true;
     },
     
     _initContextState: function(contextId, own) {    
         Amm.Operator.prototype._initContextState.call(this, contextId, own);
-        if (own && this._expression) {
-            this._sub(this.expression, 'varsChange', '_handleProviderVarsChange', null, true);
+        if (own && this._varsProvider) {
+            this._varsProviderContextId = this._varsProvider._contextId;
+            this._varsProvider.addConsumer(this, '');
         }
     },
     
@@ -157,14 +162,14 @@ Amm.Operator.VarsProvider.prototype = {
                 if (!this._allVars) this.getVars();
                 this._allVars[name] = value;
             }
-            if (exp) exp.outVarsChange(value, old, name, this, this._contextId);
+            if (this._consumers) this._notifyConsumers(value, old, name);
         } else { // b - set whole vars
             if (typeof value !== 'object') throw "setVars(`value`): object required";
             var old = Amm.override({}, this._allVars || this.getVars());
             if (!value) value = {}; // delete all vars
             this._vars = value;
             this._allVars = null;
-            if (exp) exp.outVarsChange(this.getVars(), old, null, this, this._contextId);
+            if (this._consumers) this._notifyConsumers(this.getVars(), old, '');
         }
         return true;
     },
@@ -195,21 +200,129 @@ Amm.Operator.VarsProvider.prototype = {
         this._vars = {};
         this._providerVars = null;
         this._allVars = null;
-        if (this._expression && this._varsProvider) {
-            this._expression.unsubscribeOperator(this._expression, 'varsChange', this);
+        this._consumers = null;
+        if (this._varsProvider && this._varsProvider.hasContext(this._varsProviderContextId)) {
+            var tmp;
+            if (this._varsProviderContextId !== this._varsProvider._contextId) {
+                tmp = this._varsProvider._contextId;
+                this._varsProvider.setContextId(this._varsProviderContextId);
+            }
+            this._varsProvider.deleteConsumer(this, '');
+            if (tmp) this._varsProvider.setContextId(tmp);
         }
         Amm.Operator.prototype._partialCleanup.call(this);
     },
     
     cleanup: function() {
+        if (this._varsProvider && this._varsProvider.hasContext(this._varsProviderContextId)) {
+            var tmp;
+            if (this._varsProviderContextId !== this._varsProvider._contextId) {
+                tmp = this._varsProvider._contextId;
+                this._varsProvider.setContextId(this._varsProviderContextId);
+            }
+            this._varsProvider.deleteConsumer(this, '');
+            if (tmp) this._varsProvider.setContextId(tmp);
+        }
         this._varsProvider = null;
+        this._consumers = null;
         Amm.Operator.prototype.cleanup.call(this);
     },
     
     _constructContextState: function() {
         var res = Amm.Operator.prototype._constructContextState.call(this);
         res._vars = {};
+        res._consumers = null;
         return res;
+    },
+    
+    addConsumer: function(consumer, varName) {
+        varName = varName || '';
+        if (!this._consumers) {
+            this._consumers = {};
+            this._consumers[varName] = [];
+        } else if (!this._consumers[varName]) {
+            this._consumers[varName] = [];
+        }
+        var ins = consumer._contextId !== this._contextId?
+            [consumer, consumer._contextId] : consumer;
+        this._consumers[varName].push(ins);
+    },
+    
+    deleteConsumer: function(consumer, varName) {
+        if (!this._consumers) return;
+        varName = varName || '';
+        var contextId = consumer._contextId;
+        if (contextId === this._contextId) contextId = null;
+        if (!this._consumers[varName]) return;
+        for (var i = 0, l = this._consumers[varName].length; i < l; i++) {
+            var c = this._consumers[varName][i];
+            if (contextId === null && c === consumer || c[0] === consumer && c[1] === contextId) {
+                this._consumers[varName].splice(i, 1);
+                return;
+            }
+        }
+    },
+    
+    _notifyConsumers: function(value, oldValue, varName) {
+        if (!this._consumers) return;
+        var consumers = this._consumers, contextId = this._contextId;
+        var gotAny = false;
+        varName = varName || '';
+        var i, j, l, cs, cx, o, n, v;
+        var kk;
+        if (varName === '') kk = Amm.keys(consumers);
+        else {
+            kk = ['', varName];
+            n = value;
+            o = oldValue;
+            v = varName;
+        }
+        for (var ki = 0, kl = kk.length; ki < kl; ki++) if (consumers[kk[ki]]) {
+            i = kk[ki];
+            // check if our var changed or it is 'all vars' consumer (or no old/new value provided)
+            if (varName === '') {
+                // var is of no interest
+                if (!(i === '' || !oldValue || !value || oldValue[i] !== value[i])) continue; 
+                if (i !== '') {
+                    n = value? value[i] : undefined;
+                    o = oldValue? oldValue[i] : undefined;
+                    v = i;
+                } else {
+                    n = value;
+                    o = oldValue;
+                    v = '';
+                }
+            }
+            for (j = 0, l = consumers[i].length; j < l; j++) {
+                if (consumers[i][j][0]) {
+                    cs = consumers[i][j][0];
+                    cx = consumers[i][j][1];
+                } else {
+                    cs = consumers[i][j];
+                    cx = contextId;
+                }
+                if (!gotAny) {
+                    gotAny = true;
+                    if (this._expression) {
+                        this._expression._beginUpdate();
+                    } else if (this['Amm.Expression']) {
+                        this._beginUpdate();
+                    }
+                }
+                if (cs._contextId !== cx) {
+                    cs.setContextId(cx);
+                }
+                cs.notifyProviderVarsChange(n, o, v, this);
+            }
+        }
+        if (gotAny) {
+            if (this._expression) {
+                this._expression._endUpdate();
+            } else if (this['Amm.Expression']) {
+                this._endUpdate();
+            }
+        }
+        
     }
     
 };

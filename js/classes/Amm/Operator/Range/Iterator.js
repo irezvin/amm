@@ -25,20 +25,6 @@ Amm.Operator.Range.Iterator.prototype = {
         valueVar: true
     },
     
-    setContextIdToDispatchEvent: function(contextId, ev, args) {
-        if (ev === 'varsChange' && (args[3] !== this._varsProvider || args[4] !== this._contextState[contextId].parentContextId)) {
-            return;
-        }
-        Amm.Operator.prototype.setContextIdToDispatchEvent.call(this, contextId, ev, args);
-    },
-    
-    _handleProviderVarsChange: function(value, oldValue, name, object, contextId) {
-        if (object !== this._varsProvider || contextId !== this.parentContextId) {
-            return; // not ours
-        }
-        Amm.Operator.VarsProvider.prototype._handleProviderVarsChange.call(this, value, oldValue, name, object, this._contextId);
-    },
-    
     _doEvaluate: function(again) { // converts result to boolean
         var res = this._getOperandValue('operator', again);
         if (res === undefined) return res;

@@ -539,6 +539,7 @@
         e.setPropName('bar');
         assert.equal(exp.getValue(), 20);
         assert.equal(c, 1);
+        d.exp = exp;
         exp.setVars(e1, 'e');
         assert.equal(exp.getValue(), 30);
         assert.equal(c, 2);

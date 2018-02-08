@@ -455,8 +455,9 @@ Amm.Operator.prototype = {
     },
     
     _reportChange: function(oldValue) {
-        if (this._parent) 
+        if (this._parent) {
             this._parent.notifyOperandChanged(this._parentOperand, this._value, oldValue, this);
+        }
     },
     
     _checkNonCacheableOperators: function() {
@@ -810,7 +811,7 @@ Amm.Operator.prototype = {
     },
     
     hasContext: function(contextId) {
-        return !!this._contextState[contextId];
+        return this._contextId === contextId || this._contextState && this._contextState[contextId];
     },
     
     listContexts: function() {

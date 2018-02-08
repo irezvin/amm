@@ -62,7 +62,7 @@
         
             assert.deepEqual(lastValue, ['Pup1', 'Pup2', 'Pup3'], "Array is properly changed when data is changed");
             assert.deepEqual(changes, [[['Pup1', 'Pup2', 'Pup3'], ['Pup2', 'Pup3']]], "Only one change is reported; old value is proper");
-        
+
         changes = [];
         r1.setVars(3, 'min');
         
@@ -330,7 +330,7 @@
         
         probl = testRangeStateCorrectness(ex, 1, 2, els2.slice(8, 10));
         assert.equal(probl, '', 'Deleting 2, inserting 2 items');
-        
+    
         probl = testRangeStateCorrectness(ex, 0, 10, els2.slice(0, 10), 'c');
         assert.equal(probl, '', 'Replacing with partially matching items');
 

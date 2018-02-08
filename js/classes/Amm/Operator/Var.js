@@ -19,6 +19,8 @@ Amm.Operator.Var.prototype = {
     
     _varsProvider: null,
     
+    _varsProviderContextId: null,
+    
     OPERANDS: ['varName'],
 
     STATE_SHARED: {
@@ -27,15 +29,10 @@ Amm.Operator.Var.prototype = {
     
     supportsAssign: true,
     
-    setContextIdToDispatchEvent: function(contextId, ev, args) {
-        if (ev === 'varsChange' && args[3] !== this._varsProvider && args[4] !== contextId) return;
-        if (this._varNameValue && args[2] && this._varNameValue !== args[2]) return;
-        Amm.Operator.prototype.setContextIdToDispatchEvent.call(this, contextId, ev, args);
-    },
-
-    _onProviderVarsChange: function(value, oldValue, name, provider, contextId) {
-        if (provider !== this._varsProvider || contextId !== this._contextId) return;
-        if (this._varNameValue && name && this._varNameValue !== name) return;
+    notifyProviderVarsChange: function(value, oldValue, name, provider) {
+        if (this._varNameValue && name && this._varNameValue !== name) {
+            throw "WTF - we shouldn't received wrong varsChange notification";
+        }
         if (this._expression && this._expression.getUpdateLevel()) {
             this._expression.queueUpdate(this);
         } else {
@@ -46,23 +43,23 @@ Amm.Operator.Var.prototype = {
     setExpression: function(expression) {
         Amm.Operator.prototype.setExpression.call(this, expression);
         this._varsProvider = expression;
+        this._varsProviderContextId = expression._contextId;
         for (var p = this._parent; p; p = p._parent) {
             if (p['Amm.Operator.VarsProvider']) {
                 this._varsProvider = p;
+                this._varsProviderContextId = p._contextId;
                 break;
             }
         }
-        this._sub(this.expression, 'varsChange', '_onProviderVarsChange', null, true);
+        if (this._varsProvider && this._varNameExists && this._varNameValue) {
+            this._varsProvider.addConsumer(this, this._varNameValue + '');
+        }
     },
     
     _initContextState: function(contextId, own) {
-        if (contextId === null) {
-            console.log(this.getSrc());
-            console.trace();
-        }
         Amm.Operator.prototype._initContextState.call(this, contextId, own);
-        if (own && this._expression) {
-            this._sub(this.expression, 'varsChange', '_onProviderVarsChange', null, true);
+        if (own && this._varsProvider) {
+            this._varsProviderContextId = this._varsProvider._contextId;
         }
     },
     
@@ -73,18 +70,40 @@ Amm.Operator.Var.prototype = {
             this._hasValue = false;
             return;
         }
-        if (this._contextId !== this._varsProvider._contextId && this._varsProvider.hasContext(this._contextId)) {
-            this._varsProvider._propagateContext(null, this, false);
+        var tmp;
+        if (this._varsProviderContextId && this._varsProviderContextId !== this._varsProvider._contextId) {
+            tmp = this._varsProvider._contextId;
+            this._varsProvider.setContextId(this._varsProviderContextId);
         }
         var res = this._varsProvider.getVars(varName);
+        if (tmp) this._varsProvider.setContextId(tmp);
         return res;
+    },
+    
+    _varNameChange: function(value, oldValue, hasValue) {
+        if (!this._varsProvider) return;
+        var tmp;
+        if (this._varsProviderContextId && this._varsProviderContextId !== this._varsProvider._contextId) {
+            tmp = this._varsProvider._contextId;
+            this._varsProvider.setContextId(this._varsProviderContextId);
+        }
+        if (oldValue) this._varsProvider.deleteConsumer(this, oldValue);
+        if (value) this._varsProvider.addConsumer(this, value);
+        if (tmp) this._varsProvider.setContextId(tmp);
     },
         
     _doSetValue: function(value, checkOnly) {
         var varName = this._getOperandValue('varName');
         if (!varName && varName !== 0) return "`varName` is empty";
-        if (!this._expression) return "expression not provided";
-        if (!checkOnly) this._expression.setVars(value, varName);
+        if (!this._varsProvider) return "expression not provided";
+        if (checkOnly) return '';
+        var tmp;
+        if (this._varsProviderContextId && this._varsProviderContextId !== this._varsProvider._contextId) {
+            tmp = this._varsProvider._contextId;
+            this._varsProvider.setContextId(this._varsProviderContextId);
+        }
+        this._varsProvider.setVars(value, varName);
+        if (tmp) this._varsProvider.setContextId(tmp);
     },
         
     setVarName: function(varName) {
@@ -112,6 +131,15 @@ Amm.Operator.Var.prototype = {
     _partialCleanup: function() {
         if (this._expression && this._varsProvider) {
             this._expression.unsubscribeOperator(this._expression, 'varsChange', this);
+        }
+        if (this._varsProvider && this._varsProvider.hasContext(this._varsProviderContextId)) {
+            var tmp;
+            if (this._varsProviderContextId && this._varsProviderContextId !== this._varsProvider._contextId) {
+                tmp = this._varsProvider._contextId;
+                this._varsProvider.setContextId(this._varsProviderContextId);
+            }
+            this._varsProvider.deleteConsumer(this, this._varNameValue + '');
+            if (tmp) this._varsProvider.setContextId(tmp);
         }
         Amm.Operator.prototype._partialCleanup.call(this);
     }
