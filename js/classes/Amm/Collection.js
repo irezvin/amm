@@ -18,6 +18,12 @@ Amm.Collection.ERR_NOT_MEETING_REQUIREMENTS = "Doesn't meet requirements.";
 
 Amm.Collection.ERR_DUPLICATE_UPDATE_NOT_ALLOWED = "Duplicate; update not allowed.";
 
+Amm.Collection.ERR_ADD_DISALLOWED = "Adding new items disallowed";
+
+Amm.Collection.ERR_DELETE_DISALLOWED = "Deleting items disallowd";
+
+Amm.Collection.ERR_REORDER_DISALLOWED = "Reordering (and inserting/deleting items not at the end) disallowed";
+
 /**
  * Searches for position of item `item` in *sorted* array `arr` 
  * using binary search with some tricks (checks if item < start or if item > end,
@@ -93,6 +99,9 @@ Amm.Collection.binSearch = function(arr, item, sortFunc, left, right) {
     
 };
 
+/**
+ * @TODO: disable sort routines / sort property modification if !this._allowReorder
+ */
 Amm.Collection.prototype = {
 
     'Amm.Collection': '__CLASS__', 
@@ -163,6 +172,15 @@ Amm.Collection.prototype = {
     _suppressDeleteEvent: 0,
     
     _suppressIndexEvents: 0,
+
+    // allow to add new items
+    _allowAdd: true,
+
+    // allow to delete items
+    _allowDelete: true,
+
+    // allow to change items order. Means also items can be only appended / deleted at the end
+    _allowChangeOrder: true,
     
     _cleanupOnDissociate: false,
     
@@ -208,6 +226,8 @@ Amm.Collection.prototype = {
      * Checks if item meets requirements and can be added to a collection
      * without throwing an exception. 
      * 
+     * Always returns FALSE if this.getAllowAdd() === false.
+     * 
      * If item is already in a collection, will return FALSE 
      * unless this.getAllowUpdate() === true - it means
      * the item will be accepted, but updated on accept().
@@ -229,6 +249,10 @@ Amm.Collection.prototype = {
      */
     canAccept: function(item, checkRequirementsOnly, problem) {
         problem = problem || {};
+        if (!this._allowAdd) {
+            problem.error = Amm.Collection.ERR_ADD_DISALLOWED;
+            return false;
+        }
         if (!(typeof item === 'object' && item)) {
             problem.error = Amm.Collection.ERR_NOT_AN_OBJECT;
             return false;
@@ -556,6 +580,9 @@ Amm.Collection.prototype = {
     },
     
     reject: function(itemOrIndex, nonStrict) {
+        if (!this._suppressDeleteEvent && !this._allowDelete) {
+            throw Amm.Collection.ERR_DELETE_DISALLOWED;
+        }
         var index, item;
         if (typeof itemOrIndex !== 'object') {
             index = parseInt(itemOrIndex);
@@ -569,6 +596,9 @@ Amm.Collection.prototype = {
             if (index < 0) throw "itemOrIndex specifies non-existing item";
             item = this[index];
         }
+        if (!this._suppressDeleteEvent && !this._allowChangeOrder && index < this.length - 1) {
+            throw Amm.Collection.ERR_REORDER_DISALLOWED;
+        }
         this._rotate(index, -1);
         this._dissociate(item);
         if (this._indexProperty && index < this.length) this._reportIndexes(null, index);
@@ -581,6 +611,7 @@ Amm.Collection.prototype = {
     },
     
     push: function(element, _) {
+        if (!this._allowAdd) throw Amm.Collection.ERR_ADD_DISALLOWED;
         var items = Array.prototype.slice.apply(arguments);
         if (items.length === 1) this.accept(items[0]);
             else this.acceptMany(items);
@@ -588,10 +619,13 @@ Amm.Collection.prototype = {
     },
     
     pop: function() {
+        if (!this._allowDelete) throw Amm.Collection.ERR_ADD_DISALLOWED;
         if (this.length) return this.reject(this.length - 1);
     },
     
     unshift: function(element, _) {
+        if (!this._allowAdd) throw Amm.Collection.ERR_ADD_DISALLOWED;
+        if (!this._allowChangeOrder) throw Amm.Collection.ERR_REORDER_DISALLOWED;
         var items = Array.prototype.slice.apply(arguments);
         var index = this._sorted? undefined : 0;
         if (items.length === 1) this.accept(items[0], index);
@@ -600,6 +634,8 @@ Amm.Collection.prototype = {
     },
     
     shift: function() {
+        if (!this._allowDelete) throw Amm.Collection.ERR_DELETE_DISALLOWED;
+        if (!this._allowChangeOrder) throw Amm.Collection.ERR_REORDER_DISALLOWED;
         if (this.length) return this.reject(0);
     },
 
@@ -608,6 +644,17 @@ Amm.Collection.prototype = {
      */
     splice: function(start, deleteCount, item1, item2_) {
         var items = Array.prototype.slice.call(arguments, 2);
+        
+        if (items && !this._allowAdd) throw Amm.Collection.ERR_ADD_DISALLOWED;
+        if (deleteCount && !this._allowDelete) throw Amm.Collection.ERR_DELETE_DISALLOWED;
+        if (start < 0) {
+            start = this.length + start;
+            if (start < 0) start = 0;
+        } else if (start > this.length) start = this.length;
+        if (start < (this.length - deleteCount) && !this._allowChangeOrder) {
+            throw Amm.Collection.ERR_REORDER_DISALLOWED;
+        }
+        
         if (deleteCount < 0) deleteCount = 0;
         var cut = this.slice(start, start + deleteCount);
         var pa = this._preAccept(items, start, deleteCount);
@@ -701,6 +748,7 @@ Amm.Collection.prototype = {
     },
     
     reverse: function() {
+        if (!this._allowChangeOrder) throw Amm.Collection.ERR_REORDER_DISALLOWED;
         if (this._sorted) {
             this.setSortReverse(!this.getSortReverse());
             return this.getItems();
@@ -723,6 +771,7 @@ Amm.Collection.prototype = {
     },
     
     moveItem: function(index, newIndex) {
+        if (!this._allowChangeOrder) throw Amm.Collection.ERR_REORDER_DISALLOWED;
         if (this._sorted) {
             throw "Cannot moveItem() on sorted Collection. Check with getIsSorted() next time";
         }
@@ -1537,6 +1586,36 @@ Amm.Collection.prototype = {
     },
 
     getCleanupOnDissociate: function() { return this._cleanupOnDissociate; },
+
+    setAllowAdd: function(allowAdd) {
+        allowAdd = !!allowAdd;
+        var oldAllowAdd = this._allowAdd;
+        if (oldAllowAdd === allowAdd) return;
+        this._allowAdd = allowAdd;
+        return true;
+    },
+
+    getAllowAdd: function() { return this._allowAdd; },
+
+    setAllowDelete: function(allowDelete) {
+        allowDelete = !!allowDelete;
+        var oldAllowDelete = this._allowDelete;
+        if (oldAllowDelete === allowDelete) return;
+        this._allowDelete = allowDelete;
+        return true;
+    },
+
+    getAllowDelete: function() { return this._allowDelete; },
+
+    setAllowChangeOrder: function(allowChangeOrder) {
+        allowChangeOrder = !!allowChangeOrder;
+        var oldAllowChangeOrder = this._allowChangeOrder;
+        if (oldAllowChangeOrder === allowChangeOrder) return;
+        this._allowChangeOrder = allowChangeOrder;
+        return true;
+    },
+
+    getAllowChangeOrder: function() { return this._allowChangeOrder; },
     
 };
 

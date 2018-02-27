@@ -250,4 +250,60 @@
         
     });
     
+    //-----------------------------------------------------------------------
+
+    QUnit.test("View.Html.StaticDisplayParent", function(assert) {
+        var fx = jQuery("#qunit-fixture");
+        fx.html('\
+            <div id="cc">\
+                <em>Field #1:</em> <input type="text" id="field1" />\
+                <div>\
+                    Field #2: <input type="text" id="field2" />\
+                </div>\
+            </div>\
+        ');
+        
+        /* global Amm */
+        var cont = new Amm.Element({
+            traits: ['Amm.Trait.DisplayParent', 'Amm.Trait.Component']
+        });
+        var inp1 = new Amm.Element({
+            traits: ['Amm.Trait.Field', 'Amm.Trait.Visual']
+        });
+        var inp2 = new Amm.Element({
+            traits: ['Amm.Trait.Field', 'Amm.Trait.Visual'],
+        });
+        var v_inp1_f = new Amm.View.Html.Input({
+            htmlElement: jQuery('#qunit-fixture #field1')[0],
+            element: inp1
+        });
+        var v_inp1_v = new Amm.View.Html.Visual({
+            htmlElement: jQuery('#qunit-fixture #field1')[0],
+            element: inp1
+        });
+        var v_inp2_f = new Amm.View.Html.Input({
+            htmlElement: jQuery('#qunit-fixture #field2')[0],
+            element: inp2
+        });
+        var v_inp2_v = new Amm.View.Html.Visual({
+            htmlElement: jQuery('#qunit-fixture #field2')[0],
+            element: inp2
+        });
+        var v_cont = new Amm.View.Html.StaticDisplayParent({
+            htmlElement: jQuery('#qunit-fixture #cc')[0],
+            element: cont
+        });
+        
+        assert.ok(inp1.getDisplayParent() === cont);
+        assert.ok(inp2.getDisplayParent() === cont);
+        assert.ok(inp1.getComponent() === cont);
+        assert.ok(inp2.getComponent() === cont);
+        assert.equal(inp1.getDisplayOrder(), 0);
+        assert.equal(inp2.getDisplayOrder(), 1);
+        
+        Amm.cleanup(inp1, inp2, cont);
+        
+    });
+    
+    
 }) ();

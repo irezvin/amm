@@ -38,6 +38,7 @@ Amm.View.Html.Collection.prototype = {
         if (old) this._releaseDomNode(old);
         this._htmlElement = htmlElement;
         this._observeElementIfPossible();
+        if (!this._canObserve() && this._canObserveCollection()) this._acquireResources();
         return true;
     },
     
@@ -57,6 +58,11 @@ Amm.View.Html.Collection.prototype = {
      * Fully rebuilds HTML container content by purging it and then re-creating every item' HTML
      */
     rebuild: function() { return this._rebuild(); },
+
+    _canObserve: function() {
+        if (!this._presentationProperty) return false;
+        return !!(this._element && this[this._presentationProperty]);
+    },
     
     _createAndBindHtmlNode: function(item) {
         var r = this.createItemHtml(item);
