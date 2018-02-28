@@ -60,6 +60,10 @@ Amm.View.Html.Toggle.prototype = {
     
     getVGroupParent: function() {
         return jQuery(this._htmlElement).closest('form')[0];
+    },
+    
+    getSuggestedTraits: function() {
+        return [Amm.Trait.Toggle];
     }
     
 };

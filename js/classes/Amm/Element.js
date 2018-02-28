@@ -8,12 +8,45 @@ Amm.Element = function(options) {
     this._beginInit();
     this._cleanupList = [];
     Amm.registerItem(this);
-    if (options && options.traits) {
-        if (!(options.traits instanceof Array)) options.traits = [options.traits];
-        for (var i = 0; i < options.traits.length; i++) {
-            Amm.augment(this, options.traits[i]);
+    var traits = [], hasTraits = !!(options && options.traits);
+    var views = [];
+    if (options && options.views) {
+        for (var i = 0, l = options.views.length; i < l; i++) {
+            var view = options.views[i];
+            if (!Amm.getClass(view)) {
+                if (typeof view === 'string') view = {class: view};
+                var cl = view['class'];
+                if (!cl) throw "Views[" + i + "].class not provided";
+                var cr = Amm.getFunction(cl);
+                if (!cr.prototype['Amm.View.Abstract'])
+                    throw "View class must be a descendant of Amm.View.Abstract";
+                delete view.class;
+                view = new cr(view);
+            }
+            if (!view['Amm.View.Abstract']) throw "Created instance isn't a descendant of Amm.View.Abstract";
+            views.push(view);
+            if (!hasTraits) traits = traits.concat(view.getSuggestedTraits());
         }
+        delete options.views;
+    }
+    if (options && options.extraTraits) {
+        if (hasTraits) throw "extraTraits and traits options cannot be used simultaneously";
+        traits = traits.concat(options.extraTraits);
+        delete options.extraTraits;
+    }
+    if (hasTraits) {
+        traits = options.traits;
+        if (!(traits instanceof Array)) traits = [traits];
         delete options.traits;    
+    }
+    if (traits) {
+        var usedTraits = [];
+        for (var i = 0; i < traits.length; i++) {
+            var trait = Amm.getFunction(traits[i]);
+            if (Amm.Array.indexOf(trait, usedTraits) >= 0) continue; // already used
+            usedTraits.push(trait);
+            Amm.augment(this, trait);
+        }
     }
     var hh = [], extraProps;
     // create function handlers and expressions
@@ -33,6 +66,11 @@ Amm.Element = function(options) {
     if (hh.length) this._initInProperties(hh);
     if (extraProps) this.setProperties(extraProps);
     this._endInit();
+    if (views.length) {
+        for (var i = 0, l = views.length; i < l; i++) {
+            views[i].setElement(this);
+        }
+    }
 };
 
 Amm.Element.regInit = function(element, key, fn) {

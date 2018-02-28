@@ -105,6 +105,14 @@ Amm.View.Abstract.prototype = {
                 if (typeof this[setV] === 'function') this[setV](elementVal);
             }
         }
+    },
+
+    /**
+     * If View instance is provided during element construction, element
+     * may acquire list of suggested traits from a View
+     */
+    getSuggestedTraits: function() {
+        return [];
     }
 
 };

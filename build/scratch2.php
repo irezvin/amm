@@ -53,37 +53,27 @@
         </div>
         <script type='text/javascript'>
             /* global Amm */
-            var cont = new Amm.Element({
-                traits: ['Amm.Trait.DisplayParent', 'Amm.Trait.Component']
-            });
             var inp1 = new Amm.Element({
-                traits: ['Amm.Trait.Field', 'Amm.Trait.Visual']
+                views: [
+                    {class: Amm.View.Html.Input, htmlElement: jQuery('#field1')[0]},
+                    {class: Amm.View.Html.Visual, htmlElement: jQuery('#field1')[0]}
+                ]
             });
             var inp2 = new Amm.Element({
-                traits: ['Amm.Trait.Field', 'Amm.Trait.Visual'],
+                views: [
+                    {class: Amm.View.Html.Input, htmlElement: jQuery('#field2')[0]},
+                    {class: Amm.View.Html.Visual, htmlElement: jQuery('#field2')[0]}
+                ],
                 prop__inp1: inp1,
                 in__value: "this.inp1.value",
                 readOnly: true
             });
-            var v_inp1_f = new Amm.View.Html.Input({
-                htmlElement: jQuery('#field1')[0],
-                element: inp1
-            });
-            var v_inp1_v = new Amm.View.Html.Visual({
-                htmlElement: jQuery('#field1')[0],
-                element: inp1
-            });
-            var v_inp2_f = new Amm.View.Html.Input({
-                htmlElement: jQuery('#field2')[0],
-                element: inp2
-            });
-            var v_inp2_v = new Amm.View.Html.Visual({
-                htmlElement: jQuery('#field2')[0],
-                element: inp2
-            });
-            var v_cont = new Amm.View.Html.StaticDisplayParent({
-                htmlElement: jQuery('#cc')[0],
-                element: cont
+            var cont = new Amm.Element({
+                extraTraits: ['Amm.Trait.Component'],
+                views: [ {
+                    class: 'Amm.View.Html.StaticDisplayParent',
+                    htmlElement: jQuery('#cc')[0]
+                } ]
             });
         </script>
     </body>

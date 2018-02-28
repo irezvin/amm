@@ -75,8 +75,11 @@ Amm.View.Html.Visual.prototype = {
     
     _acquireResources: function() {
         this._acquireDomNode(this._htmlElement);
-    }
+    },
     
+    getSuggestedTraits: function() {
+        return [Amm.Trait.Visual];
+    }
     
 };
 

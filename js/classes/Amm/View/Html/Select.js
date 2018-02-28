@@ -129,6 +129,10 @@ Amm.View.Html.Select.prototype = {
     setVSelectSize: function(value) {
         var e = jQuery(this._htmlElement);
         if (e[0]) e.attr('size', value); 
+    },
+    
+    getSuggestedTraits: function() {
+        return [Amm.Trait.Select];
     }
 
 };

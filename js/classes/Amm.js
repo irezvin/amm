@@ -384,6 +384,7 @@ Amm = {
     },
     
     getFunction: function(strName) {
+        if (typeof strName === 'function') return strName;
         if (typeof strName !== 'string') throw "`strName` must be a string";
         if (this._functions[strName]) return this._functions[strName];
         var p = strName.split('.'), r = this._namespaces, s = [];

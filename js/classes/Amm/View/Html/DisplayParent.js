@@ -121,6 +121,10 @@ Amm.View.Html.DisplayParent.prototype = {
     _beginObserveCollection: function() {
         this._scanForItems();
         Amm.View.Html.Collection.prototype._beginObserveCollection.call(this);
+    },
+    
+    getSuggestedTraits: function() {
+        return [Amm.Trait.DisplayParent];
     }
 
 };

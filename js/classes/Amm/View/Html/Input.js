@@ -128,6 +128,10 @@ Amm.View.Html.Input.prototype = {
     
     _acquireResources: function() {
         this._acquireDomNode(this._htmlElement);
+    },
+    
+    getSuggestedTraits: function() {
+        return [Amm.Trait.Field];
     }
 
 };
