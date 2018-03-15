@@ -11,7 +11,26 @@ Amm = {
     _functions: {},
     
     _namespaces: {},
+    
+    _bootstrapped: false,
 
+    /** 
+     * Amm object properties will be updated from window[optionsObjectId] before
+     * bootstrapping
+     */
+    optionsObjectId: 'ammOptions',
+    
+    /**
+     * Attribute to detect elements to automatically build on bootstrapping
+     */
+    autoBuildSelector: '[data-amm-build]',
+    
+    defaultBuilderOptions: {
+        topLevelComponent: 'root'
+    },
+    
+    _autoBuilder: null,
+    
     /**
      * We maintain huge hash of all created items to reference them in appropriate places of the DOM (really?) or whatever
      */
@@ -562,7 +581,28 @@ Amm = {
         var res = [];
         for (var i in hash) if (hash.hasOwnProperty(i)) res.push(i);
         return res;
+    },
+    
+    bootstrap: function() {
+        if (!jQuery) throw "Amm.bootstrap: jQuery not found";
+        if (this._bootstrapped) return;
+        this._bootstrapped = true;
+        var t = this;
+        jQuery(function() { t._doBootstrap(); });
+    },
+    
+    _doBootstrap: function() {
+        if (this.optionsObjectId && window[this.optionsObjectId]) {
+            var opt = window[this.optionsObjectId];
+            if (typeof opt === 'object') Amm.init(this, opt);
+        }
+        if (this.autoBuildSelector) {
+            var sel = this.autoBuildSelector;
+            this._autoBuilder = new Amm.Builder(sel, this.defaultBuilderOptions);
+            this._autoBuilder.build();
+        }
     }
+    
 };
 
 Amm.event = null;
@@ -570,3 +610,7 @@ Amm.event = null;
 //Amm.id = 'amm_' + Math.trunc(Math.random() * 1000000);
 
 Amm.registerNamespace('Amm', Amm);
+
+if (window.jQuery) {
+    Amm.bootstrap();
+}

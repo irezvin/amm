@@ -48,6 +48,9 @@ Amm.Operator.Builder.prototype = {
         if (ident === 'this') {
             return new Amm.Operator.ExpressionThis;
         }
+        if (ident === 'root') {
+            return new Amm.getRoot();
+        }
         return new Amm.Operator.ScopeElement(
             new Amm.Operator.ExpressionThis,
             this.unConst(ident)

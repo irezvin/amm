@@ -10,7 +10,7 @@ Amm.Operator.Binary = function(left, operator, right) {
 Amm.Operator.Binary.BINARY_OPERATORS = {
     '!==': function(left, right) { return left !== right; },
     '===': function(left, right) {return left === right; },
-    '==': function(left, right) {return left === right; },
+    '==': function(left, right) {return left == right; },
     '!=': function(left, right) {return left != right; },
     '+': function(left, right) {return left + right; },
     '-': function(left, right) {return left - right; },

@@ -54,6 +54,7 @@
         <script type='text/javascript'>
             /* global Amm */
             var inp1 = new Amm.Element({
+                id: 'field1',
                 views: [
                     {class: Amm.View.Html.Input, htmlElement: jQuery('#field1')[0]},
                     {class: Amm.View.Html.Visual, htmlElement: jQuery('#field1')[0]}
@@ -64,8 +65,7 @@
                     {class: Amm.View.Html.Input, htmlElement: jQuery('#field2')[0]},
                     {class: Amm.View.Html.Visual, htmlElement: jQuery('#field2')[0]}
                 ],
-                prop__inp1: inp1,
-                in__value: "this.inp1.value",
+                in__value: "field1.value",
                 readOnly: true
             });
             var cont = new Amm.Element({

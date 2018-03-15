@@ -85,7 +85,7 @@ Amm.View.Html.DisplayParent.prototype = {
         var res = [];
         for (var index = 0, l = htmlElements.length; index < l; index++) {
             var ammElement = this._getElementOfHtmlElement(htmlElements[index]);
-            var itemId = ammElement._amm_id;
+            if (!ammElement) continue;
             res.push(ammElement);
         };
         return res;
@@ -115,7 +115,8 @@ Amm.View.Html.DisplayParent.prototype = {
         if (!scanForItems && !scanForDisplayOrder) return;
         
         var foundItems = this._getItemsInContainer();
-        this._updateCollectionWithFoundItems(foundItems);
+        if (foundItems.length)
+            this._updateCollectionWithFoundItems(foundItems);
     },
 
     _beginObserveCollection: function() {

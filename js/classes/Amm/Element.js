@@ -16,12 +16,16 @@ Amm.Element = function(options) {
             if (!Amm.getClass(view)) {
                 if (typeof view === 'string') view = {class: view};
                 var cl = view['class'];
-                if (!cl) throw "Views[" + i + "].class not provided";
+                if (!cl) {
+                    throw "views[" + i + "].class not provided";
+                }
                 var cr = Amm.getFunction(cl);
                 if (!cr.prototype['Amm.View.Abstract'])
                     throw "View class must be a descendant of Amm.View.Abstract";
+                var tmp = view.class, hash = view;
                 delete view.class;
                 view = new cr(view);
+                hash.class = tmp; // add class back to the options hash
             }
             if (!view['Amm.View.Abstract']) throw "Created instance isn't a descendant of Amm.View.Abstract";
             views.push(view);
@@ -359,6 +363,7 @@ Amm.Element.prototype = {
 
     setComponent: function(component) {
         if (!component) component = null;
+        if (component === 'root') component = Amm.getRoot();
         if (component) Amm.is(component, 'Component', 'component');
         var oldComponent = this._component;
         if (oldComponent === component) return;
