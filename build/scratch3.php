@@ -67,5 +67,28 @@
             <div data-amm-id="xx" data-amm-e="{}">No views</div>
         </div>
         <p data-amm-v="Amm.View.Html.Visual" data-amm-id="@field3">xxx</p>
+
+        <form>
+        <div style="display: inline-block; width: 150px; border: 1px solid silver;" data-amm-e='{extraTraits: [Amm.Trait.Component]}' data-amm-id="c1" data-amm-v='{class: Amm.View.Html.StaticDisplayParent}'>
+            <p data-amm-v="Amm.View.Html.Visual"><input data-amm-id="val1" type="radio" data-amm-e="{groupName: v1}" data-amm-v="Amm.View.Html.Toggle" value="a" />A</p>
+            <p data-amm-v="Amm.View.Html.Visual"><input type="radio" data-amm-e="{groupName: v1}" data-amm-v="Amm.View.Html.Toggle" value="b" />B</p>
+            <p data-amm-v="Amm.View.Html.Visual"><input type="radio" data-amm-e="{groupName: v1}" data-amm-v="Amm.View.Html.Toggle" value="c" />C</p>
+
+            <p data-amm-v="Amm.View.Html.Visual"><input type="checkbox" data-amm-id="val2" data-amm-v="Amm.View.Html.Toggle" name="val2" value="a" />A</p>
+            <p data-amm-v="Amm.View.Html.Visual"><input type="checkbox" data-amm-v="Amm.View.Html.Toggle" name="val2" value="b" />B</p>
+            <p data-amm-v="Amm.View.Html.Visual"><input type="checkbox" data-amm-v="Amm.View.Html.Toggle" name="val2" value="c" />C</p>
+        </div>
+
+        <div style="display: inline-block; width: 150px; border: 1px solid silver;"  data-amm-e='{extraTraits: [Amm.Trait.Component]}' data-amm-id="c2" data-amm-v='{class: Amm.View.Html.StaticDisplayParent}'>
+            <p data-amm-v="Amm.View.Html.Visual"><input type="radio" data-amm-id="val1" data-amm-e="{groupName: v1}" data-amm-v="Amm.View.Html.Toggle" value="a" />A</p>
+            <p data-amm-v="Amm.View.Html.Visual"><input type="radio" data-amm-e="{groupName: v1}" data-amm-v="Amm.View.Html.Toggle" value="b" />B</p>
+            <p data-amm-v="Amm.View.Html.Visual"><input type="radio" data-amm-e="{groupName: v1}" data-amm-v="Amm.View.Html.Toggle" value="c" />C</p>
+
+            <p data-amm-v="Amm.View.Html.Visual"><input type="checkbox" data-amm-id="val2" data-amm-v="Amm.View.Html.Toggle" name="val2" value="a" />A</p>
+            <p data-amm-v="Amm.View.Html.Visual"><input type="checkbox" data-amm-v="Amm.View.Html.Toggle" name="val2" value="b" />B</p>
+            <p data-amm-v="Amm.View.Html.Visual"><input type="checkbox" data-amm-v="Amm.View.Html.Toggle" name="val2" value="c" />C</p>
+        </div>
+        </form>
+        
     </body>
 </html>

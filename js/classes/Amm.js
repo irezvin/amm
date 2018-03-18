@@ -596,6 +596,8 @@ Amm = {
             var opt = window[this.optionsObjectId];
             if (typeof opt === 'object') Amm.init(this, opt);
         }
+        Amm.registerNamespace('v', Amm.View.Html);
+        Amm.registerNamespace('t', Amm.Trait);
         if (this.autoBuildSelector) {
             var sel = this.autoBuildSelector;
             this._autoBuilder = new Amm.Builder(sel, this.defaultBuilderOptions);

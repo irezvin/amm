@@ -316,8 +316,16 @@
     
     _subscribeToggleToRoot: function() {
         Amm.getRoot().subscribe('findToggleGroupItems', this._handleFindToggleGroupItems, this);
-    }
+    },
     
+    _setComponent_Toggle: function(component, oldComponent) {
+        if (this._groupParent === oldComponent  // was set to old component
+            || !this._groupParent // was not set
+            || this._groupParent.tagName) // was set to HTML element
+        {
+            this.setGroupParent(component); // component becomes group parent
+        }
+    }
      
  };
 

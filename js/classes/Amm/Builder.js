@@ -140,14 +140,17 @@ Amm.Builder.prototype = {
                     else this._globalIds[a].push(n);
             }
         }
-        if (a && a.length) n.id = a;
-        
+        if (a && a.length) {
+            n.id = a;
+            n.connected.id = a; // add to shared array for speedup
+        }
         return n;
     },
 
     _connect: function(node, toNode) {
         node.connected = toNode.connected;
         toNode.connected.push(node);
+        node.conIdx = node.connected.length - 1;
     },
     
     _detectConnectedChildren: function(node, otherNode) {
@@ -210,7 +213,13 @@ Amm.Builder.prototype = {
         for (var i = 0, l = node.children.length; i < l; i++) {
             res = res.concat(this._buildElements(node.children[i], topLevel));
         }
-        if (!node.e && node.connected.length > 1) return res;
+        if (!node.e && node.connected.length > 1) {
+            // we don't have element definition - check if node is primary
+            // between connected items
+            if (node.conIdx < node.connected.length - 1) return res;
+            if (node.connected.alreadyBuilt) return res;
+            if (node.connected.id !== undefined) node.id = node.connected.id;
+        }
         var proto = node.e || {};
         if (!proto.views) proto.views = [];
         proto.views = proto.views.concat(this._getAllViews(node));
@@ -232,6 +241,7 @@ Amm.Builder.prototype = {
         var element = new Amm.Element(proto);
         if (topLevel && !node.parent) topLevel.push(element);
         res.push(element);
+        node.connected.alreadyBuilt = true;
         return res;
     },
     

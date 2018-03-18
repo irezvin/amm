@@ -3,6 +3,7 @@
 Amm.Builder.Node = function(options) {
     this.children = [];
     this.connected = [this];
+    this.conIdx = 0;
     if (options) Amm.override(this, options);
 };
 
@@ -22,6 +23,8 @@ Amm.Builder.Node.prototype = {
     
     children: null,
     
-    connected: null
+    connected: null,
+    
+    conIdx: null
     
 };
