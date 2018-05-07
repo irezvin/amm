@@ -13,6 +13,8 @@ Amm = {
     _namespaces: {},
     
     _bootstrapped: false,
+    
+    lang: {},
 
     /** 
      * Amm object properties will be updated from window[optionsObjectId] before
@@ -563,16 +565,28 @@ Amm = {
         }
     },
     
-    cleanup: function(itemOrItems) {
-        for (var j = 0, al = arguments.length; j < al; j++) {
+    /**
+     * Accepts any number of arguments to call .cleanup() function of each.
+     * Arrays memebers will be .cleanup()-ed recursively.
+     * Throws if arg is not an array AND doesn't have cleanup() method.
+     * If first argument is TRUE, that will be overridden and args/members without .cleanup() will be ignored.
+     * If first argument is FALSE, default behaviour is applied.
+     */
+    cleanup: function(itemOrItems, _) {
+        var noThrow = false, s = 0;
+        if (typeof itemOrItems === 'boolean') {
+            noThrow = itemOrItems[0];
+            s = 1;
+        }
+        for (var j = s, al = arguments.length; j < al; j++) {
             itemOrItems = arguments[j];
             if (typeof itemOrItems.cleanup === 'function') itemOrItems.cleanup();
             else if (itemOrItems instanceof Array) {
-                for (var i = 0, l = itemOrItems.length; i < l; i++)
+                for (var i = s, l = itemOrItems.length; i < l; i++)
                     this.cleanup(itemOrItems[i]);
             } else {
-                console.log(itemOrItems);
-                throw '`itemOrItems` must be either an object with .cleanup() method or an Array';
+                if (!noThrow)
+                    throw '`itemOrItems` must be either an object with .cleanup() method or an Array';
             }
         }
     },
@@ -603,6 +617,144 @@ Amm = {
             this._autoBuilder = new Amm.Builder(sel, this.defaultBuilderOptions);
             this._autoBuilder.build();
         }
+    },
+    
+    /**
+     * Constructs instance from options array, in many ways similar to Avancore' Ac_Prototyped::factory.
+     * If instance of any class (Amm.getClass(options) != false) is provided, `options` is treated as already instantiated object,
+     * and "new" isn't called.
+     * 
+     * Instantiation is performed as follows:
+     * -    try to use options.class constructor, if provided.
+     * -    if `options` is string, treat that string as class name (`options` := {class: `options`})
+     * Will add `defaults` to options hash, if provided (again, for strings, `defaults` := {class: `defaults`}).
+     * Will merge `options` hash with `defaults`.
+     * If no `class` provided, `baseClass` will be used (if provided).
+     * 
+     * If instance was already passed instead of `options`, and `setToDefaults` is TRUE, will set instance properties
+     *  to values from `defaults` (except `class`).
+     * 
+     * Performs checks after instantiation:
+     * -    if `baseClass` was provided, checks against `baseClass`
+     * -    if `requirements` was provided, checks against `requirements` using Amm.meetsRequirements
+     * 
+     * Returns created instance.
+     * 
+     * @param {object|string|instance} options
+     * @param {string} baseClass
+     * @param {string|object} defaults
+     * @param {type} setToDefaults
+     * @param {type} requirements
+     * @returns {undefined}
+     */
+    constructInstance: function(options, baseClass, defaults, setToDefaults, requirements) {
+        var instance;
+        if (typeof options === 'string') options = {class: options};
+        else if (!options) options = {};
+        else if (typeof options !== 'object')
+            throw "`options` must be a string, an object or FALSEable value";
+        
+        if (Amm.getClass(options)) {
+            instance = options;
+            if (setToDefaults && defaults && typeof defaults === 'object') {
+                Amm.setProperty(instance, defaults);
+            }
+        } else {
+            if (defaults) {
+                if (typeof defaults === 'string') defaults = {class: defaults};
+                else if (typeof defaults !== 'object') 
+                    throw "`defaults` must be a string, an object or FALSEable value";
+                for (var i in defaults) if (!(i in options) && defaults.hasOwnProperty(i)) {
+                    options[i] = defaults[i];
+                }
+            }
+            var cr = options['class'] || baseClass;
+            if (!cr) throw "Either options.class or baseClass are required";
+            cr = Amm.getFunction(cr);
+            delete options['class'];
+            instance = new cr(options);
+        }
+        
+        if (baseClass) Amm.is(instance, baseClass, 'created instance');
+        if (requirements && !Amm.meetsRequirements(instance, requirements)) {
+            throw "created instance doesn't meet specified requirements";
+        }
+        
+        return instance;
+    },
+    
+    constructMany: function(options, baseClass, defaults, keyToProperty, setToDefaults, requirements) {
+        var keys = [];
+        var items;
+        if (options instanceof Array) {
+            items = options;
+        } else if (options && typeof options === 'object') {
+            items = [];
+            for (var i in options) if (options.hasOwnProperty(i)) {
+                keys.push(i);
+                items.push(options[i]);
+            }
+
+
+        } else {
+            throw "`options` must be either Array or a non-null object";
+        }
+        var res = [];
+        var def = keyToProperty? Amm.override({}, defaults) : defaults;
+        for (var i = 0, l = items.length; i < l; i++) {
+            try {
+                if (keyToProperty && def) {
+                    if (keys[i]) def[keyToProperty] = keys[i];
+                    else if (keyToProperty in defaults) def[keyToPoperty] = defaults[keyToProperty];
+                    else delete def[keyToProperty];
+                }
+                var instance = new Amm.constructInstance(items[i], baseClass, defaults, setToDefaults, requirements);
+                if (instance === items[i] && keyToProperty && keys[i] && !setToDefaults) { // have to do it ourselves
+                    Amm.setProperty(instance, keyToPoperty, keys[i]);
+                }
+                res.push(instance);
+            } catch (e) {
+                if (typeof e === "string") e = "item #'" + (keys[i] || i) + "': " + e;
+                throw e;
+            }
+        }
+        return res;
+    },
+    
+    /**
+     * Tries to translate message string using key from Amm.lang.
+     * Replaces placeholders provided in variable-length arguments list.
+     * _msg(message, placeholder1, value1, placeholder2, value2...)
+     * @param {string} message
+     * @returns {string} Translated + placeholders-replaced string
+     */
+    translate: function(message, args_) {
+        var m = message;
+        if (Amm.lang[m]) m = Amm.lang[m];
+        for (var i = 1, l = arguments.length; i < l; i += 2) {
+            m = m.replace(new RegExp(Amm.Util.regexEscape(arguments[i]), 'g'), arguments[i + 1]);
+        }
+        return m;
+    },
+    
+    /**
+     * @param {object} langStrings { stringId: value }
+     * @param {boolean} overwrite overwrite already defined strings
+     */
+    defineLangStrings: function(langStrings, overwrite) {
+        for (var i in langStrings) if (langStrings.hasOwnProperty(i)) {
+            if (overwrite || !(i in this.lang)) this.lang[i] = langStrings[i];
+        }
+    },
+    
+    describeType: function(value) {
+        var t = typeof value;
+        if (t !== 'object') return t;
+        if (!value) return 'null';
+        var c = Amm.getClass(value);
+        if (c) return c;
+        if (value.constructor && value.constructor.name) return value.constructor.name;
+        return 'object';
     }
     
 };

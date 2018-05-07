@@ -25,8 +25,10 @@ Amm.DomHolder.prototype = {
     _domExclusive: true, 
     
     _notifyDomNodeConflict: function(domNode, otherDomHolder) {
-        if (this._domExclusive && !this._domCompat(otherDomHolder))
+        if (this._domExclusive && !this._domCompat(otherDomHolder)) {
+            console.log(domNode, otherDomHolder, Amm.getInterfaces(this._element), Amm.getInterfaces(otherDomHolder._element));
             throw "Element already acquired by a different DomHolder";
+        }
     },
     
     _domCompat: function(otherDomHolder) {

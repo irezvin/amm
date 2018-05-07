@@ -1,3 +1,5 @@
+// global Amm
+
 (function() {
 
     QUnit.module("Builder");
@@ -112,4 +114,43 @@
         Amm.cleanup(elements);
         
     });
+
+    QUnit.test("Builder.NestedElementsPriority", function(assert) {
+        
+        var fx = jQuery("#qunit-fixture");
+        
+        fx.html('        \n\
+            <div data-amm-e="{id: comp, extraTraits: [t.Component]}" data-amm-v="{class: v.StaticDisplayParent}">\n\
+                <div data-amm-v="v.Visual" class="outerV">\n\
+                    <div data-amm-v="v.Visual" class="innerV">\n\
+                        <input type="text"\n\
+                               data-amm-v="v.Input" \n\
+                               data-amm-e="{id: inp, extraTraits: [t.Field]}" \/>\n\
+                    <\/div>\n\
+                <\/div>\n\
+            <\/div>\n\
+        ');
+        
+        var b = new Amm.Builder(fx, {
+            rememberElements: true,
+            reportMode: Amm.Builder.PROBLEM_HTML
+        });
+        
+        var elements = b.build();
+        
+        assert.equal(elements.length, 2, '2 elements created');
+        
+        var byIds = {};
+        byIds[elements[0].getId()] = elements[0];
+        byIds[elements[1].getId()] = elements[1];
+        
+        assert.equal(byIds.comp.getUniqueSubscribers('Amm.View.Abstract').length, 1, 'Outer element has only one view');
+        var subs;
+        assert.equal((subs = byIds.inp.getUniqueSubscribers('Amm.View.Abstract')).length, 3, 'Inner element has three views');
+        b.clear();
+        Amm.cleanup(elements);
+        
+    });
+    
+    
 }) ();

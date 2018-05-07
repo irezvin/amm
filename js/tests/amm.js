@@ -292,3 +292,30 @@ QUnit.test("Amm global events", function(assert) {
     r.raiseEvent('RandomEvent', 10);
     assert.ok(v === 10, 'Root\'s custom events can be successfully raised by raiseEvent() method');
 });
+
+QUnit.test("Amm.translate", function(assert) {
+    
+    assert.equal(Amm.translate("foo %foo bar %bar", "%foo", "foovalue", "%bar", "barvalue"), 
+                 "foo foovalue bar barvalue");
+    
+    Amm.defineLangStrings({"test_lang_string": "xxx %yyy"});
+    
+        assert.equal(Amm.lang["test_lang_string", "xxx %yyy"]);
+    
+    Amm.defineLangStrings({"test_lang_string": "xxx %zzz"});
+    
+        assert.equal(Amm.lang["test_lang_string"], "xxx %yyy", "Lang string cannot be re-written without override param");
+    
+    Amm.defineLangStrings({"test_lang_string": "xxx %zzz"}, true);
+    
+        assert.equal(Amm.lang["test_lang_string"], "xxx %zzz", "Lang string can be re-written with override === TRUE");   
+    
+    assert.equal(Amm.translate("test_lang_string", "%zzz", "zzzvalue"), 
+                 "xxx zzzvalue", "Lang string name can be passed as first param to Amm.translate");
+    
+    var xx = {};
+    assert.ok(Amm.translate(xx) === xx, "Non-lang-string value translated remains the same");
+    assert.ok(Amm.translate(null) === null, "Non-lang-string value translated remains the same");
+    assert.ok(Amm.translate(undefined) === undefined, "Non-lang-string value translated remains the same");
+    
+});

@@ -1,4 +1,4 @@
-/* global Amm */
+ /* global Amm */
 
 Amm.View.Html.Annotated = function(options) {
     Amm.DomHolder.call(this);

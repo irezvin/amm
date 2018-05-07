@@ -148,9 +148,23 @@ Amm.Builder.prototype = {
     },
 
     _connect: function(node, toNode) {
-        node.connected = toNode.connected;
-        toNode.connected.push(node);
-        node.conIdx = node.connected.length - 1;
+        if (node.e || toNode.e) node.connected.groupHasElement = true;
+        this._mergeConnected(node, toNode);
+    },
+    
+    _mergeConnected: function(node, toNode) {
+        var l = node.connected.length;
+        var x;
+        x = Amm.Array.arrayDiff(toNode.connected, node.connected);
+        node.connected.push.apply(node.connected, x);
+        if (toNode.connected.groupHasElement) node.connected.groupHasElement = true;
+        if (toNode.connected.id && !node.connected.id) node.connected.id = toNode.connected.id;
+        if (toNode.connected.alreadyBuilt) node.connected.alreadyBuilt = toNode.connected.alreadyBuilt;
+        toNode.connected = node.connected;
+        for (var i = l, cl = node.connected.length; i < cl; i++) {
+            toNode.connected[i].conIdx = i;
+            toNode.connected[i].connected = toNode.connected;
+        }
     },
     
     _detectConnectedChildren: function(node, otherNode) {
@@ -181,10 +195,18 @@ Amm.Builder.prototype = {
                 this._detectConnectedChildren(node, p);
             }
         }
+        this._detectConnectedRecursive(node.children);
         p = node.parent;
         if (p && ((node.v && !node.e) || (p.v && !p.e))) {
             if (p && p.children.length === 1) {
-                if ((!p.id || !node.id) && (p.e || p.v)) this._connect(node, p);
+                var nodeHasElement = !!(node.e || node.connected.groupHasElement);
+                var parentHasElement = !!(p.e || p.connected.groupHasElement);
+                var acceptable = !(nodeHasElement && parentHasElement);
+                if (acceptable && (!p.id || !node.id) && ( p.e || p.v)) {
+                    this._connect(p, node);
+                    node.conParent = true;
+                    p.conChild = true;
+                }
             }
         }
     },
@@ -194,8 +216,9 @@ Amm.Builder.prototype = {
         if (!res) res = [];
         for (var i = 0, l = node.connected.length; i < l; i++) {
             if (node.connected[i] !== node)
-                if (node.connected[i].v) 
+                if (node.connected[i].v) {
                     res = res.concat(node.connected[i].v);
+                }
         }
         return res;
         
@@ -204,22 +227,39 @@ Amm.Builder.prototype = {
     _detectConnectedRecursive: function(items) {
         for (var i = 0, l = items.length; i < l; i++) {
             this._detectConnectedNodes(items[i]);
-            this._detectConnectedRecursive(items[i].children);
+            //this._detectConnectedRecursive(items[i].children);
         }
     },
     
     _buildElements: function(node, topLevel) {
         var res = [];
+        
+        // first build node children and add them to result
         for (var i = 0, l = node.children.length; i < l; i++) {
             res = res.concat(this._buildElements(node.children[i], topLevel));
         }
+        
+        // do we have connected nodes? (belonging to the same element)
         if (!node.e && node.connected.length > 1) {
+            
+            // always use ID that is provided by the node group
+            if (node.connected.id !== undefined) node.id = node.connected.id;
+            
             // we don't have element definition - check if node is primary
             // between connected items
-            if (node.conIdx < node.connected.length - 1) return res;
+            
+            if (node.connected.groupHasElement) {
+                return res;
+            } else {
+                // we don't have element so build only when we got to the last node (why?)
+                if (node.conIdx < node.connected.length - 1)
+                    return res;
+            }
+            
+            // "already built" flag is set - don't build same element again
             if (node.connected.alreadyBuilt) return res;
-            if (node.connected.id !== undefined) node.id = node.connected.id;
         }
+        
         var proto = node.e || {};
         if (!proto.views) proto.views = [];
         proto.views = proto.views.concat(this._getAllViews(node));

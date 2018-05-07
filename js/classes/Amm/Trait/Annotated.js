@@ -1,7 +1,7 @@
 /* global Amm */
 
 Amm.Trait.Annotated = function() {
-    this._defaultAnnotations = ['label', 'description', 'required'];
+    this._defaultAnnotations = ['label', 'description', 'required', 'error'];
 };
 
 Amm.Trait.Annotated.prototype = {
@@ -52,6 +52,9 @@ Amm.Trait.Annotated.prototype = {
                 var p = Amm.getProperty(this, id, undefined);
                 if (p !== undefined) {
                     this.getAnnotationsContainer().getAnnotationElement(id).setContent(p);
+                } else {
+                    var cnt = this.getAnnotationsContainer().getAnnotationElement(id).getContent();
+                    if (cnt !== undefined) Amm.setProperty(this, id, cnt);
                 }
             }
         }

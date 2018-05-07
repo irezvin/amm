@@ -25,6 +25,10 @@ Amm.Builder.Node.prototype = {
     
     connected: null,
     
-    conIdx: null
+    conIdx: null,
+    
+    conParent: false,
+    
+    conChild: false
     
 };

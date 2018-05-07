@@ -6,7 +6,11 @@
 Amm.Util = {
     
     regexEscape: function(string) {
-          return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    },
+    
+    trim: function(string) {
+        return string.replace(/^\s+|\s+$/g, '');
     }
     
 };
