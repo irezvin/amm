@@ -32,6 +32,8 @@ Amm.Translator.List.prototype = {
     _enclosureElement: '<ul></ul>',
     
     _itemElement: '<li></li>',
+    
+    emptyOutValue: null,
 
     itemSelector: null,
     
@@ -47,6 +49,23 @@ Amm.Translator.List.prototype = {
     msgInvalidInValueNonStrict: 'Amm.Translator.List.msgInvalidInValueNonStrict',
     
     msgInvalidOutValue: 'Amm.Translator.List.msgInvalidOutValue',
+    
+    // Whether to cache last in-out pair; if it is the same, pass last result. 
+    // Compared using ===, including the arrays
+    _cacheValues: null,
+    
+    _lastInValue: null,
+    
+    _lastOutValue: null,
+
+    setCacheValues: function(cacheValues) {
+        var oldCacheValues = this._cacheValues;
+        if (oldCacheValues === cacheValues) return;
+        this._cacheValues = cacheValues;
+        return true;
+    },
+
+    getCacheValues: function() { return this._cacheValues; },
 
     setItemElement: function(itemElement) {
         var oldItemElement = this._itemElement;
@@ -76,7 +95,7 @@ Amm.Translator.List.prototype = {
 
     getEnclosureElement: function() { return this._enclosureElement; },
     
-    _doTranslateIn: function(value) {
+    _doTranslateOut: function(value) {
         if (!this.strict) {
             if (!value) value = [];
             else if (typeof value === 'string') value = [value];
@@ -86,6 +105,7 @@ Amm.Translator.List.prototype = {
             this.lastError = Amm._msg(msg, '%type', Amm.describeType(value));
             return;
         }
+        if (!value.length && this.emptyOutValue !== null) return this.emptyOutValue;
         var innerItems = [];
         if (!this._itemElement) throw ("_")
         var res = '', e;
@@ -103,15 +123,8 @@ Amm.Translator.List.prototype = {
         else return res;
     },
     
-    _extractItemSelector: function(e) {
-        var v;
-        this._cachedItemSelector = e.tagName.toLowerCase();
-        if (v = e.getAttribute('class')) this._cachedItemSelector += '.' + v;
-        if (v = e.getAttribute('id')) this._cachedItemSelector += '#' + v;
-        return this._cachedItemSelector;
-    },
-    
-    _doTranslateOut: function(value) {
+    _doTranslateIn: function(value) {
+        if (value === this.emptyOutValue) return [];
         if (!value) return []; // empty string or FALSEable value corresponds to empty array
         if (!(value && (value.jquery || value.nodeName || typeof value === 'string'))) {
             this.lastError = Amm._msg(this.msgInvalidOutValue, '%type', Amm.describeType(value));
@@ -126,6 +139,14 @@ Amm.Translator.List.prototype = {
             res.push(h? jQuery(e).html() : jQuery(e).text());
         });
         return res;
+    },
+    
+    _extractItemSelector: function(e) {
+        var v;
+        this._cachedItemSelector = e.tagName.toLowerCase();
+        if (v = e.getAttribute('class')) this._cachedItemSelector += '.' + v;
+        if (v = e.getAttribute('id')) this._cachedItemSelector += '#' + v;
+        return this._cachedItemSelector;
     }
 
 };

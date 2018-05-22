@@ -2,7 +2,7 @@
 
 Amm.View.Html.Collection = function(options) {
     Amm.registerItem(this);
-    Amm.DomHolder.call(this);
+    Amm.View.Html.call(this);
     this._mappingProp = '_map_vhc_' + this._amm_id;
     Amm.View.Abstract.Collection.call(this, options);
 };
@@ -10,10 +10,6 @@ Amm.View.Html.Collection = function(options) {
 Amm.View.Html.Collection.prototype = {
 
     'Amm.View.Html.Collection': '__CLASS__', 
-    
-    _presentationProperty: '_htmlElement',
-    
-    _htmlElement: null,
     
     debug: false,
     
@@ -32,17 +28,9 @@ Amm.View.Html.Collection.prototype = {
     },
     
     
-    setHtmlElement: function(htmlElement) {
-        var old = this._htmlElement;
-        if (old === htmlElement) return;
-        if (old) this._releaseDomNode(old);
-        this._htmlElement = htmlElement;
-        this._observeElementIfPossible();
+    _doSetHtmlElement: function(htmlElement, old) {
         if (!this._canObserve() && this._canObserveCollection()) this._acquireResources();
-        return true;
     },
-    
-    getHtmlElement: function() { return this._htmlElement; },
     
     getItemHtmlElement: function(item, dontThrow) {
         if (item[this._mappingProp]) return item[this._mappingProp];
@@ -218,13 +206,9 @@ Amm.View.Html.Collection.prototype = {
             items.length, oldItems.length);
         // the lamest possible solution
         this._rebuild();
-    },
-    
-    _acquireResources: function() {
-        this._acquireDomNode(this._htmlElement);
     }
         
 };
 
+Amm.extend(Amm.View.Html.Collection, Amm.View.Html);
 Amm.extend(Amm.View.Html.Collection, Amm.View.Abstract.Collection);
-Amm.extend(Amm.View.Html.Collection, Amm.DomHolder);

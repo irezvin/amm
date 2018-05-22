@@ -1,6 +1,7 @@
 /* global Amm */
 
 Amm.View.Html.Select = function(options) {
+    Amm.View.Html.call(this);
     Amm.View.Abstract.Select.call(this, options);
 };
 
@@ -12,14 +13,12 @@ Amm.View.Html.Select.prototype = {
     
     _collectionView: null,
     
-    _presentationProperty: '_htmlElement',
-    
-    _htmlElement: null,
-    
     _createFieldView: function() {
         var proto = {
             getVReadOnly: this._fieldView_getVReadOnly,
-            setVReadOnly: this._fieldView_setVReadOnly
+            setVReadOnly: this._fieldView_setVReadOnly,
+            htmlElement: this._htmlElement,
+            //element: this._element
         };
         this._fieldView = new Amm.View.Html.Input(proto);
         this._fieldView._receiveEvent = this._fieldView__receiveEvent;
@@ -45,22 +44,26 @@ Amm.View.Html.Select.prototype = {
             var item = element.options[i];
             var itm = {caption: jQuery(item).html(), value: item.value};
             if (item.disabled) itm.disabled = true;
-            if (item.selected) itm.selected = true;
+            if (item.selected) {
+                itm.selected = true;
+            }
             options.push(itm);
         };
         return options;
     },
     
     _createCollectionView: function() {
-        
         var options = this._element.getOptions();
         
         if (options === undefined) {
             this._element.setOptions(this._detectOptions(this._htmlElement));
         }
+        
         var t = this;
         var proto = {
             collectionProperty: 'optionsCollection',
+            //element: this._element,
+            htmlElement: this._htmlElement,
             createItemHtml: function(item) {
                 var r = jQuery('<option>' + item.getCaption() + '</option>');
                 r.attr('value', item.getValue());
@@ -94,16 +97,13 @@ Amm.View.Html.Select.prototype = {
         if (htmlElement && htmlElement.tagName !== 'SELECT') {
             throw "<select> element must be provided";
         }
-        var old = this._htmlElement;
-        if (old === htmlElement) return;
-        this._htmlElement = htmlElement;
-        this._observeElementIfPossible();
+        return Amm.View.Html.prototype.setHtmlElement.call(this, htmlElement);
+    },
+    
+    _doSetHtmlElement: function(htmlElement, old) {
         if (this._fieldView) this._fieldView.setHtmlElement(this._htmlElement);
         if (this._collectionView) this._collectionView.setHtmlElement(this._htmlElement);
-        return true;
     },
-
-    getHtmlElement: function() { return this._htmlElement; },
     
     getVMultiple: function() { 
         var e = jQuery(this._htmlElement);
@@ -137,4 +137,5 @@ Amm.View.Html.Select.prototype = {
 
 };
 
+Amm.extend(Amm.View.Html.Select, Amm.View.Html);
 Amm.extend(Amm.View.Html.Select, Amm.View.Abstract.Select);

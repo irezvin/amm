@@ -69,4 +69,3 @@ Amm.View.Html.Toggle.prototype = {
 };
 
 Amm.extend(Amm.View.Html.Toggle, Amm.View.Html.Input);
-

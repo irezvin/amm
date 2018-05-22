@@ -146,8 +146,9 @@ Amm.View.Abstract.Collection.prototype = {
         if (!res) return res;
         if (this._collectionProperty) {
             var e = this._collectionProperty + 'Change';
-            if (this._element && this._element.hasEvent(e))
+            if (this._element && this._element.hasEvent(e)) {
                 this._element.subscribe(e, this._onElementCollectionPropertyChange, this);
+            }
         }
         return res;
     }

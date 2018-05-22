@@ -335,7 +335,7 @@ Amm.Selection.prototype = {
             for (var i = 0, l = insert.length; i < l; i++) {
                 var o = insert[i];
                 if (this._selectedProperty && Amm.getProperty(o, this._selectedProperty)) toAdd.push(o);
-                else if (this._valueProperty && Amm.Array.indexOf(Amm.getProperty(o, this._valueProperty), v) >= 0)
+                else if (this._valueProperty && v && Amm.Array.indexOf(Amm.getProperty(o, this._valueProperty), v) >= 0)
                     toAdd.push(o);
             }
             if (toAdd.length) {

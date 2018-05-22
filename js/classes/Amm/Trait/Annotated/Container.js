@@ -11,8 +11,6 @@ Amm.Trait.Annotated.Container.prototype = {
 
     'Amm.Trait.Annotated.Container': '__CLASS__', 
     
-    _annotated: null,
-    
     _cleanupChildren: true,
     
     _cleanupWithParent: true,
@@ -28,7 +26,10 @@ Amm.Trait.Annotated.Container.prototype = {
     },
 
     createAnnotationElement: function(id) {
-        var res = new Amm.Element({traits: ['Amm.Trait.Content', 'Amm.Trait.Visual'], id: id, parent: this});
+        var proto = this._element.getAnnotationElementPrototype(id);
+        proto.id = id;
+        proto.parent = this;
+        var res = new Amm.Element(proto);
         var prop = {};
         if (Amm.detectProperty(this._element, id, prop)) {
             res.subscribe('contentChange', this._passAnnotatedContentChange, this);

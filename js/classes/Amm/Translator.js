@@ -40,6 +40,9 @@ Amm.Translator.prototype = {
                 value = Amm.Util.trim(value);
             }
         }
+        if (decorator && this.decorateBeforeValidate)
+            value = decorator.decorate(value);
+        
         if (validator) {
             this.lastError = validator.getError(value, this.field);
             if (this.lastError) {
@@ -48,6 +51,7 @@ Amm.Translator.prototype = {
             }
         }
         
+        var o = value;
         if (decorator && !this.decorateBeforeValidate)
             value = decorator.decorate(value);
         
@@ -95,7 +99,7 @@ Amm.Translator.prototype = {
     setInDecorator: function(inDecorator) {
         var oldInDecorator = this._inDecorator;
         if (oldInDecorator === inDecorator) return;
-        if (inDecorator) inDecorator = Amm.Decorator.construct(inDecorator);
+        if (inDecorator) inDecorator = Amm.Decorator.construct(inDecorator, 'Amm.Decorator');
         this._inDecorator = inDecorator;
         return true;
     },
@@ -130,20 +134,7 @@ Amm.Translator.prototype = {
         return true;
     },
 
-    getOutValidator: function() { return this._outValidator; },
-    
-    _doTranslateIn: function(value) {
-        return value;
-    },
-    
-    _doTranslateOut: function(value) {
-        if (this._outValidator) {
-            this.lastError = this._outValidator.getError(value, this.field);
-            if (this.lastError) return;
-        }
-        if (this._outDecorator) return this._outDecorator.decorate(value);
-        return value;
-    }    
+    getOutValidator: function() { return this._outValidator; }
     
 };
 

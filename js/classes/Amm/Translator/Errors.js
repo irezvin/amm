@@ -12,6 +12,8 @@ Amm.Translator.Errors.prototype = {
     
     _itemElement: '<li class="error"></li>',
     
+    emptyOutValue: '',
+    
     itemSelector: '.error',
     
     strict: false,

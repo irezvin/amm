@@ -9,7 +9,12 @@ Amm.Trait.Content.prototype = {
     
     _content: undefined,
 
-    _contentDecorator: null,
+    /**
+     *  Note: content translator is used only by views (and may be overriden by them!)
+     *  
+     * @type Amm.Translator
+     */
+    _contentTranslator: null,
 
     setContent: function(content) {
         var oldContent = this._content;
@@ -26,21 +31,22 @@ Amm.Trait.Content.prototype = {
         this._out('contentChange', content, oldContent);
     },
 
-    setContentDecorator: function(contentDecorator) {
-        var oldContentDecorator = this._contentDecorator;
-        if (oldContentDecorator === contentDecorator) return;
-        this._contentDecorator = contentDecorator;
- 
-        this.outContentDecoratorChange(contentDecorator, oldContentDecorator);
+    setContentTranslator: function(contentTranslator) {
+        if (contentTranslator)
+            contentTranslator = Amm.constructInstance(contentTranslator, 'Amm.Translator');
+        else contentTranslator = null;
+        var oldContentTranslator = this._contentTranslator;
+        if (oldContentTranslator === contentTranslator) return;
+        this._contentTranslator = contentTranslator;
+        this.outContentTranslatorChange(contentTranslator, oldContentTranslator);
         return true;
     },
 
-    getContentDecorator: function() { return this._contentDecorator; },
+    getContentTranslator: function() { return this._contentTranslator; },
 
-    outContentDecoratorChange: function(contentDecorator, oldContentDecorator) {
-        this._out('contentDecoratorChange', contentDecorator, oldContentDecorator);
-    }
-
+    outContentTranslatorChange: function(contentTranslator, oldContentTranslator) {
+        this._out('contentTranslatorChange', contentTranslator, oldContentTranslator);
+    },
 
 };
 

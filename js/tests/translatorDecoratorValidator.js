@@ -236,17 +236,17 @@
         var v = ["foo", "bar", "baz"];
         var s = "<ul><li>foo</li><li>bar</li><li>baz</li></ul>";
         var s2 = '<div class="xx">foo</div><div class="xx">bar</div><div class="xx">baz</div>';
-        assert.deepEqual(t.translateIn(v), s);
-        assert.deepEqual(t.translateOut(s), v);
+        assert.deepEqual(t.translateOut(v), s);
+        assert.deepEqual(t.translateIn(s), v);
         t.setEnclosureElement('');
         t.setItemElement('<div class="xx"></div>');
         t.itemSelector = '.xx';
-        assert.deepEqual(t.translateIn(v), s2);
-        assert.deepEqual(t.translateOut(s2), v);
+        assert.deepEqual(t.translateOut(v), s2);
+        assert.deepEqual(t.translateIn(s2), v);
         
         var t2 = new Amm.Translator.Errors();
-        assert.deepEqual(t2.translateIn('errMsg<b />'), '<ul class="errors"><li class="error">errMsg&lt;b /&gt;</li></ul>');
-        assert.deepEqual(t2.translateOut('<div class="error">errMsg1</div><div></div><div class="error">errMsg2</div>'), ['errMsg1', 'errMsg2']);
+        assert.deepEqual(t2.translateOut('errMsg<b />'), '<ul class="errors"><li class="error">errMsg&lt;b /&gt;</li></ul>');
+        assert.deepEqual(t2.translateIn('<div class="error">errMsg1</div><div></div><div class="error">errMsg2</div>'), ['errMsg1', 'errMsg2']);
         
     });
     

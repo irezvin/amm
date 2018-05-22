@@ -45,6 +45,10 @@ Amm.Translator.Bool.prototype = {
         return undefined;
     },
 
+    _doTranslateOut: function(value) {
+        return Amm.translate(value? this.trueValue : this.falseValue);
+    },
+
     _doTranslateIn: function(value) {
         var res;
         if (this._cmp(value, Amm.translate(this.trueValue))) res = true;
@@ -65,10 +69,6 @@ Amm.Translator.Bool.prototype = {
         }
         return inValue === canonValue;
     },
-
-    _doTranslateOut: function(value) {
-        return Amm.translate(value? this.trueValue : this.falseValue);
-    }
 
 };
 

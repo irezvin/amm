@@ -14,34 +14,12 @@ Amm.View.Html.Content.prototype = {
 
     'Amm.View.Html.Content': '__CLASS__',
 
-    _presentationProperty: '_htmlElement',
-    
-    _htmlElement: null,
-    
-    _lastContent: undefined,
-    
-    setHtmlElement: function(htmlElement) {
-        var old = this._htmlElement;
-        if (old === htmlElement) return;
-        if (old) this._releaseDomNode(old);
-        this._htmlElement = htmlElement;
-        this._observeElementIfPossible();
-        return true;
+    _doSetContent: function(content) {
+        jQuery(this._htmlElement).html(content);
     },
     
-    getHtmlElement: function() { return this._htmlElement; },
-    
-    setVContent: function(content) {
-        this._lastContent = content;
-        jQuery(this._htmlElement).html(Amm.decorate(this._lastContent, this._decorator));
-    },
-    
-    getVContent: function() { 
+    _doGetContent: function() { 
         return jQuery(this._htmlElement).html();
-    },
-    
-    _acquireResources: function() {
-        this._acquireDomNode(this._htmlElement);
     },
     
     getSuggestedTraits: function() {
@@ -50,6 +28,5 @@ Amm.View.Html.Content.prototype = {
 
 };
 
+Amm.extend(Amm.View.Html.Content, Amm.View.Html);
 Amm.extend(Amm.View.Html.Content, Amm.View.Abstract.Content);
-Amm.extend(Amm.View.Html.Content, Amm.DomHolder);
-

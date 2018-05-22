@@ -9,8 +9,8 @@
     var newNode = function(content, retHtml) {
         node = jQuery('<div>' + content + '</div>')[0];
         el = new Amm.Element({traits: ['Amm.Trait.Content', 'Amm.Trait.Visual'], visible: true});
-        var v = new Amm.View.Html.Visual({element: el, htmlElement: node});
-        var vc = new Amm.View.Html.Content({element: el, htmlElement: node});
+        new Amm.View.Html.Visual({element: el, htmlElement: node});
+        new Amm.View.Html.Content({element: el, htmlElement: node});
         elements.push(el);
         return retHtml? node : el;
     };

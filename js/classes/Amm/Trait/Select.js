@@ -1,7 +1,6 @@
 /* global Amm */
 
-Amm.Trait.Select = function() {
-    
+Amm.Trait.Select = function() {  
 };
 
 // compares two values. Order doesn't matter. Multiple occurances of same value are same as one.
@@ -79,6 +78,7 @@ Amm.Trait.Select.prototype = {
         };
         this.options = new Amm.Collection(proto);
         if (this._cleanupList) this._cleanupList.push(this.options);
+        if (!this._selectionCollection) this.getSelectionCollection();
         return this.options;
     },
     

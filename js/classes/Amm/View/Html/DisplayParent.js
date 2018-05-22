@@ -12,10 +12,6 @@ Amm.View.Html.DisplayParent.prototype = {
 
     'Amm.View.Html.DisplayParent': '__CLASS__', 
     
-    _presentationProperty: '_htmlElement',
-    
-    _htmlElement: null,
-    
     debug: false,
     
     _collectionProperty: 'displayChildren',

@@ -2,7 +2,7 @@
 
 Amm.View.Html.Visual = function(options) {
     Amm.View.Abstract.Visual.call(this, options);
-    Amm.DomHolder.call(this);
+    Amm.View.Html.call(this);
 };
 
 Amm.View.Html.Visual.defaultDelay = 250;
@@ -11,22 +11,7 @@ Amm.View.Html.Visual.prototype = {
 
     'Amm.View.Html.Visual': '__CLASS__', 
     
-    _presentationProperty: '_htmlElement',
-    
-    _htmlElement: null,
-    
     delay: undefined,
-
-    setHtmlElement: function(htmlElement) {
-        var old = this._htmlElement;
-        if (old === htmlElement) return;
-        if (old) this._releaseDomNode(old);
-        this._htmlElement = htmlElement;
-        this._observeElementIfPossible();
-        return true;
-    },
-    
-    getHtmlElement: function() { return this._htmlElement; },
     
     setVVisible: function(visible) {
         var delay = this.delay;
@@ -83,5 +68,5 @@ Amm.View.Html.Visual.prototype = {
     
 };
 
+Amm.extend(Amm.View.Html.Visual, Amm.View.Html);
 Amm.extend(Amm.View.Html.Visual, Amm.View.Abstract.Visual);
-Amm.extend(Amm.View.Html.Visual, Amm.DomHolder);

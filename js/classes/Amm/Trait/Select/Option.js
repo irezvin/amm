@@ -69,7 +69,6 @@ Amm.Trait.Select.Option.prototype = {
         var oldSelected = this._selected;
         if (oldSelected === selected) return;
         this._selected = selected;
- 
         this.outSelectedChange(selected, oldSelected);
         return true;
     },

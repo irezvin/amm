@@ -10,22 +10,6 @@ Amm.Trait.Property.VALIDATE_SUBMIT = 0;
 Amm.Trait.Property.VALIDATE_BLUR = 1;
 Amm.Trait.Property.VALIDATE_CHANGE = 3;
 
-Amm.Trait.Property.errorFormatterBr = function(arrErrors) {
-    if (!arrErrors || !arrErrors.length) return '';
-    return arrErrors.join('<br />');
-};
-
-Amm.Trait.Property.errorRevFormatterBr = function(str) {
-    if (!str || !str.length) return [];
-    var strs = str.split('<br />');
-    var res = [];
-    for (var i = 0, l = str.length; i < l; i++) {
-        var trimmed = str.replace(/^\s+|\s+$/g, '');
-        if (trimmed.length) res.push(trimmed);
-    }
-    return res;
-};
-
 /**
  * Important! Property does not validate its' value when it's empty (has undefined, empty string or null)
  */
@@ -59,10 +43,6 @@ Amm.Trait.Property.prototype = {
     
     _syncPropertyWithAnnotations: true,
     
-    errorFormatter: Amm.Trait.Property.errorFormatterBr, // TODO: move this to Annotated
-    
-    errorRevFormatter: Amm.Trait.Property.errorRevFormatterBr, // TODO: move this to Annotated
-    
     __augment: function(traitInstance) {
         Amm.Element.regInit(this, '99.Amm.Trait.Property', function() {
             if (!Amm.detectProperty(this, 'value')) {
@@ -92,8 +72,8 @@ Amm.Trait.Property.prototype = {
         if (this._propertyCaption !== undefined) this.setLabel(this._propertyCaption);
         else if (this._label !== undefined) this.setPropertyCaption(this._label);
 
-        if (this._validationErrors !== undefined) this.setErrors(this.errorFormatter(this._propertyCaption));
-        else if (this._errors !== undefined) this.setValidationErrors(this.errorRevFormatter(this._errors));
+        if (this._validationErrors !== undefined) this.setErrors(this._validationErrors);
+        else if (this._errors !== undefined) this.setValidationErrors(this._errors);
     },
     
     _handleSelfAnnotationRequiredChange: function(required, oldRequired) {
@@ -109,7 +89,7 @@ Amm.Trait.Property.prototype = {
     
     _handleSelfAnnotationErrorChange: function(error, oldError) {
         if (this._syncPropertyWithAnnotations && this._validationErrors === undefined) {
-            this.setValidationErrors(this.errorRevFormatter(error));
+            this.setValidationErrors(error);
         }
     },
     
@@ -222,7 +202,6 @@ Amm.Trait.Property.prototype = {
     getValidateMode: function() { return this._validateMode; },
 
     setValidationErrors: function(validationErrors) {
-        if (validationErrors instanceof Array && !validationErrors.length) validationErrors = null;
         var oldValidationErrors = this._validationErrors;
         var sameArrays = false;
         if (oldValidationErrors instanceof Array && validationErrors instanceof Array) {
@@ -234,7 +213,7 @@ Amm.Trait.Property.prototype = {
         this._validationErrors = validationErrors;
         
         if (this._syncPropertyWithAnnotations && this['Annotated'] === '__INTERFACE__') {
-            this.setError(this.errorFormatter(validationErrors));
+            this.setError(validationErrors);
         }
  
         this.outValidationErrorsChange(validationErrors, oldValidationErrors);

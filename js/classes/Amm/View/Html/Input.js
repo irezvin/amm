@@ -9,7 +9,7 @@ Amm.View.Html.Input = function(options) {
     var t = this;
     this._handler = function(event) { return t._receiveEvent(event, this); };
     Amm.View.Abstract.Field.call(this, options);
-    Amm.DomHolder.call(this);
+    Amm.View.Html.call(this);
     Amm.JQueryListener.call(this, {});
 };
 
@@ -19,11 +19,9 @@ Amm.View.Html.Input.prototype = {
 
     _eventName: 'change focus blur',
     
-    _presentationProperty: '_htmlElement',
-    
-    _htmlElement: null,
-    
     _blurTimeoutHandler: null,
+    
+    _resolveHtmlElement: false,
     
     _receiveEvent: function(event) {
         if (!this._element) return;
@@ -108,18 +106,10 @@ Amm.View.Html.Input.prototype = {
             return jQuery(this._htmlElement).val();
     },
     
-    setHtmlElement: function(htmlElement) {
-        var old = this._htmlElement;
-        if (old === htmlElement) return;
-        if (old) this._releaseDomNode(old);
-        this._htmlElement = htmlElement;
-        this.setSelector(this._htmlElement);
-        this._observeElementIfPossible();
-        return true;
+    _doSetHtmlElement: function(htmlElement) {
+        this.setSelector(htmlElement);
     },
     
-    getHtmlElement: function() { return this._htmlElement; },
-
     cleanup: function() {
         Amm.View.Abstract.Field.prototype.cleanup.call(this);
         Amm.JQueryListener.prototype.cleanup.call(this);
@@ -136,7 +126,6 @@ Amm.View.Html.Input.prototype = {
 
 };
 
-Amm.extend(Amm.View.Html.Input, Amm.View.Abstract.Field);
+Amm.extend(Amm.View.Html.Input, Amm.View.Html);
 Amm.extend(Amm.View.Html.Input, Amm.JQueryListener);
-Amm.extend(Amm.View.Html.Input, Amm.DomHolder);
-
+Amm.extend(Amm.View.Html.Input, Amm.View.Abstract.Field);

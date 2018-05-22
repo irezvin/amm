@@ -10,7 +10,7 @@ Amm.Translator.RequiredMark.prototype = {
     
     trueValue: '<span class="required">*</span>',
 
-    falseValue: '',
+    falseValue: ''
 
 };
 

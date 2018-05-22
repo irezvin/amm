@@ -16,6 +16,7 @@
             res.size = select.size || 1;
             if (select.disabled) res.disabled = true;
             if (jQuery(select).is(':focus')) res.focused = true;
+
             for (var i = 0, l = select.options.length; i < l; i++) {
                 var opt = select.options[i];
                 var obj = {value: opt.value, caption: jQuery(opt).html()};
@@ -68,7 +69,6 @@
         var v1b = new Amm.View.Html.Select({element: sel1, htmlElement: fx.find('#sel1b')[0]});
         assert.deepEqual(s(sel1), initial, "Auto-detected Select config matches html element");
         assert.deepEqual(s(fx.find('#sel1b')), s(sel1), "Initial - second view is in sync");
-        
         sel1.getOptionsCollection()[0].setSelected(true);
         assert.deepEqual(s(fx.find('#sel1')), s(sel1));
         assert.deepEqual(s(fx.find('#sel1b')), s(sel1));

@@ -425,7 +425,9 @@ Amm = {
     
     registerNamespace: function(ns, hash) {
         if (typeof ns !== 'string') throw "`ns` must be a string";
-        if (!hash || typeof hash !== 'object') throw "`hash` must be an object";
+        if (!hash || typeof hash !== 'object' && typeof hash !== 'function') {
+            throw "Amm.registerNamespace: `hash` must be an object or a function";
+        }
         this._namespaces[ns] = hash;
     },
     

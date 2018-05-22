@@ -9,10 +9,6 @@ Amm.View.Html.Annotated.prototype = {
 
     'Amm.View.Html.Annotated': '__CLASS__', 
     
-    _presentationProperty: '_htmlElement',
-    
-    _htmlElement: null,
-    
     annotationClass: 'annotation',
     
     annotationClassPrefix: 'a_',
@@ -42,17 +38,6 @@ Amm.View.Html.Annotated.prototype = {
         return this.annotationClassPrefix + annotationId;
     },
     
-    setHtmlElement: function(htmlElement) {
-        var old = this._htmlElement;
-        if (old === htmlElement) return;
-        if (old) this._releaseDomNode(old);
-        this._htmlElement = htmlElement;
-        this._observeElementIfPossible();
-        return true;
-    },
-    
-    getHtmlElement: function() { return this._htmlElement; },
-    
     locateChildHtmlElement: function(id, create) {
         if (!this._htmlElement) return null;
         var idc = this.idToClass(id), q = '.' + this.idToClass(id);
@@ -74,6 +59,8 @@ Amm.View.Html.Annotated.prototype = {
         var t = this, res = {};
         jQuery(this._htmlElement).find('.' + this.annotationClass).each(function(i, domNode) {
             var id = t.classToId(domNode.getAttribute('class'), true);
+            var el = t._element.getAnnotationsContainer().getAnnotationElement(id);
+            t._createChildViews(el, true, domNode);
         });
         return res;
     },
@@ -110,5 +97,5 @@ Amm.View.Html.Annotated.prototype = {
     
 };
 
+Amm.extend(Amm.View.Html.Annotated, Amm.View.Html);
 Amm.extend(Amm.View.Html.Annotated, Amm.View.Abstract.Annotated);
-Amm.extend(Amm.View.Html.Annotated, Amm.DomHolder);

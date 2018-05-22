@@ -4,6 +4,39 @@ Amm.Trait.Annotated = function() {
     this._defaultAnnotations = ['label', 'description', 'required', 'error'];
 };
 
+Amm.Trait.Annotated.annotationElementDefaults = {
+    
+    BASE: { traits: ['Amm.Trait.Content', 'Amm.Trait.Visual'] },
+    
+    required: { contentTranslator: { class: 'Amm.Translator.RequiredMark' } },
+    
+    error: { contentTranslator: { class: 'Amm.Translator.Errors' } }
+    
+};
+
+    
+// used to merge defaults from Amm.Trait.Annotated.annotationElementDefaults and instance' annotationElementDefaults
+Amm.Trait.Annotated.mergePrototypes = function (leftSrc, leftKey, rightSrc, rightKey) {
+    var left, right;
+    if (leftSrc && leftKey && leftKey in leftSrc) left = leftSrc[leftKey];
+    if (leftKey) {
+        if (leftSrc && leftKey in leftSrc) left = leftSrc[leftKey];
+    } else {
+        left = leftSrc;
+    }
+    if (rightKey) {
+        if (rightSrc && rightKey in rightSrc) right  = rightSrc[rightKey];
+    } else {
+        right = rightSrc;
+    }
+    if (right === null) return null;
+    if (!right) return left;
+    if (!left) return right;
+    if (typeof right !== 'object' || typeof left !== 'object') return right;
+    return Amm.override({}, left, right);
+};
+
+
 Amm.Trait.Annotated.prototype = {
 
     'Annotated': '__INTERFACE__',
@@ -17,6 +50,8 @@ Amm.Trait.Annotated.prototype = {
     _required: undefined,
     
     _error: undefined,
+    
+    annotationElementDefaults: null, // local overrides for Amm.Trait.Annotated.annotationElementDefaults
 
     // Element that contains Content elements showing annotations
     _annotationsContainer: undefined,
@@ -43,6 +78,20 @@ Amm.Trait.Annotated.prototype = {
             this._assignDefaultAnnotations();
         }
         return this._annotationsContainer;
+    },
+    
+    getAnnotationElementPrototype: function(id) {
+        
+        var def = Amm.Trait.Annotated.annotationElementDefaults, own = this.annotationElementDefaults;
+        
+        var base = Amm.Trait.Annotated.mergePrototypes(def, 'BASE', own, 'BASE');
+
+        var spec = Amm.Trait.Annotated.mergePrototypes(def, id, own, id);
+        
+        var res = Amm.Trait.Annotated.mergePrototypes(base, null, spec, null);
+        
+        return Amm.override({}, res);
+        
     },
     
     _assignDefaultAnnotations: function() {
@@ -125,11 +174,23 @@ Amm.Trait.Annotated.prototype = {
     },
     
     getAnnotationValue: function(id) {
-        var ane = this.getAnnotationsContainer().getAnnotationElement(id, true);
-        if (ane) return ane.getContent();
+        if (id) {
+            var ane = this.getAnnotationsContainer().getAnnotationElement(id, true);
+            if (ane) return ane.getContent();
+            return undefined;
+        }
+        // case when id's not used - return hash with all annotations
+        var ll = this.listAnnotations(), cnt = this.getAnnotationsContainer();
+        var res = {};
+        for (var i = 0, l = ll.length; i < l; i++) {
+            var id = ll[i];
+            var e = cnt.getAnnotationElement(id, true);
+            if (e) res[id] = e.getContent();
+        }
+        return res;
     },
     
-    setAnnotationValue: function(id, value) {
+    setAnnotationValue: function(value, id) {
         return this.getAnnotationsContainer().getAnnotationElement(id).setContent(value);
     }    
 

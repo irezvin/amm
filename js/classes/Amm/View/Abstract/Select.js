@@ -42,4 +42,3 @@ Amm.View.Abstract.Select.prototype = {
 };
 
 Amm.extend(Amm.View.Abstract.Select, Amm.View.Abstract);
-
