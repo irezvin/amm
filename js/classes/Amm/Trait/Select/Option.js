@@ -9,7 +9,7 @@ Amm.Trait.Select.Option.prototype = {
     
     _value: null,
 
-    _caption: null,
+    _label: null,
 
     _disabled: false,
     
@@ -32,19 +32,19 @@ Amm.Trait.Select.Option.prototype = {
         this._out('valueChange', value, oldValue);
     },
 
-    setCaption: function(caption) {
-        var oldCaption = this._caption;
-        if (oldCaption === caption) return;
-        this._caption = caption;
+    setLabel: function(label) {
+        var oldLabel = this._label;
+        if (oldLabel === label) return;
+        this._label = label;
  
-        this.outCaptionChange(caption, oldCaption);
+        this.outLabelChange(label, oldLabel);
         return true;
     },
 
-    getCaption: function() { return this._caption; },
+    getLabel: function() { return this._label; },
 
-    outCaptionChange: function(caption, oldCaption) {
-        this._out('captionChange', caption, oldCaption);
+    outLabelChange: function(label, oldLabel) {
+        this._out('labelChange', label, oldLabel);
     },
 
     setDisabled: function(disabled) {

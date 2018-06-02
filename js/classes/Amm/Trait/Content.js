@@ -46,7 +46,7 @@ Amm.Trait.Content.prototype = {
 
     outContentTranslatorChange: function(contentTranslator, oldContentTranslator) {
         this._out('contentTranslatorChange', contentTranslator, oldContentTranslator);
-    },
+    }
 
 };
 

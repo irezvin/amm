@@ -96,8 +96,8 @@ Amm.Selection.prototype = {
      * or B - value of item[`valueProperty`] or several such values, if `valueProperty` is set.
      * Example: 
      * 
-     *      var foo = {caption: 'Foo', value: 1};
-     *      var bar = {caption: 'Bar', value: 2};
+     *      var foo = {label: 'Foo', value: 1};
+     *      var bar = {label: 'Bar', value: 2};
      *      collection.setItems([foo, bar]);
      *      selection.setCollection(collection);
      *      selection.setValueProperty(null); // use objects

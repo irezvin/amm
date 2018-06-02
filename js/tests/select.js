@@ -19,7 +19,7 @@
 
             for (var i = 0, l = select.options.length; i < l; i++) {
                 var opt = select.options[i];
-                var obj = {value: opt.value, caption: jQuery(opt).html()};
+                var obj = {value: opt.value, label: jQuery(opt).html()};
                 if (opt.disabled) obj.disabled = true;
                 else if (opt.selected) obj.selected = true;
                 res.options.push(obj);
@@ -33,7 +33,7 @@
             var options = select.getOptions();
             for (var i = 0, l = options.length; i < l; i++) {
                 var opt = options[i];
-                var obj = {value: opt.getValue(), caption: opt.getCaption()};
+                var obj = {value: opt.getValue(), label: opt.getLabel()};
                 if (opt.getDisabled()) obj.disabled = true;
                 else if (opt.getSelected()) obj.selected = true;
                 res.options.push(obj);
@@ -51,13 +51,13 @@
        
         fx.html(
             "<select id='sel1'>"
-                + "<option value='a'>Caption A</option>"
-                + "<option value='b'>Caption B</option>"
-                + "<option value='c'>Caption C</option>"
-                + "<option value='d' selected='selected'>Caption D</option>"
-                + "<option value='e'>Caption E</option>"
-                + "<option value='f' disabled='disabled'>Caption F</option>"
-                + "<option value='g' disabled='disabled'>Caption G</option>"
+                + "<option value='a'>Label A</option>"
+                + "<option value='b'>Label B</option>"
+                + "<option value='c'>Label C</option>"
+                + "<option value='d' selected='selected'>Label D</option>"
+                + "<option value='e'>Label E</option>"
+                + "<option value='f' disabled='disabled'>Label F</option>"
+                + "<option value='g' disabled='disabled'>Label G</option>"
             + "</select>"
             + "<select id='sel1b'></select>"
         );
@@ -84,7 +84,7 @@
         sel1.getOptionsCollection().reject[0];
         sel1.getOptionsCollection()[1].setDisabled(true);
         sel1.getOptionsCollection()[2].setSelected(true);
-        sel1.getOptionsCollection().push(new Amm.Trait.Select.Option({value: 'x', caption: 'X option'}));
+        sel1.getOptionsCollection().push(new Amm.Trait.Select.Option({value: 'x', label: 'X option'}));
         assert.deepEqual(s(fx.find('#sel1')), s(sel1), 'collection mutations are synced');
         
         sel1.getOptionsCollection().reject(0);
@@ -94,13 +94,13 @@
         
         fx.append(
             "<select id='sel2' multiple='multiple'>"
-                + "<option value='a'>Caption A</option>"
-                + "<option value='b' selected='selected'>Caption B</option>"
-                + "<option value='c'>Caption C</option>"
-                + "<option value='d' selected='selected'>Caption D</option>"
-                + "<option value='e'>Caption E</option>"
-                + "<option value='f' disabled='disabled'>Caption F</option>"
-                + "<option value='g' disabled='disabled'>Caption G</option>"
+                + "<option value='a'>Label A</option>"
+                + "<option value='b' selected='selected'>Label B</option>"
+                + "<option value='c'>Label C</option>"
+                + "<option value='d' selected='selected'>Label D</option>"
+                + "<option value='e'>Label E</option>"
+                + "<option value='f' disabled='disabled'>Label F</option>"
+                + "<option value='g' disabled='disabled'>Label G</option>"
             + "</select>"
         );
 

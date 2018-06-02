@@ -40,7 +40,7 @@ Amm.View.Abstract.Annotated.prototype = {
             anc.subscribe('childAdded', this._onAnnotationAdded, this);
             var cc = anc.listChildren();
             for (var i = 0; i < cc.length; i++) {
-                this._createChildViews(anc.getChild(cc[i]));
+                this._createChildViewsOrDefer(anc.getChild(cc[i]));
             }
         }
     },
@@ -52,9 +52,26 @@ Amm.View.Abstract.Annotated.prototype = {
         }
     },
     
+    _createViewOnChildContentChange: function(newValue, oldValue) {
+        var child = Amm.event.origin;
+        if (newValue && child._annotated_needCreateViews) {
+            if (this._createChildViews(child)) {
+                child.unsubscribe('contentChange', this._createViewOnChildContentChange, this);
+                child._annotated_needCreateViews = false;
+            }
+        }
+    },
+    
+    _createChildViewsOrDefer: function(child) {
+        if (!this._createChildViews(child)) {
+            child._annotated_needCreateViews = true;
+            child.subscribe('contentChange', this._createViewOnChildContentChange, this);
+        }
+    },
+    
     // child is a child element of this.element.getAnnotationsContainer()
     _onAnnotationAdded: function(child) {
-        this._createChildViews(child);
+        this._createChildViewsOrDefer(child);
     },
     
     // child is a child element of this.element.getAnnotationsContainer()

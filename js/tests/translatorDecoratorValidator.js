@@ -200,7 +200,7 @@
         t.setStrictMode(true);
         t.errorMsg = '*%value* err';
         
-        e = {};
+        var e = {};
         assert.ok(t.translateIn('True') === true);
         assert.ok(t.translateIn('False') === false);
         assert.equal(t.translateIn(' True ', e), undefined);

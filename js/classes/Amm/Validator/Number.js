@@ -69,7 +69,7 @@ Amm.extend(Amm.Validator.Number, Amm.Validator);
 Amm.defineLangStrings ({
     'lang.Amm.Validator.Number.msgMustBeNumber': '%field must be a number',
     'lang.Amm.Validator.Number.msgMustBeInteger': '%field must be an integer number',
-    'lang.Amm.Validator.Number.msgMustBeGt': '%field value must be higher than %val',
+    'lang.Amm.Validator.Number.msgMustBeGt': '%field must be higher than %val',
     'lang.Amm.Validator.Number.msgMustBeGe': '%field must not be less than %val',
     'lang.Amm.Validator.Number.msgMustBeLt': '%field must be less than %val',
     'lang.Amm.Validator.Number.msgMustBeLe': '%field must not exceed %val'

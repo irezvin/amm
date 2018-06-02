@@ -40,7 +40,7 @@ Amm.Trait.Select.prototype = {
      * @param {Array|Object} options
      * a - Amm.Trait.Select.Option instances
      * b - Amm.Trait.Select.Option prototypes
-     * c - hash {value: caption, value2: caption2...} 
+     * c - hash {value: label, value2: label2...} 
     */
     setOptions: function(options) {
         var items = [];
@@ -48,7 +48,7 @@ Amm.Trait.Select.prototype = {
             items = options;
         } else if (typeof options === 'object') {
             for (var i in options) if (options.hasOwnProperty(i)) {
-                items.push({caption: options[i], value: i});
+                items.push({label: options[i], value: i});
             }
         }
         var instances = [];
@@ -70,7 +70,7 @@ Amm.Trait.Select.prototype = {
     getOptionsCollection: function() {
         if (this.options) return this.options;
         var proto = {
-            changeEvents: ['captionChange', 'valueChange', 'disabledChange'],
+            changeEvents: ['labelChange', 'valueChange', 'disabledChange'],
             requirements: ['Amm.Trait.Select.Option'],
             indexProperty: 'index',
             observeIndexProperty: true,

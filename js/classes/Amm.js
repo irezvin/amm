@@ -582,6 +582,7 @@ Amm = {
         }
         for (var j = s, al = arguments.length; j < al; j++) {
             itemOrItems = arguments[j];
+            if (!itemOrItems) continue;
             if (typeof itemOrItems.cleanup === 'function') itemOrItems.cleanup();
             else if (itemOrItems instanceof Array) {
                 for (var i = s, l = itemOrItems.length; i < l; i++)
@@ -655,13 +656,13 @@ Amm = {
         else if (!options) options = {};
         else if (typeof options !== 'object')
             throw "`options` must be a string, an object or FALSEable value";
-        
         if (Amm.getClass(options)) {
             instance = options;
             if (setToDefaults && defaults && typeof defaults === 'object') {
                 Amm.setProperty(instance, defaults);
             }
         } else {
+            options = Amm.override({}, options);
             if (defaults) {
                 if (typeof defaults === 'string') defaults = {class: defaults};
                 else if (typeof defaults !== 'object') 
@@ -696,23 +697,25 @@ Amm = {
                 keys.push(i);
                 items.push(options[i]);
             }
-
-
         } else {
-            throw "`options` must be either Array or a non-null object";
+            throw "`options` must be either Array or a hash";
         }
         var res = [];
-        var def = keyToProperty? Amm.override({}, defaults) : defaults;
+        var def;
+        
+        if (defaults) def = keyToProperty? Amm.override({}, defaults) : defaults;
+        else def = {};
+        
         for (var i = 0, l = items.length; i < l; i++) {
             try {
                 if (keyToProperty && def) {
                     if (keys[i]) def[keyToProperty] = keys[i];
-                    else if (keyToProperty in defaults) def[keyToPoperty] = defaults[keyToProperty];
+                    else if (keyToProperty in defaults) def[keyToProperty] = defaults[keyToProperty];
                     else delete def[keyToProperty];
                 }
                 var instance = new Amm.constructInstance(items[i], baseClass, defaults, setToDefaults, requirements);
                 if (instance === items[i] && keyToProperty && keys[i] && !setToDefaults) { // have to do it ourselves
-                    Amm.setProperty(instance, keyToPoperty, keys[i]);
+                    Amm.setProperty(instance, keyToProperty, keys[i]);
                 }
                 res.push(instance);
             } catch (e) {

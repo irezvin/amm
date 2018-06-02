@@ -42,7 +42,7 @@ Amm.View.Html.Select.prototype = {
         var options = [];
         for (var i = 0; i < element.options.length; i++) {
             var item = element.options[i];
-            var itm = {caption: jQuery(item).html(), value: item.value};
+            var itm = {label: jQuery(item).html(), value: item.value};
             if (item.disabled) itm.disabled = true;
             if (item.selected) {
                 itm.selected = true;
@@ -65,7 +65,7 @@ Amm.View.Html.Select.prototype = {
             //element: this._element,
             htmlElement: this._htmlElement,
             createItemHtml: function(item) {
-                var r = jQuery('<option>' + item.getCaption() + '</option>');
+                var r = jQuery('<option>' + item.getLabel() + '</option>');
                 r.attr('value', item.getValue());
                 if (item.getDisabled()) r.attr('disabled', 'disabled');
                 if (item.getSelected()) r.attr('selected', 'selected');
@@ -76,7 +76,7 @@ Amm.View.Html.Select.prototype = {
                 node.selected = selected;
                 node.disabled = t._element.getReadOnly() && !selected || !!item.getDisabled();
                 node.value = item.getValue();
-                jQuery(node).html(item.getCaption());
+                jQuery(node).html(item.getLabel());
             }
         };
         this._collectionView = new Amm.View.Html.Collection(proto);

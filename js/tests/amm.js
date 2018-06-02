@@ -267,6 +267,9 @@ QUnit.test("Amm getFunction / registerNamespace / registerFunction", function(as
 });
 
 QUnit.test("Amm decorate", function(assert) {
+    
+    // TODO: add decorators support and tests
+    
     var decF = function(val) { return '*' + val + '*'; };
     var decO = {
         char: 'x',
@@ -319,3 +322,53 @@ QUnit.test("Amm.translate", function(assert) {
     assert.ok(Amm.translate(undefined) === undefined, "Non-lang-string value translated remains the same");
     
 });
+
+QUnit.test("Amm.constructInstance", function(assert) {
+    var t = { class: 'Amm.Decorator' };
+    var t2 = { class: 'Amm.Decorator' };
+    var i1 = Amm.constructInstance(t);
+    var i2 = Amm.constructInstance(t);
+    assert.deepEqual(t, t2, 'Options array wasn\'t changed during instantiation');
+    assert.ok(i1['Amm.Decorator'], 'Instance created is of proper class');
+    assert.ok(i2['Amm.Decorator'], 'Instance created with same prototype is of proper class');
+    
+    i1 = Amm.constructInstance('Amm.Decorator');
+    assert.ok(i1['Amm.Decorator'], 'Instance created is of proper class (string class name provided)');
+    i1 = Amm.constructInstance('Amm.Translator.Bool', 'Amm.Translator');
+    i1 = Amm.constructInstance(false, 'Amm.Translator');
+    assert.ok(i1['Amm.Translator'], 'Default class used');
+    assert.throws(function() {
+        Amm.constructInstance('Amm.Translator', 'Amm.Decorator');
+    }, "Class check in Amm.constructInstance works");
+    
+    var i3 = new Amm.Decorator;
+    assert.ok(Amm.constructInstance(i3, 'Amm.Decorator') === i3, 'Provided instance is used');
+    assert.throws(function() {
+        Amm.constructInstance(i3, 'Amm.Translator');
+    }, "Class check in Amm.constructInstance works when instance is provided");
+    var options = {'class': 'Amm.Translator.Bool', 'reverseMode': true};
+    var oldOptions = {'class': 'Amm.Translator.Bool', 'reverseMode': true};
+    var defaults = {'field': 'z', 'reverseMode': false};
+    i1 = Amm.constructInstance(options, 'Amm.Translator', defaults);
+    assert.ok(i1['Amm.Translator.Bool'], 'Proper instance class when defaults provided');
+    assert.ok(i1['reverseMode'] === true, 'Options have priority over defaults');
+    assert.ok(i1['field'] === 'z', 'Value from defaults was used');
+    assert.throws(function() {
+        Amm.constructInstance(1, 'Amm.Translator');
+    }, "Wrong options -> throw exception");
+    assert.throws(function() {
+        Amm.constructInstance({});
+    }, "Class not provided -> throw exception");
+    assert.deepEqual(options, oldOptions, "options not modified");
+    var def2 = {'field': 'yyy'};
+    i1 = Amm.constructInstance(new Amm.Translator, null, def2, true);
+    assert.ok(i1.field === def2.field, 'Value was set from defaults when instance is provided');
+    i1 = Amm.constructInstance(null, 'Amm.Translator', null, false, ['translateIn']);
+    assert.ok(i1, 'Instance meets requirements');
+    
+    assert.throws(function() {
+        Amm.constructInstance(null, 'Amm.Translator', null, false, ['Amm.Decorator']);
+    }, 'Instance doesn\'t meets requirements -> exception');
+
+});
+

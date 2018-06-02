@@ -6,14 +6,32 @@ Amm.Trait.Property = function() {
   
 };
 
-Amm.Trait.Property.VALIDATE_SUBMIT = 0;
+/**
+ * Never automatically validate
+ */
+Amm.Trait.Property.VALIDATE_NEVER = 0;
+
+/**
+ * Validates when editor loses focus (`focused` property changes from TRUE to FALSE)
+ */
 Amm.Trait.Property.VALIDATE_BLUR = 1;
-Amm.Trait.Property.VALIDATE_CHANGE = 3;
+
+/**
+ * Validates when `valueChange` event is triggered
+ */ 
+Amm.Trait.Property.VALIDATE_CHANGE = 2;
+
+/**
+ * Validates both on lost focus or valueChange event
+ */
+Amm.Trait.Property.VALIDATE_BLUR_CHANGE = 3;
 
 /**
  * Important! Property does not validate its' value when it's empty (has undefined, empty string or null)
  */
 Amm.Trait.Property.prototype = {  
+
+    'Model': '__INTERFACE__',
 
     _parentModel: null,
 
@@ -21,13 +39,13 @@ Amm.Trait.Property.prototype = {
 
     _propertyName: undefined,
     
-    _propertyCaption: undefined,
+    _propertyLabel: undefined,
 
     _validators: null,
 
-    _validateMode: null,
+    _validateMode: Amm.Trait.Property.VALIDATE_CHANGE,
 
-    _validationErrors: undefined,
+    _propertyErrors: undefined,
     
     _needValidate: false,
 
@@ -35,7 +53,7 @@ Amm.Trait.Property.prototype = {
     
     _propertyRequired: undefined,
     
-    propertyRequiredMessage: 'Amm.Validator.Required.message',
+    propertyRequiredMessage: 'lang.Amm.Validator.Required.msg',
     
     _propertyRequiredValidator: null,
     
@@ -49,10 +67,13 @@ Amm.Trait.Property.prototype = {
                 throw "Element must have `value` property to be compatible with `Amm.Trait.Property` trait";
             }
             this.subscribe('valueChange', this._handlePropertyValueChange, this);
-            this._handlePropertyValueChange(this._value, undefined);
+            if (Amm.detectProperty(this, 'focused')) {
+                this.subscribe('focusedChange', this._handlePropertyFocusedChange, this);
+            }
             if (this['Annotated'] === '__INTERFACE__' && this._syncPropertyWithAnnotations) {
                 this._syncWithAnnotations();
             }
+            this._handlePropertyValueChange(this._value, undefined);
         });
     },
     
@@ -69,11 +90,11 @@ Amm.Trait.Property.prototype = {
         if (this._propertyRequired !== undefined) this.setRequired(this._propertyRequired);
         else if (this._required !== undefined) this.setPropertyRequired(this._required);
 
-        if (this._propertyCaption !== undefined) this.setLabel(this._propertyCaption);
-        else if (this._label !== undefined) this.setPropertyCaption(this._label);
+        if (this._propertyLabel !== undefined) this.setLabel(this._propertyLabel);
+        else if (this._label !== undefined) this.setPropertyLabel(this._label);
 
-        if (this._validationErrors !== undefined) this.setErrors(this._validationErrors);
-        else if (this._errors !== undefined) this.setValidationErrors(this._errors);
+        if (this._propertyErrors !== undefined) this.setPropertyErrors(this._propertyErrors);
+        else if (this._errors !== undefined) this.setPropertyErrors(this._errors);
     },
     
     _handleSelfAnnotationRequiredChange: function(required, oldRequired) {
@@ -81,15 +102,15 @@ Amm.Trait.Property.prototype = {
             this.setPropertyRequired(required);
     },
     
-    _handleSelfAnnotationLabelChange: function(caption, oldCaption) {
-        if (this._syncPropertyWithAnnotations && this._propertyCaption === undefined) {
-            this.setPropertyCaption(caption);
+    _handleSelfAnnotationLabelChange: function(label, oldLabel) {
+        if (this._syncPropertyWithAnnotations && this._propertyLabel === undefined) {
+            this.setPropertyLabel(label);
         }
     },
     
     _handleSelfAnnotationErrorChange: function(error, oldError) {
-        if (this._syncPropertyWithAnnotations && this._validationErrors === undefined) {
-            this.setValidationErrors(error);
+        if (this._syncPropertyWithAnnotations && this._propertyErrors === undefined) {
+            this.setPropertyErrors(error);
         }
     },
     
@@ -120,14 +141,16 @@ Amm.Trait.Property.prototype = {
 
     getPropertyName: function() { return this._propertyName; },
 
-    setPropertyCaption: function(propertyCaption) {
-        var oldPropertyCaption = this._propertyCaption;
-        if (oldPropertyCaption === propertyCaption) return;
-        this._propertyCaption = propertyCaption;
+    setPropertyLabel: function(propertyLabel) {
+        var oldPropertyLabel = this._propertyLabel;
+        if (oldPropertyLabel === propertyLabel) return;
+        this._propertyLabel = propertyLabel;
+        // re-validate since our error messages will change
+        if (this._propertyErrors) this.validate();
         return true;
     },
 
-    getPropertyCaption: function() { return this._propertyCaption; },
+    getPropertyLabel: function() { return this._propertyLabel; },
 
     setValidators: function(validators) {
         Amm.cleanup(true, this.validators);
@@ -149,18 +172,18 @@ Amm.Trait.Property.prototype = {
     },
     
     /**
-     * Generally, returns boolean (true if valid); sets validationErrors property
+     * Generally, returns boolean (true if valid); sets propertyErrors property
      * Doesn't call validators or trigger onValidate event if property value is empty.
-     * @param {onlyReturnErrors} boolean Return Array with errors; don't set this.validationErrors
+     * @param {onlyReturnErrors} boolean Return Array with errors; don't set this.propertyErrors
      * @returns Array|boolean
      */
     validate: function(onlyReturnErrors) {
         var value = this.getValue();
-        var caption = this.getPropertyCaption();
+        var label = this.getPropertyLabel();
         var err, empty = this.getPropertyEmpty();
         var errors = [];
         if (this._propertyRequiredValidator) {
-            var err = this._propertyRequiredValidator.getError(value, this.getPropertyCaption());
+            var err = this._propertyRequiredValidator.getError(value, this.getPropertyLabel());
             if (err) {
                 if (this._propertyRequired) errors.push(err);
                 empty = true;
@@ -169,25 +192,26 @@ Amm.Trait.Property.prototype = {
             }
         } else {
             if (empty && this._propertyRequired) {
-                errors.push (Amm.translate(this.propertyRequiredMessage, '%field', caption));
+                errors.push (Amm.translate(this.propertyRequiredMessage, '%field', label));
             }
         }
         if (!empty) { 
             this.outOnValidate(errors);
             for (var i = 0; i < this._validators.length; i++) {
-                err = this._validators[i].getError(value, caption);
+                err = this._validators[i].getError(value, label);
                 if (err) errors.push(err);
             }
         }
         if (onlyReturnErrors) {
             return errors;
         }
-        this.setValidationErrors(errors);
+        this.setPropertyErrors(errors);
         this.setNeedValidate(false);
         return !errors.length;
     },
     
     outOnValidate: function(errors) {
+        return this._out('onValidate', errors);
     },
     
     getValidators: function() { return this._validators; },
@@ -201,32 +225,32 @@ Amm.Trait.Property.prototype = {
 
     getValidateMode: function() { return this._validateMode; },
 
-    setValidationErrors: function(validationErrors) {
-        var oldValidationErrors = this._validationErrors;
+    setPropertyErrors: function(propertyErrors) {
+        var oldPropertyErrors = this._propertyErrors;
         var sameArrays = false;
-        if (oldValidationErrors instanceof Array && validationErrors instanceof Array) {
-            if (oldValidationErrors.length === validationErrors.length 
-                && !Amm.Array.symmetricDiff(oldValidationErrors, validationErrors).length
+        if (oldPropertyErrors instanceof Array && propertyErrors instanceof Array) {
+            if (oldPropertyErrors.length === propertyErrors.length 
+                && !Amm.Array.symmetricDiff(oldPropertyErrors, propertyErrors).length
             ) sameArrays = true;
         }
-        if (oldValidationErrors === validationErrors || sameArrays) return;
-        this._validationErrors = validationErrors;
+        if (oldPropertyErrors === propertyErrors || sameArrays) return;
+        this._propertyErrors = propertyErrors;
         
         if (this._syncPropertyWithAnnotations && this['Annotated'] === '__INTERFACE__') {
-            this.setError(validationErrors);
+            this.setError(propertyErrors);
         }
  
-        this.outValidationErrorsChange(validationErrors, oldValidationErrors);
+        this.outPropertyErrorsChange(propertyErrors, oldPropertyErrors);
         return true;
     },
 
-    getValidationErrors: function() {
-        if (this._validationErrors === undefined) this.validate(); 
-        return this._validationErrors;
+    getPropertyErrors: function() {
+        if (this._propertyErrors === undefined) this.validate(); 
+        return this._propertyErrors;
     },
 
-    outValidationErrorsChange: function(validationErrors, oldValidationErrors) {
-        this._out('validationErrorsChange', validationErrors, oldValidationErrors);
+    outPropertyErrorsChange: function(propertyErrors, oldPropertyErrors) {
+        this._out('propertyErrorsChange', propertyErrors, oldPropertyErrors);
     },
 
     setApplied: function(applied) {
@@ -296,6 +320,13 @@ Amm.Trait.Property.prototype = {
     _handlePropertyValueChange: function(value, oldValue) {
         this.setPropertyEmpty(this._isPropertyEmpty(value));
         this.setNeedValidate(true);
+        if (this._validateMode & Amm.Trait.Property.VALIDATE_CHANGE)
+            this.validate();
+    },
+    
+    _handlePropertyFocusedChange: function(focused, oldFocused) {
+        if (oldFocused && !focused && this._validateMode & Amm.Trait.Property.VALIDATE_BLUR & this._needValidate)
+            this.validate();
     },
 
     _isPropertyEmpty: function(v) {

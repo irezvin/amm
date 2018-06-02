@@ -110,7 +110,7 @@ Amm.Translator.List.prototype = {
         if (!this._itemElement) throw ("_")
         var res = '', e;
         for (var i = 0, l = value.length; i < l; i++) {
-            e = jQuery(this._itemElement);
+            var e = jQuery(this._itemElement);
             if (this.allowHTML) e.html(value[i]);
             else e.text(value[i]);
             if (!this._enclosureElement) res += e[0].outerHTML;
@@ -131,11 +131,11 @@ Amm.Translator.List.prototype = {
         }
         var sel = this.itemSelector || this._cachedItemSelector;
         if (!sel) {
-            e = jQuery(this._itemElement);
+            var e = jQuery(this._itemElement);
             sel = this._extractItemSelector(e[0]);
         }
         var res = [], h = this.allowHTML;
-        jq = jQuery(value).find(sel).addBack(sel).each(function(i, e) {
+        var jq = jQuery(value).find(sel).addBack(sel).each(function(i, e) {
             res.push(h? jQuery(e).html() : jQuery(e).text());
         });
         return res;

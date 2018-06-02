@@ -59,17 +59,21 @@
     </head>
     <body>
         <div data-amm-id="@form" data-amm-e='{extraTraits: [t.Component]}' data-amm-v='{class: v.StaticDisplayParent}'>
-            <div data-amm-id1="@name" data-amm-v="[{class: v.Visual}, {class: v.Annotated}]">
+            <div data-amm-v="[{class: v.Visual}, {class: v.Annotated}]">
                 <label for="name"><span class="annotation a_label">Имя</span><span class="annotation a_required">*</span></label>
-                <input id="name" type="text" data-amm-id1="@name"
+                <input id="name" type="text" data-amm-id="name"
                        data-amm-v="{class: v.Input}" 
-                       data-amm-e="{extraTraits: [t.Field, t.Property], component: root}" />
+                       data-amm-e="{extraTraits: [t.Field, t.Property], validateMode: 3, component: root}" />
                 <div class="annotation a_error"></div>
             </div>
             <br />
-            <div><label for="age">Возраст</label> <input id="age" type="text"></p>
-                <button>Отправить инфу</button>
+            <div data-amm-v="[{class: v.Visual}, {class: v.Annotated}]">
+                <label for="age" class="annotation a_label">Возраст</label> <input id="age" type="text" data-amm-id="age"
+                    data-amm-v='{class: v.Input}'
+                    data-amm-e="{extraTraits: [t.Field, t.Property], component: root, validators: [{class: 'Amm.Validator.Number', gt: 0}]}" />
             </div>
+            <br />
+            <button>Отправить инфу</button>
         </div>
     </body>
 </html>
