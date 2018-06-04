@@ -298,6 +298,12 @@ Amm = {
             }
             return res;
         }
+        if (typeof className === 'function') {
+            if (item instanceof className) return true;
+            var tmpClassName = Amm.getClass(className.prototype);
+            if (!tmpClassName) return false;
+            className = tmpClassName;
+        }
         var res = item && (item[className] === '__CLASS__' || item[className] === '__PARENT__' || item[className] === '__INTERFACE__');
         if (!res && throwIfNot) {
             var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
@@ -406,7 +412,9 @@ Amm = {
     
     getFunction: function(strName) {
         if (typeof strName === 'function') return strName;
-        if (typeof strName !== 'string') throw "`strName` must be a string";
+        if (typeof strName !== 'string') {
+            throw "`strName` must be a string, given: " + this.describeType(strName);
+        }
         if (this._functions[strName]) return this._functions[strName];
         var p = strName.split('.'), r = this._namespaces, s = [];
         while (p.length && r) {
@@ -493,6 +501,7 @@ Amm = {
             res = args? element[getterName].apply(element, args) : element[getterName]();
         }
         else if (property in element) res = element[property];
+        else if (property === 'class') res = Amm.getClass(element);
         else res = defaultValue;
         return res;
     },
@@ -559,9 +568,12 @@ Amm = {
     decorate: function(value, decorator, context) {
         if (!decorator) return value;
         else if (typeof decorator === 'function') return context? decorator.call(context, value) : decorator(value);
-        else if (typeof decorator === 'object') {
-            if (typeof decorator.decorate === 'function') return decorator.decorate(value, context);
-            else throw "`decorator` has no function decorate";
+        else if (typeof decorator === 'object' || typeof decorator === 'string') {
+            if (!decorator.class && typeof decorator.decorate === 'function') return decorator.decorate(value, context);
+            else {
+                var instance = Amm.Decorator.construct(decorator);
+                return instance.decorate(value);
+            }
         } else {
             throw "`decorator` must be either function or an object with .decorate() method";
         }
@@ -652,10 +664,11 @@ Amm = {
      */
     constructInstance: function(options, baseClass, defaults, setToDefaults, requirements) {
         var instance;
-        if (typeof options === 'string') options = {class: options};
+        if (typeof options === 'string' || typeof options === 'function')
+            options = {class: options};
         else if (!options) options = {};
         else if (typeof options !== 'object')
-            throw "`options` must be a string, an object or FALSEable value";
+            throw "`options` must be a string, an object, a function or FALSEable value";
         if (Amm.getClass(options)) {
             instance = options;
             if (setToDefaults && defaults && typeof defaults === 'object') {
@@ -672,8 +685,9 @@ Amm = {
                 }
             }
             var cr = options['class'] || baseClass;
-            if (!cr) throw "Either options.class or baseClass are required";
+            if (typeof options === 'function') cr = options;
             cr = Amm.getFunction(cr);
+            if (!cr) throw "Either options.class or baseClass are required";
             delete options['class'];
             instance = new cr(options);
         }
@@ -713,7 +727,7 @@ Amm = {
                     else if (keyToProperty in defaults) def[keyToProperty] = defaults[keyToProperty];
                     else delete def[keyToProperty];
                 }
-                var instance = new Amm.constructInstance(items[i], baseClass, defaults, setToDefaults, requirements);
+                var instance = new Amm.constructInstance(items[i], baseClass, def, setToDefaults, requirements);
                 if (instance === items[i] && keyToProperty && keys[i] && !setToDefaults) { // have to do it ourselves
                     Amm.setProperty(instance, keyToProperty, keys[i]);
                 }

@@ -91,6 +91,10 @@ QUnit.test("Amm object inheritance support", function(assert) {
     assert.ok(Amm.is(c, 'ClassC'));
     assert.ok(Amm.is(c, 'ClassB'));
     assert.ok(Amm.is(c, 'ClassD'));
+    assert.ok(Amm.is(c, ClassD));
+    var zz = function() {};
+    var z = new zz;
+    assert.ok(Amm.is(z, zz));
     assert.notOk(Amm.is(c, 'nonExistentClass'));
     assert.throws(function() {
         Amm.is(c, 'nonExistentClass', true); // throwIfNot := true
@@ -268,8 +272,6 @@ QUnit.test("Amm getFunction / registerNamespace / registerFunction", function(as
 
 QUnit.test("Amm decorate", function(assert) {
     
-    // TODO: add decorators support and tests
-    
     var decF = function(val) { return '*' + val + '*'; };
     var decO = {
         char: 'x',
@@ -281,7 +283,9 @@ QUnit.test("Amm decorate", function(assert) {
     assert.equal(Amm.decorate('A', decF), '*A*');
     assert.equal(Amm.decorate('A', decO), 'xAx');
     assert.equal(Amm.decorate('A', decO.decorate, decC), 'yAy');
-    assert.throws(function() { Amm.decorate('A', 'wtf') });
+    assert.throws(function() { Amm.decorate('A', 'wtf'); });
+    assert.ok(Amm.decorate(1, 'Amm.Translator.Bool') === true);
+    
 });
 
 QUnit.test("Amm global events", function(assert) {
@@ -338,7 +342,7 @@ QUnit.test("Amm.constructInstance", function(assert) {
     i1 = Amm.constructInstance(false, 'Amm.Translator');
     assert.ok(i1['Amm.Translator'], 'Default class used');
     assert.throws(function() {
-        Amm.constructInstance('Amm.Translator', 'Amm.Decorator');
+        Amm.constructInstance('Amm.Translator', 'Amm.Element');
     }, "Class check in Amm.constructInstance works");
     
     var i3 = new Amm.Decorator;
@@ -367,8 +371,62 @@ QUnit.test("Amm.constructInstance", function(assert) {
     assert.ok(i1, 'Instance meets requirements');
     
     assert.throws(function() {
-        Amm.constructInstance(null, 'Amm.Translator', null, false, ['Amm.Decorator']);
+        Amm.constructInstance(null, 'Amm.Translator', null, false, ['Amm.Element']);
     }, 'Instance doesn\'t meets requirements -> exception');
+    
+    i1 = Amm.constructInstance({}, Amm.Translator);
+    assert.ok(i1['Amm.Translator'], 'Instantiation function can be used instead of class name');
+    i2 = Amm.constructInstance({class: Amm.Translator.Bool}, Amm.Translator);
+    assert.ok(i2['Amm.Translator.Bool'], 'Instantiation function can be used instead of options.class');
+    i3 = Amm.constructInstance(i2, Amm.Translator);
+    assert.ok(i3 === i2, 'Valid class check when function is used instead of class name');
+    
 
 });
 
+QUnit.test("Amm.constructMany", function(assert) {
+    
+    // constructMany: function(options, baseClass, defaults, keyToProperty, setToDefaults, requirements) {
+    var Obj = function(options) {
+        Amm.Element.call(this, options);
+    };
+    Obj.prototype['Obj'] = '__CLASS__';
+    Amm.createProperty(Obj.prototype, 'val', null);
+    Amm.createProperty(Obj.prototype, 'val2', null);
+    Amm.extend(Obj, Amm.Element);
+    
+    var g = function(arr) {
+        return Amm.getProperty(arr, ['id', 'val', 'val2', 'class']);
+    };
+    
+    var coll;
+    var ob1 = new Obj({id: 'ob1', 'val': 1});
+    coll = Amm.constructMany([ob1, Obj, {class: Obj, id: "ob3", val: 3}], Obj);
+    
+    assert.ok(coll[0], ob1, 'Direct instance remains unchanged');
+    assert.deepEqual(g(coll), 
+    [
+        {id: 'ob1', 'val': 1, 'val2': null, class: 'Obj'},
+        {id: null, 'val': null, 'val2': null, class: 'Obj'},
+        {id: 'ob3', 'val': 3, 'val2': null, class: 'Obj'}
+    ], 'Many items are properly created');
+    
+    var def = {val2: 'x'};
+    var oDef = {val2: 'x'};
+    
+    coll = Amm.constructMany({
+        'a': ob1,
+        'b': Obj, 
+        'c': {class: Obj, id: 'ob3'}
+    }, Obj, {val2: 'x'}, 'id', false);
+    
+    assert.deepEqual(g(coll), 
+    [
+        {id: 'a', 'val': 1, 'val2': null, class: 'Obj'},
+        {id: 'b', 'val': null, 'val2': 'x', class: 'Obj'},
+        {id: 'ob3', 'val': null, 'val2': 'x', class: 'Obj'}
+    ], 'Key-to-property works (unless already in options)');
+    
+    assert.deepEqual(def, oDef, 'defaults unchanged');
+    
+});

@@ -67,6 +67,10 @@ Amm.Translator.prototype = {
         return res;
     },
     
+    decorate: function(value) {
+        return this.translateIn(value);
+    },
+    
     translateIn: function(externalValue, error) {
         if (this.reverseMode) {
             return this._implTranslate(externalValue, this.errOutValue, '_doTranslateOut', error, false,
@@ -138,3 +142,4 @@ Amm.Translator.prototype = {
     
 };
 
+Amm.extend(Amm.Translator, Amm.Decorator);
