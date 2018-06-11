@@ -14,7 +14,6 @@ Amm.Trait.Annotated.annotationElementDefaults = {
     
 };
 
-    
 // used to merge defaults from Amm.Trait.Annotated.annotationElementDefaults and instance' annotationElementDefaults
 Amm.Trait.Annotated.mergePrototypes = function (leftSrc, leftKey, rightSrc, rightKey) {
     var left, right;
@@ -35,7 +34,6 @@ Amm.Trait.Annotated.mergePrototypes = function (leftSrc, leftKey, rightSrc, righ
     if (typeof right !== 'object' || typeof left !== 'object') return right;
     return Amm.override({}, left, right);
 };
-
 
 Amm.Trait.Annotated.prototype = {
 
@@ -171,6 +169,10 @@ Amm.Trait.Annotated.prototype = {
 
     listAnnotations: function() {
         return this.getAnnotationsContainer().listChildren();
+    },
+    
+    hasAnnotation: function(id) {
+        return !!this.getAnnotationsContainer().getAnnotationElement(id, true);
     },
     
     getAnnotationValue: function(id) {

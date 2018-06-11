@@ -11,8 +11,34 @@
             echo "
         <script src=\"../js/classes/{$f}\"></script>";
         
-        }        
+        }
+        
 ?> 
+        
+        <script type="text/javascript">
+            Tr = function(options) {
+                options = Amm.override({
+                    inDecorator: function(v) {
+                        console.log('in', v);
+                        if (typeof v !== 'string') return v;
+                        if (v === 'eee')  throw '[in] eee is not allowed';
+                        return 'xx' + v + 'xx';
+                    },
+                    
+                    outDecorator: function(v) {
+                        console.log('out', v);
+                        if (typeof v !== 'string') return v;
+                        if (v === 'xxeeexx') throw '[out] eee is not allowed';
+                        return v.replace(/^xx|xx$/g, '');
+                    },
+
+                }, options);
+                Amm.Translator.call(this, options);
+            }
+            Amm.extend(Tr, Amm.Translator);
+            Amm.registerNamespace('w', window);
+        </script>
+        
         <style type='text/css'>
             h1 {
                 color: orangered;
@@ -63,9 +89,10 @@
                 <label for="name"><span class="annotation a_label">Name</span><span class="annotation a_required">*</span></label>
                 <input id="name" type="text" data-amm-id="name"
                        data-amm-v="{class: v.Input}" 
-                       data-amm-e="{extraTraits: [t.Field, t.Property], validateMode: 3, component: root}" />
+                       data-amm-e="{extraTraits: [t.Field, t.Property], validateMode: 3, propertyTranslator: 'w.Tr', component: root}" />
                 <div class="annotation a_error"></div>
             </div>
+            <div data-amm-v="[{class: v.Content}, {class: v.Visual}]" data-amm-e="{content: mmm, in__content: 'name.propertyValue'}"></div>
             <br />
             <div data-amm-v="[{class: v.Visual}, {class: v.Annotated}]">
                 <label for="age" class="annotation a_label">Age</label> <input id="age" type="text" data-amm-id="age"

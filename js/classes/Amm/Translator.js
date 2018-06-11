@@ -40,8 +40,14 @@ Amm.Translator.prototype = {
                 value = Amm.Util.trim(value);
             }
         }
-        if (decorator && this.decorateBeforeValidate)
-            value = decorator.decorate(value);
+        if (decorator && this.decorateBeforeValidate) {
+            try {
+                value = decorator.decorate(value);
+            } catch (e) {
+                error.error = this.lastError = e;
+                return def;
+            }
+        }
         
         if (validator) {
             this.lastError = validator.getError(value, this.field);
@@ -51,10 +57,15 @@ Amm.Translator.prototype = {
             }
         }
         
-        var o = value;
-        if (decorator && !this.decorateBeforeValidate)
-            value = decorator.decorate(value);
-        
+        if (decorator && !this.decorateBeforeValidate) {
+            try {
+                value = decorator.decorate(value);
+            } catch (e) {
+                console.log(e);
+                error.error = this.lastError = e;
+                return def;
+            }
+        }
         try {
             res = this[fn](value);
         } catch (e) {
