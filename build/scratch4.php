@@ -99,6 +99,17 @@
                     data-amm-v='{class: v.Input}'
                     data-amm-e="{extraTraits: [t.Field, t.Property], component: root, validators: [{class: 'Amm.Validator.Number', gt: 0}]}" />
             </div>
+            <div data-amm-v="[{class: v.Visual}, {class: v.Annotated}]">
+                <label for="exp" class="annotation a_label">Yrs experience</label> <input id="exp" type="text" data-amm-id="exp"
+                    data-amm-v='{class: v.Input}'
+                    data-amm-e="{extraTraits: [t.Field, t.Property], 
+                        component: root, 
+                        validators: [{class: 'Amm.Validator.Number', gt: 0}],
+                        validationExpressions: [
+                            '(age.propertyValue && (this.propertyValue * 1) > (age.propertyValue * 1)) && this.propertyLabel + \' cannot be higher than than \' + age.propertyLabel'
+                        ]
+                    }" />
+            </div>
             <br />
             <button>Send info</button>
         </div>

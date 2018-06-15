@@ -1,5 +1,6 @@
 /* global Amm */
 
+// Not a trait (but used only by Amm.Trait.Annotated, therefore such name)
 Amm.Trait.Annotated.Container = function(options) {
     this._requireInterfaces('Annotated'); // our element must support annotated interface
     Amm.augment(this, Amm.Trait.Composite);

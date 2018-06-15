@@ -49,7 +49,7 @@ Amm.Element = function(options) {
             var trait = Amm.getFunction(traits[i]);
             if (Amm.Array.indexOf(trait, usedTraits) >= 0) continue; // already used
             usedTraits.push(trait);
-            Amm.augment(this, trait);
+            Amm.augment(this, trait, options);
         }
     }
     var hh = [], extraProps;
@@ -443,33 +443,44 @@ Amm.Element.prototype = {
     
     _initInProperties: function(arrPropsValues) {
         for (var i = 0, l = arrPropsValues.length; i < l; i++) {
-            var p = arrPropsValues[i][0], h = arrPropsValues[i][1];
-            // in__class__foo <- write arg
-            var args = p.split('__');
+            var propName = arrPropsValues[i][0], 
+                definition = arrPropsValues[i][1];
+        
+            // we may supply write-args to setters using double underscores
+            // format of in-property is in__setter__arg1__arg2...
+            // example: in__class__foo - will call setClass(value, 'foo')
+            // note: in__ prefix is stripped outside of this function
+            
+            var args = propName.split('__');
             if (args.length > 1) {
-                p = args[0];
+                propName = args[0];
                 args = args.slice(1);
             } else {
                 args = undefined;
             }
-            var fn, han;
-            if (typeof h === 'string') { // expression?
-                if (h.slice(0, 11) === 'javascript:') {
-                    var body = this._prepareFunctionHandlerBody(h.slice(11));
-                    fn = Function('g', 's', body);
-                } else {
-                    han = new Amm.Expression(h, this, p, undefined, args);
-                }
-            } else if (typeof h === 'function') {
-                fn = h;
-            } else {
-                throw "in__<property> must be a string or a function";
-            }
-            if (fn) {
-                han = new Amm.Expression.FunctionHandler(fn, this, p, undefined, args);
-            }
-            if (!han) throw "Assertion";
+            this._createExpression(definition, propName, args);
         }
+    },
+    
+    _createExpression: function(definition, propName, args) {
+        var fn, expression;
+        if (typeof definition === 'string') { // expression?
+            if (definition.slice(0, 11) === 'javascript:') {
+                var body = this._prepareFunctionHandlerBody(definition.slice(11));
+                fn = Function('g', 's', body);
+            } else {
+                expression = new Amm.Expression(definition, this, propName, undefined, args);
+            }
+        } else if (typeof definition === 'function') {
+            fn = definition;
+        } else {
+            throw "in__<property> must be a string or a function";
+        }
+        if (fn) {
+            expression = new Amm.Expression.FunctionHandler(fn, this, propName, undefined, args);
+        }
+        if (!expression) throw "Assertion";
+        return expression;
     },
     
     /** 

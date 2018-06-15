@@ -27,6 +27,11 @@ Amm.Trait.Property.VALIDATE_CHANGE = 2;
 Amm.Trait.Property.VALIDATE_BLUR_CHANGE = 3;
 
 /**
+ * Validates when validation expressions are changed
+ */ 
+Amm.Trait.Property.VALIDATE_EXPRESSIONS = 4;
+
+/**
  * We had translation error during input
  */
 Amm.Trait.Property.TRANSLATION_ERROR_IN = 1;
@@ -53,7 +58,7 @@ Amm.Trait.Property.prototype = {
 
     _validators: null,
 
-    _validateMode: Amm.Trait.Property.VALIDATE_CHANGE,
+    _validateMode: Amm.Trait.Property.VALIDATE_CHANGE | Amm.Trait.Property.VALIDATE_EXPRESSIONS,
 
     _propertyErrors: undefined,
     
@@ -85,7 +90,11 @@ Amm.Trait.Property.prototype = {
     
     _propertyInSyncWithAnnotations: false,
     
-    __augment: function(traitInstance) {
+    _initValidationExpressions: null,
+    
+    _validationExpressions: null,
+    
+    __augment: function(traitInstance, options) {
         Amm.Element.regInit(this, '99.Amm.Trait.Property', function() {
             this._propertySyncsValue = !!Amm.detectProperty(this, 'value');
             if (this._propertySyncsValue) this.subscribe('valueChange', this._handlePropertyExtValueChange, this);
@@ -255,8 +264,11 @@ Amm.Trait.Property.prototype = {
                 errors.push (Amm.translate(this.propertyRequiredMessage, '%field', label));
             }
         }
-        if (!empty) { 
-            this.outOnValidate(errors);
+        if (!empty) {
+            this.outOnValidate(value, errors);
+            if (this._validationExpressions) {
+                this._applyValidationExpressions(errors);
+            }
             for (var i = 0; i < this._validators.length; i++) {
                 err = this._validators[i].getError(value, label);
                 if (err) errors.push(err);
@@ -287,8 +299,8 @@ Amm.Trait.Property.prototype = {
         }
     },
     
-    outOnValidate: function(errors) {
-        return this._out('onValidate', errors);
+    outOnValidate: function(value, errors) {
+        return this._out('onValidate', value, errors);
     },
     
     getValidators: function() { return this._validators; },
@@ -445,11 +457,12 @@ Amm.Trait.Property.prototype = {
         this._propertyValue = propertyValue;
         this.setPropertyEmpty(this._isPropertyEmpty(propertyValue));
         this.setNeedValidate(true);
-        if (this._validateMode & Amm.Trait.Property.VALIDATE_CHANGE) {
+        this.outPropertyValueChange(propertyValue, oldPropertyValue);
+        // check for _needValidate since validate() may be called during
+        // "outPropertyValueChange" invocation
+        if (this._validateMode & Amm.Trait.Property.VALIDATE_CHANGE && this._needValidate) {
             this.validate();
         }
-        this.outPropertyValueChange(propertyValue, oldPropertyValue);
-        
         if (!this._lockPropertyValueChange && this._propertySyncsValue) {
             this._syncPropertyValueToElement(propertyValue);
         }
@@ -476,13 +489,13 @@ Amm.Trait.Property.prototype = {
     _setInTranslationErrorState: function(propertyValue, error) {
         this._translationErrorState = Amm.Trait.Property.TRANSLATION_ERROR_IN;
         this.setPropertyValue(propertyValue);
-        this.setPropertyErrors(error, true);
+        this.setPropertyErrors(error, false);
     },
     
     _setOutTranslationErrorState: function(value, error) {
         this._translationErrorState = Amm.Trait.Property.TRANSLATION_ERROR_OUT;
         this.setValue(value);
-        this.setPropertyErrors(error, true);
+        this.setPropertyErrors(error, false);
     },
 
     getPropertyValue: function() { return this._propertyValue; },
@@ -547,5 +560,47 @@ Amm.Trait.Property.prototype = {
     getPropertyTranslator: function() { return this._propertyTranslator; },
     
     getTranslationErrorState: function() { return this._translationErrorState; },
-
+    
+    setValidationExpressions: function(validationExpressions) {
+        if (this._validationExpressions) {
+            Amm.cleanup(this._validationExpressions);
+        }
+        this._validationExpressions = null;
+        if (!validationExpressions) {
+            return;
+        } else if (!(validationExpressions instanceof Array)) {
+            throw "`validationExpressions` must be an Array or FALSEable, provided: "
+                    + Amm.describeType(validationExpressions);
+        }
+        if (!validationExpressions.length) {
+            return;
+        }
+        this._validationExpressions = [];
+        for (var i = 0, l = validationExpressions.length; i < l; i++) {
+            var expression = this._createExpression(validationExpressions[i]);
+            this._validationExpressions.push(expression);
+            expression.subscribe('valueChange', this._handleValidationExpressionChange, this, i);
+        }
+    },
+    
+    _handleValidationExpressionChange: function(value, oldValue) {
+        // var extra = arguments[arguments.length - 1];
+        this.setNeedValidate(true);
+        if (this._validateMode & Amm.Trait.Property.VALIDATE_EXPRESSIONS) {
+            this.validate();
+        }
+    },
+    
+    _applyValidationExpressions: function(errors) {
+        if (!this._validationExpressions) return;
+        var label = this.getPropertyLabel();
+        for (var i = 0, l = this._validationExpressions.length; i < l; i++) {
+            var e = this._validationExpressions[i].getValue();
+            if (e) {
+                var msg = Amm.translate(e + "", '%field', label);
+                errors.push(msg);
+            }
+        }
+    }
+    
 };

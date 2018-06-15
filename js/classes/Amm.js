@@ -140,33 +140,35 @@ Amm = {
             parentClass.afterExtend(subClass, parentClass, dontIndicateParent);
         }
     },
+
+    /**
+     *  `options` is argument that will be passed to traitInstance.__augment,
+     *  if such function exists.
     
-    augment: function(instance, trait) {
+     *  It is implemented to allow traits to pick-and-delete options that don't
+     *  have corresponding members (notably Amm.Trait.Property's val__{name}
+     *  validation expressions)
+     */
+    augment: function(instance, trait, options) {
         var l = arguments.length;
-        if (l > 2) {
-            for (var j = 1; j < l; j++) {
-                Amm.augment(instance, arguments[j]);
-            }
-        } else {
-            var traitInstance, proto;
-            if (typeof trait === 'string') {
-                trait = Amm.getFunction(trait);
-            }
-            if (typeof instance !== 'object') throw "`instance` must be an object";
-            if (typeof trait === 'function') traitInstance = new trait();
-            else if (typeof trait === 'object') traitInstance = trait;
-            else throw "`trait` must be an object or a function (constructor)";
-            var conflicts = Amm.getInterfaces(instance, traitInstance);
-            if (conflicts.length) 
-                throw "Cannot augment: `instance` already implements same interfaces as the `traitInstance`: "
-                    + conflicts.join(', ') + ")";
-            for (var i in traitInstance) if (i.slice(0, 2) !== '__') {
-                if (instance[i] === undefined || typeof instance[i] === 'function') 
-                    instance[i] = traitInstance[i];
-            }
-            if (typeof traitInstance.__augment === 'function') {
-                traitInstance.__augment.call(instance, traitInstance);
-            }
+        var traitInstance, proto;
+        if (typeof trait === 'string') {
+            trait = Amm.getFunction(trait);
+        }
+        if (typeof instance !== 'object') throw "`instance` must be an object";
+        if (typeof trait === 'function') traitInstance = new trait();
+        else if (typeof trait === 'object') traitInstance = trait;
+        else throw "`trait` must be an object or a function (constructor)";
+        var conflicts = Amm.getInterfaces(instance, traitInstance);
+        if (conflicts.length) 
+            throw "Cannot augment: `instance` already implements same interfaces as the `traitInstance`: "
+                + conflicts.join(', ') + ")";
+        for (var i in traitInstance) if (i.slice(0, 2) !== '__') {
+            if (instance[i] === undefined || typeof instance[i] === 'function') 
+                instance[i] = traitInstance[i];
+        }
+        if (typeof traitInstance.__augment === 'function') {
+            traitInstance.__augment.call(instance, traitInstance, options);
         }
     },
     

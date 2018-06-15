@@ -22,6 +22,19 @@
             assert.equal(e.getPropertyErrors(), null, "Initially we don't have errors");
             
             assert.equal(e.validate(), true, "validate() returns TRUE on no errors");
+            
+        e.subscribe('onValidate', function(value, errors) {
+            if (value === 10) errors.push("Value cannot be 10");
+        });
+            
+            assert.equal(e.validate(), false, "onValidate works...");
+            assert.deepEqual(e.getPropertyErrors(), ["Value cannot be 10"], "...and populates errors");
+            
+        e.setPropertyValue(11);
+        
+            assert.equal(e.validate(), true, "again valid");
+            assert.deepEqual(e.getPropertyErrors(), null, "and no errors after successful validation");
+            
         
         Amm.cleanup(e);
         
@@ -216,5 +229,42 @@
             assert.equal(e.getPropertyRequired(), true, 'Late sync: required');
             assert.deepEqual(e.getPropertyErrors(), ['XX', 'YY'], 'Late sync: errors');
     });
+    
+    QUnit.test("Property.validationExpressions", function(assert) {
+       
+        var age, experience;
+        
+        age = new Amm.Element({
+            traits: ['Amm.Trait.Property']
+        });
+        
+        experience = new Amm.Element({
+            traits: ['Amm.Trait.Property'],
+            properties: {
+                age: age
+            },
+            validationExpressions: [
+                "this.age.propertyValue && this.age.propertyValue * 1 < this.propertyValue*1 && 'Experience must be less than age'"
+            ]
+        });
+        
+        var err;
+        
+        experience.subscribe("propertyErrorsChange", function(e) { err = e; });
+        
+        age.setPropertyValue(10);
+        
+            assert.deepEqual(experience.getPropertyErrors(), null);
+        
+        experience.setPropertyValue(11);
+        
+            assert.deepEqual(err, ['Experience must be less than age']);
+            
+        age.setPropertyValue(12);
+        
+            assert.deepEqual(err, null);
+            
+    });
+    
     
 }) ();

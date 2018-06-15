@@ -321,7 +321,6 @@ Amm.Expression.prototype = {
         queue.push([operator, method, contextId, extra]);
     },
     
-    
     // `operator` is required arg
     unsubscribeOperator: function(object, eventName, operator, method, extra, allContexts) {
         if (!object) throw "`object` parameter is required";
