@@ -1,9 +1,14 @@
 /* global Amm */
 
-Amm.WithEvents = function(options) {
+Amm.WithEvents = function(options, initOnHandlersOnly) {
     this._subscribers = {};
-    //Amm.registerItem(this);
-    Amm.init(this, options);
+    if (options) {
+        var onHandlers = this._extractOnHandlers(options);
+        if (onHandlers) this._initOnHandlers(onHandlers);
+        if (!initOnHandlersOnly) {
+            Amm.init(this, options);
+        }
+    }
 };
 
 /* 
@@ -285,6 +290,28 @@ Amm.WithEvents.prototype = {
     cleanup: function() {
         this._subscribers = {};
         Amm.unregisterItem(this);
+    },
+
+    _extractOnHandlers: function(options) {
+        var res = [];
+        for (var i in options) {
+            if (i[0] === 'o' && i[1] === 'n' && i[2] === '_' && i[3] === '_'
+                && options.hasOwnProperty(i)
+            ) {
+                var handler = options[i];
+                if (!(handler instanceof Array)) handler = [handler];
+                var eventName = i.split('__')[1]; // ignore everything past second '__'
+                res.push([eventName, handler[0], handler[1], handler[2], handler[3]]);
+                delete options[i];
+            }
+        }
+        return res.length? res : null;
+    },
+    
+    _initOnHandlers: function(onHandlers) {
+        for (var i = 0, l = onHandlers.length; i < l; i++) {
+            this.subscribe(onHandlers[i][0], onHandlers[i][1], onHandlers[i][2], onHandlers[i][3], onHandlers[i][4]);
+        }
     }
     
 };

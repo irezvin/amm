@@ -20,7 +20,7 @@ Amm.Collection.ERR_DUPLICATE_UPDATE_NOT_ALLOWED = "Duplicate; update not allowed
 
 Amm.Collection.ERR_ADD_DISALLOWED = "Adding new items disallowed";
 
-Amm.Collection.ERR_DELETE_DISALLOWED = "Deleting items disallowd";
+Amm.Collection.ERR_DELETE_DISALLOWED = "Deleting items disallowed";
 
 Amm.Collection.ERR_REORDER_DISALLOWED = "Reordering (and inserting/deleting items not at the end) disallowed";
 
@@ -183,6 +183,13 @@ Amm.Collection.prototype = {
     _allowChangeOrder: true,
     
     _cleanupOnDissociate: false,
+
+    /**
+     * Hash: {eventName: handlerName, eventName2: handlerName2} where each object of collection
+     * will be subscribed to assocObject' handlers handlerName, handlerName2 etc (objects that don't have
+     * proper events won't be subscribed, no exception raised)
+     */
+    _assocEvents: null,
     
     setUnique: function(unique) {
         if (!unique) throw "setUnique(false) is never supported by Amm.Collection";
@@ -611,7 +618,9 @@ Amm.Collection.prototype = {
     },
     
     push: function(element, _) {
-        if (!this._allowAdd) throw Amm.Collection.ERR_ADD_DISALLOWED;
+        if (!this._allowAdd) {
+            throw Amm.Collection.ERR_ADD_DISALLOWED;
+        }
         var items = Array.prototype.slice.apply(arguments);
         if (items.length === 1) this.accept(items[0]);
             else this.acceptMany(items);
@@ -619,12 +628,14 @@ Amm.Collection.prototype = {
     },
     
     pop: function() {
-        if (!this._allowDelete) throw Amm.Collection.ERR_ADD_DISALLOWED;
+        if (!this._allowDelete) throw Amm.Collection.ERR_DELETE_DISALLOWED;
         if (this.length) return this.reject(this.length - 1);
     },
     
     unshift: function(element, _) {
-        if (!this._allowAdd) throw Amm.Collection.ERR_ADD_DISALLOWED;
+        if (!this._allowAdd) {
+            throw Amm.Collection.ERR_ADD_DISALLOWED;
+        }
         if (!this._allowChangeOrder) throw Amm.Collection.ERR_REORDER_DISALLOWED;
         var items = Array.prototype.slice.apply(arguments);
         var index = this._sorted? undefined : 0;
@@ -645,8 +656,12 @@ Amm.Collection.prototype = {
     splice: function(start, deleteCount, item1, item2_) {
         var items = Array.prototype.slice.call(arguments, 2);
         
-        if (items && !this._allowAdd) throw Amm.Collection.ERR_ADD_DISALLOWED;
-        if (deleteCount && !this._allowDelete) throw Amm.Collection.ERR_DELETE_DISALLOWED;
+        if (items.length && !this._allowAdd) {
+            throw Amm.Collection.ERR_ADD_DISALLOWED;
+        }
+        if (deleteCount && !this._allowDelete) {
+            throw Amm.Collection.ERR_DELETE_DISALLOWED;
+        }
         if (start < 0) {
             start = this.length + start;
             if (start < 0) start = 0;
@@ -883,6 +898,9 @@ Amm.Collection.prototype = {
         if (this._assocProperty) {
             Amm.setProperty(item, this._assocProperty, this._assocInstance || this);
         }
+        
+        if (this._assocEvents) this._associateEvents([item]);
+        
         if (this._indexProperty) {
             Amm.setProperty(item, this._indexProperty, index);
         }
@@ -917,6 +935,9 @@ Amm.Collection.prototype = {
         if (this._assocProperty && Amm.getProperty(item, this._assocProperty) === (this._assocInstance || this)) {
             Amm.setProperty(item, this._assocProperty, null);
         }
+        
+        if (this._assocEvents) this._associateEvents([item], true);
+        
         if (this._indexPropertyIsWatched) {
             if (this._indexPropertyIsWatched) {
                 var event = this._indexProperty + 'Change';
@@ -974,7 +995,9 @@ Amm.Collection.prototype = {
     setAssocInstance: function(assocInstance) {
         var oldAssocInstance = this._assocInstance;
         if (oldAssocInstance === assocInstance) return;
+        if (this._assocEvents) this._associateEvents(this, true);
         this._assocInstance = assocInstance;
+        if (this._assocEvents) this._associateEvents(this);
         if (this._assocProperty) {
             for (var i = 0, l = this.length; i < l; i++) Amm.setProperty(this[i], this._assocProperty, this._assocInstance || this);
         }
@@ -1616,6 +1639,56 @@ Amm.Collection.prototype = {
     },
 
     getAllowChangeOrder: function() { return this._allowChangeOrder; },
+    
+    cleanup: function() {
+        var tmp = this._allowDelete;
+        if (!tmp) this.setAllowDelete(true);
+        Amm.Array.prototype.cleanup.call(this);
+        if (!tmp) this.setAllowDelete(tmp);
+    },
+    
+    setAssocEvents: function(assocEvents) {
+        var assoc = null;
+        if (assocEvents) {
+            if (typeof assocEvents === 'object') {
+                assoc = [];
+                for (var i in assocEvents) if (assocEvents.hasOwnProperty(i)) {
+                    assoc.push([i, assocEvents[i]]);
+                }
+            } else {
+                throw "`assocEvents` must be an object";
+            }
+        }
+        if (this._assocEvents && this.length) this._associateEvents(this, true);
+        this._assocEvents = assoc;
+        if (assocEvents) this._associateEvents(this);
+        return true;
+    },
+    
+    _associateEvents: function(items, dissoc) {
+        if (!this._assocEvents) return;
+        if (!items.length) return;
+        var scope = this._assocInstance || this;
+        var l1 = this._assocEvents.length;
+        var action = dissoc? 'unsubscribe' : 'subscribe';
+        for (var i = 0, l = items.length; i < l; i++) {
+            for (var j = 0; j < l1; j++) {
+                if (dissoc || items[i].hasEvent(this._assocEvents[j][0])) {
+                    items[i][action](this._assocEvents[j][0], this._assocEvents[j][1], scope);
+                }
+            }
+        }
+    },
+    
+    getAssocEvents: function() { 
+        if (!this._assocEvents) return {};
+        var res = {};
+        for (var i = 0, l = this._assocEvents.length; i < l; i++) {
+            res[this._assocEvents[i][0]] = this._assocEvents[i][1];
+        }
+        return res;
+    }
+    
     
 };
 

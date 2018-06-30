@@ -1,2 +1,2 @@
 #!/bin/bash
-uglifyjs $(./list-cli.php ../js/classes) > amm-compressed.js
+uglifyjs $(php ./list-cli.php ../js/classes) > amm-compressed.js

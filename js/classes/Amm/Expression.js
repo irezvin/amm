@@ -17,7 +17,7 @@ Amm.Expression = function(options, expressionThis, writeProperty, writeObject, w
         options = {};
     }
     Amm.Operator.VarsProvider.call(this, operator);
-    Amm.WithEvents.call(this);
+    Amm.WithEvents.call(this, options, true);
     if (expressionThis) options.expressionThis = expressionThis;
     if (options.writeProperty) {
         writeProperty = options.writeProperty;

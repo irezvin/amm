@@ -999,7 +999,6 @@ Amm.Array.smartDiff = function(a, b, comparisonFn, spliceOnly, matches) {
 // disable to always use slow arrayDiff version, i.e. for testing
 Amm.Array._optArrayDiff = true;
 
-
 /** 
  *  returns elements in A that are not in B, each instance is compared only once.
  *  If matches is provided and is an Array, it will contain indexes of 

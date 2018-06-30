@@ -58,7 +58,8 @@ Amm = {
     event: {
         origin: null,
         name: '',
-        args: []
+        args: [],
+        parent: null
     },
     
     getRoot: function() {
@@ -448,6 +449,8 @@ Amm = {
     },
     
     pushEvent: function(event) {
+        var tmp = this.event;
+        event.parent = tmp;
         this._eventStack.push(this.event);
         this.event = event;
     },

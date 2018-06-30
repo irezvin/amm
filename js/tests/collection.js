@@ -660,6 +660,69 @@
         assert.deepEqual(Amm.getProperty(coll.getItems(), 'name'), ['E', 'A', 'B', 'C', 'D']);
         coll.setSortProperties('name');
         assert.deepEqual(Amm.getProperty(coll.getItems(), 'name'), ['A', 'B', 'C', 'D', 'E']);
+        Amm.cleanup(coll, ia, ib, ic, id, ie);
+        
+    });
+    
+    QUnit.test("Collection - assocEvents", function(assert) {
+        var ia = new Item('A', 'a item', '2016-01-01');
+        var ib = new Item('B', 'b item', '2015-02-02');
+        
+        var handler = function() {
+        };
+        
+        var a1 = {
+            id: 'a1',
+            descrChange: handler,
+            dateChange: handler
+        };
+        
+        var a2 = {
+            id: 'a2',
+            descrChange: handler,
+            dateChange: handler
+        };
+        
+        var coll = new Amm.Collection({
+            items: [ia],
+            assocInstance: a1,
+            assocEvents: {
+                descrChange: 'handler'
+            }
+        });
+        
+            assert.equal(ia.getSubscribers('descrChange').length, 1);
+            assert.equal(ia.getSubscribers('dateChange').length, 0);
+            assert.equal(ia.getSubscribers('descrChange', 'handler', a1).length, 1);
+        
+        coll.setAssocEvents({
+            dateChange: 'handler'
+        });
+        
+            assert.equal(ia.getSubscribers('descrChange').length, 0);
+            assert.equal(ia.getSubscribers('dateChange').length, 1);
+            assert.equal(ia.getSubscribers('dateChange', 'handler', a1).length, 1);
+        
+        coll.setAssocInstance(null);
+        
+            assert.equal(ia.getSubscribers('dateChange', 'handler', a1).length, 0);
+            assert.equal(ia.getSubscribers('dateChange', 'handler', coll).length, 1);
+            
+        coll.setAssocInstance(a2);
+            
+            assert.equal(ia.getSubscribers('dateChange', 'handler', coll).length, 0);
+            assert.equal(ia.getSubscribers('dateChange', 'handler', a2).length, 1);
+            
+        coll.reject(ia);
+        
+            assert.equal(ia.getSubscribers('dateChange').length, 0);
+            
+        coll.accept(ib);
+        
+            assert.equal(ib.getSubscribers('dateChange', 'handler', a2).length, 1);
+            
+        Amm.cleanup(coll, ia, ib);
+            
     });
     
     

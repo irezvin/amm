@@ -59,4 +59,24 @@
         assert.equal(v.getReadOnly(), false);
     });
     
+    QUnit.test("Element.on__handlers", function(assert) {
+        
+        var f = function() {};
+        
+        var scp1 = {};
+        
+        var e = new Amm.Element({
+            prop__a: 10,
+            on__aChange: f,
+            on__aChange__1: [f, null, 'extra'],
+            on__aChange__2: [f, scp1, 'extra2']
+        });
+        
+        assert.equal(e.getSubscribers('aChange').length, 3, 'There was 3 subscribers using on__ handlers');
+        assert.equal(e.getSubscribers('aChange', f, null, null)[0][5], 0, 'First handler matches definition');
+        assert.equal(e.getSubscribers('aChange', f, null, 'extra')[0][5], 1, 'Second handler matches definition');
+        assert.equal(e.getSubscribers('aChange', f, scp1, 'extra2')[0][5], 2, 'Third handler matches definition');
+        
+    });
+    
 }) ();

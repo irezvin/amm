@@ -5,7 +5,7 @@
 // Variant B: new Amm.Expression.FunctionHandler(function, thisObject, options)
 // Variant C: new Amm.Expression.FunctionHandler(function, thisObject, writeProperty, writeObject, writeArgs, options)
 Amm.Expression.FunctionHandler = function(options) {
-    Amm.WithEvents.call(this);
+    Amm.WithEvents.call(this, options, true);
     this._expressions = {};
     this._get = {};
     this._set = {};

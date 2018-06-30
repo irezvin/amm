@@ -64,11 +64,13 @@ Amm.Element = function(options) {
             delete options[i];
         }
     }
-    Amm.WithEvents.call(this, {});
+    Amm.WithEvents.call(this);
+    var onHandlers = this._extractOnHandlers(options);
     Amm.init(this, options, ['id', 'properties']);
     Amm.init(this, options);
     if (hh.length) this._initInProperties(hh);
     if (extraProps) this.setProperties(extraProps);
+    if (onHandlers) this._initOnHandlers(onHandlers);
     this._endInit();
     if (views.length) {
         for (var i = 0, l = views.length; i < l; i++) {

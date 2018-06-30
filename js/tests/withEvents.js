@@ -92,7 +92,8 @@ QUnit.module("WithEvents");
         assert.deepEqual(globLog, [{
             origin: thisObj,
             name: 'fooEvent',
-            args: ['arg1', 'arg2']
+            args: ['arg1', 'arg2'],
+            parent: null
         }], 'Amm.event must contain valid parameters');
 
         clearLogs();
@@ -320,6 +321,30 @@ QUnit.module("WithEvents");
         assert.deepEqual(l, ['sub', 'unsub', 'sub']);
         e.unsubscribeByIndex('eventA', 0);
         assert.deepEqual(l, ['sub', 'unsub', 'sub', 'unsub']);
+    });
+    
+    QUnit.test("event.parent", function(assert) {
+        
+        var currEvent = [], parentEvent = [];
+        var e1 = new Amm.Element({prop__b: 0, on__bChange: function(v, o) {
+            currEvent.push([Amm.event.name, Amm.event.args[0]]);
+            parentEvent.push(Amm.event.parent? [Amm.event.parent.name, Amm.event.parent.args[0]] : null);
+        }});
+        var e2 = new Amm.Element({prop__a: 10, on__aChange: function(v, o) { e1.setB(v); }});
+        
+        e1.setB(10);
+        
+            assert.deepEqual(currEvent, [['bChange', 10]], 'current event stored');
+            assert.deepEqual(parentEvent, [null], 'there was no parent event');
+            
+        currEvent = [];
+        parentEvent = [];
+        e2.setA(15); // triggers aChange => bChange
+        
+            assert.deepEqual(currEvent, [['bChange', 15]], 'current event stored');
+            assert.deepEqual(parentEvent, [['aChange', 15]], 'there was parent event when current \n\
+                event is called from parent event');
+        
     });
     
 }) ();

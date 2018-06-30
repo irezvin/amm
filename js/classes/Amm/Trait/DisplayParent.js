@@ -20,7 +20,7 @@ Amm.Trait.DisplayParent.prototype = {
     
     _displayChildrenObservedForComponent: false,
     
-    __augment: function(traitInstance) {
+    __augment: function(traitInstance, options) {
         
         var proto = {
             requirements: ['Visual'],
@@ -125,6 +125,10 @@ Amm.Trait.DisplayParent.prototype = {
             Amm.Trait.Component.changeComponent(this.displayChildren, component, oldComponent);
         }
         this._observeDisplayChildrenForComponent();
+    },
+    
+    _cleanup_DisplayParent: function() {
+        this.displayChildren.cleanup();
     }
 
 };
