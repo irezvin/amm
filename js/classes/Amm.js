@@ -147,7 +147,7 @@ Amm = {
      *  if such function exists.
     
      *  It is implemented to allow traits to pick-and-delete options that don't
-     *  have corresponding members (notably Amm.Trait.Property's val__{name}
+     *  have corresponding members (notably Amm.Trait.Fielderty's val__{name}
      *  validation expressions)
      */
     augment: function(instance, trait, options) {
@@ -619,24 +619,29 @@ Amm = {
     
     bootstrap: function() {
         if (!jQuery) throw "Amm.bootstrap: jQuery not found";
-        if (this._bootstrapped) return;
-        this._bootstrapped = true;
         var t = this;
         jQuery(function() { t._doBootstrap(); });
     },
     
+    getBootstrapped: function() {
+        return this._bootstrapped;
+    },
+    
     _doBootstrap: function() {
+        if (this._bootstrapped) return;
+        this._bootstrapped = true;
         if (this.optionsObjectId && window[this.optionsObjectId]) {
             var opt = window[this.optionsObjectId];
-            if (typeof opt === 'object') Amm.init(this, opt);
+            if (typeof opt === 'object') this.init(this, opt);
         }
-        Amm.registerNamespace('v', Amm.View.Html);
-        Amm.registerNamespace('t', Amm.Trait);
+        this.registerNamespace('v', this.View.Html);
+        this.registerNamespace('t', this.Trait);
         if (this.autoBuildSelector) {
             var sel = this.autoBuildSelector;
-            this._autoBuilder = new Amm.Builder(sel, this.defaultBuilderOptions);
+            this._autoBuilder = new this.Builder(sel, this.defaultBuilderOptions);
             this._autoBuilder.build();
         }
+        this.getRoot().raiseEvent('bootstrap');
     },
     
     /**

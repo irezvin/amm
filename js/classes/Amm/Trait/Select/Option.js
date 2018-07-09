@@ -1,6 +1,6 @@
 /* global Amm */
 Amm.Trait.Select.Option = function(options) {
-    Amm.WithEvents.call(this, options);
+    Amm.Element.call(this, options);
 };
 
 Amm.Trait.Select.Option.prototype = {
@@ -96,4 +96,4 @@ Amm.Trait.Select.Option.prototype = {
     
 };
 
-Amm.extend(Amm.Trait.Select.Option, Amm.WithEvents);
+Amm.extend(Amm.Trait.Select.Option, Amm.Element);

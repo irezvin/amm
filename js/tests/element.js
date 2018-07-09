@@ -45,9 +45,9 @@
     
     QUnit.test("Element.ElementHandlers", function(assert) {
         var v = new Amm.Element({
-            traits: ['Amm.Trait.Field'],
+            traits: ['Amm.Trait.Input'],
             properties: {
-                e: new Amm.Element({traits: ['Amm.Trait.Field'], value: 20})
+                e: new Amm.Element({traits: ['Amm.Trait.Input'], value: 20})
             },
             in__value: 'this.e.value + 20',
             in__readOnly: function(g, s) { return g('this.value') === 40; }

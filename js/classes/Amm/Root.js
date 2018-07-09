@@ -37,11 +37,24 @@ Amm.Root.prototype = {
     
     raiseEvent: function(eventName) {
         var args = Array.prototype.slice.call(arguments, 0);
-        return this._out.apply(this, args);
+        var res = this._out.apply(this, args);
+        if (eventName === 'bootstrap' && Amm.getBootstrapped()) {
+            // delete so next handler will have _subscribeFirst too
+            // and current handlers won't be called again            
+            delete this._subscribers['bootstrap'];
+        }
+        return res;
     },
     
     outInterval: function() {
         this._out('interval', this._counter++);
+    },
+    
+    _subscribeFirst_bootstrap: function() {
+        if (Amm.getBootstrapped()) {
+            // will call newly subscribed handler and clear the handlers list
+            this.raiseEvent('bootstrap');
+        }
     },
     
     _subscribeFirst_interval: function() {

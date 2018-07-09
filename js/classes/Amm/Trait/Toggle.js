@@ -106,7 +106,7 @@
     
     setEnabled: function(enabled) {
         var significant = this._getOwnValue() !== undefined;
-        var res = Amm.Trait.Field.prototype.setEnabled.call(this, enabled);
+        var res = Amm.Trait.Input.prototype.setEnabled.call(this, enabled);
         if (res && (significant || this._getOwnValue() !== undefined)) this._reportChange();
         return res;
     },
@@ -329,4 +329,4 @@
      
  };
 
-Amm.extend(Amm.Trait.Toggle, Amm.Trait.Field);
+Amm.extend(Amm.Trait.Toggle, Amm.Trait.Input);

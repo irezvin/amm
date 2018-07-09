@@ -91,9 +91,9 @@
            handle__valueChange: rep('*'),
            handle__a1__valueChange: rep('a1')
        });
-       var a1 = new Amm.Element({id: 'a1', traits: ['Amm.Trait.Field'], parent: a});
-       var a2 = new Amm.Element({id: 'a2', traits: ['Amm.Trait.Field'], parent: a});
-       var a3 = new Amm.Element({id: 'a3', traits: ['Amm.Trait.Field'], parent: a});
+       var a1 = new Amm.Element({id: 'a1', traits: ['Amm.Trait.Input'], parent: a});
+       var a2 = new Amm.Element({id: 'a2', traits: ['Amm.Trait.Input'], parent: a});
+       var a3 = new Amm.Element({id: 'a3', traits: ['Amm.Trait.Input'], parent: a});
        var adp = new Amm.Element({
            id: 'adp', traits: ['Amm.Trait.DisplayParent', 'Amm.Trait.Component'],
            handle__valueChange: rep('*'),
@@ -101,30 +101,30 @@
            handle__xx__valueChange: rep('xx'),
            parent: a
        });
-       var adp1 = new Amm.Element({id: 'adp1', traits: ['Amm.Trait.Field', 'Amm.Trait.Visual']});
-       var adp2 = new Amm.Element({id: 'adp2', traits: ['Amm.Trait.Field', 'Amm.Trait.Visual']});
-       var adp3 = new Amm.Element({id: 'adp3', traits: ['Amm.Trait.Field', 'Amm.Trait.Visual']});
+       var adp1 = new Amm.Element({id: 'adp1', traits: ['Amm.Trait.Input', 'Amm.Trait.Visual']});
+       var adp2 = new Amm.Element({id: 'adp2', traits: ['Amm.Trait.Input', 'Amm.Trait.Visual']});
+       var adp3 = new Amm.Element({id: 'adp3', traits: ['Amm.Trait.Input', 'Amm.Trait.Visual']});
        adp.setDisplayChildren([adp1, adp2, adp3]);
        
        var ac = new Amm.Element({
            id: 'ac', traits: ['Amm.Trait.Composite', 'Amm.Trait.Component'],
            parent: a
        });
-       var ac1 = new Amm.Element({id: 'ac1', traits: ['Amm.Trait.Field'],
+       var ac1 = new Amm.Element({id: 'ac1', traits: ['Amm.Trait.Input'],
            parent: ac});
-       var ac2 = new Amm.Element({id: 'ac2', traits: ['Amm.Trait.Field'],
+       var ac2 = new Amm.Element({id: 'ac2', traits: ['Amm.Trait.Input'],
            parent: ac});
-       var ac3 = new Amm.Element({id: 'ac3', traits: ['Amm.Trait.Field'],
+       var ac3 = new Amm.Element({id: 'ac3', traits: ['Amm.Trait.Input'],
            parent: ac});
        
        var acc = new Amm.Element({
            id: 'acc', traits: ['Amm.Trait.Composite'], parent: ac
        });
-       var acc1 = new Amm.Element({id: 'acc1', traits: ['Amm.Trait.Field'], 
+       var acc1 = new Amm.Element({id: 'acc1', traits: ['Amm.Trait.Input'], 
            parent: acc});
-       var acc2 = new Amm.Element({id: 'acc2', traits: ['Amm.Trait.Field'],
+       var acc2 = new Amm.Element({id: 'acc2', traits: ['Amm.Trait.Input'],
            parent: acc});
-       var acc3 = new Amm.Element({id: 'acc3', traits: ['Amm.Trait.Field'],
+       var acc3 = new Amm.Element({id: 'acc3', traits: ['Amm.Trait.Input'],
            parent: acc});
        
        return [a, a1, a2, a3, adp, adp1, adp2, adp3, ac, ac1, ac2, ac3, acc, 
@@ -226,11 +226,11 @@
            id: 'adpc', traits: ['Amm.Trait.Composite', 'Amm.Trait.Component', 'Amm.Trait.Visual'], 
            displayParent: t.adp
        });
-       var adpc1 = new Amm.Element({id: 'adpc1', traits: ['Amm.Trait.Field'], 
+       var adpc1 = new Amm.Element({id: 'adpc1', traits: ['Amm.Trait.Input'], 
            parent: adpc});
-       var adpc2 = new Amm.Element({id: 'adpc2', traits: ['Amm.Trait.Field'],
+       var adpc2 = new Amm.Element({id: 'adpc2', traits: ['Amm.Trait.Input'],
            parent: adpc});
-       var adpc3 = new Amm.Element({id: 'adpc3', traits: ['Amm.Trait.Field'],
+       var adpc3 = new Amm.Element({id: 'adpc3', traits: ['Amm.Trait.Input'],
            parent: adpc});
        
         tsa.push(adpc, adpc1, adpc2, adpc3);

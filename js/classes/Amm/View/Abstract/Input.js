@@ -1,13 +1,13 @@
 /* global Amm */
 
-Amm.View.Abstract.Field = function(options) {
+Amm.View.Abstract.Input = function(options) {
     Amm.View.Abstract.call(this, options);
     this._requireInterfaces('Focusable', 'Editor', 'Lockable');
 };
 
-Amm.View.Abstract.Field.prototype = {
+Amm.View.Abstract.Input.prototype = {
 
-    'Amm.View.Abstract.Field': '__CLASS__', 
+    'Amm.View.Abstract.Input': '__CLASS__', 
     
     setVFocused: function(focus) {
     },
@@ -38,5 +38,5 @@ Amm.View.Abstract.Field.prototype = {
     
 };
 
-Amm.extend(Amm.View.Abstract.Field, Amm.View.Abstract);
+Amm.extend(Amm.View.Abstract.Input, Amm.View.Abstract);
 

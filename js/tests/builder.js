@@ -125,7 +125,7 @@
                     <div data-amm-v="v.Visual" class="innerV">\n\
                         <input type="text"\n\
                                data-amm-v="v.Input" \n\
-                               data-amm-e="{id: inp, extraTraits: [t.Field]}" \/>\n\
+                               data-amm-e="{id: inp, extraTraits: [t.Input]}" \/>\n\
                     <\/div>\n\
                 <\/div>\n\
             <\/div>\n\

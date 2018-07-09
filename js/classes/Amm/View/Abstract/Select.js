@@ -28,10 +28,10 @@ Amm.View.Abstract.Select.prototype = {
     },
     
     _doObserveSelect: function() {
-        if (!this._fieldView) this._createFieldView();
         if (!this._collectionView) this._createCollectionView();
-        this._fieldView.setElement(this._element);
         this._collectionView.setElement(this._element);
+        if (!this._fieldView) this._createFieldView();
+        this._fieldView.setElement(this._element);
     },
     
     _endObserve: function() {

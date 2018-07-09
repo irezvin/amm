@@ -43,6 +43,7 @@ Amm.Trait.Select.prototype = {
      * c - hash {value: label, value2: label2...} 
     */
     setOptions: function(options) {
+        if (!options) options = [];
         var items = [];
         if (options instanceof Array || options['Amm.Array']) {
             items = options;
@@ -168,4 +169,4 @@ Amm.Trait.Select.prototype = {
     
 };
 
-Amm.extend(Amm.Trait.Select, Amm.Trait.Field);
+Amm.extend(Amm.Trait.Select, Amm.Trait.Input);

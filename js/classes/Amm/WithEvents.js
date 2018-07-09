@@ -169,15 +169,17 @@ Amm.WithEvents.prototype = {
         if (!this._subscribers[eventName]) {
             this._subscribers[eventName] = [];
             isFirst = true;
-            if (isFirst) {
-                var fn = '_subscribeFirst_' + eventName;
-                if (this[fn] && typeof this[fn] === 'function') this[fn]();
-            }
         }
+        var res;
         if (!this.getSubscribers(eventName, handler, scope, extra, decorator).length) {
             this._subscribers[eventName].push([handler, scope, extra, decorator]);
-            return true;
+            res = true;
         }
+        if (isFirst) {
+            var fn = '_subscribeFirst_' + eventName;
+            if (this[fn] && typeof this[fn] === 'function') this[fn]();
+        }
+        return res;
     },
     
     // if returns undefined, exception "no such event" will be thrown

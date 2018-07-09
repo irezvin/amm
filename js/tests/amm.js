@@ -1,4 +1,5 @@
 /* global Amm */
+/* global QUnit */
 
 QUnit.module("Amm Global Object");
 QUnit.test("Amm get/set/destroy Item", function(assert) {
@@ -428,5 +429,36 @@ QUnit.test("Amm.constructMany", function(assert) {
     ], 'Key-to-property works (unless already in options)');
     
     assert.deepEqual(def, oDef, 'defaults unchanged');
+    
+});
+
+QUnit.test("Amm.bootstrap", function(assert) {
+   
+    var ev1 = 0;
+    var ev2 = 0;
+    
+    var fn1 = function() { ev1++; };
+    var fn2 = function() { ev2++; };
+    
+    var tmp = Amm._bootstrapped;
+    Amm._bootstrapped = false;
+    
+    Amm.getRoot().subscribe('bootstrap', fn1);
+    Amm._bootstrapped = true;
+    Amm.getRoot().raiseEvent('bootstrap');
+    
+        assert.equal(ev1, 1, 'Bootstrap handler called once');
+        
+    Amm.getRoot().subscribe('bootstrap', fn2);
+    
+        assert.equal(ev2, 1, 'First bootstrap handler wasn\'t called again');
+        assert.equal(ev1, 1, 'Second bootstrap handler was called immediately since Amm is already bootstrapped');
+    
+    Amm.getRoot().raiseEvent('bootstrap');
+    
+        assert.equal(ev2, 1, 'Both handlers weren\'t called on third event raise (1)');
+        assert.equal(ev1, 1, 'Both handlers weren\'t called on third event raise (2)');
+    
+    Amm._bootstrapped = tmp;
     
 });

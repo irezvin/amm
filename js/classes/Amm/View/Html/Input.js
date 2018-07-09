@@ -8,7 +8,7 @@
 Amm.View.Html.Input = function(options) {
     var t = this;
     this._handler = function(event) { return t._receiveEvent(event, this); };
-    Amm.View.Abstract.Field.call(this, options);
+    Amm.View.Abstract.Input.call(this, options);
     Amm.View.Html.call(this);
     Amm.JQueryListener.call(this, {});
 };
@@ -111,7 +111,7 @@ Amm.View.Html.Input.prototype = {
     },
     
     cleanup: function() {
-        Amm.View.Abstract.Field.prototype.cleanup.call(this);
+        Amm.View.Abstract.Input.prototype.cleanup.call(this);
         Amm.JQueryListener.prototype.cleanup.call(this);
         if (this._htmlElement) this._releaseDomNode(this._htmlElement);
     },
@@ -121,11 +121,11 @@ Amm.View.Html.Input.prototype = {
     },
     
     getSuggestedTraits: function() {
-        return [Amm.Trait.Field];
+        return [Amm.Trait.Input];
     }
 
 };
 
 Amm.extend(Amm.View.Html.Input, Amm.View.Html);
 Amm.extend(Amm.View.Html.Input, Amm.JQueryListener);
-Amm.extend(Amm.View.Html.Input, Amm.View.Abstract.Field);
+Amm.extend(Amm.View.Html.Input, Amm.View.Abstract.Input);
