@@ -48,7 +48,7 @@ Amm.Trait.Field.prototype = {
 
     'Field': '__INTERFACE__',
 
-    _parentForm: null,
+    _form: null,
 
     // _fieldName defaults to element.getId() if 'undefined'
     _fieldName: undefined,
@@ -96,12 +96,13 @@ Amm.Trait.Field.prototype = {
     _fieldIndex: undefined,
     
     __augment: function(traitInstance, options) {
+        
         Amm.Element.regInit(this, '99.Amm.Trait.Field', function() {
             if (this._fieldName === undefined) {
-                this.subscribe('idChange', this._handlePropElementIdChange, this);
+                this.subscribe('idChange', this._handleFormElementIdChange, this);
             }
             this._fieldSyncsValue = !!Amm.detectProperty(this, 'value');
-            if (this._fieldSyncsValue) this.subscribe('valueChange', this._handlePropExtValueChange, this);
+            if (this._fieldSyncsValue) this.subscribe('valueChange', this._handleFormExtValueChange, this);
             if (Amm.detectProperty(this, 'focused')) {
                 this.subscribe('focusedChange', this._handleFieldFocusedChange, this);
             }
@@ -112,7 +113,7 @@ Amm.Trait.Field.prototype = {
                 if (this._fieldValue === undefined) {
                     var v = this.getValue();
                     if (v !== undefined) {
-                        this._handlePropExtValueChange(v, undefined);
+                        this._handleFormExtValueChange(v, undefined);
                     }
                 } else {
                     this._syncFieldValueToElement(this._fieldValue);
@@ -163,35 +164,35 @@ Amm.Trait.Field.prototype = {
         }
     },
     
-    setParentForm: function(parentForm) {
-        if (parentForm) Amm.is(parentForm, 'Form', 'parentForm');
-        else parentForm = null;
-        var oldParentForm = this._parentForm;
-        if (oldParentForm === parentForm) return;
-        if (oldParentForm) {
-            var idx = oldParentForm.displayChildren.strictIndexOf(this);
-            if (idx >= 0) oldParentForm.displayChildren.removeAtIndex(idx);
+    setForm: function(form) {
+        if (form) Amm.is(form, 'Form', 'form');
+        else form = null;
+        var oldForm = this._form;
+        if (oldForm === form) return;
+        if (oldForm) {
+            var idx = oldForm.fields.strictIndexOf(this);
+            if (idx >= 0) oldForm.fields.removeAtIndex(idx);
         }
-        if (parentForm) {
-            var idxNew = parentForm.displayChildren.strictIndexOf(this);
-            if (idxNew < 0) parentForm.displayChildren.accept(this);
+        if (form) {
+            var idxNew = form.fields.strictIndexOf(this);
+            if (idxNew < 0) form.fields.accept(this);
         }
-        this._parentForm = parentForm;
-        this.outParentFormChange(parentForm, oldParentForm);
+        this._form = form;
+        this.outFormChange(form, oldForm);
         return true;
     },
     
-    outParentFormChange: function(parentForm, oldParentForm) {
-        return this._out('parentFormChange', parentForm, oldParentForm);
+    outFormChange: function(form, oldForm) {
+        return this._out('formChange', form, oldForm);
     },
 
-    getParentForm: function() { return this._parentForm; },
+    getForm: function() { return this._form; },
 
     setFieldName: function(fieldName) {
         var oldFieldName = this._fieldName;
         if (oldFieldName === fieldName) return;
-        if (fieldName === undefined) this.subscribe('idChange', this._handlePropElementIdChange, this);
-        else if (this._fieldName === undefined) this.unsubscribe('idChange', this._handlePropElementIdChange, this);
+        if (fieldName === undefined) this.subscribe('idChange', this._handleFormElementIdChange, this);
+        else if (this._fieldName === undefined) this.unsubscribe('idChange', this._handleFormElementIdChange, this);
         this._fieldName = fieldName;
         this.outFieldNameChange(fieldName, oldFieldName);
         return true;
@@ -325,7 +326,7 @@ Amm.Trait.Field.prototype = {
             this._translationErrorState === Amm.Trait.Field.TRANSLATION_ERROR_IN
         ) {
             var v = this.getValue();
-            this._handlePropExtValueChange(v, v);
+            this._handleFormExtValueChange(v, v);
         } else if (
             this._fieldSyncsValue && 
             this._translationErrorState === Amm.Trait.Field.TRANSLATION_ERROR_OUT
@@ -473,7 +474,7 @@ Amm.Trait.Field.prototype = {
         return true;
     },
     
-    _handlePropExtValueChange: function(value, oldValue) {
+    _handleFormExtValueChange: function(value, oldValue) {
         if (this._lockFieldValueChange) return;
         this._lockFieldValueChange = 1;
         this._translationErrorState = 0;

@@ -78,7 +78,7 @@ Amm = {
         if (!item._amm_id) return; // no work
         if (typeof item === 'string') item = this._items[item];
         if (item._amm_id && this._items[item._amm_id] !== item) {
-            throw "Mismatch of _amm_id detected during the item de-registration";
+            throw Error("Mismatch of _amm_id detected during the item de-registration");
         }
         if (typeof item.getPath === 'function') {
             var p = item.getPath();
@@ -103,7 +103,7 @@ Amm = {
             return r;
         } else {
             var res = this._items[item];
-            if (!res && throwIfNotFound) throw "Item '" + item + "' not found";
+            if (!res && throwIfNotFound) throw Error("Item '" + item + "' not found");
             return res;
         }
     },
@@ -120,10 +120,10 @@ Amm = {
     
     extend: function(subClass, parentClass, dontIndicateParent) {
         if (typeof subClass !== 'function') {
-            throw "Amm.extend: `subClass` is not a function";
+            throw Error("Amm.extend: `subClass` is not a function");
         };
         if (typeof parentClass !== 'function') {
-            throw "Amm.extend: `parentClass` is not a function";
+            throw Error("Amm.extend: `parentClass` is not a function");
         };
         var skip = false;
         if (typeof parentClass.beforeExtend === 'function') {
@@ -156,14 +156,14 @@ Amm = {
         if (typeof trait === 'string') {
             trait = Amm.getFunction(trait);
         }
-        if (typeof instance !== 'object') throw "`instance` must be an object";
+        if (typeof instance !== 'object') throw Error("`instance` must be an object");
         if (typeof trait === 'function') traitInstance = new trait();
         else if (typeof trait === 'object') traitInstance = trait;
-        else throw "`trait` must be an object or a function (constructor)";
-        var conflicts = Amm.getInterfaces(instance, traitInstance);
+        else throw Error("`trait` must be an object or a function (constructor)");
+        var conflicts = this.getInterfaces(instance, traitInstance);
         if (conflicts.length) 
-            throw "Cannot augment: `instance` already implements same interfaces as the `traitInstance`: "
-                + conflicts.join(', ') + ")";
+            throw Error("Cannot augment: `instance` already implements same interfaces as the `traitInstance`: "
+                + conflicts.join(', ') + ")");
         for (var i in traitInstance) if (i.slice(0, 2) !== '__') {
             if (instance[i] === undefined || typeof instance[i] === 'function') 
                 instance[i] = traitInstance[i];
@@ -187,7 +187,7 @@ Amm = {
     
     overrideRecursive: function(modifiedObject, overrider, noOverwrite) {
         if (typeof modifiedObject !== 'object' || typeof overrider !== 'object')
-            throw 'Both modifiedObject and overrider must be objects';
+            throw Error('Both modifiedObject and overrider must be objects');
 
         for (var i in overrider) if (overrider.hasOwnProperty(i)) {
             if (modifiedObject[i] instanceof Array && overrider[i] instanceof Array) {
@@ -310,7 +310,7 @@ Amm = {
         var res = item && (item[className] === '__CLASS__' || item[className] === '__PARENT__' || item[className] === '__INTERFACE__');
         if (!res && throwIfNot) {
             var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
-            throw argname + " must be an instance of " + className;
+            throw Error(argname + " must be an instance of " + className);
         }
         return res;
     },
@@ -398,17 +398,17 @@ Amm = {
         }
         if (!optToSet) return;
         for (var i in optToSet) if (optToSet.hasOwnProperty(i)) {
-            if (i[0] === '_') throw "Use of pseudo-private identifiers is prohibited in `optToSet`, encountered: '" + i + "'";
+            if (i[0] === '_') throw Error("Use of pseudo-private identifiers is prohibited in `optToSet`, encountered: '" + i + "'");
             if (i in object && typeof object[i] === 'function') {
                 if (typeof optToSet[i] === 'function') object[i] = optToSet[i];
-                else throw "Only function is allowed to override the function (`" + i +"` provided is " + (typeof optToSet[i]) + ")";
+                else throw Error("Only function is allowed to override the function (`" + i +"` provided is " + (typeof optToSet[i]) + ")");
             } 
             var v = optToSet[i], s = 'set' + ('' + i).slice(0, 1).toUpperCase() + ('' + i).slice(1);
             if (typeof object[s] === 'function') object[s](v);
             else if (i in object) object[i] = v;
             else if (typeof v === 'function') object[i] = v;
             else {
-                throw "No such property: '" + i + "' in " + (this.getClass(object) || '`object`');
+                throw Error("No such property: '" + i + "' in " + (this.getClass(object) || '`object`'));
             }
         }
     },
@@ -416,7 +416,7 @@ Amm = {
     getFunction: function(strName) {
         if (typeof strName === 'function') return strName;
         if (typeof strName !== 'string') {
-            throw "`strName` must be a string, given: " + this.describeType(strName);
+            throw Error("`strName` must be a string, given: " + this.describeType(strName));
         }
         if (this._functions[strName]) return this._functions[strName];
         var p = strName.split('.'), r = this._namespaces, s = [];
@@ -427,24 +427,24 @@ Amm = {
         }
         if (!r) {
             if (p.length) {
-                throw "Unknown namespace '" + s.join('.') + "' (when trying to locate function '" + strName + "')";
+                throw Error("Unknown namespace '" + s.join('.') + "' (when trying to locate function '" + strName + "')");
             } 
-            else throw "Unknown function '" + s.join('.') + "'";
+            else throw Error("Unknown function '" + s.join('.') + "'");
         }
         return r;
     },
     
     registerNamespace: function(ns, hash) {
-        if (typeof ns !== 'string') throw "`ns` must be a string";
+        if (typeof ns !== 'string') throw Error("`ns` must be a string");
         if (!hash || typeof hash !== 'object' && typeof hash !== 'function') {
-            throw "Amm.registerNamespace: `hash` must be an object or a function";
+            throw Error("Amm.registerNamespace: `hash` must be an object or a function");
         }
         this._namespaces[ns] = hash;
     },
     
     registerFunction: function(name, fn) {
-        if (typeof name !== 'string') throw "`name` must be a string";
-        if (!fn || typeof fn !== 'function') throw "`fn` must be a function";
+        if (typeof name !== 'string') throw Error("`name` must be a string");
+        if (!fn || typeof fn !== 'function') throw Error("`fn` must be a function");
         this._functions[name] = fn;
     },
     
@@ -528,14 +528,14 @@ Amm = {
             res = args? element[setterName].apply(element, args) : element[setterName](value);
         }
         else if (property in element) element[property] = value;
-        else if (throwIfNotFound) throw "No setter for property: `" + property + "`";
+        else if (throwIfNotFound) throw Error("No setter for property: `" + property + "`");
         return res;
     },
     
     createProperty: function(target, propName, defaultValue, onChange) {
         
         if (!target || typeof target !== 'object') 
-            throw "`target` must be an object";
+            throw Error("`target` must be an object");
         
         var 
             sfx = propName.slice(1), 
@@ -580,7 +580,7 @@ Amm = {
                 return instance.decorate(value);
             }
         } else {
-            throw "`decorator` must be either function or an object with .decorate() method";
+            throw Error("`decorator` must be either function or an object with .decorate() method");
         }
     },
     
@@ -606,7 +606,7 @@ Amm = {
                     this.cleanup(itemOrItems[i]);
             } else {
                 if (!noThrow)
-                    throw '`itemOrItems` must be either an object with .cleanup() method or an Array';
+                    throw Error('`itemOrItems` must be either an object with .cleanup() method or an Array');
             }
         }
     },
@@ -618,7 +618,7 @@ Amm = {
     },
     
     bootstrap: function() {
-        if (!jQuery) throw "Amm.bootstrap: jQuery not found";
+        if (!jQuery) throw Error("Amm.bootstrap: jQuery not found");
         var t = this;
         jQuery(function() { t._doBootstrap(); });
     },
@@ -678,7 +678,7 @@ Amm = {
             options = {class: options};
         else if (!options) options = {};
         else if (typeof options !== 'object')
-            throw "`options` must be a string, an object, a function or FALSEable value";
+            throw Error("`options` must be a string, an object, a function or FALSEable value");
         if (Amm.getClass(options)) {
             instance = options;
             if (setToDefaults && defaults && typeof defaults === 'object') {
@@ -689,7 +689,7 @@ Amm = {
             if (defaults) {
                 if (typeof defaults === 'string') defaults = {class: defaults};
                 else if (typeof defaults !== 'object') 
-                    throw "`defaults` must be a string, an object or FALSEable value";
+                    throw Error("`defaults` must be a string, an object or FALSEable value");
                 for (var i in defaults) if (!(i in options) && defaults.hasOwnProperty(i)) {
                     options[i] = defaults[i];
                 }
@@ -697,14 +697,14 @@ Amm = {
             var cr = options['class'] || baseClass;
             if (typeof options === 'function') cr = options;
             cr = Amm.getFunction(cr);
-            if (!cr) throw "Either options.class or baseClass are required";
+            if (!cr) throw Error("Either options.class or baseClass are required");
             delete options['class'];
             instance = new cr(options);
         }
         
         if (baseClass) Amm.is(instance, baseClass, 'created instance');
         if (requirements && !Amm.meetsRequirements(instance, requirements)) {
-            throw "created instance doesn't meet specified requirements";
+            throw Error("created instance doesn't meet specified requirements");
         }
         
         return instance;
@@ -722,7 +722,7 @@ Amm = {
                 items.push(options[i]);
             }
         } else {
-            throw "`options` must be either Array or a hash";
+            throw Error("`options` must be either Array or a hash");
         }
         var res = [];
         var def;
@@ -743,7 +743,10 @@ Amm = {
                 }
                 res.push(instance);
             } catch (e) {
-                if (typeof e === "string") e = "item #'" + (keys[i] || i) + "': " + e;
+                if (typeof e === "string") e = Error("item #'" + (keys[i] || i) + "': " + e);
+                else if (e instanceof Error) {
+                    e.message = "item #'" + (keys[i] || i) + "': " + e.message;
+                }
                 throw e;
             }
         }

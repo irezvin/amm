@@ -93,7 +93,7 @@ Amm.WithEvents.invokeHandlers = function(eventName, args, subscribers, dontPush,
                 if (!(argsCpy instanceof Array)) continue;
             }
             if (typeof handler !== 'function' && typeof handler.apply !== 'function') {
-                throw "Cannot call non-function handler or handler without .apply";
+                throw Error("Cannot call non-function handler or handler without .apply");
             }
             handler.apply(scope, argsCpy);
         }
@@ -156,13 +156,13 @@ Amm.WithEvents.prototype = {
     
     // returns true if subscriber was added or undefined if was already present
     subscribe: function(eventName, handler, scope, extra, decorator) {
-        if (typeof eventName !== 'string' || !eventName.length) throw "`eventName` must be a non-empty string";
+        if (typeof eventName !== 'string' || !eventName.length) throw Error("`eventName` must be a non-empty string");
         scope = scope || null; // required by getSubscribers to work properly
         extra = extra || null;
         decorator = decorator || null;
         if (this.strictEvents && !this.hasEvent(eventName)) {
             var miss = this._handleMissingEvent(eventName, handler, scope, extra, decorator);
-            if (miss === undefined) throw "No such out event: '" + eventName+ "'";
+            if (miss === undefined) throw Error("No such out event: '" + eventName+ "'");
             if (miss === false) return true;
         }
         var isFirst = false;

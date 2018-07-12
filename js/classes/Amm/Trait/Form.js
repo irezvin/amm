@@ -14,17 +14,25 @@ Amm.Trait.Form.prototype = {
      * @type {Amm.Collection}
      */
     fields: null,
+    
+    /**
+     * Temporary variable that holds fields' array when setFields() is called 
+     * before this.fields collection is created
+     */
+    _setFormFields: null,
 
     // if also Amm.Trait.Component, adding Field to Component adds it to `fields`
-    _elementsToFields: true,
+    _elementsAreFields: true,
 
-    _displayChildrenToFields: true,
+    _displayChildrenAreFields: true,
 
-    _childrenToFields: true,
+    _childrenAreFields: true,
     
     _fieldsUpdateLevel: 0,
     
-    _fieldsMap: null,
+    _fieldMap: null,
+    
+    _setFieldMap: null,
     
     _fieldsChanged: false,
     
@@ -32,10 +40,12 @@ Amm.Trait.Form.prototype = {
     
     _beginUpdateFields: function() {
         this._fieldsUpdateLevel++;
+        this.fields.beginUpdate();
     },
     
     _endUpdateFields: function() {
         if (!this._fieldsUpdateLevel) throw "Call to _endUpdateFields() w/o corresponding _beginUpdateFields()";
+        this.fields.endUpdate();
         this._fieldsUpdateLevel--;
         if (!this._fieldsUpdateLevel && this._fieldsChanged) {
             this._fieldsChanged = false;
@@ -45,19 +55,26 @@ Amm.Trait.Form.prototype = {
 
     __augment: function(traitInstance, options) {
         
+        Amm.Trait.Field.prototype.__augment.call(this, traitInstance, options);
+        
         var proto = {
             
             indexProperty: 'fieldIndex',
-            assocProperty: 'parentModel',
+            assocProperty: 'form',
             assocInstance: this,
             assocEvents: {
-                fieldNameChange: this._recalcFields,
-                fieldValueChange: this._recalcFields,
-                fieldAppliedChange: this._recalcFields
+                fieldNameChange: this._softRecalc,
+                fieldValueChange: this._softRecalc,
+                fieldAppliedChange: this._softRecalc
             },
-            on__spliceItems: [this._recalcFields, this]
+            on__spliceItems: [this._softRecalc, this]
             
         };
+        
+        if (this._setFormFields) {
+            proto.items = this._setFormFields.slice();
+            this._setFormFields = null;
+        }
         
         if ('fieldsPrototype' in options) {
             if (typeof options.fieldsPrototype === 'object' && options.fieldsPrototype) {
@@ -68,16 +85,24 @@ Amm.Trait.Form.prototype = {
         
         this.fields = new Amm.Collection(proto);
         
-        this._beginUpdateFields();
+        Amm.Element.regInit(this, '99.Amm.Trait.Form', function() {        
+            
+            this._beginUpdateFields();
         
-        if (this._elementsToFields) this.setElementsToFields(true, true);
+            if (this._elementsAreFields) this.setElementsAreFields(true, true);
         
-        if (this._displayChildrenToFields) this.setDisplayChildrenToFields(true, true);
+            if (this._displayChildrenAreFields) this.setDisplayChildrenAreFields(true, true);
         
-        if (this._childrenToFields) this.setChildrenToFields(true, true);
+            if (this._childrenAreFields) this.setChildrenAreFields(true, true);
         
-        this._endUpdateFields();
+            this._endUpdateFields();
+            
+        });
         
+    },
+    
+    _softRecalc: function() {
+        this._recalcFields();
     },
     
     _recalcFields: function(force) {
@@ -86,23 +111,29 @@ Amm.Trait.Form.prototype = {
             return true;
         }
         this._fieldsChanged = false;
-        var newVal = {}, arr = [], idx = 0, hadNames = false, diff = !this._fieldValue, num = 0;
+        var newVal = {}, arr = [], idx = 0, setIdx = 0, hadNames = false, diff = !this._fieldValue, num = 0;
         this._fieldMap = {};
+        this._setFieldMap = {};
         for (var i = 0, l = this.fields.length; i < l; i++) {
-            var p = this.fields[i];
-            if (!p.getFieldApplied()) continue;
-            num++;
-            var v = p.getFieldValue(), n = p.getFieldName();
+            var f = this.fields[i];
+            var v = f.getFieldValue(), n = f.getFieldName();
             if (n === undefined || n === null) {
+                this._setFieldMap[setIdx] = f;
+                setIdx++;
+                if (!f.getFieldApplied()) continue;
+                num++;
                 arr.push(v);
                 newVal[idx] = v;
-                this._fieldMap[idx] = p;
+                this._fieldMap[idx] = f;
                 if (!diff && this._fieldValue[idx] !== v) diff = true;
                 idx++;
             } else {
+                this._setFieldMap[n] = f;
+                if (!f.getFieldApplied()) continue;
+                num++;
                 hadNames = true;
                 newVal[n] = v;
-                this._fieldMap[n] = p;
+                this._fieldMap[n] = f;
                 if (!diff && this._fieldValue[n] !== newVal[n]) diff = true;
             }
         }
@@ -112,6 +143,7 @@ Amm.Trait.Form.prototype = {
         this._lastNum = num;
         var old = this._fieldValue;
         this._fieldValue = hadNames? newVal : arr;
+        if (window.Object && window.Object.freeze) window.Object.freeze(this._fieldValue);
         this.outFieldValueChange(this._fieldValue, old);
         return true;
     },
@@ -130,34 +162,80 @@ Amm.Trait.Form.prototype = {
         return newFields;
     },
     
-    _delFields: function(fields) {
+    _delFields: function(fields, xElements, xChildren, xDisplayChildren) {
+        
+        var tmpFields = [];
+        
+        for (var i = 0, l = fields.length; i < l; i++) {
+            if (fields[i]['Field'] === '__INTERFACE__') tmpFields.push(fields[i]);
+        }        
+        
+        // exclude items that are in other to-be-included sets
+        if (
+            xElements 
+            && tmpFields.length
+            && this._elementsAreFields && this['Component'] 
+            && this._elements.length
+        ) {
+            tmpFields = Amm.Array.arrayDiff(tmpFields, this._elements);
+        }
+        
+        if (
+            xChildren 
+            && tmpFields.length
+            && this._childrenAreFields && this['Composite'] 
+            && this._children.length
+        ) {
+            for (var j = tmpFields.length - 1; j >= 0; j--) {
+                var id = tmpFields[j].getId();
+                if (this._children[id] === tmpFields[j]) {
+                    tmpFields.splice(j, 1);
+                }
+            }
+        }
+        
+        if (
+            xDisplayChildren
+            && tmpFields.length
+            && this._displayChildrenAreFields && this['DisplayParent'] 
+            && this.displayChildren.length
+        ) {
+            tmpFields = Amm.Array.arrayDiff(tmpFields, this.displayChildren);
+        }
+            
+        if (!tmpFields.length) return;
+            
         this._beginUpdateFields();
-        var oldFields = fields.slice(), res = [];
-        for (var i = 0, l = oldFields.length; i < l; i++) {
-            if (oldFields[i]['Field'] !== '__INTERFACE__') continue;
-            var idx = this.fields.indexOf(oldFields[i]);
+        var res = [];
+        for (var i = 0, l = tmpFields.length; i < l; i++) {
+            var idx = this.fields.indexOf(tmpFields[i]);
             if (idx >= 0) {
                 this.fields.removeAtIndex(idx);
-                res.push(oldFields[i]);
+                res.push(tmpFields[i]);
             }
         }
         this._endUpdateFields();
         return res;
     },
     
-    setElementsToFields: function(elementsToFields, force) {
+    setElementsAreFields: function(elementsAreFields, force) {
         
-        elementsToFields = !!elementsToFields;
+        elementsAreFields = !!elementsAreFields;
         
-        var oldElementsToFields = this._elementsToFields;
-        if (oldElementsToFields === elementsToFields && !force) return;
-        this._elementsToFields = elementsToFields;
+        var oldElementsAreFields = this._elementsAreFields;
+        if (oldElementsAreFields === elementsAreFields && !force) return;
+        this._elementsAreFields = elementsAreFields;
         if (!this.fields || this['Component'] !== '__INTERFACE__') return true; // nothing to do
 
-        var m = elementsToFields? 'subscribe' : 'unsubscribe';
+        var m = elementsAreFields? 'subscribe' : 'unsubscribe';
         this[m]('acceptedElements', this._handleFieldComponentAcceptedElements, this);
         this[m]('rejectedElements', this._handleFieldComponentRejectedElements, this);
-        if (elementsToFields && this._elements.length) this._addFields(this._elements);
+        if (this._elements.length) {
+            if (elementsAreFields) 
+                this._addFields(this._elements);
+            else 
+                this._delFields(this._elements, false, true, true);
+        }
         
         return true;
     },
@@ -167,23 +245,35 @@ Amm.Trait.Form.prototype = {
     },
     
     _handleFieldComponentRejectedElements: function(fields) {
-        this._delFields(fields);
+        if (this._childrenAreFields && this['Composite'] && this._children.length) {
+            fields = Amm.Array.arrayDiff(fields, this._children);
+        }
+        if (fields.length && this._displayChildrenAreFields && this['DisplayParent']
+            && this.displayChildren.length) {
+            fields = Amm.Array.arrayDiff(fields, this.displayChildren);
+        }
+        if (fields.length) this._delFields(fields, false, true, true);
     },
 
-    getElementsToFields: function() { return this._elementsToFields; },
+    getElementsAreFields: function() { return this._elementsAreFields; },
 
-    setDisplayChildrenToFields: function(displayChildrenToFields, force) {
+    setDisplayChildrenAreFields: function(displayChildrenAreFields, force) {
         
-        displayChildrenToFields = !!displayChildrenToFields;
+        displayChildrenAreFields = !!displayChildrenAreFields;
         
-        var oldDisplayChildrenToFields = this._displayChildrenToFields;
-        if (oldDisplayChildrenToFields === displayChildrenToFields && !force) return;
-        this._displayChildrenToFields = displayChildrenToFields;
+        var oldDisplayChildrenAreFields = this._displayChildrenAreFields;
+        if (oldDisplayChildrenAreFields === displayChildrenAreFields && !force) return;
+        this._displayChildrenAreFields = displayChildrenAreFields;
         if (!this.fields || this['DisplayParent'] !== '__INTERFACE__') return true; // nothing to do
 
-        var m = displayChildrenToFields? 'subscribe' : 'unsubscribe';
+        var m = displayChildrenAreFields? 'subscribe' : 'unsubscribe';
         this.displayChildren[m]('spliceItems', this._handleFieldDisplayChildrenSpliceItems, this);
-        if (displayChildrenToFields && this.displayChildren.length) this._addFields(this.displayChildren);
+        if (this.displayChildren.length) {
+            if (displayChildrenAreFields) 
+                this._addFields(this.displayChildren);
+            else 
+                this._delFields(this.displayChildren, true, true, false);
+        }
         
         return true;
     },
@@ -192,26 +282,32 @@ Amm.Trait.Form.prototype = {
         var del = Amm.Array.symmetricDiff(cut, insert);
         var add = Amm.Array.symmetricDiff(insert, cut);
         if (del.length && add.length) this._beginUpdateFields();
-        if (del.length) this._delFields(del);
+        if (del.length) this._delFields(del, true, true, false);
         if (add.length) this._addFields(add);
         if (del.length && add.length) this._endUpdateFields();
    },
 
-    getDisplayChildrenToFields: function() { return this._displayChildrenToFields; },
+    getDisplayChildrenAreFields: function() { return this._displayChildrenAreFields; },
 
-    setChildrenToFields: function(childrenToFields, force) {
+    setChildrenAreFields: function(childrenAreFields, force) {
         
-        childrenToFields = !!childrenToFields;
+        childrenAreFields = !!childrenAreFields;
         
-        var oldChildrenToFields = this._childrenToFields;
-        if (oldChildrenToFields === childrenToFields && !force) return;
-        this._childrenToFields = childrenToFields;
+        var oldChildrenAreFields = this._childrenAreFields;
+        if (oldChildrenAreFields === childrenAreFields && !force) return;
+        this._childrenAreFields = childrenAreFields;
         if (!this.fields || this['Composite'] !== '__INTERFACE__') return true; // nothing to do
         
-        var m = childrenToFields? 'subscribe' : 'unsubscribe';
-        this.displayChildren[m]('childAdded', this._handleFieldCompositeChildAdded, this);
-        this.displayChildren[m]('childRemoved', this._handleFieldCompositeChildRemoved, this);
-        if (childrenToFields && this._children.length) this._addFields(this._children);
+        var m = childrenAreFields? 'subscribe' : 'unsubscribe';
+        this[m]('childAdded', this._handleFieldCompositeChildAdded, this);
+        this[m]('childRemoved', this._handleFieldCompositeChildRemoved, this);
+        var c = this.getChildren();
+        if (c.length) {
+            if (childrenAreFields)
+                this._addFields(c);
+            else 
+                this._delFields(c, true, false, true);
+        }
         
         return true;
     },
@@ -221,10 +317,10 @@ Amm.Trait.Form.prototype = {
     },
     
     _handleFieldCompositeChildRemoved: function(child) {
-        this._delFields([child]);
+        this._delFields([child], true, false, true);
     },
     
-    getChildrenToFields: function() { return this._childrenToFields; },
+    getChildrenAreFields: function() { return this._childrenAreFields; },
 
     _cleanup_Model: function() {    
         this.fields.cleanup();
@@ -242,15 +338,70 @@ Amm.Trait.Form.prototype = {
         if (pp.length) this.fields.push.apply(this.fields, pp);
     },
     
-    getFieldValue: function(key) {
-        if (this._fieldValue === undefined) {
-            this._recalcFields(true);
+    setFields: function(fields) {
+        
+        if (!this.fields) {
+            if (!this._setFormFields) this._setFormFields = fields;
+            else {
+                if (!fields) this._setFormFields = null;
+                else if (!(fields instanceof Array || fields['Amm.Array']))
+                    throw Error("`fields` must be an Array or Amm.Array");
+                this._setFormFields = fields;
+            }
+            return;
         }
+        
+        var toDel = Amm.Array.arrayDiff(this.fields, fields);
+        var toAdd = Amm.Array.arrayDiff(fields, this.fields);
+        if (!toDel.length && !toAdd.length) return;
+        this._beginUpdateFields();
+        if (toDel.length) this._delFields(toDel, true, true, true);
+        if (fields.length) this.fields.acceptMany(fields);
+        this._endUpdateFields();
+        
+    },
+    
+    getFields: function() {
+        
+        if (!this.fields) {
+            if (!this._setFormFields) this._setFormFields = [];
+            return this._setFormFields;
+        }
+        
+        return this.fields;
+        
+    },
+    
+    /**
+     * locates target field, first key and tail of the key
+     * for methods like setFieldValue, getFieldValue
+     * 
+     * {allArgs} is Arguments of calling function; arg #0 is ignored
+     * 
+     * returns: [targetField, firstKey, remainingKey]
+     */
+
+    _parseKeyArgs: function(start, allArgs, toSet) {
+        var key = allArgs[start];
         if (key !== undefined) {
-            // TODO: support for chaining several keys
-            return this._fieldValue[key];
+            // we support both setFieldValue(value, ['key', 'subKey']) 
+            // and setFieldValue(value, 'key', 'subkey')
+            // and even mixed mode: setFieldValue(value, ['key', 'subkey'], 'sub-subkey')
+            var fullKey = key, topKey;
+            if (allArgs.length > start + 1) {
+                if (!(fullKey instanceof Array)) fullKey = [fullKey];
+                fullKey = fullKey.concat(Array.prototype.slice.call(allArgs, start + 1));
+            }
+            if (fullKey instanceof Array) {
+                topKey = fullKey.shift();
+                if (!fullKey.length) fullKey = undefined;
+            } else {
+                topKey = fullKey;
+                fullKey = undefined;
+            }            
+            var targetField = toSet? this._setFieldMap[topKey] : this._fieldMap[topKey];
+            return [targetField, topKey, fullKey];
         }
-        return this._fieldValue;
     },
     
     setFieldValue: function(value, key) {
@@ -258,16 +409,45 @@ Amm.Trait.Form.prototype = {
         // TODO: variable-length arrays aren't supported yet
         // TODO: what to do with extra or missing keys?
         if (key !== undefined) {
-            // TODO: support chaining of several keys
-            if (this._fieldMap[key]) return this._fieldMap[key].setFieldValue(value);
+            var args = this._parseKeyArgs(1, arguments, true), targetField = args[0];         
+            if (targetField)  return targetField.setFieldValue(value, args[2]);
             else return undefined;
         }
         this._beginUpdateFields();
-        if (typeof value !== 'object' || !value) throw "`value` must be a hash or an Array";
-        for (var i in value) if (value.hasOwnProperty(i) && this._fieldMap[i]) {
-            this._fieldMap[i].setFieldValue(value[i]);
+        if (typeof value !== 'object' || !value) throw Error("`value` must be a hash or an Array; provided: " + Amm.describeType(value));
+        for (var i in value) if (value.hasOwnProperty(i) && this._setFieldMap[i]) {
+            this._setFieldMap[i].setFieldValue(value[i]);
         }
         this._endUpdateFields();
+    },
+    
+    
+    // if we will return cached _fieldValue, it will pass === checks
+    getFieldValue: function(key) {
+        if (this._fieldValue === undefined) {
+            this._recalcFields(true);
+        }
+        if (key === undefined) return this._fieldValue;
+
+        var 
+            args = this._parseKeyArgs(0, arguments, false), 
+            targetField = args[0], 
+            topKey = args[1],
+            fullKey = args[2];
+    
+        var res = this._fieldValue[topKey];
+        if (fullKey) {
+            do {
+                var subKey = fullKey.shift();
+                if ((typeof res === 'object') && (res instanceof Array || res) && subKey in res) {
+                    res = res[subKey];
+                } else {
+                    res = undefined;
+                }
+            } while (fullKey.length);
+            if (fullKey.length) res = undefined; // we didn't process whole length
+        }
+        return res;
     },
     
     _doValidate: function(errors, value, empty, label) {
@@ -287,6 +467,5 @@ Amm.extend(Amm.Trait.Form, Amm.Trait.Field);
 
 Amm.defineLangStrings ({
     'lang.Amm.Trait.Form.invalidFieldsMsg': 'One or more fields of %field are filled with errors',
-    'lang.Amm.Trait.Form.form': 'the form',
-    
+    'lang.Amm.Trait.Form.form': 'the form'
 });
