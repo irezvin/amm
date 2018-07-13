@@ -80,7 +80,9 @@ Amm.Trait.Visual.prototype = {
         var className;
         if (part) {
             var rx = new RegExp('\\s*\\b' + Amm.Util.regexEscape(part) + '\\b\\s*', 'g');
+            if (this._className === undefined) this._className = '';
             if (!classNameOrToggle) {
+                if (this._className === undefined) this._className = '';
                 className = this._className.replace(rx, ' ').replace(/ {2,}/g, ' ');
                 if (className[0] === ' ') className = className.slice(1);
                 if (className[className.length - 1] === ' ') className = className.slice(0, -1);

@@ -65,10 +65,10 @@ Amm.Trait.Form.prototype = {
             assocEvents: {
                 fieldNameChange: this._softRecalc,
                 fieldValueChange: this._softRecalc,
-                fieldAppliedChange: this._softRecalc
+                fieldAppliedChange: this._softRecalc,
+                needValidateChange: this._fieldNeedValidate,
             },
             on__spliceItems: [this._softRecalc, this]
-            
         };
         
         if (this._setFormFields) {
@@ -103,6 +103,10 @@ Amm.Trait.Form.prototype = {
     
     _softRecalc: function() {
         this._recalcFields();
+    },
+    
+    _fieldNeedValidate: function(needValidate) {
+        this.setNeedValidate(true);
     },
     
     _recalcFields: function(force) {

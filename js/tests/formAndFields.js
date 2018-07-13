@@ -477,5 +477,32 @@
         
     });
     
+    QUnit.test("Form.validate", function(assert) {
+        
+        var msg = "subErrors";
+        
+        var f = new Amm.Element({
+            traits: ['Amm.Trait.Form'], 
+            invalidFieldsMessage: msg
+        });
+        var a = new Amm.Element({id: 'a', traits: ['Amm.Trait.Field'], fieldRequired: true, form: f});
+        var b = new Amm.Element({id: 'b', traits: ['Amm.Trait.Field'], fieldRequired: true, form: f});
+        
+        b.setFieldValue(10);
+            assert.notOk(a.validate(), 'Form sub-field is invalid when value not provided and required is TRUE');
+            assert.notOk(f.validate(), 'Form is invalid when sub-field is invalid');
+            assert.deepEqual(f.getFieldErrors(), [msg], 'Form.getFieldErrors() return msg about error in sub-field');
+            assert.equal(f.getNeedValidate(), false, 'Form.needValidate is FALSE after Form.validate()');
+
+        a.setFieldApplied(false);
+        
+        assert.equal(f.getNeedValidate(), true, "form.`needValidate` is true after field.`needValidate` became true");
+        
+            assert.ok(f.validate(), 'form.validate() is TRUE after sub-field isn\'t applied');
+            assert.deepEqual(f.getFieldErrors(), null, 'form doesn\'t have errors when it\'s valid');
+        
+        
+    });
+    
     
 }) ();

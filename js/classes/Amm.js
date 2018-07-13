@@ -522,6 +522,7 @@ Amm = {
         var P = ('' + property[0]).toUpperCase() + property.slice(1), setterName = 'set' + P;
         if (args !== undefined && args !== null) {
             if (!(args instanceof Array)) args = [args];
+            else args = [].concat(args);
             args.unshift(value);
         }
         if (typeof element[setterName] === 'function') {
@@ -787,6 +788,16 @@ Amm = {
         if (c) return c;
         if (value.constructor && value.constructor.name) return value.constructor.name;
         return 'object';
+    },
+    
+    /**
+     * Traverses dom tree up until discovers Amm view that is bound to the node.
+     * Returns element of that view
+     */
+    findElement: function(domNode) {
+        var views = Amm.DomHolder.find(domNode);
+        if (views[0] && views[0]['Amm.View.Abstract']) return views[0].getElement();
+        return null;
     }
     
 };

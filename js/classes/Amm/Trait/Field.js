@@ -32,6 +32,11 @@ Amm.Trait.Field.VALIDATE_BLUR_CHANGE = 3;
 Amm.Trait.Field.VALIDATE_EXPRESSIONS = 4;
 
 /**
+ * Validates instantly when `needValidate` becomes TRUE
+ */ 
+Amm.Trait.Field.VALIDATE_INSTANT = 8;
+
+/**
  * We had translation error during input
  */
 Amm.Trait.Field.TRANSLATION_ERROR_IN = 1;
@@ -272,10 +277,16 @@ Amm.Trait.Field.prototype = {
     /**
      * Generally, returns boolean (true if valid); sets fieldErrors field
      * Doesn't call validators or trigger onValidate event if field value is empty.
+     * Fields with !getFieldApplied() are always valid
+     * 
      * @param {onlyReturnErrors} boolean Return Array with errors; don't set this.fieldErrors
      * @returns Array|boolean
      */
     validate: function(onlyReturnErrors) {
+        if (!this._fieldApplied) {
+            if (onlyReturnErrors) return [];
+            return true;
+        }
         if (this._translationErrorState) {
             if (onlyReturnErrors) return this._fieldErrors? [].concat(this._fieldErrors) : [];
             return false;
@@ -347,6 +358,9 @@ Amm.Trait.Field.prototype = {
         var oldValidateMode = this._validateMode;
         if (oldValidateMode === validateMode) return;
         this._validateMode = validateMode;
+        if (this._needValidate && validateMode & (Amm.Trait.Field.VALIDATE_INSTANT)) {
+            this.validate();
+        }
         return true;
     },
 
@@ -388,6 +402,7 @@ Amm.Trait.Field.prototype = {
     },
 
     getFieldErrors: function() {
+        if (!this._fieldApplied) return [];
         if (this._fieldErrors === undefined) this.validate(); 
         return this._fieldErrors? [].concat(this._fieldErrors) : null;
     },
@@ -402,6 +417,7 @@ Amm.Trait.Field.prototype = {
         if (oldFieldApplied === fieldApplied) return;
         this._fieldApplied = fieldApplied;
         this.outFieldAppliedChange(fieldApplied, oldFieldApplied);
+        this.setNeedValidate(true);
         return true;
     },
 
@@ -571,6 +587,9 @@ Amm.Trait.Field.prototype = {
         var oldNeedValidate = this._needValidate;
         this._needValidate = needValidate;
         this._out('needValidateChange', needValidate, oldNeedValidate);
+        if (needValidate && (this._validateMode & Amm.Trait.Field.VALIDATE_INSTANT)) {
+            this.validate();
+        }
         return true;
     },
     
@@ -625,7 +644,7 @@ Amm.Trait.Field.prototype = {
     _handleValidationExpressionChange: function(value, oldValue) {
         // var extra = arguments[arguments.length - 1];
         this.setNeedValidate(true);
-        if (this._validateMode & Amm.Trait.Field.VALIDATE_EXPRESSIONS) {
+        if (this._needValidate && (this._validateMode & Amm.Trait.Field.VALIDATE_EXPRESSIONS)) {
             this.validate();
         }
     },
