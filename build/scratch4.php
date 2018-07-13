@@ -44,6 +44,10 @@
         </script>
         
         <style type='text/css'>
+            .withErrors {
+                border: 1px solid red;
+                margin: 0;
+            }
             h1 {
                 color: orangered;
                 font-weight: normal;
@@ -88,7 +92,13 @@
         </style>
     </head>
     <body>
-        <div data-amm-id="@form" data-amm-e='{extraTraits: [t.Form, t.Component]}' data-amm-v='{class: v.StaticDisplayParent}'>
+        <div data-amm-id="@form" data-amm-e="{
+                extraTraits: [t.Form, t.Component],
+                in__className__withErrors: 'this.fieldErrors'
+            }" data-amm-v='[v.StaticDisplayParent, v.Visual]' style="padding: 1em; margin: 1px">
+            <div class="formErrors" data-amm-v='[v.Visual, v.Content]' data-amm-e="{in__content: 'this.component.fieldErrors', contentTranslator: 'Amm.Translator.Errors'}"></div>
+            <button onclick="Amm.findElement(this).validate()">Validate</button>            
+            <br /><br />
             <div data-amm-v="[{class: v.Visual}, {class: v.Annotated}]">
                 <label for="name"><span class="annotation a_label">Name</span><span class="annotation a_required">*</span></label>
                 <input id="name" type="text" data-amm-id="name"
@@ -115,34 +125,33 @@
                     }" />
             </div>
             <br />
-            <button>Send info</button>
-            <br />
-            <select id="sel1" data-amm-id="sel1" name="zz" data-amm-v="[v.Select, v.Visual]" 
-                data-amm-e="{
-                options: [
-                    {
-                        value: 'foo', 
-                        label: 'Foo', 
-                        prop__linked: {
-                            foo1: 'Foo1',
-                            foo2: 'Foo2'
-                        }
-                    },
-                    {
-                        value: 'bar', 
-                        label: 'Bar', 
-                        prop__linked: {
-                            foo1: 'Bar1',
-                            foo2: 'Bar2'
-                        }
-                    },
-                ]
-            }">
-            </select>
-            <select data-amm-v="[v.Select, v.Visual]" data-amm-e="{
-                in__options: 'sel1.selectionCollection[0].linked'
-            }" data-amm-id="sel2" id="sel2">
-            </select>
         </div>
+        <h2>Linked selects (unrelated)</h2>
+        <select id="sel1" data-amm-id="sel1" name="zz" data-amm-v="[v.Select, v.Visual]" 
+            data-amm-e="{
+            options: [
+                {
+                    value: 'foo', 
+                    label: 'Foo', 
+                    prop__linked: {
+                        foo1: 'Foo1',
+                        foo2: 'Foo2'
+                    }
+                },
+                {
+                    value: 'bar', 
+                    label: 'Bar', 
+                    prop__linked: {
+                        foo1: 'Bar1',
+                        foo2: 'Bar2'
+                    }
+                },
+            ]
+        }">
+        </select>
+        <select data-amm-v="[v.Select, v.Visual]" data-amm-e="{
+            in__options: 'sel1.selectionCollection[0].linked'
+        }" data-amm-id="sel2" id="sel2">
+        </select>
     </body>
 </html>
