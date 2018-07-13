@@ -66,8 +66,8 @@ Amm.Expression.FunctionHandler.prototype = {
     setFn: function(fn) {
         var oldFn = this._fn;
         if (oldFn === fn) return;
-        if (this._fn) throw "Can setFn() only once";
-        if (typeof fn !== 'function') throw "fn must be a function";
+        if (this._fn) throw Error("Can setFn() only once");
+        if (typeof fn !== 'function') throw Error("fn must be a function");
         this._fn = fn;
         return true;
     },
@@ -78,7 +78,7 @@ Amm.Expression.FunctionHandler.prototype = {
         var oldThisObject = this._thisObject;
         if (oldThisObject === thisObject) return;
         if (typeof thisObject !== 'object' || !thisObject)
-            throw "thisObject must be a non-null object";
+            throw Error("thisObject must be a non-null object");
         this._thisObject = thisObject;
         if (thisObject['Amm.WithEvents'] && thisObject.hasEvent('cleanup')) {
             thisObject.subscribe('cleanup', this.cleanup, this);
@@ -126,10 +126,10 @@ Amm.Expression.FunctionHandler.prototype = {
             writeObject = arguments[0][1];
             writeArgs = arguments[0][2];
         }
-        if (this._writeProperty) throw "Can setWriteProperty() only once";
-        if (!writeProperty) throw "writeProperty must be non-falseable";
+        if (this._writeProperty) Error("Can setWriteProperty() only once")
+        if (!writeProperty) Error("writeProperty must be non-falseable")
         if (writeProperty['Amm.Expression']) {
-            if (writeObject || writeArgs) throw "When Amm.Expression is used as writeProperty, don't specify writeObject/writeArgs";
+            if (writeObject || writeArgs) Error("When Amm.Expression is used as writeProperty, don't specify writeObject/writeArgs")
             writeObject = writeProperty;
             writeProperty = 'value';
             writeObject.subscribe('writeDestinationChanged', this._write, this);
@@ -140,7 +140,7 @@ Amm.Expression.FunctionHandler.prototype = {
             writeArgs = [writeArgs];
         }
         if (!writeObject && !this._thisObject) {
-            throw "setThisObject() or provide writeObject when setting writeProperty";
+            Error("setThisObject() or provide writeObject when setting writeProperty")
         }
         this._writeProperty = writeProperty;
         this._writeObject = writeObject;

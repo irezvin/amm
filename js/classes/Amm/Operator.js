@@ -109,7 +109,7 @@ Amm.Operator.prototype = {
     setExpression: function(expression) {
         Amm.is(expression, 'Amm.Expression', 'Expression');
         if (this._expression === expression) return;
-        else if (this._expression) throw "Can setExpression() only once";
+        else if (this._expression) Error("Can setExpression() only once")
         this._expression = expression;
         for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
             var o = this['_' + this.OPERANDS[i] + 'Operator'];
@@ -372,8 +372,7 @@ Amm.Operator.prototype = {
         
         if (!diff) return;
         
-        if (diff[0] !== 'splice') throw "Assertion - should receive only 'splice' event (spliceOnly === true)";
-        
+        if (diff[0] !== 'splice') Error("Assertion - should receive only 'splice' event (spliceOnly === true)")
         // 0 'splice', 1 `start`, 2 `length`, 3 `elements` (`insert`)
         var cut = diff[2]? oldValue.slice(diff[1], diff[1] + diff[2]) : [];
         var ci = this._makeChangeInfoForSplice(diff[1], cut, diff[3]);
@@ -419,7 +418,7 @@ Amm.Operator.prototype = {
      */ 
     _doSetValue: function(value, checkOnly) {
         if (checkOnly) return "assignment not supported";
-        throw "Call to abstract method _doSetValue";
+        Error("Call to abstract method _doSetValue")
     },
     
     getReadonly: function() {
@@ -430,12 +429,12 @@ Amm.Operator.prototype = {
     
     // evaluates the expression
     _doEvaluate: function(again) {
-        throw "Call to abstract method _doEvaluate";
+        Error("Call to abstract method _doEvaluate")
     },
     
     // creates the function that recevies the Expression instance and evaluates it
     toFunction: function() {
-        throw "Call to abstract method toFunction";
+        Error("Call to abstract method toFunction")
     },
     
     /**
@@ -443,7 +442,7 @@ Amm.Operator.prototype = {
      *  and returns FALSEABLE value on success or exception description on failure
      **/
     assignmentFunction: function() {
-        throw "Call to abstract method assignmentFunction";
+        Error("Call to abstract method assignmentFunction")
     },
     
     // returns function that returns value of operand `operand`
@@ -795,7 +794,7 @@ Amm.Operator.prototype = {
         if (contextId in this._contextState) {
             newState = this._contextState[contextId];
             if (newState === null) {
-                throw "Attempt to setContextId() of already destroyed context";
+                Error("Attempt to setContextId() of already destroyed context")
             }
         } else {
             newState = this._constructContextState();

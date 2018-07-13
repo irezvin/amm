@@ -17,24 +17,24 @@ Amm.Element = function(options) {
                 if (typeof view === 'string') view = {class: view};
                 var cl = view['class'];
                 if (!cl) {
-                    throw "views[" + i + "].class not provided";
+                    throw Error("views[" + i + "].class not provided");
                 }
                 var cr = Amm.getFunction(cl);
                 if (!cr.prototype['Amm.View.Abstract'])
-                    throw "View class must be a descendant of Amm.View.Abstract";
+                    throw Error("View class must be a descendant of Amm.View.Abstract");
                 var tmp = view.class, hash = view;
                 delete view.class;
                 view = new cr(view);
                 hash.class = tmp; // add class back to the options hash
             }
-            if (!view['Amm.View.Abstract']) throw "Created instance isn't a descendant of Amm.View.Abstract";
+            if (!view['Amm.View.Abstract']) throw Error("Created instance isn't a descendant of Amm.View.Abstract");
             views.push(view);
             if (!hasTraits) traits = traits.concat(view.getSuggestedTraits());
         }
         delete options.views;
     }
     if (options && options.extraTraits) {
-        if (hasTraits) throw "extraTraits and traits options cannot be used simultaneously";
+        if (hasTraits) throw Error("extraTraits and traits options cannot be used simultaneously");
         traits = traits.concat(options.extraTraits);
         delete options.extraTraits;
     }
@@ -149,11 +149,11 @@ Amm.Element.prototype = {
     setId: function(id) {
         if (this._id === id) return;
         if (('' + id).indexOf(Amm.ID_SEPARATOR) >= 0) {
-            throw "`id` must not contain Amm.ID_SEPARATOR ('" + Amm.ID_SEPARATOR + "')";
+            throw Error("`id` must not contain Amm.ID_SEPARATOR ('" + Amm.ID_SEPARATOR + "')");
         }
         var o = this._id, oldPath = this.getPath(), otherChild;
         if (this._parent && (otherChild = this._parent.getChild(id)) && otherChild !== this) {
-            throw "Cannot setId() since the Parent already hasChild() with id '" + id + "'";
+            throw Error("Cannot setId() since the Parent already hasChild() with id '" + id + "'");
         }
         this._id = id;
         this.outIdChange(id, o);
@@ -199,7 +199,7 @@ Amm.Element.prototype = {
         // check that parent isn't our child
         if (parent) {
             for (var e = parent; e; e = e.getParent()) {
-                if (e === this) throw "Cannot setParent() when `parent` is the child of me";
+                if (e === this) throw Error("Cannot setParent() when `parent` is the child of me");
             }
         }
         var oldParent = this._parent, oldPath = this.getPath();
@@ -261,7 +261,7 @@ Amm.Element.prototype = {
      */
     getByPath: function(path) {
         if (!((typeof path === 'string' || path instanceof Array) && path.length)) 
-            throw "`path` must be a non-empty array or non-empty string";
+            throw Error("`path` must be a non-empty array or non-empty string");
         var res = null, scope;
         
         if (path[0] === '^' && this._id !== '^') // it's a root - take a shortcut
@@ -421,7 +421,7 @@ Amm.Element.prototype = {
     
     setProperties: function(properties) {
         if (!properties || typeof properties !== 'object') {
-            throw "`properties` must be an object";
+            throw Error("`properties` must be an object");
         }
         var hh = [];
         for (var i in properties) if (properties.hasOwnProperty(i)) {
@@ -476,12 +476,12 @@ Amm.Element.prototype = {
         } else if (typeof definition === 'function') {
             fn = definition;
         } else {
-            throw "in__<property> must be a string or a function";
+            throw Error("in__<property> must be a string or a function");
         }
         if (fn) {
             expression = new Amm.Expression.FunctionHandler(fn, this, propName, undefined, args);
         }
-        if (!expression) throw "Assertion";
+        if (!expression) throw Error("Assertion");
         return expression;
     },
     
@@ -495,11 +495,11 @@ Amm.Element.prototype = {
         var inside = false, buf = '';
         var rep = function(match) {
             if (match === '{:') {
-                if (inside) throw "Cannot nest {: in function template";
+                if (inside) throw Error("Cannot nest {: in function template");
                 inside = true;
                 return '';
             } else if (match === ':}') {
-                if (!inside) throw ":} without opening {: in function template";
+                if (!inside) throw Error(":} without opening {: in function template");
                 inside = false;
                 var res = "g('" + buf.replace(/(['"\\])/g, '\\$1') + "')";
                 buf = '';

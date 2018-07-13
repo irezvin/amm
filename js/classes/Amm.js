@@ -282,8 +282,8 @@ Amm = {
             if (!item || item[interfaces[i]] !== '__INTERFACE__') {
                 if (throwIfNot) {
                     var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
-                    throw argname += " must implement all following interfaces: " + interfaces.join(',')
-                        + " but it doesn't implement interface " + interfaces[i];
+                    throw Error(argname += " must implement all following interfaces: " + interfaces.join(',')
+                        + " but it doesn't implement interface " + interfaces[i]);
                 } else {
                     return false;
                 }
@@ -297,7 +297,7 @@ Amm = {
             for (var j = 0, n = j.length; j < n; j++) if (Amm.is(item, className[j])) return true;
             if (throwIfNot) {
                 var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
-                throw argname + " must be an instance of " + className.join("|");
+                throw Error(argname + " must be an instance of " + className.join("|"));
             }
             return res;
         }

@@ -192,12 +192,12 @@ Amm.Collection.prototype = {
     _assocEvents: null,
     
     setUnique: function(unique) {
-        if (!unique) throw "setUnique(false) is never supported by Amm.Collection";
+        if (!unique) throw Error("setUnique(false) is never supported by Amm.Collection");
         return Amm.Array.prototype.setUnique.call(this, unique);
     },
     
     setSparse: function(sparse) {
-        if (sparse) throw "setSparse(true) is never supported by Amm.Collection";
+        if (sparse) throw Error("setSparse(true) is never supported by Amm.Collection");
         return Amm.Array.prototype.setSparse.call(this, sparse);
     },
 
@@ -211,15 +211,15 @@ Amm.Collection.prototype = {
                 || typeof requirements === 'string' 
                 || typeof requirements === 'function';
         if (!ok) {
-            throw "requirements must be an Array, a string or a function";
+            throw Error("requirements must be an Array, a string or a function");
         } 
         var oldRequirements = this._requirements;
         if (oldRequirements === requirements) return;
         if (requirements) { // check brave new requirements
             for (var i = 0, l = this.length; i < l; i++) {
                 if (!Amm.meetsRequirements(this[i], requirements)) {
-                    throw "Cannot setRequirements(): at least one item (" + i + ")"
-                        + " doesn't meet new `requirements`";
+                    throw Error("Cannot setRequirements(): at least one item (" + i + ")"
+                        + " doesn't meet new `requirements`");
                 }
             }
         }
@@ -327,7 +327,7 @@ Amm.Collection.prototype = {
         for (i = 0, n = items.length; i < n; i++) {
             var problem = {};
             if (!this.canAccept(items[i], true, problem)) {
-                throw "Cannot accept items[" + i + "]: " + problem.error;
+                throw Error("Cannot accept items[" + i + "]: " + problem.error);
             }
         }
         // check if there are duplicates in the added aray
@@ -351,21 +351,21 @@ Amm.Collection.prototype = {
             if (idx.length > 2) {
                 var s = [];
                 for (j = 0; j < idx.length; j++) s.push(this._describeIdx(idx[j], items.length));
-                throw "Multiple duplicates of item: " + s.join (", ");
+                throw Error("Multiple duplicates of item: " + s.join (", "));
             }
             var exact = long[idx[0]] === long[idx[1]];
             
             if (idx[0] >= items.length)
-                throw "WTF: we found two duplicates in `this`: " 
+                throw Error("WTF: we found two duplicates in `this`: " 
                     + this._describeIdx(idx[0], items.length) 
                     + (exact? ' === ' : ' ~= ') 
-                    + this._describeIdx(idx[1], items.length);
+                    + this._describeIdx(idx[1], items.length));
             
             if (idx[1] < items.length)
-                throw "There are at least two duplicates in `items`: " 
+                throw Error("There are at least two duplicates in `items`: " 
                     + this._describeIdx(idx[0], items.length) 
                     + (exact? ' === ' : ' ~= ') 
-                    + this._describeIdx(idx[1], items.length);
+                    + this._describeIdx(idx[1], items.length));
             
             // now check if our index is in delete interval 
             // - therefore is a candidate for a reinsert
@@ -378,18 +378,18 @@ Amm.Collection.prototype = {
             }
             
             if (exact && !reinsert && !this._ignoreExactMatches) {
-                throw "Item already in collection: " 
+                throw Error("Item already in collection: " 
                     + this._describeIdx(idx[0], items.length) 
                     + ' === ' 
                     + this._describeIdx(idx[1], items.length)
-                    + ". setIgnoreExactMatches(true) next time.";
+                    + ". setIgnoreExactMatches(true) next time.");
             }
             if (!exact && !reinsert && !this._allowUpdate) {
-                throw "Added item matches existing one, but no update routine provided: "
+                throw Error("Added item matches existing one, but no update routine provided: "
                     + this._describeIdx(idx[0], items.length) 
                     + ' ~= ' 
                     + this._describeIdx(idx[1], items.length)
-                    + ". setUpdateProperties() and/or setUpdateFn() may help.";
+                    + ". setUpdateProperties() and/or setUpdateFn() may help.");
             }
                 
             if (reinsert) {
@@ -456,7 +456,7 @@ Amm.Collection.prototype = {
         var pa = this._preAccept([item]);
         var res;
         if (this._sorted && index !== undefined) {
-            throw "`index` must not be used with sorted Collection - check for getIsSorted() next time";
+            throw Error("`index` must not be used with sorted Collection - check for getIsSorted() next time");
         }
         if (index === undefined) index = this.length;
         if (index < 0) index = this.length + index;
@@ -494,7 +494,7 @@ Amm.Collection.prototype = {
     acceptMany: function(items, index) {
         var sorted = this._sorted;
         if (sorted && index !== undefined) 
-            throw "`index` must not be used with sorted Collection - check for getIsSorted() next time";
+            throw Error("`index` must not be used with sorted Collection - check for getIsSorted() next time");
         if (!items.length) return []; // shortcut
         if (items.length === 1) return [this.accept(items[0])];
         var pa = this._preAccept(items);
@@ -567,7 +567,7 @@ Amm.Collection.prototype = {
      */
     intersect: function(items, strict, groups) {
         if (groups && !(groups instanceof Array))
-            throw "`groups` must be an Array (or falseable value)";
+            throw Error("`groups` must be an Array (or falseable value)");
         if (!items.length) return []; // nothing to do
         var long = this.getItems().concat(items);
         var dups = Amm.Array.findDuplicates(long, false, strict? null : this._comparison, this.length, true);
@@ -588,23 +588,23 @@ Amm.Collection.prototype = {
     
     reject: function(itemOrIndex, nonStrict) {
         if (!this._suppressDeleteEvent && !this._allowDelete) {
-            throw Amm.Collection.ERR_DELETE_DISALLOWED;
+            throw Error(Amm.Collection.ERR_DELETE_DISALLOWED);
         }
         var index, item;
         if (typeof itemOrIndex !== 'object') {
             index = parseInt(itemOrIndex);
-            if (isNaN(index)) throw "itemOrIndex must be an object or a number";
+            if (isNaN(index)) throw Error("itemOrIndex must be an object or a number");
             if (index < 0) index = this.length + index;
-            if (index >= this.length) throw "index [" + index + "] doesn't exist";
+            if (index >= this.length) throw Error("index [" + index + "] doesn't exist");
             item = this[index];
         } else {
             item = itemOrIndex;
             index = nonStrict? this.indexOf(item) : this.strictIndexOf(item);
-            if (index < 0) throw "itemOrIndex specifies non-existing item";
+            if (index < 0) throw Error("itemOrIndex specifies non-existing item");
             item = this[index];
         }
         if (!this._suppressDeleteEvent && !this._allowChangeOrder && index < this.length - 1) {
-            throw Amm.Collection.ERR_REORDER_DISALLOWED;
+            throw Error(Amm.Collection.ERR_REORDER_DISALLOWED);
         }
         this._rotate(index, -1);
         this._dissociate(item);
@@ -619,7 +619,7 @@ Amm.Collection.prototype = {
     
     push: function(element, _) {
         if (!this._allowAdd) {
-            throw Amm.Collection.ERR_ADD_DISALLOWED;
+            throw Error(Amm.Collection.ERR_ADD_DISALLOWED);
         }
         var items = Array.prototype.slice.apply(arguments);
         if (items.length === 1) this.accept(items[0]);
@@ -628,15 +628,15 @@ Amm.Collection.prototype = {
     },
     
     pop: function() {
-        if (!this._allowDelete) throw Amm.Collection.ERR_DELETE_DISALLOWED;
+        if (!this._allowDelete) throw Error(Amm.Collection.ERR_DELETE_DISALLOWED);
         if (this.length) return this.reject(this.length - 1);
     },
     
     unshift: function(element, _) {
         if (!this._allowAdd) {
-            throw Amm.Collection.ERR_ADD_DISALLOWED;
+            throw Error(Amm.Collection.ERR_ADD_DISALLOWED);
         }
-        if (!this._allowChangeOrder) throw Amm.Collection.ERR_REORDER_DISALLOWED;
+        if (!this._allowChangeOrder) throw Error(Amm.Collection.ERR_REORDER_DISALLOWED);
         var items = Array.prototype.slice.apply(arguments);
         var index = this._sorted? undefined : 0;
         if (items.length === 1) this.accept(items[0], index);
@@ -645,8 +645,8 @@ Amm.Collection.prototype = {
     },
     
     shift: function() {
-        if (!this._allowDelete) throw Amm.Collection.ERR_DELETE_DISALLOWED;
-        if (!this._allowChangeOrder) throw Amm.Collection.ERR_REORDER_DISALLOWED;
+        if (!this._allowDelete) throw Error(Amm.Collection.ERR_DELETE_DISALLOWED);
+        if (!this._allowChangeOrder) throw Error(Amm.Collection.ERR_REORDER_DISALLOWED);
         if (this.length) return this.reject(0);
     },
 
@@ -657,17 +657,17 @@ Amm.Collection.prototype = {
         var items = Array.prototype.slice.call(arguments, 2);
         
         if (items.length && !this._allowAdd) {
-            throw Amm.Collection.ERR_ADD_DISALLOWED;
+            throw Error(Amm.Collection.ERR_ADD_DISALLOWED);
         }
         if (deleteCount && !this._allowDelete) {
-            throw Amm.Collection.ERR_DELETE_DISALLOWED;
+            throw Error(Amm.Collection.ERR_DELETE_DISALLOWED);
         }
         if (start < 0) {
             start = this.length + start;
             if (start < 0) start = 0;
         } else if (start > this.length) start = this.length;
         if (start < (this.length - deleteCount) && !this._allowChangeOrder) {
-            throw Amm.Collection.ERR_REORDER_DISALLOWED;
+            throw Error(Amm.Collection.ERR_REORDER_DISALLOWED);
         }
         
         if (deleteCount < 0) deleteCount = 0;
@@ -763,7 +763,7 @@ Amm.Collection.prototype = {
     },
     
     reverse: function() {
-        if (!this._allowChangeOrder) throw Amm.Collection.ERR_REORDER_DISALLOWED;
+        if (!this._allowChangeOrder) throw Error(Amm.Collection.ERR_REORDER_DISALLOWED);
         if (this._sorted) {
             this.setSortReverse(!this.getSortReverse());
             return this.getItems();
@@ -786,9 +786,9 @@ Amm.Collection.prototype = {
     },
     
     moveItem: function(index, newIndex) {
-        if (!this._allowChangeOrder) throw Amm.Collection.ERR_REORDER_DISALLOWED;
+        if (!this._allowChangeOrder) throw Error(Amm.Collection.ERR_REORDER_DISALLOWED);
         if (this._sorted) {
-            throw "Cannot moveItem() on sorted Collection. Check with getIsSorted() next time";
+            throw Error("Cannot moveItem() on sorted Collection. Check with getIsSorted() next time");
         }
         var low, high;
         if (index <= newIndex) {
@@ -879,7 +879,7 @@ Amm.Collection.prototype = {
     },
     
     insertItem: function(item, index) {
-        if (index < 0) throw "`index` must be >= 0";
+        if (index < 0) throw Error("`index` must be >= 0");
         var r;
         if (index === undefined || index >= this.length || this._sorted) r = this.accept(item);
         else r = this.accept(item, index);
@@ -893,7 +893,7 @@ Amm.Collection.prototype = {
     // Does NOT subscribe to item change events
     _associate: function(item, index, alsoSubscribe) {
         if (this[index] !== item) {
-            throw "WTF - this[`index`] !== `item`";
+            throw Error("WTF - this[`index`] !== `item`");
         }
         if (this._assocProperty) {
             Amm.setProperty(item, this._assocProperty, this._assocInstance || this);
@@ -1075,7 +1075,7 @@ Amm.Collection.prototype = {
              if (this[newPos] === item) return;
             // try to find the item
             oldPos = this.strictIndexOf(item);
-            if (oldPos < 0) throw "WTF - received item indexProperty change event from item not belonging to this Collection";
+            if (oldPos < 0) throw Error("WTF - received item indexProperty change event from item not belonging to this Collection");
         }
         if (oldPos === newPos) return;
         // now move item to the new place
@@ -1084,7 +1084,7 @@ Amm.Collection.prototype = {
     
     // note: won't change for already accepted items
     setDefaults: function(defaults) {
-        if (defaults && typeof defaults !== 'object') throw "`defaults` must be an object";
+        if (defaults && typeof defaults !== 'object') throw Error("`defaults` must be an object");
         if (!defaults) defaults = null;
         var oldDefaults = this._defaults;
         if (oldDefaults === defaults) return;
@@ -1099,7 +1099,7 @@ Amm.Collection.prototype = {
      * @param {object|null} undefaults
      */
     setUndefaults: function(undefaults) {
-        if (undefaults && typeof undefaults !== 'object') throw "`undefaults` must be an object";
+        if (undefaults && typeof undefaults !== 'object') throw Error("`undefaults` must be an object");
         if (!undefaults) undefaults = null;
         var oldUndefaults = this._undefaults;
         if (oldUndefaults === undefaults) return;
@@ -1327,7 +1327,7 @@ Amm.Collection.prototype = {
 
     setSortFn: function(sortFn) {
         if (sortFn) {
-            if (typeof sortFn !== 'function') throw "sortFn must be a function or a null";
+            if (typeof sortFn !== 'function') throw Error("sortFn must be a function or a null");
         } else {
             sortFn = null;
         }
@@ -1361,11 +1361,11 @@ Amm.Collection.prototype = {
         
         if (this._sortFn) {
             if (fnOrProps) 
-                throw "Cannot sort(fn) when `sortFn` is set; use sort() with no parameters";
+                throw Error("Cannot sort(fn) when `sortFn` is set; use sort() with no parameters");
             return this._sort();
         }
         if (this._sortProperties) {
-            throw "Cannot sort() when `sortProperties` is set";
+            throw Error("Cannot sort() when `sortProperties` is set");
         }
         var changed = {}, old;
         if (this._indexProperty) old = this.getItems();
@@ -1397,7 +1397,7 @@ Amm.Collection.prototype = {
     
     _sort: function() { // re-orders current array
         if (!(this._sortFn || this._sortProperties)) {
-            throw "WTF - call to _sort() w/o _sortFn or _sortProperties";
+            throw Error("WTF - call to _sort() w/o _sortFn or _sortProperties");
         }
         var changed = {}, old;
         if (this._indexProperty) old = this.getItems();
@@ -1513,9 +1513,9 @@ Amm.Collection.prototype = {
             } else {
                 index = this.strictIndexOf(item);
             }
-            if (index < 0) throw "WTF: `item` not found in this";
+            if (index < 0) throw Error("WTF: `item` not found in this");
         }
-        if (this[index] !== item) throw "WTF: this[`index`] !== `item`";
+        if (this[index] !== item) throw Error("WTF: this[`index`] !== `item`");
         var newIndex = undefined, sortError = false, low, high;
 
         // check left-side inversion
@@ -1581,8 +1581,8 @@ Amm.Collection.prototype = {
                     + " Not throwing the exception since the collection"
                     + " is still unique.");
             } else {
-                throw "After the change of this[" + ownIdx + "]," + 
-                    " duplicate(s) appeared: this[" + dp.join("], this[") + ']';
+                throw Error("After the change of this[" + ownIdx + "]," + 
+                    " duplicate(s) appeared: this[" + dp.join("], this[") + ']');
             }
         }
     },
@@ -1590,7 +1590,7 @@ Amm.Collection.prototype = {
     // @param {function} updateFn - function(myUpdatedItem, externalItem)
     setUpdateFn: function(updateFn) {
         if (updateFn && typeof updateFn !== 'function') 
-            throw "updateFn must be a function";
+            throw Error("updateFn must be a function");
         var oldUpdateFn = this._updateFn;
         if (oldUpdateFn === updateFn) return;
         this._updateFn = updateFn;
@@ -1656,7 +1656,7 @@ Amm.Collection.prototype = {
                     assoc.push([i, assocEvents[i]]);
                 }
             } else {
-                throw "`assocEvents` must be an object";
+                throw Error("`assocEvents` must be an object");
             }
         }
         if (this._assocEvents && this.length) this._associateEvents(this, true);

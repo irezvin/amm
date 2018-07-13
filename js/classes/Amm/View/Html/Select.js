@@ -95,7 +95,7 @@ Amm.View.Html.Select.prototype = {
     
     setHtmlElement: function(htmlElement) {
         if (htmlElement && htmlElement.tagName !== 'SELECT') {
-            throw "<select> element must be provided";
+            Error("<select> element must be provided")
         }
         return Amm.View.Html.prototype.setHtmlElement.call(this, htmlElement);
     },

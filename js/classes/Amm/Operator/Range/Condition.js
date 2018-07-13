@@ -311,7 +311,7 @@ Amm.Operator.Range.Condition.prototype = {
         else { // we have both items and oldItems
             var diff = Amm.Array.smartDiff(oldItems, items, null, true);
             if (!diff) return; // arrays are equal
-            if (diff[0] !== 'splice') throw "Assertion - should receive only 'splice' event (spliceOnly === true)";
+            if (diff[0] !== 'splice') Error("Assertion - should receive only 'splice' event (spliceOnly === true)")
             cut = diff[2]? oldValue.slice(diff[1], diff[1] + diff[2]) : [];
             insert = diff[3];
             index = diff[1];

@@ -240,7 +240,7 @@ Amm.Array.prototype = {
                 ignoreLength || 0),
                 b = this._describeIdx(d[0][1], insert.length, ignoreStart || 0, 
                 ignoreLength || 0);
-            throw "Cannot " + method + ": duplicates found (" + a + " and " + b + ")";
+            throw Error("Cannot " + method + ": duplicates found (" + a + " and " + b + ")");
         }
     },
     
@@ -362,7 +362,7 @@ Amm.Array.prototype = {
         )
             return; 
         if (this._unique) this._checkDuplicates("setItem()", [item], index, 1);
-        if (index < 0) throw "`index` must be >= 0";
+        if (index < 0) throw Error("`index` must be >= 0");
         if (index >= this.length) {
             if (!this._sparse) index = this.length;
             this.length = index + 1;
@@ -381,7 +381,7 @@ Amm.Array.prototype = {
     removeAtIndex: function(index, sparse) {
         if (!this._sparse) sparse = false;
         if (!(index in this)) return false;
-        if (index < 0) throw "`index` must be >= 0";
+        if (index < 0) throw Error("`index` must be >= 0");
         var item = this[index];
         if (!sparse) this._rotate(index, -1);
             else delete this[index];
@@ -390,9 +390,9 @@ Amm.Array.prototype = {
     },
     
     moveItem: function(index, newIndex) {
-        if (index < 0) throw "`index` must be >= 0";
-        if (index >= this.length) throw "No item with index " + index;
-        if (newIndex < 0) throw "`newIndex` must be >= 0";
+        if (index < 0) throw Error("`index` must be >= 0");
+        if (index >= this.length) throw Error("No item with index " + index);
+        if (newIndex < 0) throw Error("`newIndex` must be >= 0");
         if (newIndex >= this.length && !this._sparse) {
             newIndex = this.length - 1;
         }
@@ -407,7 +407,7 @@ Amm.Array.prototype = {
         if (index === undefined || index >= this.length && !this._sparse) {
             return this.push(item) - 1; // new index will be length - 1
         }
-        if (index < 0) throw "`index` must be >= 0";
+        if (index < 0) throw Error("`index` must be >= 0");
         if (this._unique) this._checkDuplicates("insertItem()", [item]);
         if (index < this.length) this._rotate(index, 1);
         if (index >= this.length) this.length = index;
@@ -419,7 +419,7 @@ Amm.Array.prototype = {
     insertItemBefore: function(item, otherItem) {
         if (otherItem === undefined) return this.insertItem(item);
         var idx = this.indexOf(otherItem);
-        if (idx < 0) throw "cannot insertItemBefore: `otherItem` not found";
+        if (idx < 0) throw Error("cannot insertItemBefore: `otherItem` not found");
         return this.insertItem(item, idx);
     },
     
@@ -435,7 +435,7 @@ Amm.Array.prototype = {
     },
     
     setItems: function(items) {
-        if (!items instanceof Array) throw "`items` must be an array";
+        if (!items instanceof Array) throw Error("`items` must be an array");
         if (this._unique) this._checkDuplicates("setItems()", items, 0, this.length);
         var oldItems = this.getItems(), 
             l = items.length, 
@@ -531,7 +531,7 @@ Amm.Array.prototype = {
     },
     
     endUpdate: function() {
-        if (!this._updateLevel) throw "endUpdate() before beginUpdate()!";
+        if (!this._updateLevel) throw Error("endUpdate() before beginUpdate()!");
         this._updateLevel--;
         if (this._updateLevel === 0) {
             this._doEndUpdate();
@@ -1179,8 +1179,8 @@ Amm.Array.findDuplicates = function(array, onlyFirst, comparisonFn, stopSearchId
 };
 
 Amm.Array.intersect = function(a, b, comparisonFn) {
-    if (!(a instanceof Array || a['Amm.Array'])) throw "`a` must be an Array";
-    if (!(b instanceof Array || b['Amm.Array'])) throw "`b` must be an Array";
+    if (!(a instanceof Array || a['Amm.Array'])) throw Error("`a` must be an Array");
+    if (!(b instanceof Array || b['Amm.Array'])) throw Error("`b` must be an Array");
     if (!a.length || !b.length) return []; // nothing to do
     var long = [].concat(a).concat(b);
     var dups = Amm.Array.findDuplicates(long, false, comparisonFn, a.length, true);

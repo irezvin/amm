@@ -42,7 +42,7 @@ Amm.Trait.DisplayParent.prototype = {
     setDisplayChildrenPrototype: function(displayChildrenPrototype) {
         if (!displayChildrenPrototype) displayChildrenPrototype = null;
         else if (typeof displayChildrenPrototype !== 'object') {
-            throw "`displayChildrenPrototype` must be a nullable or an object";
+            Error("`displayChildrenPrototype` must be a nullable or an object")
         }
         var oldDisplayChildrenPrototype = this._displayChildrenPrototype;
         if (oldDisplayChildrenPrototype === displayChildrenPrototype) return;

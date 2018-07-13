@@ -41,7 +41,7 @@ Amm.Operator.Unary.prototype = {
     _setOperator: function(operator) {
         var fn = Amm.Operator.Unary.Unary_OPERATORS[operator];
         if (!fn)
-            throw "Unsupported Unary operator type: '" + operator + "'";
+            Error("Unsupported Unary operator type: '" + operator + "'")
         this._operator = operator;
         this._operatorFn = fn;
     },

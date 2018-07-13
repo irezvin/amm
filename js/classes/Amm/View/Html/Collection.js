@@ -56,10 +56,10 @@ Amm.View.Html.Collection.prototype = {
         var r = this.createItemHtml(item);
         if (typeof r === 'string') r = jQuery(r)[0];
         if (!r || !r.nodeType) 
-            throw "Cannot reliabliy create and bind Html Node";
+            Error("Cannot reliabliy create and bind Html Node")
         if (r.parentNode && r.parentNode.nodeType !== 11) {
             if (this.itemHtmlElementsMustBeOrphans) {
-                throw "createItemHtml() is supposed to create new nodes, but this one already has parentNode";
+                Error("createItemHtml() is supposed to create new nodes, but this one already has parentNode")
             } else {
                 r.parentNode.removeChild(r);
             }
@@ -144,11 +144,11 @@ Amm.View.Html.Collection.prototype = {
         var r = jQuery(up)[0];
         if (r) {
             if (!r.nodeType) {
-                throw "updateItemHtml() returned something that is not an HTML Node";
+                Error("updateItemHtml() returned something that is not an HTML Node")
             }
             if (r.parentNode && r.parentNode.nodeType !== 11) {
                 if (this.itemHtmlElementsMustBeOrphans) {
-                    throw "updateItemHtml() is supposed to create new nodes, but this one already has parentNode";
+                    Error("updateItemHtml() is supposed to create new nodes, but this one already has parentNode")
                 } else {
                     r.parentNode.removeChild(r);
                 }

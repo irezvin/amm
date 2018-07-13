@@ -5,7 +5,7 @@
  */
 Amm.Operator.VarsProvider = function(operator, vars) {
     if (vars && typeof vars !== 'object') {
-        throw "`vars` must be an object";
+        Error("`vars` must be an object")
     }
     this._vars = vars || {};
     Amm.Operator.call(this);
@@ -131,9 +131,9 @@ Amm.Operator.VarsProvider.prototype = {
         var oldVarsProvider = this._varsProvider;
         var oldVarsProviderContextId = this._varsProviderContextId;
         if (oldVarsProvider === varsProvider && oldVarsProviderContextId === this._varsProviderContextId) return;
-        if (oldVarsProvider) throw "Can setVarsProvider() only once";
+        if (oldVarsProvider) Error("Can setVarsProvider() only once")
         if (!varsProvider || !varsProvider['Amm.Operator.VarsProvider'])
-            throw "varsProvider must be an instance of Amm.Operator.VarsProvider";
+            Error("varsProvider must be an instance of Amm.Operator.VarsProvider")
         this._varsProvider = varsProvider;
         this._varsProviderContextId = varsProvider._contextId;
         this._varsProvider.addConsumer(this, '');
@@ -154,7 +154,7 @@ Amm.Operator.VarsProvider.prototype = {
         var exp = this['Amm.Expression']? this : this._expression;
         if (name) { // a - set item in vars
             if (typeof name !== 'string')
-                throw "setVars(`value`, `name`): `name` must be a string";
+                Error("setVars(`value`, `name`): `name` must be a string")
             var old = this._vars[name];
             if (value === old) return; // nothing to do
             this._vars[name] = value;
@@ -164,7 +164,7 @@ Amm.Operator.VarsProvider.prototype = {
             }
             if (this._consumers) this._notifyConsumers(value, old, name);
         } else { // b - set whole vars
-            if (typeof value !== 'object') throw "setVars(`value`): object required";
+            if (typeof value !== 'object') Error("setVars(`value`): object required")
             var old = Amm.override({}, this._allVars || this.getVars());
             if (!value) value = {}; // delete all vars
             this._vars = value;

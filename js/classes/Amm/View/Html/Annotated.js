@@ -69,7 +69,7 @@ Amm.View.Html.Annotated.prototype = {
     _createChildViews: function(child, throwIfCant, childHtmlElement) {
         childHtmlElement = childHtmlElement || this.locateChildHtmlElement(child.getId(), this.createNodesOnDemand);
         if (!childHtmlElement) {
-            if (throwIfCant) throw "Cannot locate child htmlElement for child with id " + child.getId();
+            if (throwIfCant) throw Error("Cannot locate child htmlElement for child with id " + child.getId());
             if (this.createNodesOnDemand) {
                 child._annotated_needCreateViews = true; // hack that will allow us to remember views yet have to be created
             }

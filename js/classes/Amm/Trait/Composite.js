@@ -22,18 +22,18 @@ Amm.Trait.Composite.prototype = {
     },
     
     addChild: function(child) {
-        if (!child || typeof child !== 'object') throw "`child` must be a non-null object";
+        if (!child || typeof child !== 'object') Error("`child` must be a non-null object")
         if (this._requiredChildClass) Amm.is(child, this._requiredChildClass, 'child');
         var id = child.getId();
         if (!id) {
             id = this._autoId(child);
-            if (!id) throw "`child` doesn't have Id, cannot auto-assign";
+            if (!id) Error("`child` doesn't have Id, cannot auto-assign")
             child.setId(id);
         }
         if (this.hasChild(child)) return; // bingo - have it already
         if (this._children[id]) {
-            if (this._children[id] !== child) throw "Parent already has child with id '" + id + "'";
-            else throw "Assertion: hasChild() returned FALSE, but the instance is there!";
+            if (this._children[id] !== child) Error("Parent already has child with id '" + id + "'")
+            else Error("Assertion: hasChild() returned FALSE, but the instance is there!")
         }
         child.setParent(this);
         this._children[id] = child;
@@ -86,7 +86,7 @@ Amm.Trait.Composite.prototype = {
     _childIdChange: function(newId, oldId) {
         var child = Amm.event.origin;
         if (this._children[newId] && this._children[newId] !== child)
-            throw "Cannot handle _childIdChange to id that is already busy ('" + newId + "')";
+            Error("Cannot handle _childIdChange to id that is already busy ('" + newId + "')")
         if (this._children[oldId] === child) {
             delete this._children[oldId];
         } else {

@@ -35,9 +35,9 @@ Amm.View.Html.prototype = {
             return jQuery(htmlElement)[0] || null;
         }
         if (htmlElement.jquery) return htmlElement[0] || null;
-        throw "`htmlElement` of Amm.View.Html is expected to be HTMLElement instance"
+        throw Error("`htmlElement` of Amm.View.Html is expected to be HTMLElement instance"
             + ", string or jQuery result or FALSEable value; provided: "
-            + Amm.describeType(htmlElement);
+            + Amm.describeType(htmlElement));
     },
     
     _doSetHtmlElement: function(htmlElement, old) {

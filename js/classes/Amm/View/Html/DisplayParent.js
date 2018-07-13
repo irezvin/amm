@@ -27,7 +27,7 @@ Amm.View.Html.DisplayParent.prototype = {
         var res = null;
         if (cv) res = cv.getHtmlElement();
         if (!res && !dontThrow) {
-            throw "Collection item doesn't have view with htmlElement";
+            Error("Collection item doesn't have view with htmlElement")
         }
         if (!res[this._mappingProp]) {
             res[this._mappingProp] = item;
@@ -44,7 +44,7 @@ Amm.View.Html.DisplayParent.prototype = {
         var elViews = item.getUniqueSubscribers('Amm.View.Html.Visual');
         if (!elViews.length) {
             if (!dontThrow) 
-                throw "Collection item doesn't have respective Amm.View.Html.Visual view";
+                Error("Collection item doesn't have respective Amm.View.Html.Visual view")
             return null;
         }
         if (!elViews.length > 1) console.warn("Collection item have more than one Amm.View.Html.Visual view");

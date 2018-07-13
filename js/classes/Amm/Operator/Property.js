@@ -61,12 +61,12 @@ Amm.Operator.Property.prototype = {
     },
     
     promoteToCall: function(args, cacheability) {
-        if (this._hasValue) throw "Cannot promoteToCall(): already evaluated";
+        if (this._hasValue) Error("Cannot promoteToCall(): already evaluated")
         this._isEvaluating++;
         this._isCall = true;
         this.supportsAssign = false;
         if (this._argumentsOperator || !(this._arguments === null || this._arguments === undefined))
-            throw "Getter arguments already defined - cannot promote to call";
+            Error("Getter arguments already defined - cannot promote to call")
         if (cacheability !== undefined && cacheability !== null) {
             this._cacheability = !!cacheability;
         }
@@ -168,8 +168,7 @@ Amm.Operator.Property.prototype = {
         
         if (this._isCall) {
             
-            if (typeof object[property] !== 'function') throw "cannot call a non-function property";
-            
+            if (typeof object[property] !== 'function') Error("cannot call a non-function property")
             args = this._getOperandValue('arguments', again);
             if (args === null || args === undefined) return object[property]();
             else if (args instanceof Array) return object[property].apply(object, args);
@@ -208,8 +207,7 @@ Amm.Operator.Property.prototype = {
             var object = _object(e);
             if (!object) return;
             
-            if (typeof object[property] !== 'function') throw "cannot call a non-function property";
-            
+            if (typeof object[property] !== 'function') Error("cannot call a non-function property")
             var args = _args(e);
             
             if (args === null || args === undefined) return object[property]();

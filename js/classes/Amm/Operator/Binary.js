@@ -63,7 +63,7 @@ Amm.Operator.Binary.prototype = {
     _setOperator: function(operator) {
         var fn = Amm.Operator.Binary.BINARY_OPERATORS[operator];
         if (!fn)
-            throw "Unsupported binary operator type: '" + operator + "'";
+            Error("Unsupported binary operator type: '" + operator + "'")
         this._operator = operator;
         this._operatorFn = fn;
     },
