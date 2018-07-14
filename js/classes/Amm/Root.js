@@ -28,7 +28,7 @@ Amm.Root.prototype = {
     },
     
     setParent: function(parent) {
-        if (parent) throw new Exception("Cannot setParent() of root");
+        if (parent) throw Error("Cannot setParent() of root");
     },
     
     setId: function(id) {

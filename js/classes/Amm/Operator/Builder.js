@@ -9,7 +9,7 @@ Amm.Operator.Builder.prototype = {
     build: function(lexType, _) {
         var args = Array.prototype.slice.call(arguments, 1);
         var method = lexType;
-        if (!this[method]) throw "Uknown/unsupported lexeme: " + method;
+        if (!this[method]) throw Error("Uknown/unsupported lexeme: " + method);
         return this[method].apply(this, args);
     },
     
@@ -81,7 +81,7 @@ Amm.Operator.Builder.prototype = {
             case '<=':  return left <= right;
             case '>=':  return left >= right;
         }
-        throw "Unknown operator: " + operator;
+        throw Error("Unknown operator: " + operator);
     },
     
     Binary: function(left, operator, right) {

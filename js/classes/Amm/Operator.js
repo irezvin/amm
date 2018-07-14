@@ -405,7 +405,7 @@ Amm.Operator.prototype = {
     },
     
     setValue: function(value, throwIfCant) {
-        if (!this.supportsAssign) throw Amm.getClass(this) + " cannot be used as lvalue";
+        if (!this.supportsAssign) throw Error(Amm.getClass(this) + " cannot be used as lvalue");
         var err = this._doSetValue(value);
         if (!err) return true;
         if (throwIfCant) throw err;
@@ -695,7 +695,7 @@ Amm.Operator.prototype = {
         if (!operand) operand = this.OPERANDS[0];
         else if (typeof operand === 'number') operand = this.OPERANDS[operand];
         var op = '_' + operand + 'Operator';
-        if (!(op in this)) throw "No such operand: '" + operand + "' in '" + Amm.getClass(this);
+        if (!(op in this)) throw Error("No such operand: '" + operand + "' in '" + Amm.getClass(this));
         var res;
         res = this[op];
         if (res && arguments.length > 1) {

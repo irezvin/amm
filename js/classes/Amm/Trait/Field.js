@@ -627,8 +627,8 @@ Amm.Trait.Field.prototype = {
         if (!validationExpressions) {
             return;
         } else if (!(validationExpressions instanceof Array)) {
-            throw "`validationExpressions` must be an Array or FALSEable, provided: "
-                    + Amm.describeType(validationExpressions);
+            throw Error("`validationExpressions` must be an Array or FALSEable, provided: "
+                    + Amm.describeType(validationExpressions));
         }
         if (!validationExpressions.length) {
             return;
