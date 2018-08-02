@@ -1,3 +1,5 @@
+/* global QUnit */
+
 (function() {
 
     QUnit.module("Array");
@@ -381,7 +383,7 @@
                
     });
     
-    QUnit.test("Array.arrayManipulation", function(assert) {
+    QUnit.test("Array.findDuplicates", function(assert) {
         
         var findDuplicates = Amm.Array.findDuplicates;
         var cmp = function(a, b) { return a != b; };
@@ -404,6 +406,100 @@
         
         // check up to 3rd element but first 4 will have its' dupes' found
         assert.deepEqual(findDuplicates([4, 2, 3, 4, 4, 4], false, false, 3), [[0, 3, 4, 5]]);
+        
+        // report all items even ones with single occurance
+        assert.deepEqual(findDuplicates([1, 2, 3, 3, 4], false, null, false, false, true), 
+            [[0], [1], [2, 3], [4]]);
+
+        // report all items even ones with single occurance
+        assert.deepEqual(findDuplicates([1, 2, 3, 4, 3, 4], false, null, 4, false, true), 
+            [[0], [1], [2, 4], [3, 5]]);
+        
+        assert.deepEqual(findDuplicates([1, 2, 3, 4, 3, 4], false, null, 4, true, true), 
+            [[0], [1], [2, 4], [3, 5]]);
+            
+        assert.deepEqual(findDuplicates([1, 2, 3], false, null, 3, false, true), 
+            [[0], [1], [2]]);
+            
+        assert.deepEqual(findDuplicates([1, 2, 3], false, null, 3, true, true), 
+            [[0], [1], [2]]);
+            
+    });
+    
+    QUnit.test("Array.calcChanges", function(assert) {
+       
+        var calcChanges = Amm.Array.calcChanges;
+        
+        // test basic cases with and without 'unique'
+        
+        assert.deepEqual(calcChanges(['a', 'b', 'c'], [], null, 0, true), {
+            added: [],
+            deleted: [ ['a', 0], ['b', 1], ['c', 2] ],
+            moved: [],
+            same: []
+        }, 'All deleted - unique');
+        
+        assert.deepEqual(calcChanges(['a', 'b', 'b', 'c'], [], null, 0, false), {
+            added: [],
+            deleted: [ ['a', 0], ['b', 1], ['b', 2], ['c', 3] ],
+            moved: [],
+            same: []
+        }, 'All deleted - non-unique');
+        
+        assert.deepEqual(calcChanges([], ['a', 'b', 'c'], null, 0, true), {
+            added: [ ['a', 0], ['b', 1], ['c', 2] ],
+            deleted: [],
+            moved: [],
+            same: []
+        }, 'All added - unique');
+        
+        assert.deepEqual(calcChanges([], ['a', 'b', 'b', 'c'], null, 0, false), {
+            added: [ ['a', 0], ['b', 1], ['b', 2], ['c', 3] ],
+            deleted: [],
+            moved: [],
+            same: []
+        }, 'All added - non-unqiue');
+        
+        assert.deepEqual(calcChanges([], ['a', 'b', 'b', 'c'], null, 0, false), {
+            added: [ ['a', 0], ['b', 1], ['b', 2], ['c', 3] ],
+            deleted: [],
+            moved: [],
+            same: []
+        }, 'All added - non-unqiue');
+        
+        // complex changes
+        
+        assert.deepEqual(calcChanges(['a', 'b', 'c'], ['d', 'a', 'c'], null, 0, true), {
+            added: [['d', 0]],
+            deleted: [['b', 1]],
+            moved: [['a', 0, 1]],
+            same: [['c', 2]]
+        }, 'Complex - unique');
+        
+        assert.deepEqual(calcChanges(['a', 'a', 'b', 'c', 'c'], ['a', 'b', 'c', 'c', 'd'], null, 0, false), {
+            added: [['d', 4]],
+            deleted: [['a', 1]],
+            moved: [['b', 2, 1], ['c', 4, 2]],
+            same: [['a', 0], ['c', 3]]
+        }, 'Complex - non-unique');
+        
+        // offset
+        
+        var offset = 10;
+        
+        assert.deepEqual(calcChanges(['a', 'b', 'c'], ['d', 'a', 'c'], null, offset, true), {
+            added: [['d', 0 + offset]],
+            deleted: [['b', 1 + offset]],
+            moved: [['a', 0 + offset, 1 + offset]],
+            same: [['c', 2 + offset]]
+        }, 'Complex - unique + offset');
+        
+        assert.deepEqual(calcChanges(['a', 'a', 'b', 'c', 'c'], ['a', 'b', 'c', 'c', 'd'], null, offset, false), {
+            added: [['d', 4 + offset]],
+            deleted: [['a', 1 + offset]],
+            moved: [['b', 2 + offset, 1 + offset], ['c', 4 + offset, 2 + offset]],
+            same: [['a', 0 + offset], ['c', 3 + offset]]
+        }, 'Complex - non-unique + offset');
         
     });
     

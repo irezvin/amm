@@ -903,19 +903,21 @@ Amm.Array.equal = function(a, b, aOffset, bOffset, length, comparisonFn) {
 };
 
 /** 
- * {a} - old version of array. 
- * {b} - new version of array.
- * {comparisonFn} - function that returns 0 if elements are equal (=== is used by default)
- * {spliceOnly} - don't try to detect move/reorder events, always return splice info in case of any changes
- * {matches} - optional reference to Array instance to be passed to symmetricDiff function.
- * If symmetricDiff is not called, matches.length is 0
+ * @param {Array} a - old version of array. 
+ * @param {Array} b - new version of array.
+ * @param {function} [comparisonFn] - function that returns 0 if elements are equal (=== is used by default)
  * 
- * returns Array:
+ * @param {boolean} [spliceOnly] - don't try to detect move/reorder events, 
+ *      always return splice info in case of any changes
  * 
- * a) ['splice', start, length, elements[]]
- * b) ['move', oldIndex, newIndex] - element was moved from `oldIndex` to `newIndex`, that's all
- * c) ['reorder', start, length, oldItems] - `length` elements starting from `start` have different order, otherwise the same array
- * d) null - nothing changed
+ * @param {Array} [matches] - reference to Array instance to be passed to symmetricDiff function.
+ *      If symmetricDiff is not called, matches.length is 0
+ * 
+ * @returns {Array} [changeType, details...] - see below* 
+ *      -   ['splice', start, length, elements[]]
+ *      -   ['move', oldIndex, newIndex] - element was moved from `oldIndex` to `newIndex`, that's all
+ *      -   ['reorder', start, length, oldItems] - `length` elements starting from `start` have different order
+ *      -   null - nothing changed
  */
 Amm.Array.smartDiff = function(a, b, comparisonFn, spliceOnly, matches) {
     
@@ -1117,43 +1119,51 @@ Amm.Array.arrayDiff = function(a, b, comparisonFn) {
     return r;
 };
 
-/* Finds duplicate items in an array, using either a === b 
- * or !comparisonFn(a, b) comparison.
+/** 
+ * Finds duplicate items in an array, using either a === b or !comparisonFn(a, b) comparison.
  * 
- * Returns [[aIdx1, aIdx2, aIdx3...], ...] where aIdx1, aIdx2, ... - indexes 
- * of found duplicates of the same items (aIdx is an index of first occurance,
- * etc) -- note that aIdx1 < aIdx2 < aIdx3
+ * @param {Array} array -   array to search duplicates (or Amm.Array)
  * 
- * {onlyFirst} - bool - return after locating second instance of any item 
+ * @param {boolean} onlyFirst - return after locating second instance of any item 
  * (result array will have at most 1 element with 2 items) instead of thoroughly
- * searching all possible duplicates
+ * searching all possible duplicates. Note this shouldn't be used with reportSingles
  * 
- * {stopSearchIdx} - int - if non-zero, the items after this index are assumed
+ * @param {function} [comparisonFn] Function (a, b) that returns 0 if a and b are equal
+ * 
+ * @param {number} stopSearchIdx - if non-zero, the items after this index are assumed
  * to have NO duplicates, and routine will stop after searching duplicate
  * instances of items with indexes betetween 0 <= idx < stopSearchIdx.
  * 
- * {startAtStop} - bool - will assume items between 0 and stopSearchIdx 
+ * @param {boolean} startAtStop - will assume items between 0 and stopSearchIdx 
  *      don't have duplicates, but search duplicates between two sets - 
  *      [0..stopSearchIdx) and [stopSearchIdx..array.length)
+ * 
+ * @param {boolean} reportSingles - add [idx1] items to result array for items w/o duplicates
+ * 
+ * @returns {Array} [[idx1, idx2, idx3...], ...] where idx1, idx2 etc are indexes 
+ *      of found duplicates of the same items. idx1 is an index of first occurance,
+ *      idx2 of second and so on. Note that it is always that idx1 < idx2 < idx3.
  */
-Amm.Array.findDuplicates = function(array, onlyFirst, comparisonFn, stopSearchIdx, startAtStop) {
-    var l = array.length, res = [], fnd, rr, same;
+Amm.Array.findDuplicates = function(array, onlyFirst, comparisonFn, stopSearchIdx, startAtStop, reportSingles) {
+    var l = array.length, res = [], fnd, hasNone, rr, same;
     if (!stopSearchIdx || stopSearchIdx < 0 || stopSearchIdx > l)
         stopSearchIdx = l;
-    if (startAtStop && (stopSearchIdx >= l)) {
+    if (startAtStop && (stopSearchIdx >= l) && !reportSingles) {
         return [];
     }
     for (var i = 0; i < stopSearchIdx; i++) {
+        hasNone = true;
         for (var j = (startAtStop? stopSearchIdx : i + 1); j < l; j++) {
+            var has;
             if (comparisonFn) same = !comparisonFn(array[i], array[j]);
             else same = (array[i] === array[j]);
             if (same) {
-                // fnd keeps registry of already found items to we don't include them again in result
+                hasNone = false;
+                // fnd keeps registry of already found items so we don't include them again in result
                 // otherwise items that have more than 2 instances will produce several results
                 // (we don't want to "unset" found ones to not break numbering)
                 if (!fnd) fnd = [i]; 
                 else {
-                    var has;
                     if (fnd.indexOf) has = fnd.indexOf(j) >= 0;
                     else {
                         for (var k = 0; k < fnd.length; k++) 
@@ -1173,9 +1183,150 @@ Amm.Array.findDuplicates = function(array, onlyFirst, comparisonFn, stopSearchId
         if (rr) {
             res.push(rr);
             rr = null;
+        } else if (reportSingles && hasNone) {
+            var inFnd;
+            if (!fnd) inFnd = false;
+            else {
+                if (fnd.indexOf) inFnd = fnd.indexOf(i) >= 0;
+                else {
+                    for (var k = 0; k < fnd.length; k++) 
+                        if (fnd[k] === i) {
+                            inFnd = true; 
+                            break;
+                        }
+                }
+            }
+            if (!inFnd) res.push([i]);
+        }        
+    }
+    if (startAtStop && reportSingles) {
+        for (var ii = stopSearchIdx; ii < l; ii++) {
+            var inFnd;
+            if (!fnd) inFnd = false;
+            else {
+                if (fnd.indexOf) inFnd = fnd.indexOf(ii) >= 0;
+                else {
+                    for (var k = 0; k < fnd.length; k++) 
+                        if (fnd[k] === ii) {
+                            inFnd = true; 
+                            break;
+                        }
+                }
+            }
+            if (!inFnd) res.push([ii]);
         }
     }
     return res;
+};
+
+/**
+ * Calculates changes between two arrays
+ * 
+ * @param {Array} oldItems          - previous content or part of the array (i.e. "cut" of splice)
+ * @param {Array} newItems          - new content or part of the array (i.e. "insert" of splice)
+ * @param {function} [comparisonFn] - optional function to find equal items (should return 0)
+ * @param {number} offset           - optional offset to add to both newIndex and oldIndex of result
+ * @param {boolean} areUnique       - sppedup by assuming oldItems and newItems have unique items inside
+ * 
+ * @returns {object}
+ * 
+ * Returns following structure:
+ * 
+ * {
+ *      added:   [ [item, newIndex], ... ],
+ *      deleled: [ [item, oldIndex], ... ]
+ *      moved:   [ [item, oldIndex, newIndex], ... ]
+ *      same:    [ [item, oldIndex] ]]
+ * }
+ * 
+ */
+Amm.Array.calcChanges = function(oldItems, newItems, comparisonFn, offset, areUnique) {
+    
+    var oldLength = oldItems.length;
+    var stopIndex = areUnique? oldLength : null, startAtStop = !!areUnique;
+    
+    if (!offset) offset = 0;
+    
+    // we provide "reportSingles" to locate 'added' or 'deleted' items
+    var dd = Amm.Array.findDuplicates(oldItems.concat(newItems), false, comparisonFn, stopIndex, startAtStop, true);
+    
+    var res = {
+        added: [],
+        deleted: [],
+        moved: [],
+        same: []
+    };
+    
+    var l = dd.length, i;
+    
+    if (areUnique) { // simple case for unique items
+        
+        for (i = 0; i < l; i++) {
+            if (dd[i].length === 1) { // one entry - item is either uniqe to oldItems or newItems
+                
+                if (dd[i][0] >= oldLength) 
+                    res.added.push([newItems[dd[i][0] - oldLength], dd[i][0] - oldLength + offset]);
+                else 
+                    res.deleted.push([oldItems[dd[i][0]], dd[i][0] + offset]);
+                continue;
+            }
+            // item moved or same
+            var oi = dd[i][0], ni = dd[i][1] - oldLength;
+            if (oi === ni) {
+                res.same.push([oldItems[oi], oi + offset]);
+            } else {
+                res.moved.push([oldItems[oi], oi + offset, ni + offset]);
+            }
+        }
+        
+        return res;
+    }
+    
+    for (i = 0; i < l; i++) {
+        
+        var oldIdx = [], newIdx = [], j, same = {}, sameIdx = [], ll;
+        
+        for (j = 0, ll = dd[i].length; j < ll; j++) {
+            
+            var idx = dd[i][j], isNew = idx >= oldLength, convIdx = isNew? idx - oldLength : idx;
+            
+            if (!same[convIdx]) same[convIdx] = 1;
+            else {
+                same[convIdx]++;
+                sameIdx.push(convIdx);
+            }
+            
+            if (isNew) {
+                newIdx.push(convIdx);
+            } else {
+                oldIdx.push(convIdx);
+            }                
+            
+        }
+        
+        if (sameIdx.length) {
+            for (j = oldIdx.length; j >= 0; j--) if (same[oldIdx[j]] > 1) oldIdx.splice(j, 1);
+            for (j = newIdx.length; j >= 0; j--) if (same[newIdx[j]] > 1) newIdx.splice(j, 1);
+            for (j = 0; j < sameIdx.length; j++) res.same.push([oldItems[sameIdx[j]], sameIdx[j] + offset]);
+        }
+        
+        var common = oldIdx.length < newIdx.length? oldIdx.length : newIdx.length;
+        
+        for (j = 0; j < common; j++) {
+            if (newIdx[j] === oldIdx[j]) res.same.push([oldItems[oldIdx[j]], oldIdx[j] + offset]);
+            else res.moved.push([oldItems[oldIdx[j]], oldIdx[j] + offset, newIdx[j] + offset]);
+        }
+        
+        // in new, but not in old
+        for (j = common; j < newIdx.length; j++) res.added.push([newItems[newIdx[j]], newIdx[j] + offset]);
+        
+        // in old, but not in new
+        for (j = common; j < oldIdx.length; j++) res.deleted.push([oldItems[oldIdx[j]], oldIdx[j] + offset]);
+        
+    }
+    
+    return res;
+    
 };
 
 Amm.Array.intersect = function(a, b, comparisonFn) {
