@@ -8,9 +8,23 @@ Amm.Element = function(options) {
     this._beginInit();
     this._cleanupList = [];
     Amm.registerItem(this);
-    var traits = [], hasTraits = !!(options && options.traits);
+    if (!options) {
+        Amm.WithEvents.call(this);
+        this._endInit();
+        return;
+    }
+    var traits = [], hasTraits = options.traits;
     var views = [];
-    if (options && options.views) {
+    if (options.builderSource) {
+        var extraOptions = Amm.Builder.calcPrototypeFromSource(options.builderSource);
+        var newOptions = options.builderPriority? 
+            Amm.override({}, options, extraOptions) : Amm.override(extraOptions, options);
+        delete newOptions.builderSource;
+        delete newOptions.builderPriority;
+        if (delete newOptions.class);
+        options = newOptions;
+    }
+    if (options.views) {
         for (var i = 0, l = options.views.length; i < l; i++) {
             var view = options.views[i];
             if (!Amm.getClass(view)) {
@@ -33,7 +47,7 @@ Amm.Element = function(options) {
         }
         delete options.views;
     }
-    if (options && options.extraTraits) {
+    if (options.extraTraits) {
         if (hasTraits) throw Error("extraTraits and traits options cannot be used simultaneously");
         traits = traits.concat(options.extraTraits);
         delete options.extraTraits;
@@ -512,6 +526,28 @@ Amm.Element.prototype = {
         };
         var res = template.replace(/([{]:|:[}]|:|[{}]|[^:{}]+)/g, rep);
         return res;
+    },
+    
+    outViewAdded: function(view) {
+        this._out('viewAdded', view);
+    },
+    
+    outViewDeleted: function(view) {
+        this._out('viewDeleted', view);
+    },
+    
+    outViewReady: function(view) {
+        this._out('viewReady', view);
+    },
+    
+    findView: function(id, className) {
+        var s = this.getUniqueSubscribers('Amm.View.Abstract');
+        for (var i = 0, l = s.length; i < l; i++) {
+            if (id !== undefined && s[i].id !== id) continue;
+            if (className !== undefined && !Amm.is(s[i], className)) 
+                continue;
+            return s[i];
+        }
     }
     
 };

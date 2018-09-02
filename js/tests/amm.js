@@ -462,3 +462,36 @@ QUnit.test("Amm.bootstrap", function(assert) {
     Amm._bootstrapped = tmp;
     
 });
+
+QUnit.test("Amm.html", function(assert) {
+   
+    var h = Amm.html( 
+        {$: 'div', id: 'foo', class: 'bar', 'data-amm-e': {'xx': 'yy'}, zz: false, yy: true, $$: [ 
+            'baz', 
+            {$: 'div', 'class': 'zz', $$: [ 
+                'aa', 
+                {$: 'img', 'style': {
+                        background: 'none', 
+                        border: {
+                            left: {
+                                style: 'dashed', 
+                                color: 'blue'
+                            }
+                        }
+                }, $$: null}, 
+                {$: 'textarea', $noIndent: true, $$: 'some pretty text here'} 
+            ]}
+    ]} 
+    );
+    
+    assert.equal(h, 
+"<div id='foo' class='bar' data-amm-e='{\"xx\":\"yy\"}' yy='yy'>\n\
+    baz\n\
+    <div class='zz'>\n\
+        aa\n\
+        <img style='background: none; border-left-style: dashed; border-left-color: blue; ' />\n\
+        <textarea>some pretty text here</textarea>\n\
+    </div>\n\
+</div>");
+    
+});

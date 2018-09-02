@@ -1,3 +1,5 @@
+/* global Amm */
+
 Amm = {
     
     ID_SEPARATOR: '/',
@@ -226,7 +228,7 @@ Amm = {
      * @returns boolean TRUE if matches, FALSE if not
      */
     
-    meetsRequirements: function(object, requirements) {
+    meetsRequirements: function(object, requirements, paramName) {
         if (!(requirements instanceof Array)) requirements = [[requirements]];
         for (var i = 0, l = requirements.length; i < l; i++) {
             var rqs = requirements[i], matches = true;
@@ -245,7 +247,31 @@ Amm = {
             }
             if (matches) return true;
         }
+        if (paramName) {
+            throw Error("[" + Amm.describeType(object) + "] `" + paramName + "` " 
+                    + "doesn't meet following requirement(s): " + Amm.describeRequirements(requirements));
+        }
         return false;
+    },
+    
+    describeRequirements: function (requirements) {
+        var top = [];
+        for (var i = 0; i < requirements.length; i++) {
+            var rqs = requirements[i], strGroup;
+            if (!(rqs instanceof Array)) rqs = [rqs];
+            for (var j = 0; j < rqs.length; j++) {
+                if (rqs[j][0].toLowerCase() === rqs[j][0]) {
+                     rqs[j] += '()';
+                }
+            }
+            if (rqs.length > 1) {
+                strGroup = '( ' + rqs.join(' & ') + ' )';
+            } else {
+                strGroup = rqs[0];
+            }
+            top.push(strGroup);
+        }
+        return top.join(' || ');
     },
     
     getClass: function(object, all) {
@@ -798,6 +824,102 @@ Amm = {
         var views = Amm.DomHolder.find(domNode);
         if (views[0] && views[0]['Amm.View.Abstract']) return views[0].getElement();
         return null;
+    },
+    
+    callMethods: function(object, prefix /*, ...*/) {
+        var rx = prefix instanceof RegExp, aa, res = {};
+        for (var i in object) {
+            if (typeof object[i] === 'function' && (rx? i.match(rx) : i.indexOf(prefix) === 0)) {
+                aa = aa || Array.prototype.slice.call(arguments, 2);
+                res[i] = object[i].apply(object, aa);
+            }
+        }
+        return res;
+    },
+    
+    /**
+     * Definition is:
+     *
+     * string - will return string
+     * array - will concatenate array of definitions
+     * hash:
+     *      { $: tagName, $$: contentDefinition, attr: value, attr2: value2 }
+     * where 
+     * 
+     *      value may be scalar, hash or arary.
+     *      
+     *  scalar value will be converted to string and added as-is.
+     *  hashes and arrays will be converted to JSON and inserted into attribute, except if attr: is style.
+     *  For 'style' attribute hash keys will be recursively merged using '-' as glue string, i.e.
+     *  
+     *      { style: { display: 'block', background: { color: 'red', image: 'url("foo.gif")', repeat: 'none' } } }
+     *      
+     *  will be converted into style="display: block; background-color: red; background-image: url("foo.gif"); background-repeat: 'none'"
+     *  
+     *  Note: this function returns HTML as string and does NOT create DOM nodes.
+     *  
+     *  $noIndent special attribute means element's content won't be indented (useful for <textarea>)
+     *  $$: null means element will not have closing tag (i.e. <img />)
+     *  Attributes with FALSE value will be ignored.
+     *  Attributes with TRUE value will have same value as the name.
+     */
+    html: function(definition, indent, indentIncrease) {
+        if (indent === undefined) indent = 0;
+        if (indentIncrease === undefined) indentIncrease = 4;
+        var res, i, l, strIndent = '', strIndentIncrease = '';
+        for (i = 0; i < indent; i++) strIndent += ' ';
+        for (i = 0; i < indentIncrease; i++) strIndentIncrease += ' ';
+        if (!definition || typeof definition !== 'object') return strIndent + definition;
+        if (definition instanceof Array) {
+            res = '';
+            for (i = 0, l = definition.length; i < l; i++) {
+                if (i > 0) res += '\n';
+                res += Amm.html(definition[i], indent, indentIncrease);
+            }
+            return res;
+        }
+        if (!definition.$) throw Error ("`$` (tag name) must be present in attribute definition");
+        res = strIndent + '<' + definition.$;
+        for (i in definition) if (definition.hasOwnProperty(i)) {
+            if (i[0] === '$') continue;
+            var attrValue = definition[i];
+            if (attrValue === false) continue;
+            if (attrValue === true) attrValue = i;
+            if (typeof attrValue === 'object' && attrValue) {
+                if (i === 'style') {
+                    var mkStyle;
+                    mkStyle = function (h, v) {
+                        var res = '';
+                        if (!v || typeof v !== 'object') return h + ': ' + v + '; ';
+                        if (v instanceof Array) return v.join(' ');
+                        if (h.length) h += '-';
+                        for (var i in v) if (v.hasOwnProperty(i)) {
+                            res += mkStyle(h + i, v[i]);
+                        }
+                        return res;
+                    };
+                    attrValue = mkStyle('', attrValue);
+                } else {
+                    attrValue = JSON.stringify(attrValue).replace(/'/g, '&#39;');
+                }
+            }
+            res += ' ' + i + "='" + attrValue + "'";
+        }
+        if (definition.$$ === null) {
+            res += ' />';
+            return res;
+        }
+        if (!definition.$$) {
+            res += '></' + definition.$ + '>';
+            return res;
+        }
+        var sub = definition['$noIndent']? 0 : indent + indentIncrease;
+        res += '>';
+        if (sub) res += '\n';
+        res += Amm.html(definition.$$, sub, indentIncrease);
+        if (sub) res += '\n' + strIndent;
+        res += '</' + definition.$ + '>';
+        return res;
     }
     
 };

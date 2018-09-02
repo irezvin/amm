@@ -9,9 +9,36 @@
  * - other element values are passed to corresponding setters
  */
 Amm.View.Abstract = function(options) {
+    Amm.callMethods(this, '_preInit_', options);
     Amm.ElementBound.call(this, options);
     Amm.init(this, options, ['element', 'elementPath']);
+    if (!this.id) this.id = Amm.getClass(this);
 };
+
+Amm.View.Abstract.waitForView = function(element, id, className, callback, scope) {
+    var v = element.findView(id, className);
+    if (v && v.getObserving()) {
+        callback.call(scope, v, element);
+        return null;
+    }
+    var handler = ( function() { 
+        var localHandler;
+        localHandler = function(view) {
+            if (id !== undefined && view.id !== id) return;
+            if (className !== undefined && !Amm.is(view, className)) return;
+            callback.call(scope, v, element);
+            element.unsubscribe('viewReady', localHandler);
+        };
+        return localHandler;
+    } ) ();
+    element.subscribe('viewReady', handler);
+    return handler;
+};
+
+Amm.View.Abstract.stopWaitingForView = function(element, handler) {
+    element.unsubscribe('viewReady', handler);
+};
+
 
 Amm.View.Abstract.prototype = {
 
@@ -27,9 +54,22 @@ Amm.View.Abstract.prototype = {
     
     _observing: null,
     
+    id: null,
+    
+    getIsReady: function() {
+        return this.getObserving();
+    },
+    
+    getObserving: function() {
+        return this._observing;
+    },
+    
     _doElementChange: function(element, oldElement) {
         if (this._observing) this._endObserve();
+        if (oldElement) oldElement.outViewDeleted(this);
         Amm.ElementBound.prototype._doElementChange.call(this, element, oldElement);
+        if (element) element.outViewAdded(this);
+        Amm.callMethods(this, '_elementChange_', element, oldElement);
         this._observeElementIfPossible();
     },
     
@@ -40,7 +80,7 @@ Amm.View.Abstract.prototype = {
     
     _endObserve: function() {
         this._observing = false;
-        if (this._element) this._element.unsubscribe(undefined, undefined, this);        
+        if (this._element) this._element.unsubscribe(undefined, undefined, this);
     },
     
     _observeElementIfPossible: function() {
@@ -71,6 +111,7 @@ Amm.View.Abstract.prototype = {
         }
         this._observing = true;
         this._initProperties(bindList);
+        this._element.outViewReady(this);
         return true;
     },
     
@@ -114,7 +155,7 @@ Amm.View.Abstract.prototype = {
     getSuggestedTraits: function() {
         return [];
     }
-
+    
 };
 
 Amm.extend(Amm.View.Abstract, Amm.ElementBound);

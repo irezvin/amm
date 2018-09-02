@@ -1,4 +1,5 @@
 /* global Amm */
+/* global QUnit */
 
 (function() { 
     QUnit.module("Trait.Visual");
@@ -31,5 +32,17 @@
         assert.equal(v.getClassName(), 'baz');
         assert.equal(classNameValue, 'baz');
     });
+    
+    QUnit.test("detect visibility", function(assert) {
+        var h = jQuery("\
+                        <div style='display: none' id='outer'>\n\
+                            <div id='inner'></div>\n\
+                        </div>");
+        var a = new Amm.View.Html.Visual({htmlElement: h[0]});
+        var b = new Amm.View.Html.Visual({htmlElement: h.find('#inner')});
+        assert.equal(a.getVVisible(), false);
+        assert.equal(b.getVVisible(), true);
+    });
+    
 }) ();
 

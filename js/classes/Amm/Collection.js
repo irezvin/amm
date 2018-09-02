@@ -111,6 +111,8 @@ Amm.Collection.prototype = {
     _sparse: false,
     
     _requirements: null,
+    
+    _prototype: null,
 
     _assocProperty: null,
     
@@ -226,7 +228,40 @@ Amm.Collection.prototype = {
         this._requirements = requirements;
         return true;
     },
-
+    
+    setPrototype: function(prototype) {
+        if (!prototype) prototype = null;
+        else if (!(typeof prototype === 'object'))
+            throw Error("`prototype` must be an object");
+        
+        var oldPrototype = this._prototype;
+        
+        if (oldPrototype === prototype) return;
+        this._prototype = prototype;
+        this._outPrototypeChange(prototype, oldPrototype);
+        return true;
+    },
+    
+    getPrototype: function(prototype) {
+        return this._prototype;
+    },
+    
+    _outPrototypeChange: function(prototype, oldPrototype) {
+        return this._out('_prototypeChange', prototype, oldPrototype);
+    },
+    
+    // TODO: builder (Instantiator) support
+    
+    createItem: function(prototypeOverrides) {
+        if (!this._prototype && !prototypeOverrides)
+            throw Error("`instantiator` or `prototype` not set and `prototypeOverrides` not provided");
+        var proto = this._prototype? Amm.override({}, this._prototype) : {};
+        if (prototypeOverrides) Amm.override(proto, prototypeOverrides);
+        var instance = Amm.constructInstance(proto);
+        this.accept(instance);
+        return instance;
+    },
+    
     getRequirements: function() { return this._requirements; },
     
     /**

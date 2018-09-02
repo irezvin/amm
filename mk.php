@@ -16,7 +16,7 @@ function mkJsProps(array $props = array(), $withSignal = false) {
         var old<?php echo $u; ?> = this.<?php echo $p; ?>;
         if (old<?php echo $u; ?> === <?php echo $prop; ?>) return;
         this.<?php echo $p; ?> = <?php echo $prop; ?>;
-<?php   if ($withSignal) { ?> 
+<?php   if ($withSignal) { ?>
         this.out<?php echo $u; ?>Change(<?php echo $prop; ?>, old<?php echo $u; ?>);
 <?php   } ?>
         return true;

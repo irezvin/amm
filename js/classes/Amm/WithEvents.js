@@ -68,12 +68,20 @@ Amm.WithEvents.invokeHandlers = function(eventName, args, subscribers, dontPush,
         });
     }
     try {
-        for (var i = 0; i < subscribers.length; i++) {
+        
+        // if we have more than one subscriber, clone subscribers array and work on it, 
+        // because both subscribers.length and subscriber may unpredictably change during
+        // handlers execution and loop will not work as expected
+        
+        var l = subscribers.length, s = l < 2? subscribers : subscribers.slice();
+        
+        for (var i = 0; i < l; i++) {
             var 
-                handler = subscribers[i][0] || null,
-                scope = subscribers[i][1] || this,
-                extra = subscribers[i][2] || undefined,
-                decorator = subscribers[i][3] || defaultDecorator || null;
+                h = s[i],
+                handler = h[0] || null,
+                scope = h[1] || this,
+                extra = h[2] || undefined,
+                decorator = h[3] || defaultDecorator || null;
             
             if (typeof scope === 'string') { // this is an Element
                 if (typeof this.getByPath === 'function') scope = this.getByPath(scope);

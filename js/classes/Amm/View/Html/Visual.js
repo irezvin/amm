@@ -20,7 +20,9 @@ Amm.View.Html.Visual.prototype = {
     },
 
     getVVisible: function() {
-        return jQuery(this._htmlElement).is(':visible');
+        if (!this._htmlElement) return undefined;
+        var res = this._htmlElement.style.display !== "none";
+        return res;
     },
 
     setVDisplayParent: function(displayParent) {

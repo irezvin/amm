@@ -478,6 +478,7 @@ Amm.Array.prototype = {
     getSparse: function() { return this._sparse; },
 
     setUnique: function(unique) {
+        unique = !!unique;
         var oldUnique = this._unique;
         if (oldUnique === unique) return;
         if (unique) {
@@ -486,7 +487,7 @@ Amm.Array.prototype = {
         this._unique = unique;
         return true;
     },
-
+    
     getUnique: function() { return this._unique; },
 
     setComparison: function(comparison) {

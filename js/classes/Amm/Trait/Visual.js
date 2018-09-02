@@ -108,6 +108,6 @@ Amm.Trait.Visual.prototype = {
  
     outClassNameChange: function(className, oldClassName) {
         this._out('classNameChange', className, oldClassName);
-    }
-
+    },
+    
 };

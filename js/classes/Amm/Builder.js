@@ -66,7 +66,7 @@ Amm.Builder.prototype = {
     
     problems: null,
     
-    build: function() {
+    build: function(prototypesOnly) {
         var root = this.selector;
         var tmp = this._globalIds;
         this._globalIds = {};
@@ -74,7 +74,7 @@ Amm.Builder.prototype = {
         var topLevel = [];
         this._detectConnectedRecursive(nodes);
         for (var i = 0, l = nodes.length; i < l; i++) {
-            res = res.concat(this._buildElements(nodes[i], topLevel));
+            res = res.concat(this._buildElements(nodes[i], topLevel, prototypesOnly));
         }
         if (this.rememberElements) {
             if (res.length) this.elements.push.apply(this.elements, res);
@@ -94,7 +94,12 @@ Amm.Builder.prototype = {
         if (!root) root = window.document.documentElement;
         var scProp = '_amm_builder_scn_' + (Amm.Builder._scanId++);
         var rootNodes = [], allNodes = [], t = this;
-        jQuery(root).find(this.sel).not(this.selIgnore).each(function(i, htmlElement) {
+        var jq = 
+            jQuery(root)
+            .filter(this.sel)
+            .add(jQuery(root).find(this.sel))
+            .not(this.selIgnore);
+        jq.each(function(i, htmlElement) {
             var node = t._createNode(htmlElement);
             htmlElement[scProp] = allNodes.length;
             allNodes.push(node);
@@ -113,13 +118,30 @@ Amm.Builder.prototype = {
         return rootNodes;
     },
     
+    _replaceRefs: function(json, htmlElement) {
+        if (!json || typeof json !== 'object') return json;
+        var i, l;
+        if ('$ref' in json) return new Amm.Builder.Ref(json, htmlElement);
+        if (json instanceof Array) {
+            for (i = 0, l = json.length; i < l; i++) {
+                if (json[i] && typeof json[i] === 'object') 
+                    json[i] = this._replaceRefs(json[i], htmlElement);
+            }
+        } else {
+            for (i in json) if (json.hasOwnProperty(i) && json[i] && typeof json[i] === 'object') {
+                json[i] = this._replaceRefs(json[i], htmlElement);
+            }
+        }
+        return json;
+    },
+    
     _createNode: function(htmlElement) {
         var json = window.RJSON || window.JSON; // use relaxed json when possible
         var n = new Amm.Builder.Node(), a;
         n.htmlElement = htmlElement;
         a = htmlElement.getAttribute('data-amm-v');
         if (a && a.length) {
-            n.v = json.parse(a);
+            n.v = this._replaceRefs(json.parse(a), n.htmlElement);
             if (!(n.v instanceof Array)) n.v = n.v? [n.v] : [];
             for (var i = 0, l = n.v.length; i < l; i++) {
                 if ((typeof n.v[i]) === 'string') {
@@ -129,7 +151,7 @@ Amm.Builder.prototype = {
             }
         }
         a = htmlElement.getAttribute('data-amm-e');
-        if (a && a.length) n.e = json.parse(a);
+        if (a && a.length) n.e = this._replaceRefs(json.parse(a), n.htmlElement);
         a = htmlElement.getAttribute('data-amm-id');
         if (a && a.length) {
             a = a.replace(/^\s+|\s+$/g, '');
@@ -231,12 +253,12 @@ Amm.Builder.prototype = {
         }
     },
     
-    _buildElements: function(node, topLevel) {
+    _buildElements: function(node, topLevel, prototypesOnly) {
         var res = [];
         
         // first build node children and add them to result
         for (var i = 0, l = node.children.length; i < l; i++) {
-            res = res.concat(this._buildElements(node.children[i], topLevel));
+            res = res.concat(this._buildElements(node.children[i], topLevel, prototypesOnly));
         }
         
         // do we have connected nodes? (belonging to the same element)
@@ -278,7 +300,9 @@ Amm.Builder.prototype = {
             if (node.connected && node.connected.length) n = node.connected;
             this._regProblem(n, 'Element has no defined views');
         }
-        var element = new Amm.Element(proto);
+        var element;
+        if (prototypesOnly) element = Amm.override({'class': 'Amm.Element'}, proto);
+        else element = new Amm.Element(proto);
         if (topLevel && !node.parent) topLevel.push(element);
         res.push(element);
         node.connected.alreadyBuilt = true;
@@ -311,3 +335,31 @@ Amm.Builder.prototype = {
     }
     
 };
+
+Amm.Builder.calcPrototypeFromSource = function(builderSource, dontClone) {
+    if (!builderSource) throw Error("`builderSource` is required");
+    var source;
+    if (typeof builderSource === 'string') {
+        if (builderSource.match(/\s*<.*>\s*$/)) dontClone = true;
+        source = builderSource;
+    } else if (builderSource['Amm.Builder.Ref']) {
+        source = builderSource.resolve();
+    }
+    else if(builderSource.tagName || builderSource.jquery) {
+        source = builderSource;
+    }
+    else throw Error ("Unsupported builderSource type: " + Amm.describeType(builderSource));
+    
+    var jq = jQuery(source);
+    if (!jq.length) throw Error("Cannot resolve builderSource reference");
+    if (!dontClone) jq = jq.clone();
+    jq.removeAttr('data-amm-dont-build');
+    var builder = new Amm.Builder(jq);
+    var proto = builder.build(true);
+    
+    if (!proto.length) throw Error("Builder returned no prototypes");
+    if (proto > 1) throw Error("Builder returned more than one prototype");
+    return proto[0];
+}
+
+

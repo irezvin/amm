@@ -27,7 +27,10 @@ Amm.Trait.DisplayParent.prototype = {
             assocInstance: this,
             assocProperty: 'displayParent',
             indexProperty: 'displayOrder',
-            observeIndexProperty: true
+            observeIndexProperty: true,
+            assocEvents: {
+                cleanup: '_handleDisplayChildCleanup'
+            }
         };
         
         if (this._displayChildrenPrototype) {
@@ -42,7 +45,7 @@ Amm.Trait.DisplayParent.prototype = {
     setDisplayChildrenPrototype: function(displayChildrenPrototype) {
         if (!displayChildrenPrototype) displayChildrenPrototype = null;
         else if (typeof displayChildrenPrototype !== 'object') {
-            Error("`displayChildrenPrototype` must be a nullable or an object")
+            Error("`displayChildrenPrototype` must be a nullable or an object");
         }
         var oldDisplayChildrenPrototype = this._displayChildrenPrototype;
         if (oldDisplayChildrenPrototype === displayChildrenPrototype) return;
@@ -129,6 +132,18 @@ Amm.Trait.DisplayParent.prototype = {
     
     _cleanup_DisplayParent: function() {
         this.displayChildren.cleanup();
+    },
+    
+    _handleDisplayChildCleanup: function(displayChild) {
+        if (displayChild.getDisplayParent() === this) {
+            var allowDelete = this.displayChildren.getAllowDelete();
+            var allowChangeOrder = this.displayChildren.getAllowChangeOrder();
+            this.displayChildren.setAllowDelete(true);
+            this.displayChildren.setAllowChangeOrder(true);
+            this.displayChildren.reject(displayChild);
+            this.displayChildren.setAllowDelete(allowDelete);
+            this.displayChildren.setAllowChangeOrder(allowChangeOrder);
+        }
     }
 
 };
