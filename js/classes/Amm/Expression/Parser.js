@@ -71,7 +71,7 @@ Amm.Expression.Parser.prototype = {
             rx = doubleQuote? this.stringDoubleQuoteRx : this.stringSingleQuoteRx;
         while (buf) {
             var match = rx.exec(buf);
-            if (!match) Error("Assertion: cannot match string part (shouldn't happen)")
+            if (!match) Error("Assertion: cannot match string part (shouldn't happen)");
             if (match[1] === quote) {
                 break;
             };
@@ -100,7 +100,7 @@ Amm.Expression.Parser.prototype = {
         buf = buf.slice(1);
         while(buf && !end) {
             match = this.regexTokens.exec(buf);
-            if (!match) Error("Assertion - shouldn't happen")
+            if (!match) Error("Assertion - shouldn't happen");
             if (match[2]) {
                 if (match[2] === '[' && !brackets) brackets = true;
                 else if (match[2] === ']' && brackets) brackets = false;
@@ -138,7 +138,7 @@ Amm.Expression.Parser.prototype = {
         lastNonWhitespace = lastNonWhitespace || this._lastNonWhitespace;
         var rx = this.tokensRx.exec(string), id, value;
         if (!rx) {
-            Error("Assertion: match next token (shouldn't happen)")
+            Error("Assertion: match next token (shouldn't happen)");
         }
         if (rx[1]) id = Amm.Expression.Token.Type.WHITESPACE;
         else if (rx[2]) id = Amm.Expression.Token.Type.WORD;
@@ -213,7 +213,7 @@ Amm.Expression.Parser.prototype = {
             try {
                 var token = this.getToken(buf);
                 token.offset = _offset;
-                if (!token.string.length) Error("WTF")
+                if (!token.string.length) Error("WTF");
                 buf = buf.slice(token.string.length);
                 _offset += token.string.length;
                 res.push(token);
@@ -294,14 +294,14 @@ Amm.Expression.Parser.prototype = {
         var token = this.fetch();
         if (token && token.isSymbol('?')) {
             trueOp = this.parsePart('Expression');
-            if (!trueOp) Error("Expected: expression")
+            if (!trueOp) Error("Expected: expression");
             token = this.fetch();
             if (token && token.isSymbol(':')) {
                 falseOp = this.parsePart('Expression');
-                if (!falseOp) Error("Expected: expression")
+                if (!falseOp) Error("Expected: expression");
                 return this.genOp('Conditional', condition, trueOp, falseOp);
             } else {
-                Error("Expected: ':'")
+                Error("Expected: ':'");
             }
         } else {
             if (token) this.unfetch();
@@ -321,7 +321,7 @@ Amm.Expression.Parser.prototype = {
         if (token.isSymbol(this._binaryPriority[level])) {
             op = token;
             right = this.parsePart('Binary', level);
-            if (!right) Error("Expected: binary " + this._binaryPriority[level].join(", ") + " operand")
+            if (!right) Error("Expected: binary " + this._binaryPriority[level].join(", ") + " operand");
             return this.genOp('Binary', left, op.string, right);
         }
         this.unfetch();
@@ -333,7 +333,7 @@ Amm.Expression.Parser.prototype = {
         if (!token) return;
         if (token.isSymbol('!', '-')) {
             var expr = this.parsePart('Unary');
-            if (!expr) Error("Expected: unary")
+            if (!expr) Error("Expected: unary");
             return this.genOp('Unary', token.string, expr);
         } else {
             this.unfetch();
@@ -350,7 +350,7 @@ Amm.Expression.Parser.prototype = {
             var token = this.fetch();
             if (token.isSymbol(',')) {
                 exp = this.parsePart('Expression');
-                if (!exp) Error("Expected: expression")
+                if (!exp) Error("Expected: expression");
                 exps.push(exp);
             } else {
                 this.unfetch();
@@ -390,7 +390,7 @@ Amm.Expression.Parser.prototype = {
         }
         var args = this.parsePart('List') || [];
         token = this.fetch();
-        if (!token || !token.isSymbol(')')) Error("Expected: ')'")
+        if (!token || !token.isSymbol(')')) Error("Expected: ')'");
         var cacheability = this.parsePart('CacheabilityModifier');
         return this.genOp('FunctionCall', value, args, cacheability === undefined? null : cacheability);
     },
@@ -410,7 +410,7 @@ Amm.Expression.Parser.prototype = {
                 prop = this.genOp('Constant', token.string); // use identifier as constant property name
             } else {
                 this._oldPos = tmp;
-                Error("Expected: identifier")
+                Error("Expected: identifier");
             }
             this._oldPos = tmp;
         } else {
@@ -439,9 +439,9 @@ Amm.Expression.Parser.prototype = {
             return;
         }
         var expr = this.parsePart('Expression');
-        if (!expr) Error("Expected: expression")
+        if (!expr) Error("Expected: expression");
         var token = this.fetch();
-        if (!token || !token.isSymbol(']')) Error("Expected: ']'")
+        if (!token || !token.isSymbol(']')) Error("Expected: ']'");
         return this.genOp('Subexpression', expr);
     },
     
@@ -459,9 +459,9 @@ Amm.Expression.Parser.prototype = {
             if (!token) break;
             if (token.isSymbol('{')) {
                 args = this.parsePart('List');
-                if (!args) Error("Expected: list")
+                if (!args) Error("Expected: list");
                 token = this.fetch();
-                if (!token || !token.isSymbol('}')) Error("Expected: '}'")
+                if (!token || !token.isSymbol('}')) Error("Expected: '}'");
                 isList = true;
             } else if (token.isSymbol('::')) {
                 arg = this.genOp('Constant', undefined); // skipped item - undefined
@@ -489,7 +489,7 @@ Amm.Expression.Parser.prototype = {
         var rangeOnly = false;
         token = this.fetch();
         if (!(token && (token.isSymbol('{', '[') || token.isIdentifier()))) 
-            Error("Expected: identifier, subexpression or range")
+            Error("Expected: identifier, subexpression or range");
         if (token.string === '{') {
             rangeOnly = true;
         }
@@ -500,7 +500,7 @@ Amm.Expression.Parser.prototype = {
             if (!rangeOnly) {
                 specifier = this.parsePart('Subexpression');
                 if (!specifier) {
-                    Error("Expected: subexpression")
+                    Error("Expected: subexpression");
                 }
             }
         }
@@ -524,9 +524,9 @@ Amm.Expression.Parser.prototype = {
             } else {
                 this.unfetch();
                 varName = this.parsePart('Variable', true);
-                if (!varName) Error("Expected: variable")
+                if (!varName) Error("Expected: variable");
                 token = this.fetch();
-                if (!token || !token.isSymbol(':')) Error("Expected: ':'")
+                if (!token || !token.isSymbol(':')) Error("Expected: ':'");
             }
             return this.genOp('LoopIdentifiers', varName, keyName);
         } else if (token.isSymbol(':')) {
@@ -575,7 +575,7 @@ Amm.Expression.Parser.prototype = {
                 var loopId = this.parsePart('LoopIdentifiers');
                 var arg1 = this.parsePart('Expression');
                 if (!arg1) {
-                    Error("Expected: expression")
+                    Error("Expected: expression");
                 }
                 if (loopId) { // {loopIdentifiers expression} is Condition
                     rangeType = 'Condition';
@@ -593,7 +593,7 @@ Amm.Expression.Parser.prototype = {
             }
         }
         token = this.fetch();
-        if (!token || !token.isSymbol('}')) Error("Expected: '}'")
+        if (!token || !token.isSymbol('}')) Error("Expected: '}'");
         return this.genOp('Range', rangeType, value, arg1, arg2);
     },
 
@@ -606,7 +606,7 @@ Amm.Expression.Parser.prototype = {
                 if (getNameOnly) return this.genOp('Constant', token.string);
                 return this.genOp('Variable', token.string);
             } else {
-                Error("Expected: identifier")
+                Error("Expected: identifier");
             }
         } else {
             this.unfetch();
@@ -619,9 +619,9 @@ Amm.Expression.Parser.prototype = {
         var token = this.fetch();
         if (token.isSymbol('(')) { // the sub-expression
             var exp = this.parsePart('Expression');
-            if (!exp) Error("Expected: expression")
+            if (!exp) Error("Expected: expression");
             token = this.fetch();
-            if (!token || !token.isSymbol(')')) Error("Expected: ')'")
+            if (!token || !token.isSymbol(')')) Error("Expected: ')'");
             return this.genOp('Parenthesis', exp);
         }
         if (token.isConstant()) { // constant
@@ -644,7 +644,7 @@ Amm.Expression.Parser.prototype = {
     
     fetch: function(noAdvance, reverse) {
         
-        if (this._fetches++ > 10000) Error("Guard: too much fetches (TODO: remove)")
+        if (this._fetches++ > 10000) Error("Guard: too much fetches (TODO: remove)");
         if (!this._tokens) return null;
         var res = null, d = reverse? -1 : 1, p = this._pos;
         do {
@@ -664,10 +664,10 @@ Amm.Expression.Parser.prototype = {
             dontSaveOffset = true;
             part = args.shift();
         }
-        if (!part) Error("`part` is required to be non-empty string")
+        if (!part) Error("`part` is required to be non-empty string");
         var method = 'parse' + part;
-        if (typeof this[method] !== 'function') Error("Amm.Expression.Parser: no such method: '" + method + "'")
-        if (part === 'Part') Error("WTF")
+        if (typeof this[method] !== 'function') Error("Amm.Expression.Parser: no such method: '" + method + "'");
+        if (part === 'Part') Error("WTF");
         var tmp = this._oldPos;
         if (!dontSaveOffset) this._oldPos = this._pos;
         if (!args.length) {
@@ -688,7 +688,7 @@ Amm.Expression.Parser.prototype = {
         this.begin(string);
         res = this.parsePart('Expression');
         var token = this.fetch();
-        if (token) Error("Expected: eof")
+        if (token) Error("Expected: eof");
         return res;
     }
     

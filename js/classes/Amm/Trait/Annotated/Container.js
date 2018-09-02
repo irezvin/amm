@@ -18,7 +18,7 @@ Amm.Trait.Annotated.Container.prototype = {
 
     setElement: function(element) {
         if (this._element !== null && this._element !== element)
-            Error("can setElement() only once in Amm.Trait.Annotated.Container")
+            Error("can setElement() only once in Amm.Trait.Annotated.Container");
         return Amm.ElementBound.prototype.setElement.call(this, element);
     },
 

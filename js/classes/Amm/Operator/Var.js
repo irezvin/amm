@@ -31,7 +31,7 @@ Amm.Operator.Var.prototype = {
     
     notifyProviderVarsChange: function(value, oldValue, name, provider) {
         if (this._varNameValue && name && this._varNameValue !== name) {
-            Error("WTF - we shouldn't received wrong varsChange notification")
+            Error("WTF - we shouldn't received wrong varsChange notification");
         }
         if (this._expression && this._expression.getUpdateLevel()) {
             this._expression.queueUpdate(this);

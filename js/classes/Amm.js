@@ -308,7 +308,7 @@ Amm = {
             if (!item || item[interfaces[i]] !== '__INTERFACE__') {
                 if (throwIfNot) {
                     var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
-                    throw Error(argname += " must implement all following interfaces: " + interfaces.join(',')
+                    throw Error(argname += " must implement all following interfaces: " + interfaces.join(',');
                         + " but it doesn't implement interface " + interfaces[i]);
                 } else {
                     return false;

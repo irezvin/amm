@@ -40,7 +40,7 @@ Amm.Operator.List.prototype = {
     },
     
     setItems: function(items) {
-        if (!(items instanceof Array)) Error("items must be an Array")
+        if (!(items instanceof Array)) Error("items must be an Array");
         var oldLength = this._length,
             newLength = items.length;
     

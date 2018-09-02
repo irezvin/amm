@@ -44,7 +44,7 @@ Amm.Trait.Form.prototype = {
     },
     
     _endUpdateFields: function() {
-        if (!this._fieldsUpdateLevel) Error("Call to _endUpdateFields() w/o corresponding _beginUpdateFields()")
+        if (!this._fieldsUpdateLevel) Error("Call to _endUpdateFields() w/o corresponding _beginUpdateFields()");
         this.fields.endUpdate();
         this._fieldsUpdateLevel--;
         if (!this._fieldsUpdateLevel && this._fieldsChanged) {

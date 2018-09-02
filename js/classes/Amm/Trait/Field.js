@@ -260,7 +260,7 @@ Amm.Trait.Field.prototype = {
         this._validators = [];
         if (!validators) return;
         if (!(validators instanceof Array)) {
-            Error("`validators` must be an Array")
+            Error("`validators` must be an Array");
         }
         for (var i = 0; i < validators.length; i++) {
             var instance = Amm.Validator.construct(validators[i]);

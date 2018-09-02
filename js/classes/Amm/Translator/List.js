@@ -70,9 +70,9 @@ Amm.Translator.List.prototype = {
     setItemElement: function(itemElement) {
         var oldItemElement = this._itemElement;
         if (oldItemElement === itemElement) return;
-        if (!itemElement) Error("itemElement is required")
-        if (typeof itemElement !== "string") Error("itemElement must be a string")
-        if (!itemElement.match(/^<.*>$/)) Error("itemElement must be a jQuery-compatible HTML element definition")
+        if (!itemElement) Error("itemElement is required");
+        if (typeof itemElement !== "string") Error("itemElement must be a string");
+        if (!itemElement.match(/^<.*>$/)) Error("itemElement must be a jQuery-compatible HTML element definition");
         this._itemElement = itemElement;
         this._cachedItemSelector = null;
         return true;
@@ -84,8 +84,8 @@ Amm.Translator.List.prototype = {
         var oldEnclosureElement = this._enclosureElement;
         if (oldEnclosureElement === enclosureElement) return;
         if (enclosureElement) {
-            if (typeof enclosureElement !== "string") Error("enclosureElement must be a string")
-            if (!enclosureElement.match(/^<.*>$/)) Error("enclosureElement must be a jQuery-compatible HTML element definition")
+            if (typeof enclosureElement !== "string") Error("enclosureElement must be a string");
+            if (!enclosureElement.match(/^<.*>$/)) Error("enclosureElement must be a jQuery-compatible HTML element definition");
         } else {
             enclosureElement = '';
         }
@@ -107,7 +107,7 @@ Amm.Translator.List.prototype = {
         }
         if (!value.length && this.emptyOutValue !== null) return this.emptyOutValue;
         var innerItems = [];
-        if (!this._itemElement) throw Error("itemElement not set")
+        if (!this._itemElement) throw Error("itemElement not set");
         var res = '', e;
         for (var i = 0, l = value.length; i < l; i++) {
             var e = jQuery(this._itemElement);

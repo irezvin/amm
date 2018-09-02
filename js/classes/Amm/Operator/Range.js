@@ -23,11 +23,11 @@ Amm.Operator.Range.prototype = {
     },
 
     _doEvaluate: function(again) {
-        Error("Call to abstract function")
+        Error("Call to abstract function");
     },
     
     toFunction: function() {
-        Error("Call to abstract function")
+        Error("Call to abstract function");
     }
     
 };

@@ -28,7 +28,7 @@ Amm.Validator.Function.prototype = {
                 return;
             }
         } else {
-            Error("Amm.Validator.Function: this.`func` not set (or not a function)")
+            Error("Amm.Validator.Function: this.`func` not set (or not a function)");
         }
         return res;
         

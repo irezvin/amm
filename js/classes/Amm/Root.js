@@ -32,7 +32,7 @@ Amm.Root.prototype = {
     },
     
     setId: function(id) {
-        if (id !== '^') Error("Cannot setId() of root to anything other than '^'")
+        if (id !== '^') Error("Cannot setId() of root to anything other than '^'");
     },
     
     raiseEvent: function(eventName) {

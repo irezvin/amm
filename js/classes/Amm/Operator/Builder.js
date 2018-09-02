@@ -99,7 +99,7 @@ Amm.Operator.Builder.prototype = {
         if (operand.Const) {
             if (operator === '!') return this.const(!this.unConst(operand));
             else if (operator === '-') return this.const(- this.unConst(operand));
-            else Error("Unknown unary operator: '" + operator + "'")
+            else Error("Unknown unary operator: '" + operator + "'");
         } else {
             return new Amm.Operator.Unary(
                 operator, 
@@ -212,7 +212,7 @@ Amm.Operator.Builder.prototype = {
                 this.unConst(arg2.valueVar)
             );
         } else {
-            Error("Uknown range type: '" + rangeType + "'")
+            Error("Uknown range type: '" + rangeType + "'");
         }
         if (simpleRangeSupport) {
             if (!value._rangeOperator && value._rangeValue === null) {

@@ -107,10 +107,10 @@ Amm.Expression.prototype = {
             writeObject = arguments[0][1];
             writeArgs = arguments[0][2];
         }
-        if (this._writeProperty) Error("Can setWriteProperty() only once")
-        if (!writeProperty) Error("writeProperty must be non-falseable")
+        if (this._writeProperty) Error("Can setWriteProperty() only once");
+        if (!writeProperty) Error("writeProperty must be non-falseable");
         if (writeProperty['Amm.Expression']) {
-            if (writeObject || writeArgs) Error("When Amm.Expression is used as writeProperty, don't specify writeObject/writeArgs")
+            if (writeObject || writeArgs) Error("When Amm.Expression is used as writeProperty, don't specify writeObject/writeArgs");
             writeObject = writeProperty;
             writeProperty = 'value';
             this._sub(writeObject, 'writeDestinationChanged', this._write, undefined, true);
@@ -121,7 +121,7 @@ Amm.Expression.prototype = {
             writeArgs = [writeArgs];
         }
         if (!writeObject && !this._expressionThis) {
-            Error("setExpressionThis() or provide writeObject when setting writeProperty")
+            Error("setExpressionThis() or provide writeObject when setting writeProperty");
         }
         this._writeProperty = writeProperty;
         this._writeObject = writeObject;
@@ -281,7 +281,7 @@ Amm.Expression.prototype = {
     },
     
     parse: function(string) {
-        if (this._src) Error("Already parsed")
+        if (this._src) Error("Already parsed");
         this._src = string;
         if (!Amm.Expression._builder) {
             Amm.Expression._parser = new Amm.Expression.Parser();
@@ -305,10 +305,10 @@ Amm.Expression.prototype = {
             target.subscribe(eventName, this.dispatchEvent, this, queue);
             return;
         }
-        if (op.length > 1) Error("Assertion: Amm.Expression.dispatchEvent handler must be subscribed only once")
+        if (op.length > 1) Error("Assertion: Amm.Expression.dispatchEvent handler must be subscribed only once");
         queue = op[0][2];
         if (!queue || queue.eventName !== eventName) {
-            Error("Assertion: we found wrong queue array")
+            Error("Assertion: we found wrong queue array");
         }
         for (var i = 0, l = queue.length; i < l; i++) {
             if (
@@ -323,7 +323,7 @@ Amm.Expression.prototype = {
     
     // `operator` is required arg
     unsubscribeOperator: function(object, eventName, operator, method, extra, allContexts) {
-        if (!object) Error("`object` parameter is required")
+        if (!object) Error("`object` parameter is required");
         if (extra === undefined && arguments.length < 5) extra = null;
         var contextId = operator._contextId;
         var op = object.getSubscribers(eventName, this.dispatchEvent, this);
@@ -332,7 +332,7 @@ Amm.Expression.prototype = {
         for (var j = 0; j < op.length; j++) {
             var queue = op[j][2];
             if (!queue || !queue.eventName || (eventName && queue.eventName !== eventName))
-                Error("Assertion: we found wrong queue array")
+                Error("Assertion: we found wrong queue array");
             for (var i = queue.length - 1; i >= 0; i--) {
                 if (queue[i][0] !== operator) continue; 
                 if (
@@ -362,7 +362,7 @@ Amm.Expression.prototype = {
     dispatchEvent: function() {
         var queue = arguments[arguments.length - 1], args = Array.prototype.slice.call(arguments, 0, -1);
         if (!queue.eventName)
-            Error("Queue array (extra) not provided to Amm.Expression._dispatchIncomingEvent method")
+            Error("Queue array (extra) not provided to Amm.Expression._dispatchIncomingEvent method");
         var ev = queue.eventName;
         
         if (queue.length > 1) {
@@ -412,7 +412,7 @@ Amm.Expression.prototype = {
     
     _endUpdate: function() {
         if (!this._updateLevel) {
-            Error("Amm.Expression: _endUpdate() without _beginUpdate!")
+            Error("Amm.Expression: _endUpdate() without _beginUpdate!");
         }
         if (this._updateLevel > 1) {
             this._updateLevel--;

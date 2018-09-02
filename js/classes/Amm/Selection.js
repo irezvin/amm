@@ -247,7 +247,7 @@ Amm.Selection.prototype = {
     getSameOrder: function() { return this._sameOrder; },
     
     sort: function(fnOrProps) {
-        if (this._sameOrder) Error("Refusing to sort() when `sameOrder` === true")
+        if (this._sameOrder) Error("Refusing to sort() when `sameOrder` === true");
         return Amm.Collection.prototype.sort.call(this, fnOrProps);
     },
 

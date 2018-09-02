@@ -126,10 +126,10 @@ Amm.Expression.FunctionHandler.prototype = {
             writeObject = arguments[0][1];
             writeArgs = arguments[0][2];
         }
-        if (this._writeProperty) Error("Can setWriteProperty() only once")
-        if (!writeProperty) Error("writeProperty must be non-falseable")
+        if (this._writeProperty) Error("Can setWriteProperty() only once");
+        if (!writeProperty) Error("writeProperty must be non-falseable");
         if (writeProperty['Amm.Expression']) {
-            if (writeObject || writeArgs) Error("When Amm.Expression is used as writeProperty, don't specify writeObject/writeArgs")
+            if (writeObject || writeArgs) Error("When Amm.Expression is used as writeProperty, don't specify writeObject/writeArgs");
             writeObject = writeProperty;
             writeProperty = 'value';
             writeObject.subscribe('writeDestinationChanged', this._write, this);
@@ -140,7 +140,7 @@ Amm.Expression.FunctionHandler.prototype = {
             writeArgs = [writeArgs];
         }
         if (!writeObject && !this._thisObject) {
-            Error("setThisObject() or provide writeObject when setting writeProperty")
+            Error("setThisObject() or provide writeObject when setting writeProperty");
         }
         this._writeProperty = writeProperty;
         this._writeObject = writeObject;

@@ -43,7 +43,7 @@ Amm.Operator.FunctionCall.prototype = {
     _doEvaluate: function(again) {
         var func = this._getOperandValue('func', again);
         if (!func) return;
-        if (typeof func !== 'function') Error("cannot call: operand is not a function")
+        if (typeof func !== 'function') Error("cannot call: operand is not a function");
         var args = this._getOperandValue('args', again);
         if (args === null || args === undefined || args instanceof Array && !args.length) {
             return func();
@@ -59,7 +59,7 @@ Amm.Operator.FunctionCall.prototype = {
         return function(e) {
             var func = f(e);
             if (!func) return;
-            if (typeof func !== 'function') Error("cannot call: operand is not a function")
+            if (typeof func !== 'function') Error("cannot call: operand is not a function");
             var args = a(e);;
             if (args === null || args === undefined || args instanceof Array && !args.length) {
                 return func();
