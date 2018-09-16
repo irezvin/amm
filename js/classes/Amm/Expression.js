@@ -133,9 +133,10 @@ Amm.Expression.prototype = {
     },
     
     _write: function() {
+        var wo = this._writeObject || this._expressionThis;
+        if (!wo) return;
         if (this._lockWrite) return;
         this._lockWrite++;
-        var wo = this._writeObject || this._expressionThis;
         Amm.setProperty(wo, this._writeProperty, this.getValue(), false, this._writeArgs);
         this._lockWrite--;
     },

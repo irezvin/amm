@@ -66,11 +66,14 @@ Amm.Element = function(options) {
             Amm.augment(this, trait, options);
         }
     }
-    var hh = [], extraProps;
+    var inProps = [], extraProps;
     // create function handlers and expressions
     for (var i in options) if (options.hasOwnProperty(i)) { 
         if (i[0] === 'i' && i.slice(0, 4) === 'in__') {
-            hh.push([i.slice(4), options[i]]);
+            inProps.push([i.slice(4), options[i], false]);
+            delete options[i];
+        } if (i[0] === 's' && i.slice(0, 6) === 'sync__') {
+            inProps.push([i.slice(6), options[i], true]);
             delete options[i];
         } else if (i[0] === 'p' && i.slice(0, 6) === 'prop__') {
             extraProps = extraProps || {};
@@ -82,8 +85,8 @@ Amm.Element = function(options) {
     var onHandlers = this._extractOnHandlers(options);
     Amm.init(this, options, ['id', 'properties']);
     Amm.init(this, options);
-    if (hh.length) this._initInProperties(hh);
     if (extraProps) this.setProperties(extraProps);
+    if (inProps.length) this._initInProperties(inProps);
     if (onHandlers) this._initOnHandlers(onHandlers);
     this._endInit();
     if (views.length) {
@@ -457,10 +460,11 @@ Amm.Element.prototype = {
         if (hh.length) this._initInProperties(hh);
     },
     
-    _initInProperties: function(arrPropsValues) {
-        for (var i = 0, l = arrPropsValues.length; i < l; i++) {
-            var propName = arrPropsValues[i][0], 
-                definition = arrPropsValues[i][1];
+    _initInProperties: function(arrPropValues) {
+        for (var i = 0, l = arrPropValues.length; i < l; i++) {
+            var propName = arrPropValues[i][0], 
+                definition = arrPropValues[i][1],
+                sync = arrPropValues[i][2];
         
             // we may supply write-args to setters using double underscores
             // format of in-property is in__setter__arg1__arg2...
@@ -474,20 +478,25 @@ Amm.Element.prototype = {
             } else {
                 args = undefined;
             }
-            this._createExpression(definition, propName, args);
+            this._createExpression(definition, propName, args, sync);
         }
     },
     
-    _createExpression: function(definition, propName, args) {
+    _createExpression: function(definition, propName, args, isSync) {
         var fn, expression;
         if (typeof definition === 'string') { // expression?
             if (definition.slice(0, 11) === 'javascript:') {
+                if (isSync) throw Error("Cannot use javascript function handler for sync-property");
                 var body = this._prepareFunctionHandlerBody(definition.slice(11));
                 fn = Function('g', 's', body);
             } else {
-                expression = new Amm.Expression(definition, this, propName, undefined, args);
+                expression = new (isSync? Amm.Expression.Sync : Amm.Expression)(definition, this, propName, undefined, args);
             }
+        } else if (definition && (typeof definition === 'object')) {
+            if (definition['Amm.Expression']) expression = definition;
+            else expression = new (isSync? Amm.Expression.Sync : Amm.Expression)(definition, this, propName, undefined, args);
         } else if (typeof definition === 'function') {
+            if (isSync) throw Error("Cannot use javascript function handler for sync-property");
             fn = definition;
         } else {
             throw Error("in__<property> must be a string or a function");

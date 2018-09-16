@@ -61,7 +61,6 @@ Amm.Translator.prototype = {
             try {
                 value = decorator.decorate(value);
             } catch (e) {
-                console.log(e);
                 error.error = this.lastError = e;
                 return def;
             }

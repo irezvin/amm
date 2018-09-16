@@ -1,4 +1,5 @@
 /* global Amm */
+/* global QUnit */
 
 (function() { 
     QUnit.module("Expression");
@@ -794,7 +795,114 @@
         ]);
         
     });
-
+    
+    QUnit.test("Expression.Sync", function(assert) {
+       
+        var a = new Amm.Element({
+            prop__src: null,
+            prop__val: 'aVal', 
+            prop__err: null
+        });
+        
+        var b = new Amm.Element({
+            prop__x: 'bVal'
+        });
+        
+        var c = new Amm.Element({
+            prop__x: undefined
+        });
+        
+        window.d.a = a;
+        window.d.b = b;
+        window.d.c = c;
+        
+        var sync = new Amm.Expression.Sync('this.src.x', a, 'val');
+        
+        window.d.sync = sync;
+        
+        a.setSrc(b);
+        
+            assert.equal(a.getVal(), 'bVal',
+                'writeProperty was set from provider expression');
+        
+        a.setVal('newVal');
+            assert.equal(b.getX(), 'newVal', 
+                'writeProperty change -> provider expression target changed');
+        
+        a.setSrc(c);
+            assert.equal(a.getVal(), 'newVal', 
+                'expression change -> not updated from "undefined" result');
+            
+            assert.equal(c.getX(), 'newVal', 
+                'expression change -> "undefined" expression rValue replaced');
+                
+        Amm.cleanup(a, b, c, sync);
+        
+        var t = new Amm.Translator({
+            
+            inDecorator: function(v) {
+                var n = parseInt(v);
+                if (isNaN(v)) throw "value must be a number";
+                return n;
+            },
+            
+            outDecorator: function(v) {
+                return ' ' + v + ' ';
+            }
+            
+        });
+        
+        var d = new Amm.Element({
+            prop__val: 10,
+            prop__e: null,
+            sync__val: {
+                src: 'this.e.val',
+                translator: t,
+                errProperty: 'err'
+            },
+            prop__err: null
+        });
+        
+        var e = new Amm.Element({
+            prop__val: undefined
+        });
+        
+        d.setE(e);
+        
+            assert.equal(e.getVal(), ' 10 ',  
+                'sync__ expression: overwrite and decorate undefined dest value');
+        
+        d.setVal(20);
+            
+            assert.equal(e.getVal(), ' 20 ',
+                'sync__ expression: writeProperty value changed => dest updated');
+        
+        e.setVal(' 4 ');
+        
+            assert.equal(d.getVal(), 4, 
+                'sync__ expression: dest => writeProperty');
+                
+            assert.equal(typeof d.getVal(), 'number',
+                'value was properly translated');
+        
+        e.setVal('Foobar');
+            
+            assert.equal(d.getVal(), 4, 
+                'sync__ expression: invalid dest => writeProperty unchanged');
+                
+            assert.equal(d.getErr(), 'value must be a number', 
+                'Translation error was saved into errorProperty');
+                
+        e.setVal('5');
+                
+            assert.equal(d.getVal(), 5, 
+                'sync__ expression: valid dest => writeProperty changed');
+                
+            assert.equal(d.getErr(), null, 
+                'errorProperty nulled after success');
+                
+        
+    });
     
 }) ();
 
