@@ -169,6 +169,8 @@
         
         var nodes = b.build(true);
         
+        assert.ok(nodes.length > 0, "Amm.Builder.build(true) returns at least one prototype (given correct markup)");
+        
         assert.notOk(Amm.getClass(nodes[0]), "Builder's prototype has no class");
         
         var e = Amm.constructInstance(nodes[0]);
@@ -248,9 +250,12 @@
                         {'class': 'Amm.View.Html.DisplayParent', htmlElement: {$ref: '.children'}},
                     ],
                     displayChildrenPrototype: {
-                        prototype: {
-                            class: 'Amm.Element',
-                            builderSource: {$ref: '.childProto'}
+                        instantiator: {
+                            __construct: 'Amm.Instantiator.Proto',
+                            proto: {
+                                'class': 'Amm.Element',
+                                builderSource: {$ref: '.childProto'}
+                            },
                         }
                     }
                 },

@@ -101,7 +101,6 @@ Amm.View.Html.prototype = {
             if (htmlElement['Amm.Builder.Ref']) return htmlElement.resolve(true);
             return jQuery(htmlElement)[0] || null;
         }
-        console.log(htmlElement);
         if (htmlElement.jquery) return htmlElement[0] || null;
         throw Error("`htmlElement` of Amm.View.Html is expected to be HTMLElement instance"
             + ", string or jQuery result or FALSEable value; provided: "

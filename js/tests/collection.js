@@ -1,3 +1,6 @@
+/* global Amm */
+/* global QUnit */
+
 (function() {
 
     var Item = function(name, descr, date) {
@@ -722,7 +725,45 @@
             assert.equal(ib.getSubscribers('dateChange', 'handler', a2).length, 1);
             
         Amm.cleanup(coll, ia, ib);
-            
+        
+    });
+    
+    QUnit.test("Collection.instantiator", function(assert) {
+        
+        var c = new Amm.Collection({
+            requirements: ['Amm.Element']
+        });
+        
+        var i = new Amm.Instantiator.Proto({
+            'class': 'Amm.Element',
+            'prop__a': null,
+            'prop__orig': null
+        }, 'orig');
+        
+        assert.throws(function() {
+            c.createItem();
+        }, /`instantiator` not provided/,
+        "Collection cannot createItem() w/o instantiator");
+        
+        c.setInstantiator(i);
+        
+        var item1 = c.createItem();
+        
+        var orig = {};
+        
+        assert.ok(Amm.is(item1, 'Amm.Element'), 'Instantiated with createItem()');
+
+        assert.throws(function() {
+            var r1 = c.accept(orig);
+        }, /requirements/i, "Won't accept w/o setInstantiateOnAccept(true);");
+        
+        c.setInstantiateOnAccept(true);
+        
+        var r2 = c.accept(orig);
+        
+        assert.ok(Amm.is(r2, 'Amm.Element'), 'Instantiated on acceptItem()');
+        assert.ok(r2.getOrig() === orig, 'Original item was correctly associated');
+        
     });
     
     

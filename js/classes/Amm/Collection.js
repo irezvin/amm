@@ -193,6 +193,10 @@ Amm.Collection.prototype = {
      */
     _assocEvents: null,
     
+    _instantiator: null,
+    
+    _instantiateOnAccept: false,
+    
     setUnique: function(unique) {
         if (!unique) throw Error("setUnique(false) is never supported by Amm.Collection");
         return Amm.Array.prototype.setUnique.call(this, unique);
@@ -228,36 +232,33 @@ Amm.Collection.prototype = {
         this._requirements = requirements;
         return true;
     },
-    
-    setPrototype: function(prototype) {
-        if (!prototype) prototype = null;
-        else if (!(typeof prototype === 'object'))
-            throw Error("`prototype` must be an object");
+
+    setInstantiator: function(instantiator) {
         
-        var oldPrototype = this._prototype;
+        if (!instantiator) instantiator = null;
         
-        if (oldPrototype === prototype) return;
-        this._prototype = prototype;
-        this._outPrototypeChange(prototype, oldPrototype);
+        var oldInstantiator = this._instantiator;
+        if (oldInstantiator === instantiator) return;
+        this._instantiator = instantiator;
         return true;
     },
+
+    getInstantiator: function() { return this._instantiator; },
     
-    getPrototype: function(prototype) {
-        return this._prototype;
+    setInstantiateOnAccept: function(instantiateOnAccept) {
+        instantiateOnAccept = !!instantiateOnAccept;
+        var oldInstantiateOnAccept = this._instantiateOnAccept;
+        if (oldInstantiateOnAccept === instantiateOnAccept) return;
+        this._instantiateOnAccept = instantiateOnAccept;
+        return true;
     },
-    
-    _outPrototypeChange: function(prototype, oldPrototype) {
-        return this._out('_prototypeChange', prototype, oldPrototype);
-    },
-    
-    // TODO: builder (Instantiator) support
-    
-    createItem: function(prototypeOverrides) {
-        if (!this._prototype && !prototypeOverrides)
-            throw Error("`instantiator` or `prototype` not set and `prototypeOverrides` not provided");
-        var proto = this._prototype? Amm.override({}, this._prototype) : {};
-        if (prototypeOverrides) Amm.override(proto, prototypeOverrides);
-        var instance = Amm.constructInstance(proto);
+
+    getInstantiateOnAccept: function() { return this._instantiateOnAccept; },
+
+    createItem: function(arg) {
+        if (!this._instantiator)
+            throw Error("Cannot createItem() when `instantiator` not provided");
+        var instance = this._instantiator.construct(arg);
         this.accept(instance);
         return instance;
     },
@@ -318,6 +319,23 @@ Amm.Collection.prototype = {
     },
     
     /**
+     * Expects both _instantiator && _instantiateOnAccept - no check
+     * We consider item needed to be instantiated if
+     *      a) we have requirements and item doesn't meet them
+     *      b) we don't have requirements and item is not an object 
+     *      c) we don't have requirements, item is object but !Amm.getClass(item)
+     */
+    _instantiateIfNeeded: function(item) {
+        var should = false;
+        if (this._requirements) should = !Amm.meetsRequirements(item, this._requirements);
+        else if (typeof item !== 'object') should = true;
+        else if (!Amm.getClass(item)) should = true;
+        if (!should) return item;
+        var instance = this._instantiator.construct(item);
+        return instance;
+    },
+    
+    /**
      * Checks if can accept items; returns SIX arrays:
      * 0. Items that are not added yet - excluding ones that have matches
      * 1. Subset of `items` that have matches
@@ -357,7 +375,13 @@ Amm.Collection.prototype = {
     
         for (var i = deleteStart; i < deleteEnd; i++)
             toDeleteIdx.push(i);
-    
+
+        if (this._instantiator && this._instantiateOnAccept) {
+            for (i = 0, n = items.length; i < n; i++) {
+                items[i] = this._instantiateIfNeeded(items[i]);
+            }
+        }
+        
         // check requirements for each item
         for (i = 0, n = items.length; i < n; i++) {
             var problem = {};
@@ -485,7 +509,7 @@ Amm.Collection.prototype = {
         return [sorted, idx];
     },
 
-    // accepts item. Returns added item (same or one that was updated)
+    // accepts item. Returns added item (same or one that was updated, or one that was instantiated)
     // TODO: add idx and use in array-ish methods below
     accept: function(item, index) {
         var pa = this._preAccept([item]);
@@ -501,7 +525,7 @@ Amm.Collection.prototype = {
             var idx = sorted? 
                 this._locateItemIndexInSortedArray(item) : index;
             if (idx === undefined || idx <= 0) idx = 0;
-            res = item;
+            res = pa[0][0];
             if (idx < this.length) {
                 this._rotate(idx, 1);
                 this[idx] = item;
@@ -532,7 +556,7 @@ Amm.Collection.prototype = {
             throw Error("`index` must not be used with sorted Collection - check for getIsSorted() next time");
         if (!items.length) return []; // shortcut
         if (items.length === 1) return [this.accept(items[0])];
-        var pa = this._preAccept(items);
+        var pa = this._preAccept([].concat(items));
         var i;
         if (pa[0].length) { // we have addable items
             var oldItems = this.getItems(), minIdx;

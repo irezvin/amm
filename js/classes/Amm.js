@@ -323,7 +323,7 @@ Amm = {
             for (var j = 0, n = j.length; j < n; j++) if (Amm.is(item, className[j])) return true;
             if (throwIfNot) {
                 var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
-                throw Error(argname + " must be an instance of " + className.join("|"));
+                throw Error(argname + " must be an instance of " + className.join("|") + "; given: " + Amm.describeType(item));
             }
             return res;
         }
@@ -336,7 +336,7 @@ Amm = {
         var res = item && (item[className] === '__CLASS__' || item[className] === '__PARENT__' || item[className] === '__INTERFACE__');
         if (!res && throwIfNot) {
             var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
-            throw Error(argname + " must be an instance of " + className);
+            throw Error(argname + " must be an instance of " + className + "; given: " + Amm.describeType(item));
         }
         return res;
     },

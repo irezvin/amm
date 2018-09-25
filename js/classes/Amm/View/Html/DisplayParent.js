@@ -20,6 +20,8 @@ Amm.View.Html.DisplayParent.prototype = {
     
     scanForItems: true,
     
+    buildItems: true,
+    
     scanForDisplayOrder: true,
     
     getItemHtmlElement: function(item, dontThrow) {
@@ -107,6 +109,12 @@ Amm.View.Html.DisplayParent.prototype = {
     },
     
     _scanForItems: function() {
+        
+        if (this.buildItems) {
+            var b = new Amm.Builder(jQuery(this._htmlElement));
+            b.build();
+        }
+        
         var scanForItems = this.scanForItems, scanForDisplayOrder = this.scanForDisplayOrder;
         if (!scanForItems && !scanForDisplayOrder) return;
         

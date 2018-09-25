@@ -81,6 +81,7 @@ Amm.Builder.prototype = {
             if (topLevel.length) this.topLevel.push.apply(this.topLevel, topLevel);
         }
         this._globalIds = tmp;
+        if (prototypesOnly) return topLevel;
         return res;
     },
     
@@ -118,18 +119,23 @@ Amm.Builder.prototype = {
         return rootNodes;
     },
     
-    _replaceRefs: function(json, htmlElement) {
+    _replaceRefsAndInstaniateObjects: function(json, htmlElement) {
         if (!json || typeof json !== 'object') return json;
         var i, l;
         if ('$ref' in json) return new Amm.Builder.Ref(json, htmlElement);
         if (json instanceof Array) {
             for (i = 0, l = json.length; i < l; i++) {
                 if (json[i] && typeof json[i] === 'object') 
-                    json[i] = this._replaceRefs(json[i], htmlElement);
+                    json[i] = this._replaceRefsAndInstaniateObjects(json[i], htmlElement);
             }
         } else {
             for (i in json) if (json.hasOwnProperty(i) && json[i] && typeof json[i] === 'object') {
-                json[i] = this._replaceRefs(json[i], htmlElement);
+                json[i] = this._replaceRefsAndInstaniateObjects(json[i], htmlElement);
+            }
+            if ('__construct' in json) {
+                var tmp = json.__construct;
+                delete json.__construct;
+                json = Amm.constructInstance(json, tmp);
             }
         }
         return json;
@@ -141,7 +147,7 @@ Amm.Builder.prototype = {
         n.htmlElement = htmlElement;
         a = htmlElement.getAttribute('data-amm-v');
         if (a && a.length) {
-            n.v = this._replaceRefs(json.parse(a), n.htmlElement);
+            n.v = this._replaceRefsAndInstaniateObjects(json.parse(a), n.htmlElement);
             if (!(n.v instanceof Array)) n.v = n.v? [n.v] : [];
             for (var i = 0, l = n.v.length; i < l; i++) {
                 if ((typeof n.v[i]) === 'string') {
@@ -151,7 +157,7 @@ Amm.Builder.prototype = {
             }
         }
         a = htmlElement.getAttribute('data-amm-e');
-        if (a && a.length) n.e = this._replaceRefs(json.parse(a), n.htmlElement);
+        if (a && a.length) n.e = this._replaceRefsAndInstaniateObjects(json.parse(a), n.htmlElement);
         a = htmlElement.getAttribute('data-amm-id');
         if (a && a.length) {
             a = a.replace(/^\s+|\s+$/g, '');
@@ -274,8 +280,9 @@ Amm.Builder.prototype = {
                 return res;
             } else {
                 // we don't have element so build only when we got to the last node (why?)
-                if (node.conIdx < node.connected.length - 1)
+                if (node.conIdx < node.connected.length - 1) {
                     return res;
+                }
             }
             
             // "already built" flag is set - don't build same element again
@@ -303,7 +310,7 @@ Amm.Builder.prototype = {
         var element;
         if (prototypesOnly) element = Amm.override({'class': 'Amm.Element'}, proto);
         else element = new Amm.Element(proto);
-        if (topLevel && !node.parent) topLevel.push(element);
+        if (topLevel && (!node.parent || node.conParent && !node.parent.parent)) topLevel.push(element);
         res.push(element);
         node.connected.alreadyBuilt = true;
         return res;
@@ -358,8 +365,9 @@ Amm.Builder.calcPrototypeFromSource = function(builderSource, dontClone) {
     var proto = builder.build(true);
     
     if (!proto.length) throw Error("Builder returned no prototypes");
-    if (proto > 1) throw Error("Builder returned more than one prototype");
+    if (proto.length > 1) throw Error("Builder returned more than one prototype");
+    if (!proto[0].class) proto[0].class = 'Amm.Element';
     return proto[0];
-}
+};
 
 

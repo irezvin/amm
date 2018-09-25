@@ -70,22 +70,15 @@
         </style>
     </head>
     <body>
-        <div style='display: none' id='itemSample' data-amm-dont-build="">
-            <div class='outer'>
-                <label for="name"><span class="annotation a_label">foo</span><span class="annotation a_required"></span></label>
-                <input type="text" /> 
-                <button type='button' onclick='Amm.findElement(this).cleanup();'>X</button>
-                <button type='button' onclick='var e = Amm.findElement(this); e.setDisplayOrder(e.getDisplayOrder() - 1);'>up</button>
-                <button type='button' onclick='var e = Amm.findElement(this); e.setDisplayOrder(e.getDisplayOrder() + 1);'>down</button>
-                <div class="annotation a_error"></div>
-            </div>
-        </div>
         <div data-amm-id="@form" data-amm-e="{
                 extraTraits: [t.Form, t.Component],
                 displayChildrenPrototype: {
-                    prototype: {
-                        class: 'Amm.Element',
-                        builderSource: { $ref: '.itemProto' }
+                    instantiator: {
+                        __construct: 'Amm.Instantiator.Proto',
+                        proto: {
+                            class: 'Amm.Element',
+                            builderSource: { $ref: '.itemProto' }
+                        }
                     }
                 }
             }" data-amm-v='[v.Visual]' style="padding: 1em; margin: 1px">

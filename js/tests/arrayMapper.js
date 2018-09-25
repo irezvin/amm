@@ -77,4 +77,65 @@
         
     });
     
+    QUnit.test("ArrayMapper with Instantiator", function(assert) {
+        
+        var ins1 = new Amm.Instantiator.Proto({
+            proto: {
+                'class': Amm.Element,
+                prop__src: null,
+                prop__destructed: false,
+            },
+            destruct: function(instance) {
+                instance.setDestructed(true);
+            },
+            assocProperty: 'src'
+        });
+        
+        var ins2 = new Amm.Instantiator.Proto({
+            'class': Amm.Element,
+            prop__src2: null
+        }, 'src2');
+        
+        var am = new Amm.ArrayMapper({
+            instantiator: ins1,
+            srcClass: 'Amm.Collection',
+            destClass: 'Amm.Collection'
+        });
+        
+        var orig1 = {}, orig2 = {};
+        
+        var s = am.getSrc(), d = am.getDest();
+        
+        s.accept(orig1);
+        s.accept(orig2);
+        
+        var dd = d.getItems();
+        
+        assert.ok(Amm.is(dd[0], 'Amm.Element'),
+            "dest instance was created");
+            
+        assert.ok(dd[0].getSrc() === orig1,
+            "link to src instance was provided");
+        
+        assert.ok(Amm.is(dd[1], 'Amm.Element'),
+            "dest instance #2 was created");
+            
+        assert.ok(dd[1].getSrc() === orig2,
+            "link to src instance #2 was provided");
+        
+        am.setInstantiator(ins2);
+        
+        assert.ok(dd[0].getDestructed(),
+            "dest instance was destructed on instantiator change");
+        
+        assert.ok(d[0] !== dd[0], 
+            "different dest instance was created on instantiator change");
+        
+        assert.ok(d[0].getSrc2() === orig1, 
+            "different dest instance had different property; still associated with orig instance");
+        
+        am.cleanup();
+        
+    });
+    
 }) ();

@@ -2,9 +2,9 @@
 
 Amm.ArrayMapper = function(options) {
 
-    Amm.WithEvents.call(this, options);
     this._srcEntries = [];
     this._destEntries = [];
+    Amm.WithEvents.call(this, options);
     
 };
 
@@ -425,7 +425,6 @@ Amm.ArrayMapper.prototype = {
         }
         if (oldInstantiator === instantiator) return;
         this.beginUpdate();
-        var i, l, item, srcItem;
         // deconstruct old items, then re-construct them
         this._destructAll();
         this._instantiatorIsFn = instantiatorIsFn;
@@ -448,7 +447,8 @@ Amm.ArrayMapper.prototype = {
     },
     
     _destructAll: function(entries) {
-        if (!entries) entries = this._destEntries;
+        entries = entries || this._destEntries;  
+        if (!entries) return;
         for (var i = 0, l = this._destEntries.length; i < l; i++) {
             var item = this._destEntries[i][Amm.ArrayMapper._DEST_ITEM];
             if (!item) continue;
@@ -458,7 +458,8 @@ Amm.ArrayMapper.prototype = {
     },
     
     _constructAll: function(entries) {
-        if (!entries) entries = this._destEntries;        
+        entries = entries || this._destEntries;  
+        if (!entries) return;
         for (var i = 0, l = entries.length; i < l; i++) {
             if (entries[i][Amm.ArrayMapper._DEST_ITEM]) continue;
             if (!entries[i][Amm.ArrayMapper._DEST_IN_SLICE]) continue;
@@ -502,7 +503,8 @@ Amm.ArrayMapper.prototype = {
             if (this._applySort) this._recalcAllSort();
             this._remap();
         }
-        if (this._dest) this._dest.endUpdate();
+        if (this._dest && this._dest.getUpdateLevel() > this._updateLevel)
+            this._dest.endUpdate();
     },
     
     _handleSrcSpliceItems: function(index, cut, insert) {
@@ -538,7 +540,8 @@ Amm.ArrayMapper.prototype = {
             destEntry[Amm.ArrayMapper._DEST_ITEM] = null; // will be built by _remap            
             if (srcItem && (typeof srcItem === 'object')) {
                 if (this._filter && !this._filterIsFn) this._filter.registerItem(srcItem, this);
-                if (this._sort && !this._sortIsFn) this._sort.registerItem(srcItem, this);
+                if (this._sort && typeof this._sort === 'object' && !this._sortIsFn)
+                    this._sort.registerItem(srcItem, this);
             }
             
             this._destEntries.push(destEntry);
@@ -620,8 +623,9 @@ Amm.ArrayMapper.prototype = {
     },
     
     _cleanAll: function() {
+        if (!this._srcEntries) return;
         var i, l, srcEntry, destEntry, destItem;
-        for (i = 0, l = this._srcEntries.length; i < l; i++) {
+        for (i = this._srcEntries.length - 1; i >= 0; i--) {
             srcEntry = this._srcEntries[i];
             destEntry = srcEntry[Amm.ArrayMapper._SRC_REF_TO_DEST];
             destItem = destEntry[Amm.ArrayMapper._DEST_ITEM];
@@ -630,10 +634,10 @@ Amm.ArrayMapper.prototype = {
             }
             srcEntry.splice(0, srcEntry.length);
             destEntry.splice(0, destEntry.length);
-            this._srcEntries = [];
-            this._destEntries = [];
             if (this._dest) this._dest.setItems([]);
         }
+        this._srcEntries = [];
+        this._destEntries = [];
     },
     
     _rebuild: function() {
@@ -647,6 +651,8 @@ Amm.ArrayMapper.prototype = {
      * Should be called when we already have this._srcEntries and this._destEntries
      */
     _remap: function() {
+        
+        if (!this._destEntries) return;
         
         this._applySort = false;
         this._applyFilter = false;
