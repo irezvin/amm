@@ -1,13 +1,13 @@
 /* global Amm */
 
 Amm.Array = function(options) {
-    var a = arguments, val;
-    if (a[0] instanceof Array) {
-        val = a[0];
-        options = a[1];
-    } else if(a[0] instanceof Amm.Array) {
-        val = a[0].getItems();
-        options = a[1];
+    var arr = arguments, val;
+    if (arr[0] instanceof Array) {
+        val = arr[0];
+        options = arr[1];
+    } else if(arr[0] instanceof Amm.Array) {
+        val = arr[0].getItems();
+        options = arr[1];
     }
     Amm.WithEvents.call(this, options);
     if (val !== undefined) this.setItems(val);
@@ -1343,6 +1343,18 @@ Amm.Array.intersect = function(a, b, comparisonFn) {
                 res.push(long[dups[j][k]]);
                 break;
             }
+        }
+    }
+    return res;
+};
+
+Amm.Array.unique = function(arr, comparisonFn) {
+    if (!(arr instanceof Array || arr['Amm.Array'])) throw Error("`arr` must be an Array");
+    var res = arr['Amm.Array']? arr.getItems() : [].concat(arr);
+    // leave only unique items
+    for (var i = 0; i < res.length; i++) {
+        for (var j = res.length - 1; j > i; j--) {
+            if (comparisonFn? !comparisonFn(res[j], res[i]) : res[j] === res[i]) res.splice(j, 1);
         }
     }
     return res;

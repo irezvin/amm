@@ -227,7 +227,9 @@ Amm.Operator.prototype = {
     
     notifyOperandChanged: function(operand, value, oldValue, operator) {
         this._propagateContext(operand, operator, false);
-        if (this._lockChange) return;
+        if (this._lockChange) {
+            return;
+        }
         this._setOperandValue(operand, value);
     },
     

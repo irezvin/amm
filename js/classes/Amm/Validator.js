@@ -15,6 +15,18 @@ Amm.Validator.construct = function(proto, defaults, setToDefaults, requirements)
     return Amm.constructInstance(proto, 'Amm.Validator', defaults, setToDefaults, requirements);
 };
 
+Amm.Validator.instantiate = function(object, key) {
+    if (!object[key]['Amm.Validator']) object[key] = Amm.Validator.construct(object[key]);
+    return object[key];
+};
+
+/*
+ * instantiates object[key] and returns error
+ */
+Amm.Validator.iErr = function(object, key, value, field) {
+    return Amm.Validator.instantiate(object, key).getError(value, field);
+};
+
 Amm.Validator.prototype = {
     
     'Amm.Validator': '__CLASS__',

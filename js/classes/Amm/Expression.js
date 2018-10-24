@@ -7,7 +7,7 @@
  * Allows to parse operator from string definition.
  */
 Amm.Expression = function(options, expressionThis, writeProperty, writeObject, writeArgs) {
-    this._allSubs = [];
+    Amm.WithEvents.DispatcherProxy.call(this);
     if (options && typeof options === 'string') {
         options = {src: options};
     }
@@ -51,15 +51,14 @@ Amm.Expression.prototype = {
     _writeObject: null,
     
     _writeArgs: null,
-    
+
     _lockWrite: 0,
+    
+    _writeDestinationChanged: false,
     
     _src: null,
     
     _updateLevel: 0,
-    
-    // registry of all objects that we are subscribed to (in all contexts)
-    _allSubs: null,
     
     /**
      *  contains operators that need to be recalculated when one event intoduces changes to many parts of Expression
@@ -77,7 +76,9 @@ Amm.Expression.prototype = {
         _updateQueue: true,
         _deferredValueChange: true,
         _src: true,
-        _allSubs: true
+        _subscriptions: true,
+        _eventsProxy: true,
+        scope: true
     },
     
     setExpressionThis: function(expressionThis) {
@@ -230,6 +231,12 @@ Amm.Expression.prototype = {
     },
     
     notifyWriteDestinationChanged: function() {
+        if (this._updateLevel) {
+            this._writeDestinationChanged = true;
+            return true;
+        } else {
+            this._writeDestinationChanged = false;
+        }
         if (this._operatorOperator._contextId !== this._contextId) {
             this._propagateContext('operator', this._operatorOperator);
         }
@@ -254,12 +261,12 @@ Amm.Expression.prototype = {
     },
     
     cleanup: function() {
-        Amm.WithEvents.prototype.cleanup.call(this);
         // unsubscribe all our subscribers
-        for (var i = 0; i < this._allSubs.length; i++) {
-            this._allSubs[i].unsubscribe(undefined, this.dispatchEvent, this);
+        for (var i = this._subscriptions.length - 1; i >= 0; i--) {
+            this._eventsProxy.unsubscribeObject(this._subscriptions[i], undefined, this.dispatchEvent, this);
         }
-        this._allSubs = [];
+        Amm.WithEvents.prototype.cleanup.call(this);
+        this._subscriptions = [];
         this._numCtx = 0;
         if (this._writeObject && this._writeObject['Amm.Expression']) {
             this._writeObject.cleanup();
@@ -293,109 +300,52 @@ Amm.Expression.prototype = {
     },
     
     subscribeOperator: function(target, eventName, operator, method, extra) {
+        var contextId = operator._contextId;
         if (extra === undefined) extra = null;
-        var contextId = operator._contextId;
-        var op = target.getSubscribers(eventName, this.dispatchEvent, this);
-        // queue is stored as Extra arg. Since it is stored and passed by reference, we can edit it later
-        var queue;
-        if (!op.length) { 
-            // this is the first time we subscribe to this object
-            this._allSubs.push(target);
-            queue = [[operator, method, contextId, extra]];
-            queue.eventName = eventName;
-            target.subscribe(eventName, this.dispatchEvent, this, queue);
-            return;
-        }
-        if (op.length > 1) Error("Assertion: Amm.Expression.dispatchEvent handler must be subscribed only once");
-        queue = op[0][2];
-        if (!queue || queue.eventName !== eventName) {
-            Error("Assertion: we found wrong queue array");
-        }
-        for (var i = 0, l = queue.length; i < l; i++) {
-            if (
-                    queue[i][0] === operator
-                    && queue[i][1] === method 
-                    && queue[i][2] === contextId 
-                    && queue[i][3] === extra
-            ) return; // already subscribed
-        }
-        queue.push([operator, method, contextId, extra]);
+        this.subscribeObject(target, eventName, method, operator, [contextId, extra]);
     },
     
-    // `operator` is required arg
-    unsubscribeOperator: function(object, eventName, operator, method, extra, allContexts) {
-        if (!object) Error("`object` parameter is required");
-        if (extra === undefined && arguments.length < 5) extra = null;
-        var contextId = operator._contextId;
-        var op = object.getSubscribers(eventName, this.dispatchEvent, this);
-        var opCount = 0; //number of remaining events to dispatch to operator `operator`
-        if (!op.length) return 0; // not subscribed
-        for (var j = 0; j < op.length; j++) {
-            var queue = op[j][2];
-            if (!queue || !queue.eventName || (eventName && queue.eventName !== eventName))
-                Error("Assertion: we found wrong queue array");
-            for (var i = queue.length - 1; i >= 0; i--) {
-                if (queue[i][0] !== operator) continue; 
-                if (
-                        (method === undefined || queue[i][1] === method) 
-                        && (allContexts || queue[i][2] === contextId)
-                        && (extra === undefined || queue[i][3] === extra)
-                ) {
-                    queue.splice(i, 1);
-                    if (!queue.length) {
-                        object.unsubscribeByIndex(op[j][4], op[j][5]);
-                        // now we need to check if we are still subscribed to other
-                        // events and remove object from _allSubs
-                        var otherSubs = object.getSubscribers(undefined, this.dispatchEvent, this);
-                        if (!otherSubs.length) {
-                            var idx = Amm.Array.indexOf(this._allSubs, object);
-                            if (idx >= 0) this._allSubs.splice(idx, 1);
-                        }
-                    }
-                } else {
-                    opCount++;
-                }
-            }
+    unsubscribeOperator: function(target, eventName, operator, method, extra, allContexts) {
+        var contextId = allContexts? Amm.WithEvents.DispatcherProxy.ANY : operator._contextId;
+        if (extra === undefined) {
+             if (arguments.length < 5) extra = null;
+             else extra = Amm.WithEvents.DispatcherProxy.ANY;
         }
-        return opCount;
+        return this.unsubscribeObject(target, eventName, method, operator, [contextId, extra]);
     },
     
-    dispatchEvent: function() {
-        var queue = arguments[arguments.length - 1], args = Array.prototype.slice.call(arguments, 0, -1);
-        if (!queue.eventName)
-            Error("Queue array (extra) not provided to Amm.Expression._dispatchIncomingEvent method");
-        var ev = queue.eventName;
-        
-        if (queue.length > 1) {
+    beforeDispatch: function(eventName, queue, arguments) {
+        if (queue.length > 1) { // TODO: put to overloadable method
             this._beginUpdate();
         }
-        
-        var extraIdx = args.length;
-        args.push(null);
-        for (var i = 0; i < queue.length; i++) {
-            var 
-                operator = queue[i][0],
-                method = queue[i][1],
-                contextId = queue[i][2];
-        
-            if (!method.apply) method = operator[method];
-            
-            args[extraIdx] = queue[i][3]; // extra is last one
-            if (operator._contextId !== contextId) operator.setContextIdToDispatchEvent(contextId, ev, args);
-            method.apply(operator, args);
-        }
-        if (queue.length > 1) {
+    },
+    
+    afterDispatch: function(eventName, queue, arguments) {
+        if (queue.length > 1) { // TODO: put to oveloadable method
             this._endUpdate();
         }
     },
+    
+    beforeCallHandler: function(eventName, queue, arguments, queueIndex, extra) {
+        var contextId = extra[0], newExtra = extra[1];
+        var operator = queue[queueIndex][1]; // 'scope'
+        if (operator._contextId !== contextId) {
+            operator.setContextIdToDispatchEvent(contextId, eventName, arguments);
+        }
+        return newExtra;
+    },
+    
+    beforeCallHandlerReturnsNewExtra: true,
     
     getUpdateLevel: function() {
         return this._updateLevel;
     },
     
+    // TODO: think about completely ditching _lockWrite in favor of _updateLevel
     _beginUpdate: function() {
         if (!this._updateLevel) this._updateQueue = [];
         this._updateLevel++;
+        this._lockWrite++;
     },
     
     // sorts operators in update queue by level, descending
@@ -417,6 +367,7 @@ Amm.Expression.prototype = {
         }
         if (this._updateLevel > 1) {
             this._updateLevel--;
+            this._lockWrite--;
             return;
         }
         this._deferredValueChange = {};
@@ -431,6 +382,7 @@ Amm.Expression.prototype = {
             op.finishUpdate();
         }
         this._updateLevel = 0;
+        this._lockWrite--;
         var dv = this._deferredValueChange;
         this._deferredValueChange = null;
         if (dv.ids) {
@@ -441,6 +393,9 @@ Amm.Expression.prototype = {
                 }
                 this._reportChange(d.old);
             }
+        }
+        if (this._writeDestinationChanged) {
+            this.notifyWriteDestinationChanged();
         }
     },
     
@@ -485,5 +440,6 @@ Amm.Expression.prototype = {
 Amm.Expression._builder = null;
 Amm.Expression._parser = null;
 
+Amm.extend(Amm.Expression, Amm.WithEvents.DispatcherProxy);
 Amm.extend(Amm.Expression, Amm.WithEvents);
 Amm.extend(Amm.Expression, Amm.Operator.VarsProvider);

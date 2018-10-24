@@ -81,7 +81,7 @@ Amm.Expression.Sync.prototype = {
         if (!wo) return;
         if (this._lockWrite) return;
         this._lockWrite++;
-        var v = this.getValue(), old = v, ok = true;
+        var v = this.getValue(), ok = true;
         if (this._translator && v !== undefined) {
             var err = {};
             v = this._translator.translateIn(v, err);
@@ -137,7 +137,7 @@ Amm.Expression.Sync.prototype = {
     },
     
     notifyWriteDestinationChanged: function() {
-        Amm.Expression.prototype.notifyWriteDestinationChanged.call(this);
+        if (Amm.Expression.prototype.notifyWriteDestinationChanged.call(this)) return true;
         if (this._writeGetter && this._hasValue && this._value === undefined) {
             var o = (this._writeObject || this._expressionThis), v;
             if (o) {

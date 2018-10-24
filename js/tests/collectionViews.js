@@ -1,4 +1,5 @@
 /* global Amm */
+/* global QUnit */
 
 (function() {
 
@@ -295,6 +296,40 @@
         assert.equal(inp2.getDisplayOrder(), 1);
         
         Amm.cleanup(inp1, inp2, cont);
+        
+    });
+    
+    QUnit.test("Amm.Trait.Visual.displayOrder", function(assert) {
+       
+        var dp = new Amm.Element({traits: Amm.Trait.DisplayParent});
+        var a = new Amm.Element({traits: Amm.Trait.Visual});
+        var b = new Amm.Element({traits: Amm.Trait.Visual});
+        var c = new Amm.Element({traits: Amm.Trait.Visual});
+        var d = new Amm.Element({traits: Amm.Trait.Visual});
+        
+        dp.displayChildren.setItems([a, b, c, d]);
+        
+        assert.deepEqual(Amm.getProperty(dp.displayChildren.getItems(), 'displayOrder'), [0, 1, 2, 3]);
+        
+        a.setDisplayOrder(10);
+        
+            assert.equal(a.getDisplayOrder(), 3, "Setting displayOrder beyound max limit results in max displayOrder");
+        
+        d.setDisplayOrder(-10);
+        
+        assert.equal(d.getDisplayOrder(), 0, "Setting displayOrder below 0 results in displayOrder == 0");
+        
+        assert.throws(function() { 
+            b.setDisplayOrder("Foobar");
+        }, /number/i, "Non-numeric displayOrder => Exception");
+        
+        c.setDisplayOrder("0");
+
+        assert.equal(c.getDisplayOrder(), 0, "Numeric string displayOrder => ok");
+        
+        assert.deepEqual(Amm.getProperty(dp.displayChildren.getItems(), 'displayOrder'), [0, 1, 2, 3]);
+        
+        Amm.cleanup(dp, a, b, c, d);
         
     });
     

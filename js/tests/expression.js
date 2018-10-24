@@ -800,7 +800,7 @@
        
         var a = new Amm.Element({
             prop__src: null,
-            prop__val: 'aVal', 
+            prop__val: 'oldVal', 
             prop__err: null
         });
         
@@ -820,7 +820,11 @@
         
         window.d.sync = sync;
         
+        console.log("Lets change internal value");
+
         a.setSrc(b);
+        
+        console.log("Done");
         
             assert.equal(a.getVal(), 'bVal',
                 'writeProperty was set from provider expression');
@@ -902,6 +906,30 @@
                 'errorProperty nulled after success');
                 
         
+    });
+    
+    QUnit.test("Expression.Sync with updateLevel > 0", function(assert) {
+       
+        var a = new Amm.Element({
+            prop__src: null,
+            prop__val: 'old', 
+            prop__err: null
+        });
+        
+        var b = new Amm.Element({
+            prop__x: 'new'
+        });
+        
+        var sync = new Amm.Expression.Sync('this.src.x', a, 'val');
+        
+        sync._beginUpdate();
+        
+        a.setSrc(b);
+        
+        sync._endUpdate();
+        
+        assert.equal(a.getVal(), 'new',
+            'writeProperty was set from provider expression');
     });
     
 }) ();

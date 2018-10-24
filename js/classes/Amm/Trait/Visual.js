@@ -57,8 +57,16 @@ Amm.Trait.Visual.prototype = {
     },
 
     setDisplayOrder: function(displayOrder) {
+        if (typeof displayOrder !== 'number') {
+            displayOrder = parseInt(displayOrder);
+            if (isNaN(displayOrder)) throw Error("`displayOrder` must be a number");
+        }
         var oldDisplayOrder = this._displayOrder;
         if (oldDisplayOrder === displayOrder) return;
+        if (this._displayParent && displayOrder >= this._displayParent.displayChildren.length) {
+            displayOrder = this._displayParent.displayChildren.length - 1;
+        }
+        if (displayOrder < 0) displayOrder = 0;
         this._displayOrder = displayOrder;
         this.outDisplayOrderChange(displayOrder, oldDisplayOrder);
         return true;

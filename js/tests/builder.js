@@ -97,7 +97,7 @@
             res.sort();
             return res;
         };
-        
+
         assert.deepEqual(getBoundHtmlElementIds(byIds.inp1_e), ['inp1', 'p1'].sort(), 
             'outer view properly detected');
         

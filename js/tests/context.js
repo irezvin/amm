@@ -1,4 +1,6 @@
 /* global Amm */
+/* global QUnit */
+
 (function() {
 QUnit.module("Context");
 
@@ -81,14 +83,14 @@ QUnit.module("Context");
         
             assert.equal(v3, e3.getA() + e3.getB(), 'shared expressionThis(), context(3) value changed');
             assert.equal(v4, e3.getA() + e3.getB(), 'shared expressionThis(), context(4) value changed');
-            
+        
         xp.setContextId(cid1);
         assert.equal(xp.getValue(), e1.getA() + e1.getB());
         xp.setContextId(cid4);
         assert.equal(xp.getValue(), e3.getA() + e3.getB());
-        
+
         xp.cleanup(); // todo: test cleanup
-        
+
             assert.equal(e1.getSubscribers().length, 0, '0 observers for expressionThis(), context (0) after cleanup()');
             assert.equal(e2.getSubscribers().length, 0, '0 observers for expressionThis(), context (1) after cleanup()');
             assert.equal(e3.getSubscribers().length, 0, '0 observers for expressionThis(), context (2) after cleanup()');

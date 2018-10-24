@@ -238,14 +238,8 @@ Amm.WithEvents.prototype = {
                 if (!scope) continue;
                 if (classOrInterface === undefined || Amm.is(scope, classOrInterface)) res.push(scope);
             }
-            // leave only unique items
-            for (var i = 0; i < res.length; i++) {
-                for (var j = res.length - 1; j > i; j--) {
-                    if (res[j] === res[i]) res.splice(j, 1);
-                }
-            }
         }
-        return res;
+        return Amm.Array.unique(res);
     },
     
     /**
@@ -254,17 +248,14 @@ Amm.WithEvents.prototype = {
      * otherwise returns empty array.
      */
     unsubscribeByIndex: function(eventName, index) {
+        if (!this._subscribers[eventName] || !(index in this._subscribers[eventName])) return [];
         var res;
-        if (index in this._subscribers[eventName]) {
-            res = [[].concat(this._subscribers[eventName][index], [eventName, index])];
-            this._subscribers[eventName].splice(index, 1);
-            if (!this._subscribers[eventName].length) {
-                delete this._subscribers[eventName];
-                var fn = '_unsubscribeLast_' + eventName;
-                if (this[fn] && typeof this[fn] === 'function') this[fn]();
-            }
-        } else {
-            res = [];
+        res = [[].concat(this._subscribers[eventName][index], [eventName, index])];
+        this._subscribers[eventName].splice(index, 1);
+        if (!this._subscribers[eventName].length) {
+            delete this._subscribers[eventName];
+            var fn = '_unsubscribeLast_' + eventName;
+            if (this[fn] && typeof this[fn] === 'function') this[fn]();
         }
         return res;
     },
