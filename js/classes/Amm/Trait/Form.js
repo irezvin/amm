@@ -157,7 +157,7 @@ Amm.Trait.Form.prototype = {
         for (var i = newFields.length - 1; i >= 0; i--) {
             if (newFields[i]['Field'] !== '__INTERFACE__') newFields.splice(i, 1);
         }
-        newFields = Amm.Array.arrayDiff(newFields, this.fields);
+        newFields = Amm.Array.diff(newFields, this.fields);
         if (newFields.length) {
             if (newFields.length > 1) this._beginUpdateFields();
             this.fields.acceptMany(newFields);
@@ -181,7 +181,7 @@ Amm.Trait.Form.prototype = {
             && this._elementsAreFields && this['Component'] 
             && this._elements.length
         ) {
-            tmpFields = Amm.Array.arrayDiff(tmpFields, this._elements);
+            tmpFields = Amm.Array.diff(tmpFields, this._elements);
         }
         
         if (
@@ -204,7 +204,7 @@ Amm.Trait.Form.prototype = {
             && this._displayChildrenAreFields && this['DisplayParent'] 
             && this.displayChildren.length
         ) {
-            tmpFields = Amm.Array.arrayDiff(tmpFields, this.displayChildren);
+            tmpFields = Amm.Array.diff(tmpFields, this.displayChildren);
         }
             
         if (!tmpFields.length) return;
@@ -250,11 +250,11 @@ Amm.Trait.Form.prototype = {
     
     _handleFieldComponentRejectedElements: function(fields) {
         if (this._childrenAreFields && this['Composite'] && this._children.length) {
-            fields = Amm.Array.arrayDiff(fields, this._children);
+            fields = Amm.Array.diff(fields, this._children);
         }
         if (fields.length && this._displayChildrenAreFields && this['DisplayParent']
             && this.displayChildren.length) {
-            fields = Amm.Array.arrayDiff(fields, this.displayChildren);
+            fields = Amm.Array.diff(fields, this.displayChildren);
         }
         if (fields.length) this._delFields(fields, false, true, true);
     },
@@ -355,8 +355,8 @@ Amm.Trait.Form.prototype = {
             return;
         }
         
-        var toDel = Amm.Array.arrayDiff(this.fields, fields);
-        var toAdd = Amm.Array.arrayDiff(fields, this.fields);
+        var toDel = Amm.Array.diff(this.fields, fields);
+        var toAdd = Amm.Array.diff(fields, this.fields);
         if (!toDel.length && !toAdd.length) return;
         this._beginUpdateFields();
         if (toDel.length) this._delFields(toDel, true, true, true);

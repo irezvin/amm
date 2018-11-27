@@ -188,7 +188,7 @@
                 ["PropertyAccess",["Identifier","a"],["Subexpression",["Constant","foo"]],["PropertyArgs",[["Constant","bar"]],false],true,null],
 
             "a[$b]::{m.n, $z}":
-                ["PropertyAccess",["Identifier","a"],["Subexpression",["Variable","b"]],["PropertyArgs",["List",[["PropertyAccess",["Identifier","m"],["Constant","n"],null,false,null],["Variable","z"]],undefined],true],true,null],
+                ["PropertyAccess",["Identifier","a"],["Subexpression",["Variable","b"]],["PropertyArgs",["List",[["PropertyAccess",["Identifier","m"],["Constant","n"],null,false,null],["Variable","z"]]],true],true,null],
 
             "a.b::x.c::y":
                 ["PropertyAccess",["PropertyAccess",["Identifier","a"],["Constant","b"],["PropertyArgs",[["Constant","x"]],false],false,null],["Constant","c"],["PropertyArgs",[["Constant","y"]],false],false,null],

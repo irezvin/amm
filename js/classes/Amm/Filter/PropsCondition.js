@@ -2,56 +2,247 @@
 
 Amm.Filter.PropsCondition = function(filter, options) {
     
-    Amm.Filter.Condition.call(this, filter, options);
-    
-    this.props = {};
-    
-    this.propList = [];
-    
-    for (var i in options) if (i[0] !== '_' && options.hasOwnProperty(i)) {
-        this.props[i] = options[i];
-        this.propList.push(i);
+    options = Amm.override({}, options);
+    if ('_allowExpressions' in options) {
+        this.allowExpressions = !!options._allowExpressions;
+        delete options._allowExpressions;
     }
+    this._props = {};
+    this._expressions = {};
+    this._evaluators = {};
+    this._propList = [];
+    Amm.Filter.Condition.call(this, filter, options);
+    this.setProps(options);
     
 };
+
+Amm.Filter.propNameRx = /^\w+$/;
 
 Amm.Filter.PropsCondition.prototype = {
 
     'Amm.Filter.PropsCondition': '__CLASS__', 
     
-    props: null,
+    allowExpressions: true,
     
-    propList: null,
+    _props: null,
     
-    subscribedObjects: [],
+    _expressions: null,
     
-    // TODO: perhaps we need to subscribe objects centrally through Filter
-    // TODO 2: support adding/deleting props and changing test conditions
+    _evaluators: null,
     
-    handleObjectPropertyChange(value, oldValue) {
-        var propName = arguments[arguments.length - 1];
-        var object = Amm.event.origin;
+    _propList: null,
+    
+    _noRefresh: 0,
+    
+    _checkProps: function(props, expressionList) {
+        if (!expressionList) expressionList = {};
+        for (var i = 0, l = props.length; i < l; i++) {
+            if (Amm.Filter.propNameRx.exec(props[i])) continue;
+            if (!this.allowExpressions) {
+                throw Error("'" + props[i] + "' doesn't look like simple property name; "
+                    + " set `allowExpressions` to true to access expression values");
+            }
+            if (this._expressions[props[i]]) {
+                expressionList[props[i]] = this._expressions[props[i]];
+                continue;
+            }
+            expressionList[props[i]] = new Amm.Expression(props[i]);
+            expressionList[props[i]].setEventsProxy(this._filter);
+        }
     },
     
-    subscribe: function(object) {
-        if (!this.propList.length || !object['Amm.WithEvents']) return;
-        for (var i = 0, l = this.propList.length; i < l; i++) {
-            var prop = this.propList[i], e = prop + 'Change';
-            if (object.hasEvent(e)) {
-                object.subscribe(e, this.handleObjectPropertyChange, this, prop);
+    setProps: function(props, propName) {
+        this._noRefresh++;
+        var expressionList = {};
+        var oldProps;
+        if (this._subscribers.propsChange) {
+            oldProps = Amm.override({}, this._props);
+        }
+        if (propName) {
+            var isNewProp = !(propName in this._props);
+            this._checkProps([propName], expressionList);
+            this._props[propName] = props;
+            if (isNewProp) {
+                if (this.allowExpressions) {
+                    Amm.override(this._expressions, expressionList);
+                }
+                this._propList.push(propName);
+                this._sub(propName);
+            }
+        } else if (props) {
+            var propList = Amm.keys(props);
+            this._checkProps(propList, expressionList);
+            this.deleteProps(null, expressionList);
+            if (this.allowExpressions) {
+                Amm.override(this._expressions, expressionList);
+            }
+            this._props = Amm.override({}, props);
+            this._propList = propList;
+            this._sub();
+        } else {
+            this.deleteProps();
+        }
+        if (this._subscribers.propsChange)
+            this.outPropsChange(this._props, oldProps);
+        this._noRefresh--;
+        if (!this._noRefresh) this._filter.refresh();
+    },
+    
+    getProps: function(propName) {
+        if (propName) return this._props[propName];
+        return Amm.override(this._props);
+    },
+    
+    _handleChange: function() {
+        var o = Amm.event.origin; // event origin must be our object
+        
+        // sub-optimal (eval all conditions for all observed change events)
+        this._filter.refresh(o); 
+    },
+    
+    _handleExpressionChange: function(value, oldValue) {
+        var o = Amm.event.origin.getExpressionThis();
+        this._filter.refresh(o); 
+    },
+    
+    _sub: function(props, objects) {
+        var oo = objects || this._filter._objects, l = oo.length, i, o;
+        if (!props) props = this._propList;
+        var j, pl = props.length;
+        for (i = 0; i < l; i++) {
+            o = oo[i];
+            if (!o['Amm.WithEvents']) continue;
+            for (j = 0; j < pl; j++) {
+                
+                if (this._expressions[props[j]]) {
+                    var c = this._expressions[props[j]].findContext(o);
+                    if (c !== undefined) continue;
+                    this._expressions[props[j]].createContext({expressionThis: o});
+                    this._expressions[props[j]].subscribe('valueChange', this._handleExpressionChange, this);
+                    continue;
+                }
+                
+                ev = props[j] + 'Change';
+                
+                // no need to subscribe objects that don't have required class
+                if (this.requiredClass && !Amm.is(o, this.requiredClass)) continue; 
+                if (!o.hasEvent(ev)) continue;
+                this._filter.subscribeObject(o, ev, this._handleChange, this);
             }
         }
-        var idx = Amm.Array.indexOf(object, this.subscribedObjects);
-        if (idx < 0) this.subscribedObjects.push(object);
     },
     
-    unsubscribe: function(object) {
-        if (!this.propList.length || !object['Amm.WithEvents']) return; 
-        var idx = Amm.Array.indexOf(object, this.subscribedObjects);
-        if (idx >= 0) this.subscribedObjects.splice(idx, 1);
-    }
-
+    // if props is not provided, will unsubscribe from all events
+    _unsub: function(props, objects) {
+        var oo = objects || this._filter._objects, l = oo.length, i, o;
+        if (!props) props = this._propList;
+        var j, pl = props? props.length : 0;
+        for (i = 0; i < l; i++) {
+            o = oo[i];
+            if (!o['Amm.WithEvents']) continue;
+                
+            // we didn't subscribed to objects that didn't have required class
+            if (this.requiredClass && !Amm.is(o, this.requiredClass)) continue; 
+            
+            for (j = 0; j < pl; j++) {
+                if (this._expressions[props[j]]) {
+                    var ctx = this._expressions[props[j]].findContext(o);
+                    if (ctx !== undefined) this._expressions[props[j]].deleteContext(ctx);
+                    continue;
+                }
+                ev = props[j] + 'Change';
+                if (this._expressions[props[j]]) continue;
+                if (!o.hasEvent(ev)) continue;
+                this._filter.unsubscribeObject(o, ev, this._handleChange, this);
+            }
+        }
+    },
+    
+    _doMatch: function(object) {
+        var exp, ctxId, val;
+        for (var i = 0, l = this._propList.length; i < l; i++) {
+            if ((exp = this._expressions[this._propList[i]])) {
+                if (exp.getExpressionThis() === object) {
+                    val = exp.getValue();
+                } else {
+                    ctxId = exp.findContext(object);
+                    if (ctxId === undefined) {
+                        if (!this._evaluators[this._propList[i]]) 
+                            this._evaluators[this._propList[i]] = exp.toFunction();
+                        this._evaluators[this._propList[i]].env.expressionThis = object;
+                        val = this._evaluators[this._propList[i]]();
+                    } else {
+                        exp.setContextId(ctxId);
+                        val = exp.getValue();
+                    }
+                }
+            } else {
+                val = Amm.getProperty(object, this._propList[i]);
+            }
+            if (!Amm.Filter.Condition.testValue(val, this._props[this._propList[i]])) {
+                return false;
+            }
+        }
+        return true;
+    },
+    
+    observe: function(objects) {
+        this._sub(this._propList, objects);
+    },
+    
+    unobserve: function(objects) {
+        this._unsub(null, objects);
+    },
+    
+    getProps: function(propName) {
+        if (propName) return this._props[propName];
+        
+        // notice: returning internal data structure by reference
+        return this._props;
+    },
+    
+    deleteProps: function(propName, expressionsToLeave) {
+        
+        if (propName && !(propName instanceof Array)) {
+            propName = [propName];
+        }
+        
+        this._unsub(propName);
+        
+        if (!propName) {
+            this._props = {};
+            this._propList = [];
+        } else {
+            for (var i = 0, l = propName.length; i < l; i++) {
+                delete this._props(propName[i]);
+                if (!this._expressions[propName[i]]) continue;
+                if (expressionsToLeave && expressionsToLeave[propName[i]]) continue;
+                this._expressions[propName[i]].cleanup();
+                if (this._evaluators[[propName[i]]]) {
+                    this._evaluators[[propName[i]]].env.expressionThis = {};
+                    delete this._evaluators[[propName[i]]];
+                }
+                delete this._expressions[propName[i]];
+            }
+            this._propList = Amm.Array.diff(this._propList, propName);
+        }
+        
+        if (!this._noRefresh) this._filter.refresh();
+        
+    },
+    
+    cleanup: function() {
+        Amm.Filter.Condition.prototype.cleanup.call(this);
+        for (var i in this._expressions) if (this._expressions.hasOwnProperty(i)){
+            this._expressions[i].cleanup();
+        }
+        this._expressions = {};
+        this._evaluators = {};
+        this._propList = [];
+        this._props = {};
+    },
+    
+    
 };
 
 Amm.extend(Amm.Filter.PropsCondition, Amm.Filter.Condition);
-

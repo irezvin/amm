@@ -167,7 +167,7 @@ Amm.Operator.VarsProvider.prototype = {
             if (typeof value !== 'object') Error("setVars(`value`): object required");
             var old = Amm.override({}, this._allVars || this.getVars());
             if (!value) value = {}; // delete all vars
-            this._vars = value;
+            this._vars = Amm.override({}, value);
             this._allVars = null;
             if (this._consumers) this._notifyConsumers(this.getVars(), old, '');
         }

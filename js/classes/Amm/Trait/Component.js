@@ -276,7 +276,7 @@ Amm.Trait.Component.prototype = {
         // include all children... 
         var ee = this._includeAllChildren(elements), res = [];
         // exclude items already under our control
-        ee = Amm.Array.arrayDiff(ee, this._elements);
+        ee = Amm.Array.diff(ee, this._elements);
         if (!ee.length) return;
         this._elements.push.apply(this._elements, ee);
         var hh = this._listHandlersForElements();

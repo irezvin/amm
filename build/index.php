@@ -32,8 +32,7 @@
         <script src="qunit/qunit-2.0.1.js"></script>
         <script type='text/javascript'>
             window.d = {}; // container for random debug data
-        </script>
-    
+        </script>      
 <?php
         
         foreach (listTests() as $f) {

@@ -820,12 +820,7 @@
         
         window.d.sync = sync;
         
-        console.log("Lets change internal value");
-
         a.setSrc(b);
-        
-        console.log("Done");
-        
             assert.equal(a.getVal(), 'bVal',
                 'writeProperty was set from provider expression');
         

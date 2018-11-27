@@ -31,7 +31,7 @@
 
     QUnit.test("Array.diff", function(assert) {
 
-        var arrayDiff = Amm.Array.arrayDiff;
+        var arrayDiff = Amm.Array.diff;
         var symmetricDiff = Amm.Array.symmetricDiff;
 
         var f = Amm.Array._optArrayDiff;

@@ -463,10 +463,13 @@ Amm.Expression.Parser.prototype = {
                 token = this.fetch();
                 if (!token || !token.isSymbol('}')) Error("Expected: '}'");
                 isList = true;
+                break;
             } else if (token.isSymbol('::')) {
                 arg = this.genOp('Constant', undefined); // skipped item - undefined
             } else if (token.isIdentifier()) {
                 arg = this.genOp('Constant', token.string); // use identifier as constant getter arg
+            } else if (token.isConstant()) {
+                arg = this.genOp('Constant', token.value);
             } else {
                 this.unfetch();
                 break;

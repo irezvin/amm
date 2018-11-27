@@ -97,11 +97,11 @@ Amm.View.Html.DisplayParent.prototype = {
         var scanForItems = this.scanForItems, scanForDisplayOrder = this.scanForDisplayOrder;
         // otherwise update the display order
         if (scanForItems && scanForDisplayOrder) {
-            var newItems = Amm.Array.arrayDiff(foundItems, this._collection);
+            var newItems = Amm.Array.diff(foundItems, this._collection);
             if (newItems.length) this._collection.push.apply(this._collection, newItems);
             for (var i = 0; i < foundItems.length; i++) foundItems[i].setDisplayOrder(i); // both for old and new items
         } else if (scanForItems) {
-            var newItems = Amm.Array.arrayDiff(foundItems, this._collection);            
+            var newItems = Amm.Array.diff(foundItems, this._collection);            
             if (newItems.length) this._collection.push.apply(this._collection, this._collection.length, foundItems);
         } else { // scanForDisplayOrder only
             for (var i = 0; i < foundItems.length; i++) foundItems[i].setDisplayOrder(i);

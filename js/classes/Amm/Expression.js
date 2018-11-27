@@ -315,13 +315,13 @@ Amm.Expression.prototype = {
     },
     
     beforeDispatch: function(eventName, queue, arguments) {
-        if (queue.length > 1) { // TODO: put to overloadable method
+        if (queue.length > 1) {
             this._beginUpdate();
         }
     },
     
     afterDispatch: function(eventName, queue, arguments) {
-        if (queue.length > 1) { // TODO: put to oveloadable method
+        if (queue.length > 1) {
             this._endUpdate();
         }
     },
@@ -433,6 +433,16 @@ Amm.Expression.prototype = {
         }
         fn.env = env;
         return fn;
+    },
+    
+    findContext: function(expressionThis) {
+        if (this._expressionThis === expressionThis) return this._contextId;
+        for (var i in this._contextState) if (this._contextState.hasOwnProperty(i)) {
+            if (this._contextState[i] && this._contextState[i]._expressionThis === expressionThis) {
+                return i;
+            }
+        }
+        return undefined;
     }
     
 };

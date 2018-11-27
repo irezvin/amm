@@ -4,7 +4,9 @@ Amm.ArrayMapper = function(options) {
 
     this._srcEntries = [];
     this._destEntries = [];
+    this.beginUpdate();
     Amm.WithEvents.call(this, options);
+    this.endUpdate();
     
 };
 
@@ -219,16 +221,37 @@ Amm.ArrayMapper.prototype = {
         if (oldFilter === filter) return;
         if (!filter) {
         } else if (typeof filter === 'object') {
-            Amm.meetsRequirements(filter, [['pass', 'registerItem', 'unregisterItem']], 'sort');
+            Amm.is(filter, 'Amm.Filter', 'filter');
             this._filterIsFn = false;
         } else if (typeof filter === 'function') {
             this._filterIsFn = true;
         } else throw Error("`filter` must be an object, a function or a null");
+        if (this._filter && !this._filterIsFn) this._unsubscribeFilter();
         this._filter = filter;
+        if (this._filter && !this._filterIsFn) this._subscribeFilter();
         this.applyFilter();
         return true;
     },
-
+    
+    _subscribeFilter: function() {
+        if (this._src) this._filter.setObservedObjects(this._src.getItems());
+        this._filter.subscribe('matchesChange', this._handleFilterMatchesChange, this);
+    },
+    
+    _unsubscribeFilter: function() {
+        this._filter.unsubscribe('matchesChange', this._handleFilterMatchesChange, this);
+        this._filter.setObservedObjects([]);
+    },
+    
+    _handleFilterMatchesChange: function(items, matches) {
+        if (items.length > 1) this.beginUpdate();
+        for (i = 0, l = items.length; i < l; i++) {
+            var item = items[i], match = matches[i];
+            if (match !== undefined) this.applyFilter(item, match);
+        }
+        if (items.length > 1) this.endUpdate();
+    },
+    
     getFilter: function() { return this._filter; },
     
     /**
@@ -251,12 +274,15 @@ Amm.ArrayMapper.prototype = {
         }
         if (!this._filter) return;
         var idx = 0;
-        while ((idx = Amm.Array.indexOf(item, this._src, idx)) > 0) {
+        while ((idx = Amm.Array.indexOf(item, this._src, idx)) >= 0) {
             var dest = this._srcEntries[idx][Amm.ArrayMapper._SRC_REF_TO_DEST];
             var old = dest[Amm.ArrayMapper._DEST_PASS];
             var n = pass === undefined? this._getFilterValue(dest[Amm.ArrayMapper._DEST_ITEM]) : pass;
+            if (old != n && this._instantiator && this._instantiator['Amm.Instantiator.Variants'] && !this._instantiator.getFilter()) {
+                this._instantiator.setMatches([item], [n]);
+            }
             if (!!old !== !!n) {
-                dest[Amm.ArrayMapper._DEST_PASS] = true;
+                dest[Amm.ArrayMapper._DEST_PASS] = n;
                 // TODO: optimize for possible change of one item
                 if (!this._updateLevel) this._remap(); 
             }
@@ -330,19 +356,29 @@ Amm.ArrayMapper.prototype = {
     },
     
     _recalcAllFilter: function() {
-        var srcEntry, changed, newValue;
+        var srcEntry, changed, newValue, affectedObjects = [], newMatches = [];
+        var needNotifyInstantiator;
+        needNotifyInstantiator = this._instantiator 
+            && this._instantiator['Amm.Instantiator.Variants']
+            && !this._instantiator.getFilter();
+
         for (var i = 0, l = this._destEntries.length; i < l; i++) {
             srcEntry = this._destEntries[i][Amm.ArrayMapper._DEST_REF_TO_SRC];
             if (!this._filter) newValue = true;
             else {
                 newValue = this._getFilterValue(
-                    srcEntry[Amm.ArrayMapper._SRC_ITEM],
+                    srcEntry[Amm.ArrayMapper._SRC_ITEM]
                 );
             }
             changed = this._destEntries[i][Amm.ArrayMapper._DEST_PASS] !== newValue;
+            if (changed && needNotifyInstantiator) {
+                affectedObjects.push(srcEntry[Amm.ArrayMapper._SRC_ITEM]);
+                newMatches.push(newValue);
+            }
             this._destEntries[i][Amm.ArrayMapper._DEST_PASS] = newValue;
         }
         this._applyFilter = false;
+        if (affectedObjects.length) this._instantiator.setMatches(affectedObjects, newMatches);
         if (changed && !this._updateLevel) this._remap();
     },
         
@@ -427,18 +463,72 @@ Amm.ArrayMapper.prototype = {
         this.beginUpdate();
         // deconstruct old items, then re-construct them
         this._destructAll();
+        this._unsubscribeInstantiator();
         this._instantiatorIsFn = instantiatorIsFn;
         this._instantiator = instantiator;
+        this._subscribeInstantiator();
         this._constructAll();        
         this.endUpdate();
         // rebuild items here
         return true;
     },
     
-    _construct: function(srcItem) {
+    _subscribeInstantiator: function() {
+        if (!(this._instantiator && this._instantiator['Amm.Instantiator.Variants'])) return;
+        this._instantiator.subscribe('needRebuild', this._handleInstantiatorNeedRebuild, this);
+        if (this._filter && this._filter['Amm.Filter']) {
+            this._filter.subscribe('matchesChange', this._setInstantiatorMatches, this);
+        }
+    },
+    
+    _unsubscribeInstantiator: function() {
+        if (!(this._instantiator && this._instantiator['Amm.Instantiator.Variants'])) return;
+        this._instantiator.unsubscribe('needRebuild', this._handleInstantiatorNeedRebuild, this);
+        if (this._filter && this._filter['Amm.Filter']) {
+            this._filter.unsubscribe('matchesChange', this._setInstantiatorMatches, this);
+        }
+    },
+    
+    _setInstantiatorMatches: function(objects, matches, oldMatches) {
+        if (this._instantiator.getFilter()) return;
+        this._instantiator.handleFilterMatchesChange(objects, matches, oldMatches);
+    },
+    
+    _handleInstantiatorNeedRebuild: function(objects, matches) {
+        var i, l, idx, dest, destItem, destIdx = -1, item, srcUnique, match, newDestItem;
+        srcUnique = this._src.getUnique();
+        if (objects.length > 1 || !srcUnique) {
+            this._dest.beginUpdate();
+        }
+        for (i = 0, l = objects.length; i < l; i++) {
+            match = matches[i];
+            // not interesed in non-matching object 
+            // (it's dest instance won't appear in _dest because of filter)
+            
+            if (!match) continue; 
+            item = objects[i];
+            while ((idx = Amm.Array.indexOf(item, this._src, idx)) >= 0) {
+                dest = this._srcEntries[idx][Amm.ArrayMapper._SRC_REF_TO_DEST];
+                destItem = dest[Amm.ArrayMapper._DEST_ITEM];
+                if (!destItem) continue; // we don't have dest item for some reason
+                
+                destIdx = Amm.Array.indexOf(destItem, this._dest, destIdx);
+                if (destIdx < 0) continue;
+                
+                newDestItem = this._construct(item, match);
+                this._dest.setItem(destIdx, newDestItem);
+                this._destruct(destItem);
+                dest[Amm.ArrayMapper._DEST_ITEM] = newDestItem;
+                if (srcUnique) break; // we shouldn't try to find more items
+            }
+        }
+        if (objects.length > 1 || !this._src.getUnique()) this._dest.endUpdate();
+    },
+    
+    _construct: function(srcItem, pass) {
         if (!this._instantiator) return srcItem;
         if (this._instantiatorIsFn) return this._instantiator(srcItem, this);
-        return this._instantiator.construct(srcItem, this);
+        return this._instantiator.construct(srcItem, pass, this);
     },
     
     _destruct: function(destItem) {
@@ -464,7 +554,8 @@ Amm.ArrayMapper.prototype = {
             if (entries[i][Amm.ArrayMapper._DEST_ITEM]) continue;
             if (!entries[i][Amm.ArrayMapper._DEST_IN_SLICE]) continue;
             var srcItem = entries[i][Amm.ArrayMapper._DEST_REF_TO_SRC][Amm.ArrayMapper._SRC_ITEM];
-            var item = this._instantiator? this._construct(srcItem) : srcItem;
+            var pass = entries[i][Amm.ArrayMapper._DEST_PASS];
+            var item = this._instantiator? this._construct(srcItem, pass) : srcItem;
             entries[i][Amm.ArrayMapper._DEST_ITEM] = item;
         }
     },
@@ -487,7 +578,11 @@ Amm.ArrayMapper.prototype = {
     _getFilterValue: function(item) {
         if (!this._filter) return true;
         if (this._filterIsFn) return this._filter(item, this);
-            else return this._filter.pass(item, this);
+            else return this._filter.getMatch(item);
+    },
+    
+    getUpdateLevel: function() {
+        return this._updateLevel;
     },
     
     beginUpdate: function() {
@@ -511,6 +606,9 @@ Amm.ArrayMapper.prototype = {
         
         this.beginUpdate();
         
+        if (this._filter && !this._filterIsFn) this._filter.beginUpdate();
+        if (this._sort && typeof this._sort === 'object') this._sort.beginUpdate();
+        
         var changes = Amm.Array.calcChanges(cut, insert, this._src.getComparison(), index, this._src.getUnique());
         
         var i, l;
@@ -530,6 +628,14 @@ Amm.ArrayMapper.prototype = {
             srcItem = changes.added[i][0];
             srcIndex = changes.added[i][1];
             srcEntry = [ srcItem, srcIndex, null ];
+            
+            // we register item in filter or sort objects' first, then retrieve filter or sort value
+            if (srcItem && (typeof srcItem === 'object')) {
+                if (this._filter && !this._filterIsFn) this._filter.observeObject(srcItem);
+                if (this._sort && typeof this._sort === 'object' && !this._sortIsFn)
+                    this._sort.observeObject(srcItem);
+            }
+            
             destEntry = [ 
                 srcEntry, 
                 (pass = this._filter? this._getFilterValue(srcItem) : true), 
@@ -538,11 +644,6 @@ Amm.ArrayMapper.prototype = {
                 null
             ];
             destEntry[Amm.ArrayMapper._DEST_ITEM] = null; // will be built by _remap            
-            if (srcItem && (typeof srcItem === 'object')) {
-                if (this._filter && !this._filterIsFn) this._filter.registerItem(srcItem, this);
-                if (this._sort && typeof this._sort === 'object' && !this._sortIsFn)
-                    this._sort.registerItem(srcItem, this);
-            }
             
             this._destEntries.push(destEntry);
             
@@ -569,8 +670,8 @@ Amm.ArrayMapper.prototype = {
             
             if (destEntryIdx >= 0) this._destEntries.splice(destEntryIdx, 1);
             if (srcItem && (typeof srcItem === 'object')) {
-                if (this._filter && !this._filterIsFn) this._filter.unregisterItem(srcItem, this);
-                if (this._sort && !this._sortIsFn) this._sort.unregisterItem(srcItem, this);
+                if (this._filter && !this._filterIsFn) this._filter.unobserveObject(srcItem);
+                if (this._sort && !this._sortIsFn) this._sort.unobserveObject(srcItem);
             }
             
         }
@@ -617,6 +718,9 @@ Amm.ArrayMapper.prototype = {
         this._srcEntries.splice.apply(this._srcEntries, [index, cut.length].concat(replacement));
         
         this._remap();
+        
+        if (this._sort && typeof this._sort === 'object') this._sort.endUpdate();
+        if (this._filter && !this._filterIsFn) this._filter.endUpdate();
         
         this.endUpdate();
         
@@ -691,7 +795,7 @@ Amm.ArrayMapper.prototype = {
             } else if (!this._hasSlice) { // surely in slice
                 e[inSlice] = true;
                 if (!e[destItem]) {
-                    e[destItem] = this._instantiator? this._construct(e[srcReference][srcItem]) : e[srcReference][srcItem];
+                    e[destItem] = this._instantiator? this._construct(e[srcReference][srcItem], passing) : e[srcReference][srcItem];
                 }
                 destItems.push(e[destItem]);
             } else { // passing && this._hasSlice - dunno if will reach to the slice
@@ -714,7 +818,7 @@ Amm.ArrayMapper.prototype = {
             e = sliced[i];
             e[inSlice] = true;
             if (!e[destItem]) {
-                e[destItem] = this._instantiator? this._construct(e[srcReference][srcItem]) : e[srcReference][srcItem];
+                e[destItem] = this._instantiator? this._construct(e[srcReference][srcItem], e[pass]) : e[srcReference][srcItem];
             }
             destItems.push(e[destItem]);
         }
@@ -732,6 +836,7 @@ Amm.ArrayMapper.prototype = {
         
     },
     
+    //  returns part of full resulting array that is limited by _offset and _length
     _getSlice: function(fullLength) {
         var offset = this._offset, length = this._length;
         if (length === 0) return [0, 0];
@@ -749,6 +854,10 @@ Amm.ArrayMapper.prototype = {
     },
     
     cleanup: function() {        
+        if (this._filter && !this._filterIsFn) {
+            this._unsubscribeFilter();
+            this._filter = null;
+        }
         this._cleanAll();
         if (this._src) this._cleanupCollectionIfOwn(this._src);
         if (this._dest) this._cleanupCollectionIfOwn(this._dest);

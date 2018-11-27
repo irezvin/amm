@@ -226,7 +226,7 @@ Amm.WithEvents.DispatcherProxy.prototype = {
                     &&  (extra === undefined || !this.compareExtra(queue[i][2], extra))
                     &&  (decorator === undefined || queue[i][3] === decorator)
                 ) {
-                    res.push([].concat(queue[i], [eventName, i]));
+                    res.push([].concat(queue[i], [currEventName, i]));
                 }
             }
         }
@@ -264,10 +264,10 @@ Amm.WithEvents.DispatcherProxy.prototype = {
           if (currHandlers.length > 1)
             Error("Assertion: Amm.WithEvents.DispatcherProxy.dispatchEvent handler must be subscribed only once");
                
-        var queue = currHandlers[2];
-        if (!queue.eventName || queue.eventName !== eventName)
+        var queue = currHandlers[0][2];
+        if (!queue.eventName || queue.eventName !== eventName) {
             throw Error("Assertion: we found wrong queue array");
-        
+        }
         if (!queue[index]) return [];
         res = [[].concat(queue[index], [eventName, index])];
         queue.splice(index);

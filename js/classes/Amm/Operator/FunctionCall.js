@@ -68,6 +68,11 @@ Amm.Operator.FunctionCall.prototype = {
                 else return func(args);
             }
         };
+    },
+    
+    _isValueObservable: function(operand, value) {
+        if (operand === 'args') return false; // array result of "list" operator DOES NOT change
+        return Amm.Operator.prototype._isValueObservable.call(this, operand, value);
     }
     
 };

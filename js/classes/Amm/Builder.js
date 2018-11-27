@@ -183,7 +183,7 @@ Amm.Builder.prototype = {
     _mergeConnected: function(node, toNode) {
         var l = node.connected.length;
         var x;
-        x = Amm.Array.arrayDiff(toNode.connected, node.connected);
+        x = Amm.Array.diff(toNode.connected, node.connected);
         node.connected.push.apply(node.connected, x);
         if (toNode.connected.groupHasElement) node.connected.groupHasElement = true;
         if (toNode.connected.id && !node.connected.id) node.connected.id = toNode.connected.id;

@@ -852,6 +852,9 @@ Amm.extend(Amm.Array, Amm.WithEvents);
  * Offset defaults to 0. Ommitting length will check if arrays are equal.
  */
 Amm.Array.equal = function(a, b, aOffset, bOffset, length, comparisonFn) {
+    
+    if (a === b) return true; // same array
+    
     // shortcut
     if (!aOffset && !bOffset && length === undefined) {
         if (a.length !== b.length) return false;
@@ -1088,7 +1091,7 @@ Amm.Array.findNonMatched = function(matchesFromSymDiff, newLength, offset) {
 };
 
 // returns elements in A that are not in B
-Amm.Array.arrayDiff = function(a, b, comparisonFn) {
+Amm.Array.diff = function(a, b, comparisonFn) {
     if (!a.length || !b.length) return [].concat(a);
     
     var al = a.length, bl = b.length, r, i, j;
@@ -1227,7 +1230,7 @@ Amm.Array.findDuplicates = function(array, onlyFirst, comparisonFn, stopSearchId
  * @param {Array} newItems          - new content or part of the array (i.e. "insert" of splice)
  * @param {function} [comparisonFn] - optional function to find equal items (should return 0)
  * @param {number} offset           - optional offset to add to both newIndex and oldIndex of result
- * @param {boolean} areUnique       - sppedup by assuming oldItems and newItems have unique items inside
+ * @param {boolean} areUnique       - speedup by assuming oldItems and newItems have unique items inside
  * 
  * @returns {object}
  * 

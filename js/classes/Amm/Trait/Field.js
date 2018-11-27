@@ -378,7 +378,7 @@ Amm.Trait.Field.prototype = {
         }
         if (add && this._fieldErrors) {
             if (!fieldErrors) return; // nothing to add
-            var extra = Amm.Array.arrayDiff(fieldErrors, this._fieldErrors);
+            var extra = Amm.Array.diff(fieldErrors, this._fieldErrors);
             if (!extra.length) return; // nothing to add
             fieldErrors = [].concat(this._fieldErrors, extra);
         } else {

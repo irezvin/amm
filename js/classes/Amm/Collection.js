@@ -1186,7 +1186,7 @@ Amm.Collection.prototype = {
         if (oldChangeEvents === changeEvents) return;
         
         if (this._changeEvents && changeEvents && 
-            !Amm.Array.arrayDiff(changeEvents, this._changeEvents).length
+            !Amm.Array.diff(changeEvents, this._changeEvents).length
         ) return; // same events
         
         if (oldChangeEvents) { // unsubscribe from old events...
@@ -1265,7 +1265,7 @@ Amm.Collection.prototype = {
         var oldComparisonProperties = this._comparisonProperties;
         if (oldComparisonProperties === comparisonProperties) return;
         if (oldComparisonProperties && comparisonProperties 
-            && !Amm.Array.arrayDiff(
+            && !Amm.Array.diff(
                 oldComparisonProperties, comparisonProperties
             ).length) return; // same content of arrays - order doesn't matter
         var tmp = this._comparisonProperties;

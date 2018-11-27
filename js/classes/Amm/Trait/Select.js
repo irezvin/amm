@@ -12,7 +12,7 @@ Amm.Trait.Select.valuesAreSame = function(a, b) {
     var cmp = function(a, b) { return a == b? 0 : 1; };
     if (a instanceof Array) {
          if (!(b instanceof Array)) return false;         
-         if (!(Amm.Array.arrayDiff(a, b, cmp).length) && !(Amm.Array.arrayDiff(b, a, cmp).length)) {
+         if (!(Amm.Array.diff(a, b, cmp).length) && !(Amm.Array.diff(b, a, cmp).length)) {
              return true;
          }
          return false;

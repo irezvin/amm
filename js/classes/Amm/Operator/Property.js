@@ -114,6 +114,7 @@ Amm.Operator.Property.prototype = {
             if (object.outCleanup) this._sub(object, 'cleanup', this._handleObjectCleanup, undefined, true);
         }
     },
+
     
     getReportsContentChanged: function() {
         return this._cacheability;
@@ -188,7 +189,7 @@ Amm.Operator.Property.prototype = {
         } else {
             args = [args];
         }
-
+        
         if (args) return object[getter].apply(object, args);
         else return object[getter]();
         
@@ -282,7 +283,7 @@ Amm.Operator.Property.prototype = {
         }
 
         if (args) {
-            args.unshift(value);
+            args = [].concat([value], args);
             object[setter].apply(object, args);
             return;
         }
@@ -333,8 +334,12 @@ Amm.Operator.Property.prototype = {
             }
             object[setter](value);
         };
+    },
+    
+    _isValueObservable: function(operand, value) {
+        if (operand === 'arguments') return false; // array result of "list" operator DOES NOT change
+        return Amm.Operator.prototype._isValueObservable.call(this, operand, value);
     }
-
 
 };
 
