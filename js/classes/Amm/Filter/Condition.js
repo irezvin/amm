@@ -2,8 +2,6 @@
 
 Amm.Filter.Condition = function(filter, options) {
     
-    this._filter = filter;
-
     if (options && options._id) {
         this.id = options._id;
         delete options._id;
@@ -19,7 +17,7 @@ Amm.Filter.Condition = function(filter, options) {
         delete options._not;
     }
     
-    Amm.WithEvents.call(this, options, true);
+    Amm.FilterSorter.Observer.call(this, filter, options, true);
     
 };
 
@@ -102,8 +100,6 @@ Amm.Filter.Condition.prototype = {
     
     'Amm.Filter.Condition': '__CLASS__',
     
-    _filter: null, // Amm.Filter
-    
     id: null, // For named conditions
     
     requiredClass: null, // one or more classes
@@ -124,20 +120,6 @@ Amm.Filter.Condition.prototype = {
         return true;
     },
     
-    cleanup: function(alreadyUnsubscribed) {
-        this.unsubscribe();
-        this._filter = null;
-        Amm.WithEvents.prototype.cleanup.call(this);
-    },
-    
-    observe: function(objects) {
-        // template method
-    },
-    
-    unobserve: function(objects) {
-        // template method
-    },
-    
     setProps: function(props, propName) {
         // template method
     },
@@ -152,4 +134,4 @@ Amm.Filter.Condition.prototype = {
     
 };
 
-Amm.extend(Amm.Filter.Condition, Amm.WithEvents);
+Amm.extend(Amm.Filter.Condition, Amm.FilterSorter.Observer);

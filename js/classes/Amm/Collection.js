@@ -158,6 +158,14 @@ Amm.Collection.prototype = {
     _sortFn: null,
     
     _sorted: false,
+    
+    _sorter: null,
+    
+    _needSort: false,
+    
+    _lockSort: 0,
+    
+    _sorterIsAggregate: false,
 
     _updateProperties: null,
     
@@ -1006,6 +1014,13 @@ Amm.Collection.prototype = {
         if (this._undefaults) {
             Amm.setProperty(item, this._undefaults);
         }
+        
+        if (this._sorter) {
+            this._lockSort++;
+            this._sorter.unobserveObject(item);
+            this._lockSort--;
+        }
+        
         this.outOnDissociate(item);
         if (this._cleanupOnDissociate && typeof (item.cleanup === 'function')) {
             item.cleanup();
@@ -1344,7 +1359,7 @@ Amm.Collection.prototype = {
             && Amm.Array.equal(oldSortProperties, sortProperties))
             return; // same arrays
         this._sortProperties = sortProperties;
-        this._sorted = !!(this._sortFn || this._sortProperties);
+        this._sorted = !!(this._sortFn || this._sortProperties || this._sorter);
         this._checkIndexPropertyWatched();
         if (this._sorted) {
             this._sort();
@@ -1393,7 +1408,7 @@ Amm.Collection.prototype = {
         var oldSortFn = this._sortFn;
         if (oldSortFn === sortFn) return;
         this._sortFn = sortFn;
-        this._sorted = !!(this._sortFn || this._sortProperties);
+        this._sorted = !!(this._sortFn || this._sortProperties || this._sorter);
         this._checkIndexPropertyWatched();
         if (this._sorted)
             this._sort();
@@ -1401,9 +1416,62 @@ Amm.Collection.prototype = {
     },
 
     getSortFn: function() { return this._sortFn; },
+
+    setSorter: function(sorter) {
+        var isAggregate = false;
+        if (sorter) {
+            if (typeof sorter === 'object' && !sorter['Amm.Sorter']) {
+                sorter = Amm.constructInstance(sorter, 'Amm.Sorter');
+                isAggregate = true;
+            }
+        }  else {
+            sorter = null;
+        }                
+        var oldSorter = this._sorter;
+        if (oldSorter === sorter) return;
+        if (this._sorter) { // delete old sorter
+            if (this._sorterIsAggregate) this._sorter.cleanup();
+            else this._subSorter(true);
+        }
+                
+        this._sorterIsAggregate = isAggregate;
+        this._sorter = sorter;
+        
+        if (this._sorter) {
+            this._subSorter();
+        }
+        
+        this._sorted = !!(this._sortFn || this._sortProperties || this._sorter);
+        this._checkIndexPropertyWatched();
+        if (this._sorted) {
+            this._sort();
+        }
+        
+        return true;
+    },
+    
+    _subSorter: function(unsubscribe) {
+        
+        var m = unsubscribe? 'unsubscribe' : 'subscribe';
+        this._sorter[m]('matchesChange', this._handleSorterNeedSort, this);
+        this._sorter[m]('needSort', this._handleSorterNeedSort, this);
+        this._sorter.setObservedObjects(unsubscribe? [] : this.getItems());
+        
+    },
+
+    _handleSorterNeedSort: function() {
+        if (this._lockSort) return;
+        if (this._updateLevel) {
+            this._needSort = true;
+            return;
+        }
+        this._sort();
+    },
+
+    getSorter: function() { return this._sorter; },
     
     sort: function(fnOrProps) {
-        
+        this._needSort = false;
         if (fnOrProps instanceof Array) {
             var dummyObject = {
                 _sortReverse: this._sortReverse,
@@ -1417,10 +1485,10 @@ Amm.Collection.prototype = {
             var res = this.sort(dummyFn);
             return res;
         }
-        
-        if (this._sortFn) {
+
+        if (this._sorter || this._sortFn) {
             if (fnOrProps) 
-                throw Error("Cannot sort(fn) when `sortFn` is set; use sort() with no parameters");
+                throw Error("Cannot sort(fn) when `sortFn` or `sorter` is set; use sort() with no parameters");
             return this._sort();
         }
         if (this._sortProperties) {
@@ -1428,12 +1496,15 @@ Amm.Collection.prototype = {
         }
         var changed = {}, old;
         if (this._indexProperty) old = this.getItems();
-        var res = Amm.Array.prototype.sort.call(this, fnOrProps, changed);
+        var res;
+        if (this._sorter) res = Amm.Array.prototype.sort.call(this, this._sorter.getCompareClosureFn(), changed);
+        else res = Amm.Array.prototype.sort.call(this, fnOrProps, changed);
         if (this._indexProperty && changed.changed && old) this._reportIndexes(old);
         return res;
     },
     
     _doEndUpdate: function() {
+        if (this._needSort) this._sort();
         if (this._indexProperty) this._reportIndexes(this._preUpdateItems);
         Amm.Array.prototype._doEndUpdate.call(this);
     },
@@ -1455,12 +1526,13 @@ Amm.Collection.prototype = {
     },
     
     _sort: function() { // re-orders current array
-        if (!(this._sortFn || this._sortProperties)) {
-            throw Error("WTF - call to _sort() w/o _sortFn or _sortProperties");
+        this._needSort = false;
+        if (!(this._sortFn || this._sortProperties || this._sorter)) {
+            throw Error("WTF - call to _sort() w/o _sorter, _sortFn or _sortProperties");
         }
         var changed = {}, old;
         if (this._indexProperty) old = this.getItems();
-        Amm.Array.prototype.sort.call(this, this._sortWithProps, changed);
+        Amm.Array.prototype.sort.call(this, this._sorter? this._sorter.getCompareClosureFn() : this._sortWithProps, changed);
         if (this._indexProperty && changed.changed && old) this._reportIndexes(old);
         return changed.changed;
     },
@@ -1468,7 +1540,12 @@ Amm.Collection.prototype = {
     // locates index of item to insert into sorted array using binary search
     _locateItemIndexInSortedArray: function(item) {
         if (!this.length) return 0;
-        var idx = Amm.Collection.binSearch(this, item, this._sortWithProps);
+        if (this._sorter) {
+            this._lockSort++;
+            this._sorter.observeObject(item);
+            this._lockSort--;
+        }
+        var idx = Amm.Collection.binSearch(this, item, this._sorter? this._sorter.getCompareClosureFn() : this._sortWithProps);
         return idx[0];
     },
     
@@ -1476,12 +1553,25 @@ Amm.Collection.prototype = {
     // side effect: sorts the items!!!
     // res[i] = idxOfItems_i
     _locateManyItemIndexesInSortedArray: function(items) {
-        items.sort(this._sortWithProps);
+        
+        var i, l = items.length, fn = this._sorter? this._sorter.getCompareClosureFn() : this._sortWithProps;
+        
+        if (this._sorter) {
+            this._lockSort++;
+            for (i = 0; i < l; i++) {
+                this._sorter.observeObject(items[i]);
+            }
+            this._lockSort--;
+        }
+        
+        items.sort(fn);
         var idx = 0, res = [];
-        for (var i = 0; i < items.length; i++) {
+        for (i = 0; i < l; i++) {
+            
             // since items are sorted, we search location of next item 
             // starting from location of the last item
-            idx = Amm.Collection.binSearch(this, items[i], this._sortWithProps, idx)[0];
+            idx = Amm.Collection.binSearch(this, items[i], fn, idx)[0];
+            if (idx < 0) idx = 0;
             
             // we push idx + i since i items will be already added before
             // i-th item
@@ -1702,6 +1792,10 @@ Amm.Collection.prototype = {
     cleanup: function() {
         var tmp = this._allowDelete;
         if (!tmp) this.setAllowDelete(true);
+        if (this._sorterIsAggregate) {
+            this._sorter.cleanup();
+            this._sorter = null;
+        }
         Amm.Array.prototype.cleanup.call(this);
         if (!tmp) this.setAllowDelete(tmp);
     },
@@ -1747,7 +1841,6 @@ Amm.Collection.prototype = {
         }
         return res;
     }
-    
     
 };
 

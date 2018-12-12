@@ -243,13 +243,40 @@ Amm.ArrayMapper.prototype = {
         this._filter.setObservedObjects([]);
     },
     
+    _subscribeSort: function() {
+        if (this._src) this._sort.setObservedObjects(this._src.getItems());
+        this._sort.subscribe('matchesChange', this._handleSortMatchesChange, this);
+        this._sort.subscribe('needSort', this._handleSortNeedSort, this);
+    },
+    
+    _unsubscribeSort: function() {
+        this._filter.unsubscribe('matchesChange', this._handleFilterMatchesChange, this);
+        this._filter.unsubscribe('needSort', this._handleSortNeedSort, this);
+        this._filter.setObservedObjects([]);
+    },
+    
     _handleFilterMatchesChange: function(items, matches) {
         if (items.length > 1) this.beginUpdate();
+        var i, l;
         for (i = 0, l = items.length; i < l; i++) {
             var item = items[i], match = matches[i];
             if (match !== undefined) this.applyFilter(item, match);
         }
         if (items.length > 1) this.endUpdate();
+    },
+    
+    _handleSortMatchesChange: function(items, matches) {
+        if (items.length > 1) this.beginUpdate();
+        var i, l;
+        for (i = 0, l = items.length; i < l; i++) {
+            var item = items[i], match = matches[i];
+            if (match !== undefined) this.applySort(item, match);
+        }
+        if (items.length > 1) this.endUpdate();
+    },
+    
+    _handleSortNeedSort: function() {
+        this._remap();
     },
     
     getFilter: function() { return this._filter; },
@@ -296,14 +323,16 @@ Amm.ArrayMapper.prototype = {
         if (oldSort === sort) return;
         if (!sort) {
         } else if (typeof sort === 'object') {
-            Amm.meetsRequirements(sort, [['getSortValue', 'registerItem', 'unregisterItem']], 'sort');
+            Amm.is(sort, 'Amm.Sorter', 'sort');
             this._sortIsFn = false;
+            if (this._sort && this._sort['Amm.Sorter']) this._unsubscribeSort();
         } else if (typeof sort === 'function') {
             this._sortIsFn = true;
         } else if (!(sort === Amm.ArrayMapper.SORT_DIRECT || sort === Amm.ArrayMapper.SORT_REVERSE)) {
             throw Error("`sort` must be an object, a function, Amm.ArrayMapper.SORT_ constant or a null");
         }
         this._sort = sort;
+        if (sort && sort['Amm.Sorter']) this._subscribeSort();
         this.applySort();
         return true;
     },
@@ -332,7 +361,7 @@ Amm.ArrayMapper.prototype = {
             var old = dest[Amm.ArrayMapper._DEST_SORT_VALUE];
             var n = value === undefined? this._getSortValue(idx) : value;
             if (old !== n) {
-                dest[Amm.ArrayMapper._DEST_SORT_VALUE] = true;
+                dest[Amm.ArrayMapper._DEST_SORT_VALUE] = value;
                 // TODO: optimize for possible change of one item
                 if (!this._updateLevel) this._remap();
             }
@@ -632,8 +661,9 @@ Amm.ArrayMapper.prototype = {
             // we register item in filter or sort objects' first, then retrieve filter or sort value
             if (srcItem && (typeof srcItem === 'object')) {
                 if (this._filter && !this._filterIsFn) this._filter.observeObject(srcItem);
-                if (this._sort && typeof this._sort === 'object' && !this._sortIsFn)
+                if (this._sort && this._sort['Amm.Sorter']) {
                     this._sort.observeObject(srcItem);
+                }
             }
             
             destEntry = [ 
@@ -671,7 +701,7 @@ Amm.ArrayMapper.prototype = {
             if (destEntryIdx >= 0) this._destEntries.splice(destEntryIdx, 1);
             if (srcItem && (typeof srcItem === 'object')) {
                 if (this._filter && !this._filterIsFn) this._filter.unobserveObject(srcItem);
-                if (this._sort && !this._sortIsFn) this._sort.unobserveObject(srcItem);
+                if (this._sort && this._sort['Amm.Sorter']) this._sort.unobserveObject(srcItem);
             }
             
         }
@@ -770,13 +800,17 @@ Amm.ArrayMapper.prototype = {
             destItem = Amm.ArrayMapper._DEST_ITEM,
             srcReference = Amm.ArrayMapper._DEST_REF_TO_SRC,
             srcItem = Amm.ArrayMapper._SRC_ITEM,
-            start, end;
+            k;
         
         if (this._sort) {
-            var k = Amm.ArrayMapper._DEST_SORT_VALUE;
-            
             // we keep sorted destEntries instead of post-filter array to have less work on subsequent sorts
-            this._destEntries.sort(function(a, b) {return a[k] - b[k];});
+            k = Amm.ArrayMapper._DEST_SORT_VALUE;
+            if (this._sort['Amm.Sorter']) {
+                var s = this._sort;
+                this._destEntries.sort(function(a, b) {return s.compareMatches(a[k], b[k]);});
+            } else {
+                this._destEntries.sort(function(a, b) {return a[k] - b[k];});
+            }
         }
         
         var passed, destItems = [];
@@ -857,6 +891,10 @@ Amm.ArrayMapper.prototype = {
         if (this._filter && !this._filterIsFn) {
             this._unsubscribeFilter();
             this._filter = null;
+        }
+        if (this._sort && this._sort['Amm.Sorter']) {
+            this._unsubscribeSort();
+            this._sort = null;
         }
         this._cleanAll();
         if (this._src) this._cleanupCollectionIfOwn(this._src);

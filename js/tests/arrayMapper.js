@@ -168,6 +168,15 @@
         return Amm.getProperty(cars['Amm.Array']? cars.getItems() : cars, 'brand');
     };
     
+    var yearType = function(cars) {
+        var r = [];
+        var c = cars['Amm.Array']? cars.getItems() : cars;
+        for (var i = 0, l = c.length; i < l; i++) {
+            r.push(c[i].getBrand() + ' ' + c[i].getType() + ' ' + c[i].getYear());
+        }
+        return r;
+    };
+    
     QUnit.test("ArrayMapper and Filter integration", function(assert) {
 
         var sam = mkSample();
@@ -256,5 +265,72 @@
         Amm.cleanup(sam.cars);
         
     });
+    
+    QUnit.test("ArrayMapper and Sorter integration", function(assert) {
+        
+        var sam = mkSample();
+        var src = new Amm.Collection();
+        var sorter = new Amm.Sorter({
+            criteria: ['type', 'year DESC']
+        });
+        var dest = new Amm.Collection();
+        
+        var cleanups = [];
+        
+        var mapper = new Amm.ArrayMapper({
+            src: src,
+            dest: dest,
+            sort: sorter
+        });
+        
+        var destItems = [];
+        
+        dest.subscribe('itemsChange', function(v) {
+            destItems.push(yearType(v));
+        });
+        
+        src.setItems(sam.cars);
+        
+        assert.deepEqual(names(sorter.getObservedObjects()), names(sam.cars));
+        
+        assert.deepEqual(destItems, [[
+            'VW Diesel 2015',
+            'Lexus Diesel 2014',
+            'Toyota Diesel 2011',
+            'Geely Petrol 2017',
+            'Subaru Petrol 2012',
+            'Lada Petrol 2003',
+            'ZAZ Petrol 1981'
+        ]]);
+        
+        
+        destItems = [];
+        sam.c.VW.setYear('1980');
+        
+        assert.deepEqual(destItems, [[
+            'Lexus Diesel 2014',
+            'Toyota Diesel 2011',
+            'VW Diesel 1980',
+            'Geely Petrol 2017',
+            'Subaru Petrol 2012',
+            'Lada Petrol 2003',
+            'ZAZ Petrol 1981'
+        ]]);
+        
+        destItems = [];
+        sam.c.VW.setType('Petrol');
+        
+        assert.deepEqual(destItems, [[
+            'Lexus Diesel 2014',
+            'Toyota Diesel 2011',
+            'Geely Petrol 2017',
+            'Subaru Petrol 2012',
+            'Lada Petrol 2003',
+            'ZAZ Petrol 1981',
+            'VW Petrol 1980',
+        ]]);
+        
+    });
+    
     
 }) ();

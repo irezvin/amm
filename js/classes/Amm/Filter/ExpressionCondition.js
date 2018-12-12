@@ -27,12 +27,12 @@ Amm.Filter.ExpressionCondition.prototype = {
     
     _setExpression: function(expression) {
         this._expression = new Amm.Expression(expression);
-        this._expression.setEventsProxy(this._filter);
+        this._expression.setEventsProxy(this._filterSorter);
     },
     
     _handleExpressionChanged: function(value, oldValue) {
         var object = this._expression.getExpressionThis();
-        this._filter.refresh(object);
+        this._filterSorter.refresh(object);
     },
     
     match: function(object) {
@@ -89,13 +89,13 @@ Amm.Filter.ExpressionCondition.prototype = {
             this._props = propName;
         }
         if (this._expression) {
-            if (this._filter) this._filter.beginUpdate();
+            if (this._filterSorter) this._filterSorter.beginUpdate();
             var cc = this._expression.listContexts(), i, l;
             for (i = 0, l = cc.length; i < l; i++) {
                 this._expression.setContextId(cc[i]);
                 this._expression.setVars(props, propName);
             }
-            if (this._filter) this._filter.endUpdate();
+            if (this._filterSorter) this._filterSorter.endUpdate();
         }
         if (this._subscribers.propsChange) this.outPropsChange(this._props, oldProps);
     },

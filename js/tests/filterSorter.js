@@ -2,7 +2,7 @@
 /* global QUnit */
 
 (function() { 
-    QUnit.module("Filter");
+    QUnit.module("FilterSorter");
 
     var names = function(people) {
         return Amm.getProperty(people, "name");
@@ -595,5 +595,135 @@
         
     });
     
+    QUnit.test("Sorter.basicSort", function(assert) {
+        
+        var s = new Amm.Sorter;
+        
+        var sam = getSample();
+        
+        s.setCriteria(['this.department.location DESC', 'name asc']);
+        
+            assert.deepEqual(s.getCriteria().length, 2, 'All critera were created');
+        
+        var sorted = [];
+        var numNeedSort = 0;
+        
+        s.subscribe('needSort', function() {
+            numNeedSort++;
+            sorted = s.sort([].concat(sam.people));
+        });
+        
+        s.setObservedObjects(sam.people);
+        
+            assert.deepEqual(s.getMatches(), [
+                ['USA', 'Jane'],
+                ['USA', 'Mike'],
+                ['USA', 'John'],
+                ['Ukraine', 'Anna'],
+                ['Ukraine', 'Vika'],
+                ['Ukraine', 'Ivan'],
+                ['Ukraine', 'Buck'],
+                ['USA', 'Dmitry']
+            ], "Sorter returns proper Matches");
+            
+            assert.deepEqual(names(sorted), [
+                
+                "Anna", 
+                "Buck", 
+                "Ivan", 
+                "Vika",
+                "Dmitry", 
+                "Jane", 
+                "John", 
+                "Mike"
+                
+            ], "sorted objects are in proper order after needSort()");
+        
+        numNeedSort = 0;
+        s.getCriteria(0).setAscending(true);
+        
+            assert.equal(numNeedSort, 1, 'needSort triggered after criterion.setAscending()');
+        
+            assert.deepEqual(names(sorted), [
+                
+                "Dmitry",
+                "Jane", 
+                "John", 
+                "Mike",
+                "Anna", 
+                "Buck", 
+                "Ivan", 
+                "Vika",
+                
+            ], "needSort triggered after criterion.setAsc(), proper sort order maintained");
+        
+        numNeedSort = 0;
+        
+        s.getCriteria(0).setIndex(1);
+        
+            assert.deepEqual(numNeedSort, 1, "outNeedSort() after criterion.setIndex()");
+            
+            assert.deepEqual(s.getMatches(), [
+                ['Jane', 'USA'],
+                ['Mike', 'USA'],
+                ['John', 'USA'],
+                ['Anna', 'Ukraine'],
+                ['Vika', 'Ukraine'],
+                ['Ivan', 'Ukraine'],
+                ['Buck', 'Ukraine'],
+                ['Dmitry', 'USA']
+            ], "Sorter returns proper Matches after setIndex()");
+            
+        
+        sam.p.Anna.setName('Zhanna');
+        
+            assert.deepEqual(s.getMatch(sam.p.Anna), ['Zhanna', 'Ukraine'],
+                "sorter returns proper Matches after object property change");
+        
+            
+        sam.p.Anna.setDepartment(sam.d.Testing);
+        
+            assert.deepEqual(s.getMatch(sam.p.Anna), ['Zhanna', 'USA'],
+                "sorter returns proper Matches after object expression-accessed property change");        
+        
+        s.cleanup();
+        
+    });
+    
+    QUnit.test("Sorter.setCriteria => matches change", function(assert) {
+        
+        var s = new Amm.Sorter;
+        
+        var sam = getSample();
+        
+        s.setObservedObjects(sam.people);
+        
+        assert.deepEqual(s.getMatches(), [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+        ], "Matches are empty when there's no Criteria");
+        
+        s.setCriteria(['this.department.location DESC', 'name asc']);
+        
+        assert.deepEqual(s.getMatches(), [
+            ['USA', 'Jane'],
+            ['USA', 'Mike'],
+            ['USA', 'John'],
+            ['Ukraine', 'Anna'],
+            ['Ukraine', 'Vika'],
+            ['Ukraine', 'Ivan'],
+            ['Ukraine', 'Buck'],
+            ['USA', 'Dmitry']
+        ], "Sorter returns proper Matches after Criteria added");
+        
+        s.cleanup();
+        
+    });
     
 }) ();

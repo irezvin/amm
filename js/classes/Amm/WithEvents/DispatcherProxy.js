@@ -269,7 +269,7 @@ Amm.WithEvents.DispatcherProxy.prototype = {
             throw Error("Assertion: we found wrong queue array");
         }
         if (!queue[index]) return [];
-        res = [[].concat(queue[index], [eventName, index])];
+        var res = [[].concat(queue[index], [eventName, index])];
         queue.splice(index);
         
         if (!queue.length) {

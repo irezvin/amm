@@ -47,7 +47,7 @@ Amm.Filter.PropsCondition.prototype = {
                 continue;
             }
             expressionList[props[i]] = new Amm.Expression(props[i]);
-            expressionList[props[i]].setEventsProxy(this._filter);
+            expressionList[props[i]].setEventsProxy(this._filterSorter);
         }
     },
     
@@ -85,28 +85,23 @@ Amm.Filter.PropsCondition.prototype = {
         if (this._subscribers.propsChange)
             this.outPropsChange(this._props, oldProps);
         this._noRefresh--;
-        if (!this._noRefresh) this._filter.refresh();
-    },
-    
-    getProps: function(propName) {
-        if (propName) return this._props[propName];
-        return Amm.override(this._props);
+        if (!this._noRefresh) this._filterSorter.refresh();
     },
     
     _handleChange: function() {
         var o = Amm.event.origin; // event origin must be our object
         
         // sub-optimal (eval all conditions for all observed change events)
-        this._filter.refresh(o); 
+        this._filterSorter.refresh(o); 
     },
     
     _handleExpressionChange: function(value, oldValue) {
         var o = Amm.event.origin.getExpressionThis();
-        this._filter.refresh(o); 
+        this._filterSorter.refresh(o); 
     },
     
     _sub: function(props, objects) {
-        var oo = objects || this._filter._objects, l = oo.length, i, o;
+        var oo = objects || this._filterSorter._objects, l = oo.length, i, o, ev;
         if (!props) props = this._propList;
         var j, pl = props.length;
         for (i = 0; i < l; i++) {
@@ -127,14 +122,14 @@ Amm.Filter.PropsCondition.prototype = {
                 // no need to subscribe objects that don't have required class
                 if (this.requiredClass && !Amm.is(o, this.requiredClass)) continue; 
                 if (!o.hasEvent(ev)) continue;
-                this._filter.subscribeObject(o, ev, this._handleChange, this);
+                this._filterSorter.subscribeObject(o, ev, this._handleChange, this);
             }
         }
     },
     
     // if props is not provided, will unsubscribe from all events
     _unsub: function(props, objects) {
-        var oo = objects || this._filter._objects, l = oo.length, i, o;
+        var oo = objects || this._filterSorter._objects, l = oo.length, i, o, ev;
         if (!props) props = this._propList;
         var j, pl = props? props.length : 0;
         for (i = 0; i < l; i++) {
@@ -153,7 +148,7 @@ Amm.Filter.PropsCondition.prototype = {
                 ev = props[j] + 'Change';
                 if (this._expressions[props[j]]) continue;
                 if (!o.hasEvent(ev)) continue;
-                this._filter.unsubscribeObject(o, ev, this._handleChange, this);
+                this._filterSorter.unsubscribeObject(o, ev, this._handleChange, this);
             }
         }
     },
@@ -227,7 +222,7 @@ Amm.Filter.PropsCondition.prototype = {
             this._propList = Amm.Array.diff(this._propList, propName);
         }
         
-        if (!this._noRefresh) this._filter.refresh();
+        if (!this._noRefresh) this._filterSorter.refresh();
         
     },
     

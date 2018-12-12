@@ -766,6 +766,129 @@
         
     });
     
+    var getSample = function() {
+        var res = {
+            items: [
+                new Amm.Element({properties: {name: 'c', group: 'omega', points: 40}}),
+                new Amm.Element({properties: {name: 'z', group: 'omega', points: 30}}),
+ 
+                new Amm.Element({properties: {name: 'w', group: 'alpha', points: 90}}),
+                new Amm.Element({properties: {name: 'y', group: 'alpha', points: 80}}),
+ 
+                new Amm.Element({properties: {name: 'a', group: 'omega', points: 60}}),
+                new Amm.Element({properties: {name: 'b', group: 'omega', points: 50}}),
+            ]
+        };
+        for (var i = 0, l = res.items.length; i < l; i++) {
+            res[res.items[i].getName()] = res.items[i];
+        }
+        return res;
+    }
+    
+    var names = function(a) {
+        if (a['Amm.Array']) a = a.getItems();
+        var res = [];
+        for (var i = 0, l = a.length; i < l; i++) {
+            res.push(a[i].getName() + ' ' + a[i].getGroup() + ' ' + a[i].getPoints());
+        }
+        return res;
+    }
+    
+    QUnit.test("Collection.sorter", function(assert) {
+        
+        var collection = new Amm.Collection();
+        var sorter = new Amm.Sorter();
+        var sam = getSample();
+        var changes = [];
+        collection.setItems(sam.items);
+        collection.subscribe('itemsChange', function(items) {changes.push(names(items));});
+        collection.setSorter(sorter);
+        
+        sorter.setCriteria(['group desc', 'name asc']); // TODO: when setCriteria() after setObservedObjects(), matches not updated ((
+            assert.deepEqual(changes, [[
+                'a omega 60',
+                'b omega 50',
+                'c omega 40',
+                'z omega 30',
+                'w alpha 90',
+                'y alpha 80',
+            ]], 'sorter.setCriteria() => items in collection reordered');
+            
+        changes = [];
+        
+        sam.a.setGroup('alpha');
+            assert.deepEqual(changes, [[
+                'b omega 50',
+                'c omega 40',
+                'z omega 30',
+                'a alpha 60',
+                'w alpha 90',
+                'y alpha 80',
+            ]], 'Item change => change of position in Collection');
+
+        changes = [];
+        
+        sorter.getCriteria(0).setAscending(true);
+        
+            assert.deepEqual(changes, [[
+                'a alpha 60',
+                'w alpha 90',
+                'y alpha 80',
+                'b omega 50',
+                'c omega 40',
+                'z omega 30',
+            ]], 'Change of sorter criteria direction => collection order change');
+            
+        collection.reject(sam.a);
+            assert.notOk(sorter.hasObservedObject(sam.a), 'removal from Collection removes item from Sorter');
+        
+        changes = [];
+        collection.accept(sam.a);
+            
+            assert.ok(sorter.hasObservedObject(sam.a), 'adding to Collection adds item to Sorter');
+
+            assert.deepEqual(changes, [[
+                'a alpha 60',
+                'w alpha 90',
+                'y alpha 80',
+                'b omega 50',
+                'c omega 40',
+                'z omega 30',
+            ]], 'Item accepted => proper order maintained');
+        
+        
+        // TODO: check that sorter doesn't create multiple change events during accept/reject of many items, 
+        // i.e. during array.splice
+        
+        changes = [];
+        
+        collection.splice(0, 2);
+        
+            assert.deepEqual(changes, [[
+                'y alpha 80',
+                'b omega 50',
+                'c omega 40',
+                'z omega 30',
+            ]], 'Collection.splice => 1 change');
+        
+        changes = [];
+        
+        collection.push(sam.w, sam.a);
+        
+            assert.deepEqual(changes, [[
+                'a alpha 60',
+                'w alpha 90',
+                'y alpha 80',
+                'b omega 50',
+                'c omega 40',
+                'z omega 30',
+            ]], 'Push of 2 objects => still one change (and proper order)');
+        
+        collection.cleanup();
+        Amm.cleanup(sam.items);
+            
+    });
+    
     
 }) ();
 
