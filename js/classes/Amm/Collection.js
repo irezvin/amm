@@ -925,7 +925,6 @@ Amm.Collection.prototype = {
     _getGoodSplice: function(cutFragments, insertFragments) {
         var cl = cutFragments.length, il = insertFragments.length;
         if (cl > 1 || il > 1) return null;
-        
         if (!cl && !il) return null; // nothing done - WTF
         if (!cl && il)
             return [insertFragments[0][0], [], insertFragments[0][1]];

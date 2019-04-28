@@ -3,6 +3,7 @@ Amm.Trait.Component = function() {
     this._namedElements = {};
     this._elements = [];
     this._components = [];
+    this.e = {}; // shortcut for _namedElements
 };
 
 Amm.Trait.Component.changeComponent = function(items, component, oldComponent) {
@@ -36,6 +37,8 @@ Amm.Trait.Component.prototype = {
     _namedElements: null,
     
     _elements: null,
+    
+    e: null,
     
     _components: null,
     
@@ -167,6 +170,11 @@ Amm.Trait.Component.prototype = {
                 this._namedElements[id] = [];
             }
             this._namedElements[id].push(element);
+            if (this._namedElements[id].length === 1) {
+                this.e[id] = element;
+            } else {
+                this.e[id] = this._namedElements[id];
+            }
             this._subscribeElement(element, true, undefined);
         }
         this.outRenamedElement(element, id, oldId);
@@ -188,6 +196,10 @@ Amm.Trait.Component.prototype = {
     handle__cleanup: function() {
         var element = Amm.event.origin;
         this.rejectElements([element]);
+    },
+    
+    g: function(name, index, bubble) {
+        return this.getNamedElement(name, index, bubble);
     },
     
     getNamedElement: function(name, index, bubble) {
@@ -250,7 +262,7 @@ Amm.Trait.Component.prototype = {
                 };
             }
             for (var i in p) if (p.hasOwnProperty(i)) {
-                this._namedElements[i] = (this._namedElements[i] || []).concat(p[i]);
+                res[i] = (this._namedElements[i] || []).concat(p[i]);
             }
         }
         return res;
@@ -288,6 +300,11 @@ Amm.Trait.Component.prototype = {
                     this._namedElements[id] = [];
                 }
                 this._namedElements[id].push(ee[i]);
+                if (this._namedElements[id].length === 1) {
+                    this.e[id] = this._namedElements[id][0];
+                } else {
+                    this.e[id] = this._namedElements[id];
+                }
             }
             if (ee[i].Component === '__INTERFACE__' && ee[i].getIsComponent()) {
                 this._registerComponent(ee[i]);
@@ -317,8 +334,11 @@ Amm.Trait.Component.prototype = {
         var idx = Amm.Array.indexOf(element, this._namedElements[id]);
         if (idx >= 0) {
             this._namedElements[id].splice(idx, 1);
-            if (!this._namedElements[id].length) {
+            if (this._namedElements[id].length === 1) {
+                this.e[id] = this._namedElements[id][0];
+            } else if (!this._namedElements[id].length) {
                 delete this._namedElements[id];
+                delete this.e[id];
             }
             return true;
         }
@@ -393,6 +413,7 @@ Amm.Trait.Component.prototype = {
     
     _cleanup_Component: function() {
         this._namedElements = {};
+        this.e = {};
         var ee = this._elements;
         this._elements = [];
         for (var i = 0, l = ee.length; i < l; i++) {

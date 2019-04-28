@@ -135,8 +135,50 @@
         
         var sel3Initial = s(sel3);
         var v3 = new Amm.View.Html.Select({element: sel3, htmlElement: fx.find('#sel3')[0]});
-        assert.deepEqual(s(fx.find('#sel3')), sel3Initial, "No auto-detection when element data in place");        
+        assert.deepEqual(s(fx.find('#sel3')), sel3Initial, "No auto-detection when element data in place");
         
     });
+    
+    QUnit.test("Trait.Select: select first item by default", function(assert) {
+       
+       var s1 = new Amm.Element({
+           traits: ['Amm.Trait.Select'],
+           options: {
+                a: 'value a',
+                b: 'value b',
+                c: 'value c'
+           },
+           selectSize: 1
+       });
+       
+       assert.deepEqual(s1.getValue(), 'a', 'By default first value is selected when selectSize is 1');
+       
+       var s2 = new Amm.Element({
+           traits: ['Amm.Trait.Select'],
+           selectSize: 1
+       });
+       
+       assert.deepEqual(s2.getValue(), undefined, 'Value is undefined when there\'s no options');
+       
+       s2.setOptions({a: 'value a', b: 'value b'});
+       
+       assert.deepEqual(s2.getValue(), 'a', 'First value is set once options are provided');
+       
+       var s3 = new Amm.Element({
+           traits: ['Amm.Trait.Select'],
+           selectSize: 1,
+           options: {
+                a: 'value a',
+                b: 'value b',
+                c: 'value c'
+           }
+       });
+       
+       assert.deepEqual(s3.getValue(), 'a', 'By default first value is selected when selectSize is 1 (even if it\'s ahead of options setting)');
+       
+       Amm.cleanup(s1, s2, s3);
+       
+    });
+    
     
 }) ();

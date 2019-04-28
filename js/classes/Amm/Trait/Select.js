@@ -80,6 +80,7 @@ Amm.Trait.Select.prototype = {
         this.options = new Amm.Collection(proto);
         if (this._cleanupList) this._cleanupList.push(this.options);
         if (!this._selectionCollection) this.getSelectionCollection();
+        this.options.subscribe('itemsChange', this._handleOptionsChange, this);
         return this.options;
     },
     
@@ -91,10 +92,10 @@ Amm.Trait.Select.prototype = {
             valueProperty: 'value',
             selectedProperty: 'selected'
         };
-        if (this._cleanupList) this._cleanupList.push(this._selectionCollection);
         this._selectionCollection = new Amm.Selection(proto);
         this._selectionCollection.subscribe('valueChange', this._handleSelfSelectionValueChange, this);
         this._selectionCollection.setValue(this._value);
+        if (this._cleanupList) this._cleanupList.push(this._selectionCollection);
         return this._selectionCollection;
     },
 
@@ -106,8 +107,10 @@ Amm.Trait.Select.prototype = {
         var oldSelectSize = this._selectSize;
         if (oldSelectSize === selectSize) return;
         this._selectSize = selectSize;
-        if (selectSize === 1 && !this._multiple && this._value === null) {
-            this._correctValueForSingleSelect();
+        if (selectSize === 1 && !this._multiple && (this._value === null || this._value === undefined)) {
+            if (this.options && this.options.length) {
+                this._correctValueForSingleSelect();
+            }
         }
  
         this.outSelectSizeChange(selectSize, oldSelectSize);
@@ -133,8 +136,15 @@ Amm.Trait.Select.prototype = {
         }
     },
     
+    _handleOptionsChange: function(items, oldItems) {
+        // set first item as selected? but when?
+        if (!oldItems.length && items.length && this._selectSize === 1 && this._value === undefined) {
+            this._correctValueForSingleSelect();
+        }
+    },
+    
     _correctValueForSingleSelect: function() {
-        var first = null, options = this.getOptionsCollection();
+        var options = this.getOptionsCollection();
         for (var i = 0, l = options.length; i < l; i++) {
             var op = options[i];
             if (!op.getDisabled()) {

@@ -50,6 +50,11 @@ Amm = {
      */
     _waitList: {},
     
+    /**
+     * Shortcut to root element
+     */
+    r: null,
+    
     _root: null,
     
     /**
@@ -65,7 +70,10 @@ Amm = {
     },
     
     getRoot: function() {
-        if (!this._root) this._root = new this.Root();
+        if (!this._root) {
+            this._root = new this.Root();
+            this.r = this._root;
+        }
         return this._root;
     },
     
@@ -559,7 +567,7 @@ Amm = {
         return res;
     },
     
-    createProperty: function(target, propName, defaultValue, onChange) {
+    createProperty: function(target, propName, defaultValue, onChange, defineProperty) {
         
         if (!target || typeof target !== 'object') 
             throw Error("`target` must be an object");
@@ -585,8 +593,14 @@ Amm = {
                 var old = this[memberName];
                 if (old === value) return;
                 this[memberName] = value;
-                if (onChange) onChange.call(this, value, old);
-                this[outName](value, old);
+                if (onChange) {
+                    onChange.call(this, value, old, memberName);
+                    if (this[memberName] !== old) {
+                        this[outName](this[memberName], old);
+                    }
+                } else {
+                    this[outName](value, old);
+                }
                 return true;
             };
         }
@@ -594,6 +608,13 @@ Amm = {
             target[outName] = function(value, oldValue) {
                 this._out(eventName, value, oldValue);
             };
+        }
+        if (defineProperty) {
+            Object.defineProperty(target, l, {
+                enumerable: true,
+                get: target[getterName], 
+                set: target[setterName]
+            });
         }
     },
     

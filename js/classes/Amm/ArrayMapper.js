@@ -356,7 +356,7 @@ Amm.ArrayMapper.prototype = {
         }
         if (!this._sort) return;
         var idx = 0;
-        while ((idx = Amm.Array.indexOf(item, this._src, idx)) > 0) {
+        while ((idx = Amm.Array.indexOf(item, this._src, idx)) >= 0) {
             var dest = this._srcEntries[idx][Amm.ArrayMapper._SRC_REF_TO_DEST];
             var old = dest[Amm.ArrayMapper._DEST_SORT_VALUE];
             var n = value === undefined? this._getSortValue(idx) : value;

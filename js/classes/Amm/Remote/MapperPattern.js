@@ -107,8 +107,12 @@ Amm.Remote.MapperPattern.prototype = {
      * If there's enough args in `args` parameter, produces the path, otherwise returns undefined
      * Doesn't check args for validity (only word characters should be in non-free args), only for their presence.
      * Empty args ('') doesn't count as ones.
+     *
+     * @param {object} args Hash with args
+     * @param {boolean} removeBuilt Will delete `args` members 
+     *                  that were incorporated to the result string
      */
-    build: function(args) {
+    build: function(args, removeBuilt) {
         var i, l;
         for (i = 0, l = this.args.length; i < l; i++) {
             var v = args[this.args[i]];
@@ -116,7 +120,10 @@ Amm.Remote.MapperPattern.prototype = {
         }
         var res = '';
         for (i = 0, l = this.segments.length; i < l; i++) {
-            if (this.segments[i] instanceof Array) res += '' + args[this.segments[i][0]];
+            if (this.segments[i] instanceof Array) {
+                res += '' + args[this.segments[i][0]];
+                if (removeBuilt) delete args[this.segments[i][0]];
+            }
             else res += this.segments[i];
         }
         return res;
