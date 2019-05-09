@@ -1,6 +1,6 @@
 /* global Amm */
 
-Amm.Trait.Select = function() {  
+Amm.Trait.Select = function() {
 };
 
 // compares two values. Order doesn't matter. Multiple occurances of same value are same as one.
@@ -27,6 +27,11 @@ Amm.Trait.Select.prototype = {
     'Select': '__INTERFACE__',
     
     options: null,
+
+    /**
+     * @type Amm.ArrayMapper
+     */
+    _objectsMapper: null,
     
     _selectionCollection: null,
     
@@ -35,6 +40,12 @@ Amm.Trait.Select.prototype = {
     _selectSize: undefined,
     
     _numChanges: 0,
+    
+    _labelProperty: null,
+
+    _valueProperty: null,
+    
+    _disabledProperty: null,
     
     /**
      * @param {Array|Object} options
@@ -171,10 +182,149 @@ Amm.Trait.Select.prototype = {
         this._out('multipleChange', multiple, oldMultiple);
     },
     
+    setObjects: function(objects) {
+        if (!objects) {
+            this._detachObjects();
+        }
+        if (!(objects instanceof Array || Amm.is(objects, 'Amm.Array')))
+            throw new Error("objects must be FALSEable, Array or Amm.Array");
+        if (!this._objectsMapper) this._objectsMapper = this._createObjectsMapper(objects);
+    },
+    
+    getObjects: function() {
+        if (!this._objectsMapper) return null;
+        return this._objectsMapper.getSrc();
+    },
+    
+    getObjectsItems: function() {
+         if (!this._objectsMapper) return [];
+         return this._objectsMapper.getSrc().getItems();
+    },
+    
+    _detachObjects: function(objects) {
+        if (!this._objectsMapper) return;
+        this._objectsMapper.setSrc([]);
+        this._objectsMapper.cleanup();
+        for (var i = 0, l = this._cleanupList.length; i < l; i++) {
+            if (this._cleanupList[i] === this._objectsMapper) {
+                this._cleanupList[i].splice(i, 1);
+                break;
+            }
+        }
+        this._objectsMapper = null;
+    },
+    
+    outObjectsChange: function(objects, oldObjects) {
+        // TODO
+    },
+    
     setValue: function(value) {
         var o = this._numChanges;
         this.getSelectionCollection().setValue(value);
         if (this._numChanges !== o) return true; // compat. with 'set' behaviour
+    },
+
+    setLabelProperty: function(labelProperty) {
+        var oldLabelProperty = this._labelProperty;
+        if (oldLabelProperty === labelProperty) return;
+        this._labelProperty = labelProperty;
+        this.outLabelPropertyChange(labelProperty, oldLabelProperty);
+        this._updateInstantiator();
+        return true;
+    },
+
+    getLabelProperty: function() { return this._labelProperty; },
+
+    outLabelPropertyChange: function(labelProperty, oldLabelProperty) {
+        this._out('labelPropertyChange', labelProperty, oldLabelProperty);
+    },
+
+    setValueProperty: function(valueProperty) {
+        var oldValueProperty = this._valueProperty;
+        if (oldValueProperty === valueProperty) return;
+        this._valueProperty = valueProperty;
+        this.outValuePropertyChange(valueProperty, oldValueProperty);
+        this._updateInstantiator();
+        return true;
+    },
+
+    getValueProperty: function() { return this._valueProperty; },
+    
+    setDisabledProperty: function(disabledProperty) {
+        var oldDisabledProperty = this._disabledProperty;
+        if (oldDisabledProperty === disabledProperty) return;
+        this._disabledProperty = disabledProperty;
+        this.outDisabledPropertyChange(disabledProperty, oldDisabledProperty);
+        this._updateInstantiator();
+        return true;
+    },
+
+    getDisabledProperty: function() { return this._disabledProperty; },
+
+    outDisabledPropertyChange: function(disabledProperty, oldDisabledProperty) {
+        this._out('disabledPropertyChange', disabledProperty, oldDisabledProperty);
+    },
+
+    /** 
+     * For given labelProperty or valueProperty, returns proper in__ expression
+     * for option instance's label or value
+     */
+    _objectPropToExp: function(propOrExp) {
+        if (propOrExp.match(/^\w+$/)) return 'this.origin.' + propOrExp;
+        return propOrExp;
+    },
+    
+    _updateInstantiator: function() {
+        if (!this._objectsMapper) return;
+        // TODO: save selected objects and select them back
+        var oldSel = Amm.getProperty(this._selectionCollection.getItems(), 'origin');
+        this._selectionCollection.beginUpdate();
+        this._objectsMapper.setInstantiator(this._createInstantiator());
+        if (oldSel.length) {
+            var newSel = [];
+            for (var i = 0, l = this.options.length; i < l; i++) {
+                if (Amm.Array.indexOf(this.options[i].getOrigin(), oldSel) < 0) continue;
+                newSel.push(this.options[i]);
+            }
+            this._selectionCollection.setItems(newSel);
+        }
+        this._selectionCollection.endUpdate();
+    },
+    
+    _createInstantiator: function() {
+        var optionProto = {
+            class: 'Amm.Trait.Select.Option'
+        };
+        if (this._labelProperty) {
+            optionProto['in__label'] = this._objectPropToExp(this._labelProperty);
+        }
+        if (this._disabledProperty) {
+            optionProto['in__disabled'] = this._objectPropToExp(this._disabledProperty);
+        }
+        if (this._valueProperty) {
+            optionProto['in__value'] = this._objectPropToExp(this._valueProperty);
+        } else {
+            optionProto['in__value'] = 'this.origin';
+        }
+        return new Amm.Instantiator.Proto(optionProto, 'origin');
+    },
+    
+    _createObjectsMapper: function(src) {
+        var proto = {
+            instantiator: this._createInstantiator(),
+            dest: this.getOptionsCollection(),
+            src: src
+        };
+        var res = new Amm.ArrayMapper(proto);
+        return res;
+    },
+    
+    outValuePropertyChange: function(valueProperty, oldValueProperty) {
+        this._out('valuePropertyChange', valueProperty, oldValueProperty);
+    },
+    
+    _cleanup_AmmTraitSelect: function() {
+        this._detachObjects();
     }
     
 };

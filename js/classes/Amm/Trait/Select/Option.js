@@ -13,9 +13,11 @@ Amm.Trait.Select.Option.prototype = {
 
     _disabled: false,
     
-    _selected: null,
+    _selected: false,
     
     _index: null,
+    
+    _origin: null,
 
     setValue: function(value) {
         var oldValue = this._value;
@@ -92,6 +94,20 @@ Amm.Trait.Select.Option.prototype = {
 
     outIndexChange: function(index, oldIndex) {
         this._out('indexChange', index, oldIndex);
+    },
+    
+    setOrigin: function(origin) {
+        var oldOrigin = this._origin;
+        if (oldOrigin === origin) return;
+        this._origin = origin;
+        this.outOriginChange(origin, oldOrigin);
+        return true;
+    },
+
+    getOrigin: function() { return this._origin; },
+
+    outOriginChange: function(origin, oldOrigin) {
+        this._out('originChange', origin, oldOrigin);
     }
     
 };

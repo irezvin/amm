@@ -794,7 +794,7 @@ Amm.ArrayMapper.prototype = {
         
         // now recalc everything and replace dest items
         
-        var destItems = [], i, p, passing, l, e,
+        var destItems = [], i, passing, l, e,
             pass = Amm.ArrayMapper._DEST_PASS,
             inSlice = Amm.ArrayMapper._DEST_IN_SLICE,
             destItem = Amm.ArrayMapper._DEST_ITEM,

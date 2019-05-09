@@ -418,7 +418,7 @@ Amm.Collection.prototype = {
             if (idx.length > 2) {
                 var s = [];
                 for (j = 0; j < idx.length; j++) s.push(this._describeIdx(idx[j], items.length));
-                throw Error("Multiple duplicates of item: " + s.join (", "));
+                throw Error("Multiple instances of same item: " + s.join (", "));
             }
             var exact = long[idx[0]] === long[idx[1]];
             
@@ -460,8 +460,13 @@ Amm.Collection.prototype = {
             }
                 
             if (reinsert) {
-                toDelete.splice(thisIdx - deleteStart, 1);
-                toDeleteIdx.splice(thisIdx - deleteStart, 1);
+                // mark re-inserted items as not-to-be-deleted
+                // we only mark them now to maintain proper index mapping
+                // between toDelete[] and this[] arrays; we will remove
+                // marked elements later
+                
+                toDelete[thisIdx - deleteStart] = undefined;
+                toDeleteIdx[thisIdx - deleteStart] = undefined;
                 numNotDeleted++;
             }
             
@@ -479,6 +484,15 @@ Amm.Collection.prototype = {
             indexes.push(idx[0]);
             itemsWithMatches.push(long[idx[0]]); // part from insert[]
             matches.push(long[idx[1]]); // part from this[]
+        }
+        
+        if (numNotDeleted) {
+            // remove marked items from toDelete and toDeleteIdx arrays
+            for (i = toDelete.length - 1; i >= 0; i--) {
+                if (toDelete[i] !== undefined) continue;
+                toDelete.splice(i, 1);
+                toDeleteIdx.splice(i, 1);
+            }
         }
         
         return [newItems, itemsWithMatches, matches, 
@@ -1199,8 +1213,9 @@ Amm.Collection.prototype = {
         
         if (oldChangeEvents === changeEvents) return;
         
-        if (this._changeEvents && changeEvents && 
-            !Amm.Array.diff(changeEvents, this._changeEvents).length
+        if (this._changeEvents && changeEvents
+            && !Amm.Array.diff(changeEvents, this._changeEvents).length
+            && !Amm.Array.diff(this._changeEvents, changeEvents).length
         ) return; // same events
         
         if (oldChangeEvents) { // unsubscribe from old events...
@@ -1212,8 +1227,9 @@ Amm.Collection.prototype = {
         if (changeEvents) { // ...and subscribe to the new!
             var l1 = changeEvents.length;
             for (var i = 0, l = this.length; i < l; i++) {
-                for (var j = 0; j < l1; j++)
+                for (var j = 0; j < l1; j++) {
                     this[i].subscribe(changeEvents[j], this._reportItemChangeEvent, this);
+                }
             }
         }
         

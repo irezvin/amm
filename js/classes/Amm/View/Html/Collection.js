@@ -32,7 +32,7 @@ Amm.View.Html.Collection.prototype = {
         if (!this._canObserve() && this._canObserveCollection()) this._acquireResources();
     },
     
-    getItemHtmlElement: function(item, dontThrow) {
+    getItemHtmlElement: function(item) {
         if (item[this._mappingProp]) return item[this._mappingProp];
         var node = this._createAndBindHtmlNode(item);
         if (!node[this._mappingProp]) {
@@ -40,6 +40,10 @@ Amm.View.Html.Collection.prototype = {
             item[this._mappingProp] = node;
         }
         return node;
+    },
+    
+    getHtmlElementItem: function(htmlElement) {
+        return htmlElement[this._mappingProp];
     },
 
     /**

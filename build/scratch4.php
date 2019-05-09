@@ -127,7 +127,7 @@
             <br />
         </div>
         <h2>Linked selects (unrelated)</h2>
-        <select id="sel1" data-amm-id="sel1" name="zz" data-amm-v="[v.Select, v.Visual]" 
+        <select id="sel1" data-amm-id="sel1" name="zz" data-amm-v="[v.Select, v.Visual]"
             data-amm-e="{
             options: [
                 {
@@ -140,7 +140,7 @@
                 },
                 {
                     value: 'bar', 
-                    label: 'Bar', 
+                    label: 'Bar',
                     prop__linked: {
                         foo1: 'Bar1',
                         foo2: 'Bar2'

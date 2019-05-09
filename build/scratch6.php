@@ -77,6 +77,7 @@
                 <div>
                     <button onclick='window.lastItem = window.items.createItem();'>Add Item</button>
                 </div>
+                <br />
                 <div class='itemProto' style='display: none' data-amm-dont-build="">
                     <div class='outer' data-amm-e="{prop__item: null}" data-amm-v="['v.Visual', 'v.StaticDisplayParent']">
                         Name: <input type="text" 
@@ -89,7 +90,30 @@
                 </div>
                 <div data-amm-v='v.DisplayParent'>
                 </div>
+                
         </div>
+        <!--select data-amm-id="sortModes" data-amm-v="[v.Select, v.Visual]" 
+            data-amm-e="{
+            options: [
+                {
+                    value: ['name'], 
+                    label: 'name ASC', 
+                },
+                {
+                    value: ['name DESC'], 
+                    label: 'name DESC', 
+                },
+                {
+                    value: ['age'], 
+                    label: 'age ASC', 
+                },
+                {
+                    value: ['age DESC'], 
+                    label: 'age DESC', 
+                }
+            ]
+        }"-->
+        </select>
         <div data-amm-id="@list" data-amm-e="{
                 extraTraits: [t.DisplayParent],
                 prop__itemProto: { $ref: '.itemProto' }
@@ -108,7 +132,10 @@
                     instantiator: new Amm.Instantiator.Proto ({
                         'class': 'Amm.Element',
                         prop__name: '',
-                        prop__age: ''
+                        prop__age: {
+                            defaultValue: 0,
+                            onChange: function(v) { var v1 = parseInt(v); if (!isNaN(v1)) this._age = v1; }
+                        }
                     })
                 });
                 window.am = new Amm.ArrayMapper({
@@ -127,7 +154,9 @@
                     }, 'item'),
                     src: window.items,
                     dest: window.list.displayChildren,
-                    sort: Amm.ArrayMapper.SORT_REVERSE
+                    sort: new Amm.Sorter({
+                        criteria: ['age', 'name']
+                    })
                 });
             });
         </script>

@@ -527,12 +527,20 @@
         ib.setDate('2015-02-02');
         c.setUpdateProperties(null);
         
-        var pa = c._preAccept([ia, ib, ic], 0, c.length);
+        pa = c._preAccept([ia, ib, ic], 0, c.length);
         assert.ok(pa[4].length === 2 && pa[4][0] === ie && pa[4][1] === id, 'Proper delete detection');
 
+        pa = c._preAccept([ia, ib, ic, ie], 0, c.length);
+        
         c.setItems([ia, ib, ic, ie]);
         
-        var pa = c._preAccept([id, ib], 1, 3);
+        assert.deepEqual(Amm.getProperty(c.getItems(), 'name'),
+            ['E', 'C', 'B', 'A'], 'proper items order after setItems()'
+        );
+        
+        c.setIgnoreExactMatches(true);
+        
+        pa = c._preAccept([id, ib], 1, 3);
         assert.ok(pa[0].length === 1 && pa[0][0] === id, 'Re-inserted exact match is not considered new');
         
     });
@@ -888,6 +896,60 @@
         Amm.cleanup(sam.items);
             
     });
+
+    QUnit.test("Collection - no side effect on setItems() or slice with same items", function(assert) {
+        
+        var subLog = [];
+        var Itm = function(val) { Amm.Element.call(this, {val: val}); };
+        Itm.prototype = {
+            unsubscribe: function(event) {
+                if (event === 'valChange' || !event) subLog.push('unsub ' + this._val);
+                Amm.Element.prototype.unsubscribe.apply(this, Array.prototype.slice.apply(arguments));
+            },
+            subscribe: function(event, handler, scope) {
+                if (event === 'valChange') subLog.push('sub ' + this._val);
+                Amm.Element.prototype.subscribe.apply(this, Array.prototype.slice.apply(arguments));
+            }
+        };
+        Amm.createProperty(Itm.prototype, 'val');
+        Amm.extend(Itm, Amm.Element);
+        
+        var c = new Amm.Collection({changeEvents: ['valChange']});
+        var i = {
+            a: new Itm('a'),
+            b: new Itm('b'),
+            c: new Itm('c'),
+            d: new Itm('d'),
+            e: new Itm('e'),
+            f: new Itm('f'),
+            g: new Itm('g')
+        };
+        
+        c.setItems([i.a, i.b, i.c, i.d, i.e, i.f, i.g]);
+
+        subLog.splice(0, subLog.length);
+        
+        c.setItems(c.getItems());
+        
+        assert.deepEqual(subLog.length, 0, 
+            "setItems() with same content doesn't unsubscribe any items from collection' observation");
+        
+        c.splice.apply(c, [1, 3, i.b, i.c, i.d]);
+        assert.deepEqual(subLog.length, 0, 'splice with same content - no dissoc');
+        
+        c.splice.apply(c, [1, 4, i.e, i.d, i.c, i.b]);
+        assert.deepEqual(subLog.length, 0, 'no dissociation on order change');
+        
+        c.setCleanupOnDissociate(true);
+        c.setItems([]);
+        c.cleanup();
+        
+    });
+    
+    
+//    QUnit.test("Collection - no dissociation on reinsert", function(assert) {
+//        
+//    });
     
     
 }) ();

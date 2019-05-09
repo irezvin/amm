@@ -1,4 +1,5 @@
 /* global Amm */
+/* global QUnit */
 
 (function() {
     
@@ -170,7 +171,7 @@
            options: {
                 a: 'value a',
                 b: 'value b',
-                c: 'value c'
+                c: 'value c',
            }
        });
        
@@ -179,6 +180,95 @@
        Amm.cleanup(s1, s2, s3);
        
     });
-    
+
+    QUnit.test("Trait.Select: 'objects' mapping", function(assert) {
+       
+        var s1 = new Amm.Element({
+            traits: ['Amm.Trait.Select'],
+            labelProperty: 'lbl',
+            disabledProperty: 'dis',
+            multiple: true
+        });
+       
+        var objects = [
+            new Amm.Element({
+                prop__lbl: 'a',
+                prop__lbl2: 'aa',
+                prop__dis: false
+            }),
+            new Amm.Element({
+                prop__lbl: 'b',
+                prop__lbl2: 'bb',
+                prop__dis: false
+            }),
+            new Amm.Element({
+                prop__lbl: 'c',
+                prop__lbl2: 'cc',
+                prop__dis: false
+            }),
+            new Amm.Element({
+                prop__lbl: 'd',
+                prop__lbl2: 'dd',
+                prop__dis: false
+            }),
+            new Amm.Element({
+                prop__lbl: 'e',
+                prop__lbl2: 'ee',
+                prop__dis: false
+            }),
+            new Amm.Element({
+                prop__lbl: 'f',
+                prop__lbl2: 'ff',
+                prop__dis: false
+            })
+            
+            
+       ];
+       
+       s1.setObjects(objects);
+       
+       assert.deepEqual(s1.getOptions().length, objects.length, 'All objects have corresponding options');
+       assert.deepEqual(Amm.getProperty(s1.getOptions(), 'label'), ['a', 'b', 'c', 'd', 'e', 'f'], 'options have matching labels');
+       assert.deepEqual(Amm.getProperty(s1.getOptions(), 'value'), [objects[0], objects[1], objects[2], objects[3], objects[4], objects[5]], 'options\' values match the objects');
+       objects[0].setLbl('foo');
+       assert.deepEqual(s1.getOptions()[0].getLabel(), 'foo', 'option label was changed when object property was changed');
+       window.d.s1 = s1;
+       window.d.fx = fx;
+       
+       //return;
+       s1.getOptions()[0].setSelected(true);
+       s1.getOptions()[1].setSelected(true);
+       assert.deepEqual(s1.getValue(), [objects[0], objects[1]]);
+       s1.setValue([objects[2]]);
+       assert.deepEqual(Amm.getProperty(s1.getOptions(), 'selected'), [false, false, true, false, false, false]);
+       
+       fx.html('<select id="s1"></select>');
+       var v = new Amm.View.Html.Select({element: s1, htmlElement: '#s1'});
+       fx.find('option')[0].selected = true;
+       fx.find('select').trigger('change');
+       assert.deepEqual(Amm.getProperty(s1.getValue(), 'lbl'), ['foo', 'c']);
+       
+       objects[1].setDis(true);
+       assert.equal(fx.find('option')[1].disabled, true, 'Option becomes disabled');
+       
+       var oldValue = Amm.getProperty(s1.getValue(), 'lbl');
+       s1.setLabelProperty('lbl2');
+       assert.deepEqual(Amm.getProperty(s1.getOptions(), 'label'), 
+           ['aa', 'bb', 'cc', 'dd', 'ee', 'ff'], 'options have matching labels');
+       var newValue = Amm.getProperty(s1.getValue(), 'lbl');
+       assert.deepEqual(newValue, oldValue,
+           'after labelProperty changed, select.getValue() remains the same');
+
+       oldValue = Amm.getProperty(Amm.getProperty(s1.getSelectionCollection().getItems(), 'origin'), 'lbl');
+       s1.setValueProperty('lbl');
+       assert.deepEqual(Amm.getProperty(s1.getOptions(), 'value'), 
+           ['foo', 'b', 'c', 'd', 'e', 'f'], 'valueProperty works');
+       var newValue = s1.getValue();
+       assert.deepEqual(newValue, oldValue,
+           'after valueProperty changed, selection remains the same');
+       
+       Amm.cleanup(s1, objects);
+       
+    });
     
 }) ();
