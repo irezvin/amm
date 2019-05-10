@@ -946,10 +946,119 @@
         
     });
     
+    QUnit.test("Collection - associative access", function(assert) {
+        
+        var numChanges = 0;
+        
+        var c = new Amm.Collection({keyProperty: 'val'});
+        
+        c.subscribe('byKeyChange', function() {
+            numChanges++;
+        });
+        
+        var i = {
+            a: new Amm.Element({prop__val: 'a', prop__val1: '_a'}),
+            b: new Amm.Element({prop__val: 'b', prop__val1: '_b'}),
+            c: new Amm.Element({prop__val: 'c', prop__val1: '_c'}),
+            d: new Amm.Element({prop__val: 'd', prop__val1: '_d'}),
+            e: new Amm.Element({prop__val: 'e', prop__val1: '_e'}),
+            f: new Amm.Element({prop__val: 'f', prop__val1: '_f'}),
+            g: new Amm.Element({prop__val: 'g', prop__val1: '_g'})
+        };
+        
+        var ii = [i.a, i.b, i.c, i.d, i.e, i.f, i.g];
+        
+        c.setItems(ii);
+        
+        assert.equal(numChanges, 1, 'only one byKeyChange on setItems()');
+        
+        assert.ok(
+            c.k.a === i.a
+            && c.k.b === i.b
+            && c.k.c === i.c
+            && c.k.d === i.d
+            && c.k.e === i.e
+            && c.k.f === i.f
+            && c.k.g === i.g,
+            
+            'collection.k indexes items by keys'
+        );
+        
+        numChanges = 0;
+
+        c.setKeyProperty('val1');
+
+        assert.equal(numChanges, 1, 'only one byKeyChange on setKeyProperty()');
+        
+        assert.ok(
+            c.k._a === i.a
+            && c.k._b === i.b
+            && c.k._c === i.c
+            && c.k._d === i.d
+            && c.k._e === i.e
+            && c.k._f === i.f
+            && c.k._g === i.g,
     
-//    QUnit.test("Collection - no dissociation on reinsert", function(assert) {
-//        
-//    });
+            'new keys are used in Collection.k after setKeyProperty()'
+        );
+
+        window.d.c = c;
+        
+        numChanges = 0;
+        
+        i.a.setVal1('foo');
+
+        assert.ok(c.k.foo === i.a, 'item key changed -> new key appeared in Collection.k');
+        assert.notOk('_a' in c.k, 'item key changed -> old key not in Collection.k anymore');
+        assert.equal(numChanges, 1, 'item key changed -> one byKeyChange trigger');
+        
+        assert.throws(function() {
+            i.a.setVal1('_b');
+        }, /duplicate value of keyProperty/i, 'cannot set key to already existing value');
+        
+        assert.equal(i.a.getVal1(), 'foo', 'value of conflicting key was reverted back');
+        
+        assert.throws(function() {
+            i.a.setVal1({});
+        }, /invalid value of keyProperty/i, 'cannot set key to object');
+        
+        assert.equal(i.a.getVal1(), 'foo', 'value of conflicting key was reverted back');
+        
+        numChanges = 0;
+        c.reject(i.b);
+        assert.equal(numChanges, 1, 'item rejected: byKeyChange triggered');
+        assert.notOk('_b' in c.k, 'item rejected: key not in collection.k anymore');
+
+        var expVal = null;
+        
+        var exp = new Amm.Expression({
+            src: 'this.byKey::{$key}',
+            expressionThis: c,
+            vars: {
+                key: '_d'
+            },
+            on__valueChange: function(v) {
+                expVal = v;
+            }
+        });
+        
+        console.log(exp.getValue());
+        assert.ok(exp.getValue() === i.d, 'expression that accesses `byKey` collection property returns correct item');
+        
+        exp.setVars('_x', 'key');
+        assert.ok(expVal === undefined, 'collection.byKey: when parameter is changed, new result is returned');
+        
+        i.a.setVal1('_x');
+        assert.ok(expVal === i.a, 'collection.byKey: when item key is changed, new result is returned');
+        
+        d.exp = exp;
+        return;
+        
+        numChanges = 0;
+        c.setItems([]);
+        assert.equal(numChanges, 1, 'when collection was cleared, only one byKeyChange triggered');
+        
+    });
     
     
 }) ();

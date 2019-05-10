@@ -9,6 +9,7 @@ Amm.Collection = function(options) {
         return t._implSortWithProps(a, b);
     };
     this._itemUpdateQueue = [];
+    this.k = {};
     Amm.Array.call(this, options);
 };
 
@@ -23,6 +24,10 @@ Amm.Collection.ERR_ADD_DISALLOWED = "Adding new items disallowed";
 Amm.Collection.ERR_DELETE_DISALLOWED = "Deleting items disallowed";
 
 Amm.Collection.ERR_REORDER_DISALLOWED = "Reordering (and inserting/deleting items not at the end) disallowed";
+
+Amm.Collection.ERR_KEY_PROPERTY_MISSING = "Key property missing";
+
+Amm.Collection.ERR_KEY_PROPERTY_INVALID = "Invalid key property value (must be scalar)";
 
 /**
  * Searches for position of item `item` in *sorted* array `arr` 
@@ -105,6 +110,9 @@ Amm.Collection.binSearch = function(arr, item, sortFunc, left, right) {
 Amm.Collection.prototype = {
 
     'Amm.Collection': '__CLASS__', 
+    
+    /* JS hash that contains references to the objects by their keyProperty when keyProperty is set */
+    k: null,
     
     _unique: true,
     
@@ -204,6 +212,10 @@ Amm.Collection.prototype = {
     _instantiator: null,
     
     _instantiateOnAccept: false,
+    
+    _keyProperty: null,
+    
+    _byKeyChange: false,
     
     setUnique: function(unique) {
         if (!unique) throw Error("setUnique(false) is never supported by Amm.Collection");
@@ -311,6 +323,17 @@ Amm.Collection.prototype = {
         if (this._requirements && !Amm.meetsRequirements(item, this._requirements)) {
             problem.error = Amm.Collection.ERR_NOT_MEETING_REQUIREMENTS;
             return false;
+        }
+        if (this._keyProperty) {
+            if (!Amm.detectProperty(item, this._keyProperty)) {
+                problem.error = Amm.Collection.ERR_KEY_PROPERTY_MISSING;
+                return false;
+            }
+            var key = Amm.getProperty(item, this._keyProperty);
+            if (key && typeof key === 'object') {
+                problem.error = Amm.Collection.ERR_KEY_PROPERTY_INVALID;
+                return false;
+            }
         }
         if (!checkRequirementsOnly && !this._allowUpdate) {
             var index = this.indexOf(item);
@@ -573,11 +596,13 @@ Amm.Collection.prototype = {
      * index can be used only for non-sorted array
      */
     acceptMany: function(items, index) {
+        
         var sorted = this._sorted;
         if (sorted && index !== undefined) 
             throw Error("`index` must not be used with sorted Collection - check for getIsSorted() next time");
         if (!items.length) return []; // shortcut
         if (items.length === 1) return [this.accept(items[0])];
+        this._byKeyChange = 1;
         var pa = this._preAccept([].concat(items));
         var i;
         if (pa[0].length) { // we have addable items
@@ -624,6 +649,14 @@ Amm.Collection.prototype = {
             // previously-saved index
             res.splice(pa[3][i], 0, pa[2][i]);
         }
+        
+        if (this._byKeyChange === true) {
+            this._byKeyChange = false;
+            this.outByKeyChange();
+        } else {
+            this._byKeyChange = false;
+        }
+        
         return res;
     },
     
@@ -780,6 +813,8 @@ Amm.Collection.prototype = {
             goodSplice = [start, cut, insert];
         }
         
+        if (this._byKeyChange !== true) this._byKeyChange = 1;
+        
         // We have to check splice to be "proper" and, if it is not,
         // split splice() event into series of delete/insert events
         // -- even with non-sorted array
@@ -826,6 +861,13 @@ Amm.Collection.prototype = {
         }
         for (i = 0; i < pa[0].length; i++) {
             this._subscribe(pa[0][i]);
+        }
+        
+        if (this._byKeyChange === true) {
+            this._byKeyChange = false;
+            this.outByKeyChange();
+        } else {
+            this._byKeyChange = false;
         }
         
         if (this._indexProperty) this._reportIndexes(oldItems);
@@ -975,6 +1017,7 @@ Amm.Collection.prototype = {
         if (this[index] !== item) {
             throw Error("WTF - this[`index`] !== `item`");
         }
+        
         if (this._assocProperty) {
             Amm.setProperty(item, this._assocProperty, this._assocInstance || this);
         }
@@ -990,6 +1033,15 @@ Amm.Collection.prototype = {
         if (alsoSubscribe) this._subscribe(item);
         
         this.outOnAssociate(item, index);
+        
+        if (this._keyProperty) {
+            var key = Amm.getProperty(item, this._keyProperty);
+            if (key !== undefined && key !== null) {
+                this.k[key] = item;
+                this.outByKeyChange();
+            }
+        }
+        
     },
     
     outOnAssociate: function(item, index) {
@@ -1005,6 +1057,9 @@ Amm.Collection.prototype = {
         if (this._indexPropertyIsWatched) {
             var event = this._indexProperty + 'Change';
             item.subscribe(event, this._reportItemIndexPropertyChange, this);
+        }
+        if (this._keyProperty) {
+            item.subscribe(this._keyProperty + 'Change', this._handleKeyChange, this);
         }
     },
     
@@ -1024,6 +1079,16 @@ Amm.Collection.prototype = {
                 item.unsubscribe(event, this._reportItemIndexPropertyChange, this);
             }
         }
+        
+        if (this._keyProperty) {
+            var key = Amm.getProperty(item, this._keyProperty);
+            if (key !== false && key !== undefined && this.k[key] === item) {
+                delete this.k[key];
+                this.outByKeyChange();
+            }
+            item.unsubscribe(this._keyProperty + 'Change', this._handleKeyChange, this);
+        }
+        
         if (this._undefaults) {
             Amm.setProperty(item, this._undefaults);
         }
@@ -1061,7 +1126,7 @@ Amm.Collection.prototype = {
         
         this._assocProperty = assocProperty;
         
-        this._beginItemsUpdate(); // 'would be a lot of chatter from the items
+        this._beginItemsUpdate(); // would be a lot of chatter from the items
         
         // report null to items that used oldAssocProperty
         var i, l = this.length;
@@ -1265,7 +1330,7 @@ Amm.Collection.prototype = {
         var tmp = this._custComparison;
         var tmp1 = this._comparison;
         this._custComparison = comparison;
-        this._onlyStrict = !(this._comparisonProperties || comparison);
+        this._onlyStrict = !(this._keyProperty || this._comparisonProperties || comparison);
         if (!this._onlyStrict) {
             this._comparison = this._compareWithProps;
         } else {
@@ -1295,12 +1360,13 @@ Amm.Collection.prototype = {
         var oldComparisonProperties = this._comparisonProperties;
         if (oldComparisonProperties === comparisonProperties) return;
         if (oldComparisonProperties && comparisonProperties 
-            && !Amm.Array.diff(
+            && oldComparisonProperties.length === comparisonProperties
+            && !Amm.Array.equal (
                 oldComparisonProperties, comparisonProperties
             ).length) return; // same content of arrays - order doesn't matter
         var tmp = this._comparisonProperties;
         var tmp1 = this._comparison;
-        this._onlyStrict = !(comparisonProperties || this._custComparison);
+        this._onlyStrict = !(this._keyProperty || comparisonProperties || this._custComparison);
         if (this._onlyStrict) {
             this._comparison = null;
         } else {
@@ -1346,17 +1412,34 @@ Amm.Collection.prototype = {
     getRecheckUniqueness: function() { return this._recheckUniqueness; },
     
     _implCompareWithProps: function(a, b) {
+        var p, propA, propB;
         if (a === b) return 0; // exact match
         if (this._comparisonProperties) {
             for (var i = 0, l = this._comparisonProperties.length; i < l; i++) {
-                var p = this._comparisonProperties[i];
-                var propA = Amm.getProperty(a, p);
-                var propB = Amm.getProperty(b, p);
+                p = this._comparisonProperties[i];
+                propA = Amm.getProperty(a, p);
+                propB = Amm.getProperty(b, p);
                 if (propA !== propB) return -1;
+            }
+        }
+        if (this._keyProperty) {
+            propA = Amm.getProperty(a, this._keyProperty);
+            if (typeof propA === 'object') throw this._keyPropertyError(a, propA);
+            if (propA !== undefined && propA !== null) {
+                propB = Amm.getProperty(b, this._keyProperty);
+                if (propB !== undefined && propB !== null) {
+                    if (typeof propB === 'object') throw this._keyPropertyError(b, propB);
+                    if (('' + propA) !== ('' + propB)) return -1;
+                }
             }
         }
         if (this._custComparison) return this._custComparison(a, b);
         return 0;
+    },
+    
+    _keyPropertyError: function(object, value, keyProperty) {
+        if (keyProperty === undefined) keyProperty = this._keyProperty;
+        return new Error("Invalid value of keyProperty '" + this._keyProperty + "': object value isn't allowed");
     },
 
     setSortProperties: function(sortProperties) {
@@ -1522,6 +1605,10 @@ Amm.Collection.prototype = {
         if (this._needSort) this._sort();
         if (this._indexProperty) this._reportIndexes(this._preUpdateItems);
         Amm.Array.prototype._doEndUpdate.call(this);
+        if (this._byKeyChange) {
+            this._byKeyChange = false;
+            this.outByKeyChange();
+        }
     },
     
     _reportIndexes: function(oldItems, start, stop) {
@@ -1663,6 +1750,10 @@ Amm.Collection.prototype = {
             this._itemUpdateQueue = [];
         }
         this._endItemsUpdateLock = false;
+        if (this._byKeyChange) {
+            this._byKeyChange = false;
+            this.outByKeyChange();
+        }
         if (this._sorted) this._sort(); // re-sort items
     },
     
@@ -1855,6 +1946,139 @@ Amm.Collection.prototype = {
             res[this._assocEvents[i][0]] = this._assocEvents[i][1];
         }
         return res;
+    },
+
+    /**
+     * Allows to access objects of the Collection using value of their keyProperty.
+     * 
+     * Objects are allowed to have `null` or `undefined` value of keyProperty, in that case they won't be accessible
+     * by keyProperty and such values won't be considering conflicting.
+     * 
+     * Comparison of keyProperty is non-strict; only scalar values are allowed (booleans, numbers, strings).
+     * 
+     * Attempt to insert object with object keyProperty will result in error.
+     * Attempt to change keyProperty of object to already existing value will result in error, and value will be
+     *      reverted back (if possible by setProperty).
+     *      
+     * Attempt to change keyProperty to value that will cause conflicts will trigger an error.
+     * 
+     * @param {string} keyProperty
+     */
+    setKeyProperty: function(keyProperty) {
+        if (!keyProperty) keyProperty = null;
+        var oldKeyProperty = this._keyProperty;
+        if (oldKeyProperty === keyProperty) return;
+        
+        var tmp = this._keyProperty;
+        var tmp1 = this._comparison;
+        this._onlyStrict = !(keyProperty || this._comparisonProperties || this._custComparison);
+        if (this._onlyStrict) {
+            this._comparison = null;
+        } else {
+            this._comparison = this._compareWithProps;
+        }
+        try {
+            this._keyProperty = keyProperty;
+            this._checkDuplicates("setKeyProperty()", [], 0, 0, true, this._comparison);
+        } catch (e) {
+            this._keyProperty = tmp;
+            this._comparison = tmp1;
+            throw e;
+        }
+        if (oldKeyProperty) this._unobserveKeyProperty();
+        this._keyProperty = keyProperty;
+        this._observeKeyProperty();
+        this._rebuildKeys();
+        this.outKeyPropertyChange(keyProperty, oldKeyProperty);
+        return true;
+    },
+    
+    _unobserveKeyProperty: function() {
+        var c = this._keyProperty + 'Change';
+        for (var i = 0, l = this.length; i < l; i++) {
+            this[i].unsubscribe(c, this._handleKeyChange, this);
+        }
+    },
+    
+    _observeKeyProperty: function() {
+        var c = this._keyProperty + 'Change';
+        for (var i = 0, l = this.length; i < l; i++) {
+            this[i].subscribe(c, this._handleKeyChange, this);
+        }
+    },
+    
+    _lockKeyValueChange: false,
+
+    _revertKeyValue: function(object, oldValue) {
+        var tmp;
+        tmp = this._lockKeyValueChange;
+        this._lockKeyValueChange = object;
+        try { 
+            Amm.setProperty(object, this._keyProperty, oldValue);
+        } catch (e) {
+            this._lockKeyValueChange = tmp;
+            throw e;
+        }
+        this._lockKeyValueChange = tmp;
+    },
+    
+    _handleKeyChange: function(value, oldValue) {
+        var object = Amm.event.origin, needTrigger;
+        if (this._lockKeyValueChange && this._lockKeyValueChange === object) return;
+        if (typeof value === 'object') {
+            this._revertKeyValue(object, oldValue);
+            throw this._keyPropertyError(object, value);
+        }
+        if (value !== null && value !== undefined) {
+            if (this.k[value] && this.k[value] !== object) {
+                this._revertKeyValue(object, oldValue);
+                throw Error("Duplicate value of keyProperty '" + this._keyProperty + "': object with key '"
+                    + value + "' already exists in the collection");
+            }
+            this.k[value] = object;
+        }
+        if (oldValue !== undefined && oldValue !== null) {
+            if (this.k[oldValue] !== object) {
+                this._rebuildKeys();
+                return;
+            } else {
+                delete this.k[oldValue];
+            }
+        }
+        this.outByKeyChange();
+    },
+    
+    _rebuildKeys: function() {
+        this.k = {};
+        for (var i = 0, l = this.length; i < l; i++) {
+            var key = Amm.getProperty(this[i], this._keyProperty);
+            if (key === null || key === undefined) continue;
+            if (typeof key === 'object') throw this._keyPropertyError(this[i], key);
+            this.k[key] = this[i];
+        }
+        this.outByKeyChange();
+    },
+
+    getKeyProperty: function() { return this._keyProperty; },
+
+    outKeyPropertyChange: function(keyProperty, oldKeyProperty) {
+        this._out('keyPropertyChange', keyProperty, oldKeyProperty);
+    },
+    
+    getByKey: function(key) {
+        return this.k[key];
+    },
+    
+    setByKey: function(key) {
+        console.warn('byKey is read-only property');
+    },
+    
+    outByKeyChange: function() {
+        if (this._updateLevel || this._itemUpdateLevel || this._byKeyChange) {
+            this._byKeyChange = true;
+            return;
+        }
+        this._out('byKeyChange');
     }
     
 };

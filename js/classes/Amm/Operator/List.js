@@ -70,7 +70,7 @@ Amm.Operator.List.prototype = {
         
         for (var i = 0; i < this._length; i++) {
             res.push(v = this._getOperandValue(i, again));
-            same = (same && this._value[i] !== v);
+            same = (same && this._value[i] === v);
         }
         
         if (same) {
