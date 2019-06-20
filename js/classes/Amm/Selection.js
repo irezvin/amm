@@ -116,6 +116,7 @@ Amm.Selection.prototype = {
      * @returns {undefined}
      */
     setValue: function(value) {
+        this.beginUpdate();
         var empty;
         if (value === undefined || value === null) {
             empty = true;
@@ -131,6 +132,7 @@ Amm.Selection.prototype = {
         if (empty) items = [];
         else items = this._findItemsWithValue(value);
         this.setItems(items);        
+        this.endUpdate();
     },
     
     getValue: function(recalc) { 
@@ -138,6 +140,9 @@ Amm.Selection.prototype = {
         var res;
         if (!this._valueProperty) {
             res = this.getItems();
+            if (!this._multiple) {
+                res = res[0];
+            }
         } else {
             if (!this._cacheValue || recalc || this._value === undefined) {
                 res = this._value = this._collectValueProperty(this, true);
@@ -145,7 +150,6 @@ Amm.Selection.prototype = {
                 res = this._value;
             }
         }
-        if (!this._multiple) res = res[0];
         return res;
     },
 
@@ -261,7 +265,7 @@ Amm.Selection.prototype = {
                 if (v !== undefined && v !== null) res.push(v);
             }
         }
-        if (deCardinalify && !this._multiple) res = res[0] || null;
+        if (deCardinalify && !this._multiple) res = res.length? res[0] : null;
         return res;
     },
     
@@ -456,7 +460,10 @@ Amm.Selection.prototype = {
     _handleItemSelectedPropertyChange: function(value, oldValue) {
         var item = Amm.event.origin;
         var hasItem = this.hasItem(item);
-        if (hasItem && !value) this.reject(item);
+        if (hasItem && !value) {
+            this.reject(item);
+            return;
+        }
         else if (!hasItem && value) {
             if (this._multiple)
                 this.accept(item);
@@ -512,7 +519,9 @@ Amm.Selection.prototype = {
         var res;
         res = Amm.Collection.prototype._dissociate.call(this, item);
         if (!this._selfSubscribed) this._value = undefined;
-        if (this._selectedProperty) Amm.setProperty(item, this._selectedProperty, false);
+        if (this._selectedProperty) {
+            Amm.setProperty(item, this._selectedProperty, false);
+        }
         return res;
     }
     

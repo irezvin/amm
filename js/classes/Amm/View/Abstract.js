@@ -81,6 +81,7 @@ Amm.View.Abstract.prototype = {
     _endObserve: function() {
         this._observing = false;
         if (this._element) this._element.unsubscribe(undefined, undefined, this);
+        this._releaseResources();
     },
     
     _observeElementIfPossible: function() {
@@ -89,6 +90,8 @@ Amm.View.Abstract.prototype = {
             if (this._observing) this._endObserve();
             return;
         }
+        if (this._observing) return;
+        this._observing = true;
         this._acquireResources();
         var bindList = [], props = {};
         for (var i in this) {
@@ -109,13 +112,15 @@ Amm.View.Abstract.prototype = {
                 }
             }
         }
-        this._observing = true;
         this._initProperties(bindList);
         this._element.outViewReady(this);
         return true;
     },
     
     _acquireResources: function() {
+    },
+    
+    _releaseResources: function() {
     },
     
     _observeProp: function(propName, setterName, bindList) {
@@ -141,7 +146,9 @@ Amm.View.Abstract.prototype = {
             var elementVal = this._element[caps.getterName]();
             if (this.twoWayInit && elementVal === undefined && caps.setterName && typeof this[getV] === 'function') {
                 var myVal = this[getV]();
-                if (myVal !== undefined) this._element[caps.setterName](myVal);
+                if (myVal !== undefined) {
+                    this._element[caps.setterName](myVal);
+                }
             } else {
                 if (typeof this[setV] === 'function') this[setV](elementVal);
             }

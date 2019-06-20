@@ -74,20 +74,18 @@ Amm.ElementBound.prototype = {
     
     getElement: function() { return this._element; },
     
-    _handleElementCleanup: function(element) {
-        if (this._element === element) {
-            this._isElementCleanup++;
-            if (this._cleanupWithElement)
-                this.cleanup();
-            this.setElement(null);
-            this._isElementCleanup--;
-            
-            return true;
+    _handleElementCleanup: function() {
+        this._isElementCleanup++;
+        if (this.cleanupWithElement) {
+            this.cleanup();
         }
+        this.setElement(null);
+        this._isElementCleanup--;
+
+        return true;
     },
     
     cleanup: function() {
-        Amm.cleanupAggregates.call(this);
         if (this._element) {
             if (!this._isElementCleanup) {
                 // full un-subscription
@@ -95,6 +93,8 @@ Amm.ElementBound.prototype = {
             }
             this.setElement(null);
         }
+        Amm.callMethods(this, '_cleanup_');
+        Amm.unregisterItem(this);
     },
 
     _requireInterfaces: function(interface, _) {

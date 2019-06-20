@@ -286,6 +286,111 @@
         
     });
     
+    QUnit.test("Amm.Builder: return view prototypes", function(assert) {
+        
+        var fx = jQuery('#qunit-fixture');
+        
+        fx.html(Amm.html({
+            $: 'div',
+            data_amm_v: 'v.StaticDisplayParent',
+            style: { border: '1px solid gold', margin: '1em' },
+            $$: [
+                'Name: ', {$: 'input', type: 'text', data_amm_id: 'name', data_amm_v: '[v.Input, v.Visual]'},
+                '<br />',
+                'Age: ', {$: 'input', type: 'text', data_amm_id: 'age', data_amm_v: '[v.Input, v.Visual]'}
+            ]
+        }));
+        
+        var e = new Amm.Element({traits: ['t.Visual', 't.DisplayParent', 't.Component']});
+        var b = new Amm.Builder(fx);
+        var proto = b.calcViewPrototypes(e);
+        assert.ok(proto.length == 1, '1 view prototype was returned');
+        assert.ok(proto[0].class == 'v.StaticDisplayParent', 'view prototype has proper class');
+        assert.ok(proto[0].htmlElement == fx[0].firstChild, 'view prototype references proper htmlElement');
+        assert.ok(proto[0].element == e, 'view prototype references proper Element instance');
+        Amm.constructInstance(proto[0]);
+        
+        assert.notOk('views' in e, 'When element instance is provided to calcViewPrototypes, ');
+        
+        fx.html(Amm.html({
+            $: 'div',
+            data_amm_v: ['v.Visual'],
+            $$: {
+                $: 'input',
+                type: 'text',
+                data_amm_v: ['v.Input'],
+            }
+        }));
+        
+        var b2 = new Amm.Builder(fx[0].firstChild);
+        
+        var proto2 = b2.calcViewPrototypes(e);
+        
+        assert.equal(proto2.length, 2, 'calcViewPrototypes(element) should not include old views');
+        
+        Amm.cleanup(e);
+        
+        fx.html(Amm.html([
+            {
+                $: 'div',
+                data_amm_id: '__parent',
+                data_amm_v: ['v.Visual'],
+                $$: {
+                    $: 'input',
+                    type: 'text',
+                    data_amm_v: ['v.Input'],
+                }
+            },
+            {
+                $: 'div',
+                data_amm_id: '__parent',
+                data_amm_v: ['v.Annotated'],
+                $$: {
+                    $: 'div',
+                    'class': 'annotation a_label'
+                }
+            },
+        ]));
+        
+        var b3 = new Amm.Builder(fx);
+        
+        var proto3 = b2.calcViewPrototypes();
+        
+        assert.equal(proto3.length, 3, 'calcViewPrototypes() included three views');
+        
+    });
+    
+    QUnit.test("Amm.Builder: use builder source as element prototype", function(assert) {
+        
+        var e = new Amm.Element('<input type="text" data-amm-v="v.Input" data-amm-e="{value: 10}" />');
+        
+        assert.equal(Amm.getClass(e), 'Amm.Element', "Element was created from HTML markup");
+        assert.ok(Amm.is(e, 'Editor'), "Element has proper traits");
+        
+        var v = e.getUniqueSubscribers('Amm.View.Html.Input');
+        if (assert.ok(v.length, 'View was created')) {
+            assert.equal(jQuery(v[0].getHtmlElement()).val(), '10', 'HTML input element has proper value');
+        }
+        
+        Amm.cleanup(e);
+        
+        var jq = jQuery('<div class="lbl" data-amm-v="[v.Content, v.Visual]">The Text</div>');
+        var e2 = new Amm.Element(jq);
+        
+        assert.equal(Amm.getClass(e2), 'Amm.Element', "Element was created from jQuery result");
+        assert.ok(Amm.is(e2, 'Content'), "Element has proper traits");
+        assert.ok(Amm.is(e2, 'Visual'), "Element has proper traits");
+        assert.equal(e2.getClassName(), 'lbl', "Element properties were init");
+        assert.equal(e2.getContent(), 'The Text', "Element properties were init");
+        
+        e2.setContent('Changed Content');
+        assert.equal(jq.html(), 'Changed Content', 'Changed property is reflected in DOM');
+        
+        Amm.cleanup(e2);
+        
+    });
+        
+    
     
     
 }) ();

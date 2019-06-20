@@ -1,4 +1,5 @@
 /* global Amm */
+/* global QUnit */
 
 (function() { 
     QUnit.module("Trait.Component");
@@ -216,6 +217,8 @@
        assert.ok(t.adp.getAllNamedElements('component', true)[0] === t.adp);
        assert.ok(t.adp.getAllNamedElements('component', true)[1] === t.ac);
        assert.ok(t.adp.getAllNamedElements('component', true)[2] === t.a);
+       Amm.cleanup(tsa);
+       
     });
     
     QUnit.test("Trait.Component events", function(assert) {
@@ -305,6 +308,8 @@
         assert.ok(hasInLog(evlog, ['rejectedInScope', 'ac', 'a', ['a1', 'a2']]));
         assert.ok(hasInLog(evlog, ['acceptedInScope', 'ac', 'a', ['a1', 'a2']]));
         assert.ok(hasInLog(evlog, ['renamedInScope', 'ac', 'a', 'a1', 'a1', 'ax']));
+        Amm.cleanup(tsa);
+        
         
    });
     

@@ -203,10 +203,10 @@ Amm.Trait.Component.prototype = {
     },
     
     getNamedElement: function(name, index, bubble) {
+        if (!index || index < 0) index = 0;
         if (this._internalId && name === this._internalId && !index) return this; // always
         var res;
         if (this._namedElements[name]) {
-            if (!index || index < 0) index = 0;
             res = this._namedElements[name][index];
         }
         if (!res && bubble) {
@@ -271,7 +271,7 @@ Amm.Trait.Component.prototype = {
     _includeAllChildren: function(elements) {
         var res = [].concat(elements);
         for (var i = 0, l = elements.length; i < l; i++) {
-            if (!elements[i].Component || !elements[i].isComponent) {
+            if (!elements[i]['Component'] || !elements[i].getIsComponent()) {
                 var sub = this._includeAllChildren(elements[i].findChildElements());
                 res = res.concat(sub);
             }
@@ -419,6 +419,9 @@ Amm.Trait.Component.prototype = {
         for (var i = 0, l = ee.length; i < l; i++) {
             this._unsubscribeElement(ee[i]);
             ee[i].setComponent(null);
+            if (ee[i].getCleanupWithComponent()) {
+                ee[i].cleanup();
+            }
         }
     },
     
@@ -448,6 +451,15 @@ Amm.Trait.Component.prototype = {
         var res = this._out('childComponentStatusChangeInScope', parentComponent, component, status);
         this.callComponents('outChildComponentStatusChangeInScope', parentComponent, component, status);
         return res;
+    },
+    
+    _setComponent_Component: function(component) {
+        this.outComponentStackChange();
+    },
+    
+    outComponentStackChange: function() {
+        this.callComponents('outComponentStackChange');
+        this._out('componentStackChange');
     }
     
 };

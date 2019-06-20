@@ -42,8 +42,6 @@
         Amm.View.Abstract.stopWaitingForView(e, bogus);
         // later we will check that log doesn't receive "Bogus msg"
         
-        
-        
         assert.equal(e.findView(), undefined, 'Element doesn\'t have any views');
         
         assert.equal(log.length, 0, "Since there's no views, there was no view-related events");
@@ -101,6 +99,34 @@
         e.cleanup();
         
     });
+    
+    QUnit.test("Amm.View.Html: release dom nodes on unobserve", function(assert) {        
+        var fx = jQuery('#qunit-fixture');
+        
+        fx.html(Amm.html({
+            $: 'div', data_amm_v: 'v.Visual', data_amm_e: {},
+            $$: {
+                $: 'input', type: 'text', data_amm_v: 'v.Input'
+            }
+        }));
+        
+        var b = new Amm.Builder(fx);
+        var e = b.build()[0];
+        
+        if (assert.ok(e, 'initial element was built successfully'));
+        if (!e) {
+            return;
+        };
+        
+        assert.equal(fx.find('[data-amm-iid *= "amm_"]').length, 2, 
+            'Both view-bound HTMLElements have data-amm-iid attribute filled-in');
+            
+        Amm.cleanup(e);
+        
+        assert.equal(fx.find('[data-amm-iid *= "amm_"]').length, 0, 
+            'After element cleanup, no HTMLElement has data-amm-iid attribute filled-in');
+        
+    });
 
     QUnit.test("htmlView.setHtmlSource", function(assert) {
         
@@ -153,5 +179,178 @@
         assert.equal(e.getValue(), 'theValue');
         
     });
+    
+    QUnit.test("Amm.View.Html.Default", function(assert) {
+
+        var f = jQuery('#qunit-fixture');
+        
+        f.html("<div class='defaultView'></div> <div class='otherLocation'></div>'"
+            + " <div class='inside'></div> <div class='inside2'></div>");
+        
+        var e = new Amm.Element({
+            traits: ['t.Input', 't.Visual'],
+            className: 'eClass',
+            value: 'eValue',
+            constructDefaultViews: function() {
+                return Amm.html({
+                    $: 'div',
+                    data_amm_v: ['v.Visual'],
+                    $$: {
+                        $: 'input',
+                        type: 'text',
+                        data_amm_v: ['v.Input'],
+                    }
+                });
+            }
+        });
+        
+        var defaultElement = f.find('.defaultView');
+        
+        var v = new Amm.View.Html.Default({
+            htmlElement: defaultElement,
+            element: e
+        });
+        
+        var iv = new Amm.View.Html.Default({
+            htmlElement: f.find('.inside'),
+            replaceOwnHtmlElement: false
+        });
+        
+        assert.ok(v.getObserving(), 'Default view observes element');
+        assert.ok(f.find('div.eClass').length === 1, 'Outermost constructed view\' HTMLElement is in place');
+        assert.ok(f.find('div.defaultView').length === 0, 'Outermost constructed view\' HTMLElement replaced default view HTMLElement');
+        if (assert.ok(v.getOwnHtmlElement() !== null, 'Default view\' getOwnHtmlElement() returns non-null value after element is observed')) {
+            assert.notOk(v.getOwnHtmlElement().parentNode, 'Default view\' HTMLElement was detached from DOM tree');
+        }
+        assert.equal(f.find('input').val(), 'eValue', 'Innermost view\' HTMLElement is in place');
+        
+        v.setHtmlElement(f.find('.otherLocation'));
+        
+        v.setElement(null);
+        
+        assert.equal(e.getUniqueSubscribers('Amm.View.Abstract').length, 0, 
+            'Constucted views are detached from element when Amm.View.Html.Default is unsubscribed');
+            
+        assert.equal(f.find('[data-amm-iid *= "amm_"]').length, 0, 
+            'All views released their HTMLElements');
+            
+        iv.setElement(e);
+        
+        assert.ok(f.find('.inside .eClass').length, 'Element container is placed inside HTMLElement of ' 
+                + 'default view with replaceOwnHtmlElement := false');
+        
+        iv.setHtmlElement(f.find('.inside2'));
+        
+        assert.notOk(f.find('.inside .eClass').length, 
+            'setHtmlElement: element html container is removed from old HTMLElement...');
+        
+        assert.ok(f.find('.inside2 .eClass').length, 
+            'setHtmlElement: element html container is placed into new HTMLElement');        
+        
+        iv.setElement(null);
+        
+        assert.notOk(f.find('.inside2 .eClass').length, 'detach view: element html container removed from HTMLElement');
+        
+        assert.equal(f.find('[data-amm-iid *= "amm_"]').length, 0, 
+            'detach: All views released their HTMLElements');
+            
+        e.cleanup();
+        
+    });
+    
+    /*
+     * This test is the same as previous one, except element views' have two sibling HTML Nodes
+     */
+    QUnit.test("Amm.View.Html.Default: several top-level views", function(assert) {
+
+        var f = jQuery('#qunit-fixture');
+        
+        f.html("<div class='defaultView'></div> <div class='otherLocation'></div>'"
+            + " <div class='inside'></div> <div class='inside2'></div>");
+        
+        var e = new Amm.Element({
+            traits: ['t.Input', 't.Visual', 't.Annotated'],
+            className: 'eClass',
+            value: 'eValue',
+            label: 'The Label',
+            constructDefaultViews: function() {
+                return Amm.html([
+                    {
+                        $: 'div',
+                        data_amm_id: '__parent',
+                        data_amm_v: ['v.Visual'],
+                        $$: {
+                            $: 'input',
+                            type: 'text',
+                            data_amm_v: ['v.Input'],
+                        }
+                    },
+                    {
+                        $: 'div',
+                        data_amm_id: '__parent',
+                        data_amm_v: ['v.Annotated'],
+                        $$: {
+                            $: 'div',
+                            'class': 'annotation a_label'
+                        }
+                    },
+                ]);
+            }
+        });
+        
+        var defaultElement = f.find('.defaultView');
+        
+        var v = new Amm.View.Html.Default({
+            htmlElement: defaultElement,
+            element: e
+        });
+        
+        var iv = new Amm.View.Html.Default({
+            htmlElement: f.find('.inside'),
+            replaceOwnHtmlElement: false
+        });
+        
+        assert.ok(v.getObserving(), 'Default view observes element');
+        assert.ok(f.find('div.eClass').length === 1, 'Outermost constructed view\' HTMLElement is in place');
+        assert.ok(f.find('div.defaultView').length === 0, 'Outermost constructed view\' HTMLElement replaced default view HTMLElement');
+        if (assert.ok(v.getOwnHtmlElement() !== null, 'Default view\' getOwnHtmlElement() returns non-null value after element is observed')) {
+            assert.notOk(v.getOwnHtmlElement().parentNode, 'Default view\' HTMLElement was detached from DOM tree');
+        }
+        assert.equal(f.find('input').val(), 'eValue', 'Innermost view\' HTMLElement is in place');
+        assert.equal(f.find('.annotation.a_label').html(), 'The Label', 'Annotation is in place');
+        
+        v.setHtmlElement(f.find('.otherLocation'));
+        
+        v.setElement(null);
+        
+        assert.equal(e.getUniqueSubscribers('Amm.View.Abstract').length, 0, 
+            'Constucted views are detached from element when Amm.View.Html.Default is unsubscribed');
+            
+        assert.equal(f.find('[data-amm-iid *= "amm_"]').length, 0, 
+            'All views released their HTMLElements');
+            
+        iv.setElement(e);
+        
+        assert.ok(f.find('.inside .eClass').length, 'Element container is placed inside HTMLElement of ' 
+                + 'default view with replaceOwnHtmlElement := false');
+        
+        iv.setHtmlElement(f.find('.inside2'));
+        
+        assert.notOk(f.find('.inside .eClass').length, 
+            'setHtmlElement: element html container is removed from old HTMLElement...');
+        
+        assert.ok(f.find('.inside2 .eClass').length, 
+            'setHtmlElement: element html container is placed into new HTMLElement');        
+        
+        iv.setElement(null);
+        
+        assert.notOk(f.find('.inside2 .eClass').length, 'detach view: element html container removed from HTMLElement');
+        
+        assert.equal(f.find('[data-amm-iid *= "amm_"]').length, 0, 
+            'detach: All views released their HTMLElements');
+            
+        e.cleanup();
+        
+    });    
     
 }) ();

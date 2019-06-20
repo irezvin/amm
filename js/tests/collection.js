@@ -791,7 +791,7 @@
             res[res.items[i].getName()] = res.items[i];
         }
         return res;
-    }
+    };
     
     var names = function(a) {
         if (a['Amm.Array']) a = a.getItems();
@@ -800,7 +800,7 @@
             res.push(a[i].getName() + ' ' + a[i].getGroup() + ' ' + a[i].getPoints());
         }
         return res;
-    }
+    };
     
     QUnit.test("Collection.sorter", function(assert) {
         
@@ -1042,7 +1042,6 @@
             }
         });
         
-        console.log(exp.getValue());
         assert.ok(exp.getValue() === i.d, 'expression that accesses `byKey` collection property returns correct item');
         
         exp.setVars('_x', 'key');
@@ -1052,7 +1051,6 @@
         assert.ok(expVal === i.a, 'collection.byKey: when item key is changed, new result is returned');
         
         d.exp = exp;
-        return;
         
         numChanges = 0;
         c.setItems([]);

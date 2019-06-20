@@ -6,6 +6,8 @@ Amm.Trait.Select = function() {
 // compares two values. Order doesn't matter. Multiple occurances of same value are same as one.
 // comparison is non-strict
 Amm.Trait.Select.valuesAreSame = function(a, b) {
+    if (a === undefined && b !== undefined) return false;
+    if (b === undefined && a !== undefined) return false;
     if (a === b) return true;
     if (a && a['Amm.Array']) a = a.getItems();
     if (b && b['Amm.Array']) b = b.getItems();
@@ -66,9 +68,13 @@ Amm.Trait.Select.prototype = {
         var instances = [];
         for (var i = 0; i < items.length; i++) {
             var item;
-            var c = Amm.getClass(items[i]);
-            if (!c) item = new Amm.Trait.Select.Option(items[i]);
-                else item = items[i];
+            if (typeof items[i] !== 'object') {
+                item = new Amm.Trait.Select.Option({label: items[i], value: items[i]});
+            } else {
+                var c = Amm.getClass(items[i]);
+                if (!c) item = new Amm.Trait.Select.Option(items[i]);
+                    else item = items[i];
+            }
             instances.push(item);
         }
         this.getOptionsCollection().setItems(instances);
@@ -155,6 +161,7 @@ Amm.Trait.Select.prototype = {
     },
     
     _correctValueForSingleSelect: function() {
+        if (this._lockSingleValueCorrection) return;
         var options = this.getOptionsCollection();
         for (var i = 0, l = options.length; i < l; i++) {
             var op = options[i];
@@ -185,9 +192,10 @@ Amm.Trait.Select.prototype = {
     setObjects: function(objects) {
         if (!objects) {
             this._detachObjects();
+            return;
         }
         if (!(objects instanceof Array || Amm.is(objects, 'Amm.Array')))
-            throw new Error("objects must be FALSEable, Array or Amm.Array");
+            throw new Error("objects must be FALSEable, Array or Amm.Array; provided: " + Amm.describeType(objects));
         if (!this._objectsMapper) this._objectsMapper = this._createObjectsMapper(objects);
     },
     
@@ -218,9 +226,13 @@ Amm.Trait.Select.prototype = {
         // TODO
     },
     
+    _lockSingleValueCorrection: false,
+    
     setValue: function(value) {
         var o = this._numChanges;
+        this._lockSingleValueCorrection = true;
         this.getSelectionCollection().setValue(value);
+        this._lockSingleValueCorrection = false;
         if (this._numChanges !== o) return true; // compat. with 'set' behaviour
     },
 

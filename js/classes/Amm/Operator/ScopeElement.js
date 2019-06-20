@@ -80,6 +80,7 @@ Amm.Operator.ScopeElement.prototype = {
             this._unsub(oldComponent, 'acceptedInScope');
             this._unsub(oldComponent, 'rejectedInScope');
             this._unsub(oldComponent, 'renamedInScope');
+            this._unsub(oldComponent, 'componentStackChange');
             if (this._componentOnly) {
                 this._unsub(oldComponent, 'childComponentStatusChangeInScope');
             }
@@ -89,13 +90,16 @@ Amm.Operator.ScopeElement.prototype = {
             var map = {
                 acceptedInScope: this._acceptedInScope,
                 rejectedInScope: this._rejectedInScope,
-                renamedInScope: this._renamedInScope
+                renamedInScope: this._renamedInScope,
+                componentStackChange: this._componentStackChange,
             };
             if (this._componentOnly) {
                 map['childComponentStatusChangeInScope'] = this._childComponentStatusChangeInScope;
             }
             this._sub(component, map);
         }
+        if (this._isEvaluating) return;
+        this.evaluate();
     },
     
     _acceptedInScope: function(component, elements) {
@@ -128,6 +132,11 @@ Amm.Operator.ScopeElement.prototype = {
         }
         if (!this._idExists || !this._idValue) return;
         if (id === this._idValue || oldId === this._idValue) this.evaluate();
+    },
+    
+    _componentStackChange: function() {
+        if (this._isEvaluating) return;
+        this.evaluate();
     },
     
     _childComponentStatusChangeInScope: function(originComponent, component, status) {

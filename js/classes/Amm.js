@@ -722,8 +722,9 @@ Amm = {
      */
     constructInstance: function(options, baseClass, defaults, setToDefaults, requirements) {
         var instance;
-        if (typeof options === 'string' || typeof options === 'function')
+        if (typeof options === 'string' || typeof options === 'function') {
             options = {class: options};
+        }
         else if (!options) options = {};
         else if (typeof options !== 'object')
             throw Error("`options` must be a string, an object, a function or FALSEable value");
@@ -859,6 +860,8 @@ Amm = {
     },
     
     /**
+     * Creates HTML string from provided definition. Does NOT create DOM nodes.
+     * 
      * Definition is:
      *
      * string - will return string
@@ -870,7 +873,8 @@ Amm = {
      *      value may be scalar, hash or arary.
      *      
      *  scalar value will be converted to string and added as-is.
-     *  hashes and arrays will be converted to JSON and inserted into attribute, except if attr: is style.
+     *  
+     *  hashes and arrays will be converted to JSON and inserted into attribute, except for attr == 'style'.
      *  For 'style' attribute hash keys will be recursively merged using '-' as glue string, i.e.
      *  
      *      { style: { display: 'block', background: { color: 'red', image: 'url("foo.gif")', repeat: 'none' } } }
@@ -881,10 +885,13 @@ Amm = {
      *  
      *  $noIndent special attribute means element's content won't be indented (useful for <textarea>)
      *  $$: null means element will not have closing tag (i.e. <img />)
+     *  
      *  Attributes with FALSE value will be ignored.
      *  Attributes with TRUE value will have same value as the name.
+     *  By default, underscores ("_") will be converted to dashes in attribue names; that can be overridden by
+     *  providing "dontReplaceUnderscores" === true.
      */
-    html: function(definition, indent, indentIncrease) {
+    html: function(definition, indent, indentIncrease, dontReplaceUnderscores) {
         if (indent === undefined) indent = 0;
         if (indentIncrease === undefined) indentIncrease = 4;
         var res, i, l, strIndent = '', strIndentIncrease = '';
@@ -895,7 +902,7 @@ Amm = {
             res = '';
             for (i = 0, l = definition.length; i < l; i++) {
                 if (i > 0) res += '\n';
-                res += Amm.html(definition[i], indent, indentIncrease);
+                res += Amm.html(definition[i], indent, indentIncrease, dontReplaceUnderscores);
             }
             return res;
         }
@@ -924,6 +931,7 @@ Amm = {
                     attrValue = JSON.stringify(attrValue).replace(/'/g, '&#39;');
                 }
             }
+            if (!dontReplaceUnderscores) i = i.replace(/_/g, '-');
             res += ' ' + i + "='" + attrValue + "'";
         }
         if (definition.$$ === null) {
@@ -937,9 +945,24 @@ Amm = {
         var sub = definition['$noIndent']? 0 : indent + indentIncrease;
         res += '>';
         if (sub) res += '\n';
-        res += Amm.html(definition.$$, sub, indentIncrease);
+        res += Amm.html(definition.$$, sub, indentIncrease, dontReplaceUnderscores);
         if (sub) res += '\n' + strIndent;
         res += '</' + definition.$ + '>';
+        return res;
+    },
+    
+    getHtmlElements: function(elementOrHTMLElement) {
+        if (elementOrHTMLElement instanceof window.HTMLElement) {
+            elementOrDOMNode = Amm.findElement(elementOrHTMLElement);
+        }
+        if (!elementOrHTMLElement) return [];
+        var ob = elementOrHTMLElement.getUniqueSubscribers('Amm.View.Html');
+        var res = [];
+        for (var i = 0; i < ob.length; i++) {
+            var node = ob[i].getHtmlElement();
+            if (node) res.push(node);
+        }
+        res = Amm.Array.unique(res);
         return res;
     }
     

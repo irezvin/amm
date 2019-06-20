@@ -1,7 +1,6 @@
 /* global Amm */
 Amm.Operator = function()  {
     this._subs = [];
-    this.id = ++Amm.Operator._iid;
 };
 
 Amm.Operator.CONTEXT_ID = 1;
@@ -23,8 +22,6 @@ Amm.Operator.CONTENT_PERIODICALLY_CHECKED = 2;
 
 // Child operand reports changes in the content and we shouldn't bother
 Amm.Operator.CONTENT_OPERAND_REPORTED = 4;
-
-Amm.Operator._iid = 0;
 
 Amm.Operator.prototype = {
 

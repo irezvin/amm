@@ -1,7 +1,6 @@
 /* global Amm */
 
 Amm.DomHolder = function() {
-    Amm.registerItem(this);
 };
 
 Amm.DomHolder.find = function(selector, inside, throwIfNotFound) {
@@ -26,6 +25,7 @@ Amm.DomHolder.prototype = {
     
     _notifyDomNodeConflict: function(domNode, otherDomHolder) {
         if (this._domExclusive && !this._domCompat(otherDomHolder)) {
+            console.trace();
             throw Error("Element already acquired by a different DomHolder");
         }
     },
@@ -40,6 +40,7 @@ Amm.DomHolder.prototype = {
     },
     
     _acquireDomNode: function(selector) {
+        Amm.registerItem(this);
         var t = this, att = Amm.domHolderAttribute;
         jQuery(selector).each(function(i, domNode) {
             var v = (domNode.getAttribute(att) || ''), idx = v.indexOf(' ' + t._amm_id);
@@ -64,7 +65,7 @@ Amm.DomHolder.prototype = {
             if (domNode.hasAttribute(att)) {
                 var v = domNode.getAttribute(att).replace(id, '');
                 if (v.length) domNode.setAttribute(att, v);
-                    else domNode.removeAttribute(v);
+                    else domNode.removeAttribute(att);
             }
         });
     }

@@ -78,7 +78,9 @@ Amm.View.Html.Select.prototype = {
             var item = cv.getHtmlElementItem(this._htmlElement.options[i]);
             if (!item) continue;
             var val = item.getValue();
-            if (!multi) return val;
+            if (!multi) {
+                return val;
+            }
             else res.push(val);
         }
         if (!multi) return null;

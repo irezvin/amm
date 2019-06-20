@@ -125,7 +125,9 @@ Amm.Instantiator.Variants.prototype = {
     
     destruct: function(instance) {
         this.forgetInstance(instance);
-        if (instance.cleanup) instance.cleanup();
+        if (instance.cleanup) {
+            instance.cleanup();
+        }
     },
     
     setMatches: function(objects, matches) {

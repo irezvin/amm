@@ -32,7 +32,9 @@ Amm.Instantiator.Proto.prototype = {
     },
     
     destruct: function(object) {
-        if (object.cleanup) object.cleanup();
+        if (object.cleanup) {
+            object.cleanup();
+        }
     }
     
 };

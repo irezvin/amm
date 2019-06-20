@@ -250,9 +250,9 @@ Amm.ArrayMapper.prototype = {
     },
     
     _unsubscribeSort: function() {
-        this._filter.unsubscribe('matchesChange', this._handleFilterMatchesChange, this);
-        this._filter.unsubscribe('needSort', this._handleSortNeedSort, this);
-        this._filter.setObservedObjects([]);
+        this._sort.unsubscribe('matchesChange', this._handleFilterMatchesChange, this);
+        this._sort.unsubscribe('needSort', this._handleSortNeedSort, this);
+        this._sort.setObservedObjects([]);
     },
     
     _handleFilterMatchesChange: function(items, matches) {
@@ -557,6 +557,10 @@ Amm.ArrayMapper.prototype = {
     _construct: function(srcItem, pass) {
         if (!this._instantiator) return srcItem;
         if (this._instantiatorIsFn) return this._instantiator(srcItem, this);
+        if (this._instantiator.getFilter) {
+            var f = this._instantiator.getFilter();
+            if (f && f !== this._filter) pass = undefined;
+        }
         return this._instantiator.construct(srcItem, pass, this);
     },
     

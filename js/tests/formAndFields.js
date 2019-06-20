@@ -1,4 +1,5 @@
 /* global Amm */
+/* global QUnit */
 
 (function() {
 
@@ -230,6 +231,9 @@
             assert.equal(e.getFieldLabel(), 'TheLabel', 'Late sync: label');
             assert.equal(e.getFieldRequired(), true, 'Late sync: required');
             assert.deepEqual(e.getFieldErrors(), ['XX', 'YY'], 'Late sync: errors');
+            
+        Amm.cleanup(e);
+            
     });
     
     QUnit.test("Field.validationExpressions", function(assert) {
@@ -265,6 +269,8 @@
         age.setFieldValue(12);
         
             assert.deepEqual(err, null);
+            
+        Amm.cleanup(age, experience);            
             
     });
     
@@ -500,7 +506,8 @@
         
             assert.ok(f.validate(), 'form.validate() is TRUE after sub-field isn\'t applied');
             assert.deepEqual(f.getFieldErrors(), null, 'form doesn\'t have errors when it\'s valid');
-        
+            
+        Amm.cleanup(f, a, b);
         
     });
     

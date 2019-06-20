@@ -66,6 +66,46 @@ Amm.Builder.prototype = {
     
     problems: null,
     
+    _parent: null,
+    
+    calcPrototypes: function() {
+        return this.build(true);
+    },
+    
+    calcViewPrototypes: function(forElementOrPrototype) {
+        var res, eProto;
+        var tmp = this._parent;
+        if (forElementOrPrototype) {
+            this._parent = new Amm.Builder.Node({e: forElementOrPrototype});
+            if (Amm.getClass(forElementOrPrototype)) {
+                Amm.is(forElementOrPrototype, 'Amm.Element', 'forElement');
+                this._parent.id = forElementOrPrototype.getId();
+            } else {
+                this._parent.id = forElementOrPrototype.id || null;
+            }
+        } else {
+            this._parent = new Amm.Builder.Node({e: {}});
+        }
+        try {
+            eProto = this.build(true);
+            if (eProto.length !== 1 || !eProto[0].views || !eProto[0].views.length) {
+                console.log({fe: forElementOrPrototype, ep: eProto});
+                var reason;
+                if (eProto.length !== 1) reason = "found " + eProto.length + " top-level elements";
+                else if (!eProto[0].views || !eProto[0].views.length) reason = "no views defined for top-level element";
+                throw new Error("Amm.Builder: cannot calcViewPrototypes(): " + reason);
+            } res = eProto[0].views;
+            if (forElementOrPrototype) {
+                for (var i = 0; i < res.length; i++) res[i].element = forElementOrPrototype;
+            }
+        } catch (e) {
+            this._parent = tmp;
+            throw e;
+        }
+        this._parent = tmp;
+        return res;
+    },
+    
     build: function(prototypesOnly) {
         var root = this.selector;
         var tmp = this._globalIds;
@@ -105,6 +145,12 @@ Amm.Builder.prototype = {
             htmlElement[scProp] = allNodes.length;
             allNodes.push(node);
         });
+        if (this._parent) {
+            rootNodes.push(this._parent);
+            
+            // line below calls infinite recursing with _detectChildrenConnectedByIds/_detectConnectedNodes
+            // allNodes.push(this._parent);
+        }
         for (var i = 0, l = allNodes.length; i < l; i++) {
             var node = allNodes[i];
             var htmlElement = node.htmlElement;
@@ -113,6 +159,10 @@ Amm.Builder.prototype = {
                 node.parent = allNodes[pp[scProp]];
                 allNodes[pp[scProp]].children.push(node);
             } else {
+                if (this._parent) {
+                    node.parent = this._parent;
+                    this._parent.children.push(node);
+                }
                 rootNodes.push(node);
             }
         }
@@ -175,12 +225,10 @@ Amm.Builder.prototype = {
         return n;
     },
 
+    // marks two nodes as semantically related to one element and makes necessary changes
+    // (when we already decided that they are)
     _connect: function(node, toNode) {
         if (node.e || toNode.e) node.connected.groupHasElement = true;
-        this._mergeConnected(node, toNode);
-    },
-    
-    _mergeConnected: function(node, toNode) {
         var l = node.connected.length;
         var x;
         x = Amm.Array.diff(toNode.connected, node.connected);
@@ -195,18 +243,29 @@ Amm.Builder.prototype = {
         }
     },
     
-    _detectConnectedChildren: function(node, otherNode) {
+    /**
+     * Searches descendant nodes between nodeWithChildren' child nodes 
+     * that can be possibly connected to node `node` using `id`.
+     * Doesn't descend into children that have 'id' set, but it is different
+     * (children that have no id will be scanned, but not 'connected')
+     * Only descendants that have same 'id' are eligible to connecting
+     */
+    
+    _detectChildrenConnectedByIds: function(node, nodeWithChildren) {
         if (!node.id) return;
-        for (var i = 0, l = otherNode.children.length; i < l; i++) {
-            var child = otherNode.children[i];
+        for (var i = 0, l = nodeWithChildren.children.length; i < l; i++) {
+            var child = nodeWithChildren.children[i];
             if (child === node) continue;
-            if (child.id && child.id !== node.id) {
+            
+            // TODO: descend to connected nodes, not only nodes with same id
+            if (child.id && child.id !== node.id) { 
                 continue;
             }
+            
             if (child.id === node.id) {
                 this._connect(node, child);
             }
-            this._detectConnectedChildren(node, child);
+            this._detectChildrenConnectedByIds(node, child);
         }
     },
     
@@ -219,8 +278,12 @@ Amm.Builder.prototype = {
                 }
             }
             for (p = node.parent; p; p = p.parent) {
+                if (node.id === '__parent') {
+                    node.id = null;
+                    this._connect(node, p);
+                }
                 if (p.id === node.id) this._connect(node, p);
-                this._detectConnectedChildren(node, p);
+                this._detectChildrenConnectedByIds(node, p);
             }
         }
         this._detectConnectedRecursive(node.children);
@@ -289,28 +352,45 @@ Amm.Builder.prototype = {
             if (node.connected.alreadyBuilt) return res;
         }
         
-        var proto = node.e || {};
-        if (!proto.views) proto.views = [];
-        proto.views = proto.views.concat(this._getAllViews(node));
-        for (var i = 0, l = proto.views.length; i < l; i++) {
-            if (!proto.views[i].htmlElement) {
-                proto.views[i].htmlElement = node.htmlElement;
+        var nodePrototypeOrElement = node.e || {};
+        var views;
+        
+        // check if we have Amm.Element instance provided instead of node prototype
+        if (nodePrototypeOrElement['Amm.Element']) {
+            if (!node.connected.views) node.connected.views = [];
+            views = node.connected.views;
+        } else {
+            if (!nodePrototypeOrElement.views) nodePrototypeOrElement.views = [];
+            views = nodePrototypeOrElement.views;
+        }
+            
+        views.push.apply(views, this._getAllViews(node));
+        if (!views.length) views.push({'class': 'Amm.View.Html.Default', reportMode: this.reportMode});
+        for (var i = 0, l = views.length; i < l; i++) {
+            if (!views[i].htmlElement) {
+                views[i].htmlElement = node.htmlElement;
             }
         }
-        if (node.id && !proto.id) 
-            proto.id = node.id;
-        if (!node.parent && this.topLevelComponent && !('component' in proto)) {
-            proto.component = this.topLevelComponent;
+        
+        if (node.id && !nodePrototypeOrElement.id) 
+            nodePrototypeOrElement.id = node.id;
+        if (!node.parent && this.topLevelComponent && !('component' in nodePrototypeOrElement)) {
+            nodePrototypeOrElement.component = this.topLevelComponent;
         }
-        if (!proto.views.length) {
-            var n = node;
-            if (node.connected && node.connected.length) n = node.connected;
-            this._regProblem(n, 'Element has no defined views');
-        }
+        
         var element;
-        if (prototypesOnly) element = Amm.override({'class': 'Amm.Element'}, proto);
-        else element = new Amm.Element(proto);
-        if (topLevel && (!node.parent || node.conParent && !node.parent.parent)) topLevel.push(element);
+        
+        if (nodePrototypeOrElement['Amm.Element']) { // we have prototype instance
+            element = {'class': 'Amm.Element', views: views};
+        } else {
+            element = Amm.override({'class': 'Amm.Element'}, nodePrototypeOrElement);
+        }
+        
+        
+        if (!prototypesOnly) {
+            element = Amm.constructInstance(nodePrototypeOrElement, 'Amm.Element');
+        }
+        if (topLevel && (!node.parent || node.parent === this._parent || node.conParent && !node.parent.parent)) topLevel.push(element);
         res.push(element);
         node.connected.alreadyBuilt = true;
         return res;
@@ -343,11 +423,20 @@ Amm.Builder.prototype = {
     
 };
 
-Amm.Builder.calcPrototypeFromSource = function(builderSource, dontClone) {
+Amm.Builder.isPossibleBuilderSource = function(source) {
+    if (!source) return false;
+    if (source['Amm.Builder.Ref']) return true;
+    if (typeof source === 'object' && 'parentNode' in source && 'tagName' in source) return true;
+    if (source.jquery) return true;
+    if (typeof source === 'string' && source.match(/^\<(?:.|[\n])*\>$/)) return true;
+    return false;
+};
+
+Amm.Builder.calcPrototypeFromSource = function(builderSource, dontClone, views) {
     if (!builderSource) throw Error("`builderSource` is required");
     var source;
     if (typeof builderSource === 'string') {
-        if (builderSource.match(/\s*<.*>\s*$/)) dontClone = true;
+        if (builderSource.match(/\s*<(?:.|[\n])*>\s*$/)) dontClone = true;
         source = builderSource;
     } else if (builderSource['Amm.Builder.Ref']) {
         source = builderSource.resolve();
@@ -356,18 +445,23 @@ Amm.Builder.calcPrototypeFromSource = function(builderSource, dontClone) {
         source = builderSource;
     }
     else throw Error ("Unsupported builderSource type: " + Amm.describeType(builderSource));
-    
     var jq = jQuery(source);
     if (!jq.length) throw Error("Cannot resolve builderSource reference");
+    if (dontClone === undefined) dontClone = jq.attr('data-amm-dont-build') === undefined;
     if (!dontClone) jq = jq.clone();
     jq.removeAttr('data-amm-dont-build');
     var builder = new Amm.Builder(jq);
-    var proto = builder.build(true);
+    var proto = views? builder.calcViewPrototypes() : builder.calcPrototypes(true);
     
     if (!proto.length) throw Error("Builder returned no prototypes");
-    if (proto.length > 1) throw Error("Builder returned more than one prototype");
-    if (!proto[0].class) proto[0].class = 'Amm.Element';
-    return proto[0];
+    if (!views) {
+        if (proto.length > 1) throw Error("Builder returned more than one prototype");
+        if (!proto[0].class) proto[0].class = 'Amm.Element';
+        return proto[0];
+    }
+    return proto;
 };
+
+
 
 

@@ -293,7 +293,7 @@ Amm.Expression.prototype = {
         this._src = string;
         if (!Amm.Expression._builder) {
             Amm.Expression._parser = new Amm.Expression.Parser();
-            Amm.Expression._builder = new Amm.Operator.Builder();
+            Amm.Expression._builder = new Amm.Expression.Builder();
             Amm.Expression._builder.configureParser(Amm.Expression._parser);
         }
         this.setOperator(Amm.Expression._builder.unConst(Amm.Expression._parser.parse(string)));

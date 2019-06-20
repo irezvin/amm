@@ -1,10 +1,14 @@
 /* global Amm */
-/* Amm.Extend (Amm.Operator.Builder, Amm.Operator) */
+/* Amm.Extend (Amm.Expression.Builder, Amm.Operator) */
 
-Amm.Operator.Builder = function() {
+/**
+ * Converts AST, which was returned by Amm.Expression.Parser, into ready-to-evaluate tree of Amm.Operator instances
+ */
+
+Amm.Expression.Builder = function() {
 };
 
-Amm.Operator.Builder.prototype = {
+Amm.Expression.Builder.prototype = {
 
     build: function(lexType, _) {
         var args = Array.prototype.slice.call(arguments, 1);

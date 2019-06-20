@@ -40,7 +40,9 @@ Amm.View.Html.prototype = {
             htmlElement = this._implResolveHtmlElement(htmlElement);
         var old = this._htmlElement;
         if (old === htmlElement) return;
-        if (old) this._releaseDomNode(old);
+        if (old) {
+            this._releaseDomNode(old);
+        }
         this._htmlElement = htmlElement;
         this._doSetHtmlElement(htmlElement, old);
         this._observeElementIfPossible();
@@ -123,6 +125,14 @@ Amm.View.Html.prototype = {
     
     _acquireResources: function() {
         this._acquireDomNode(this._htmlElement);
+    },
+    
+    _releaseResources: function() {
+        if (this._htmlElement) this._releaseDomNode(this._htmlElement);
+    },
+    
+    _cleanup_AmmViewHtml: function() {
+        this.setHtmlElement(null);
     }
     
 };

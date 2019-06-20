@@ -134,7 +134,7 @@
         assert.ok(d[0].getSrc2() === orig1, 
             "different dest instance had different property; still associated with orig instance");
         
-        am.cleanup();
+        Amm.cleanup(am, dd);
         
     });
 
@@ -262,7 +262,7 @@
         );
         
         mapper.cleanup();
-        Amm.cleanup(sam.cars);
+        Amm.cleanup(sam.cars, filter);
         
     });
     
@@ -329,6 +329,9 @@
             'ZAZ Petrol 1981',
             'VW Petrol 1980',
         ]]);
+    
+        mapper.cleanup();
+        Amm.cleanup(sam.cars, sorter);
         
     });
     

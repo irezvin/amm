@@ -120,8 +120,6 @@ Amm.Collection.prototype = {
     
     _requirements: null,
     
-    _prototype: null,
-
     _assocProperty: null,
     
     _assocInstance: null,

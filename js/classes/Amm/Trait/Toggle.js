@@ -294,7 +294,7 @@
     _getOwnValue: function() {
         if (!this._enabled) return;
         if (this._checked) return this._checkedValue;
-        if (!this._isRadio && this._uncheckedValue) return this._uncheckedValue;
+        if (!this._isRadio) return this._uncheckedValue;
     },
     
     findGroupItems: function(radiosOnly, excludeThis) {

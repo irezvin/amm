@@ -89,7 +89,9 @@ Amm.Trait.DisplayParent.prototype = {
         var removed = Amm.Array.symmetricDiff(cut, insert);
         var added = Amm.Array.symmetricDiff(insert, cut);
         if (removed) this._closestComponent.rejectElements(removed);
-        if (added) this._closestComponent.acceptElements(added);
+        if (added) {
+            this._closestComponent.acceptElements(added);
+        }
     },
     
     setPassDisplayChildrenToComponent: function(passDisplayChildrenToComponent) {

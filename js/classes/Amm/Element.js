@@ -7,57 +7,29 @@
 Amm.Element = function(options) {
     this._beginInit();
     this._cleanupList = [];
-    Amm.registerItem(this);
     if (!options) {
         Amm.WithEvents.call(this);
         this._endInit();
         return;
     }
-    var traits = [], hasTraits = options.traits;
+    var traits = this._getDefaultTraits(), hasTraits = options.traits;
     var views = [];
-    if (options.builderSource) {
-        var extraOptions = Amm.Builder.calcPrototypeFromSource(options.builderSource);
-        var newOptions = options.builderPriority? 
-            Amm.override({}, options, extraOptions) : Amm.override(extraOptions, options);
-        delete newOptions.builderSource;
-        delete newOptions.builderPriority;
-        if (delete newOptions.class);
-        options = newOptions;
-    }
-    if (options.views) {
-        for (var i = 0, l = options.views.length; i < l; i++) {
-            var view = options.views[i];
-            if (!Amm.getClass(view)) {
-                if (typeof view === 'string') view = {class: view};
-                var cl = view['class'];
-                if (!cl) {
-                    throw Error("views[" + i + "].class not provided");
-                }
-                var cr = Amm.getFunction(cl);
-                if (!cr.prototype['Amm.View.Abstract'])
-                    throw Error("View class must be a descendant of Amm.View.Abstract");
-                var tmp = view.class, hash = view;
-                delete view.class;
-                view = new cr(view);
-                hash.class = tmp; // add class back to the options hash
-            }
-            if (!view['Amm.View.Abstract']) throw Error("Created instance isn't a descendant of Amm.View.Abstract");
-            views.push(view);
-            if (!hasTraits) traits = traits.concat(view.getSuggestedTraits());
-        }
-        delete options.views;
-    }
+
+    options = Amm.Element._checkAndApplyOptionsBuilderSource(options);
+    
+    Amm.Element._checkAndApplyOptionsViews(options, views, hasTraits? null : traits);
+    
     if (options.extraTraits) {
         if (hasTraits) throw Error("extraTraits and traits options cannot be used simultaneously");
         traits = traits.concat(options.extraTraits);
         delete options.extraTraits;
     }
     if (hasTraits) {
-        traits = options.traits;
-        if (!(traits instanceof Array)) traits = [traits];
+        if (options.traits instanceof Array) traits = traits.concat(options.traits);
+        else traits.push(options.traits);
         delete options.traits;    
     }
-    if (traits) {
+    if (traits.length) {
         var usedTraits = [];
         for (var i = 0; i < traits.length; i++) {
             var trait = Amm.getFunction(traits[i]);
@@ -96,6 +68,50 @@ Amm.Element = function(options) {
     }
 };
 
+Amm.Element._checkAndApplyOptionsBuilderSource = function(options) {
+    if (Amm.Builder.isPossibleBuilderSource(options)) {
+        options = {
+            builderSource: options
+        };
+    }
+    if (!options.builderSource) return options;
+    var extraOptions = Amm.Builder.calcPrototypeFromSource(options.builderSource);
+    var newOptions = options.builderPriority? 
+        Amm.override({}, options, extraOptions) : Amm.override(extraOptions, options);
+    delete newOptions.builderSource;
+    delete newOptions.builderPriority;
+    delete newOptions.class;
+    return newOptions;
+};
+
+Amm.Element._checkAndApplyOptionsViews = function(options, views, traits) {
+    if (!options.views) return;
+    for (var i = 0, l = options.views.length; i < l; i++) {
+        var view = options.views[i];
+        if (!Amm.getClass(view)) {
+            if (typeof view === 'string') view = {class: view};
+            var cl = view['class'];
+            if (!cl) {
+                throw Error("views[" + i + "].class not provided");
+            }
+            var cr = Amm.getFunction(cl);
+            if (!cr.prototype['Amm.View.Abstract'])
+                throw Error("View class must be a descendant of Amm.View.Abstract");
+            var tmp = view.class, hash = view;
+            delete view.class;
+            view = new cr(view);
+            hash.class = tmp; // add class back to the options hash
+        }
+        if (!view['Amm.View.Abstract'])
+            throw Error("Created instance isn't a descendant of Amm.View.Abstract");
+        views.push(view);
+        if (traits) {
+            traits.push.apply(traits, view.getSuggestedTraits());
+        }
+    }
+    delete options.views;
+};
+
 Amm.Element.regInit = function(element, key, fn) {
     if (element._initLevel === false) fn.call(element);
     element._init = element._init || {};
@@ -119,6 +135,7 @@ Amm.Element.prototype = {
     // null means "check parent cleanupChildren value", true and false - specific action on parent cleanup event
     _cleanupWithParent: null,
     
+    _cleanupWithComponent: true,
     /*
      * Path to the non-exiting (yet) parent for deferred association
      */
@@ -351,9 +368,19 @@ Amm.Element.prototype = {
     },
 
     getCleanupWithParent: function() { return this._cleanupWithParent; },
-    
-    createProperty: function(propName, defaultValue, onChange) {
-        return Amm.createProperty(this, propName, defaultValue, onChange);
+
+    setCleanupWithComponent: function(cleanupWithComponent) {
+        cleanupWithComponent = !!cleanupWithComponent;
+        var oldCleanupWithComponent = this._cleanupWithComponent;
+        if (oldCleanupWithComponent === cleanupWithComponent) return;
+        this._cleanupWithComponent = cleanupWithComponent;
+        return true;
+    },
+
+    getCleanupWithComponent: function() { return this._cleanupWithComponent; },
+
+    createProperty: function(propName, defaultValue, onChange, defineProperty) {
+        return Amm.createProperty(this, propName, defaultValue, onChange, defineProperty);
     },
 
     cleanup: function() {
@@ -387,7 +414,9 @@ Amm.Element.prototype = {
         var oldComponent = this._component;
         if (oldComponent === component) return;
         this._component = component;
-        if (component) component.acceptElements([this]);
+        if (component) {
+            component.acceptElements([this]);
+        }
         this._callOwnMethods('_setComponent_', component, oldComponent);
         this._setClosestComponent();
         this.outComponentChange(component, oldComponent);
@@ -399,7 +428,7 @@ Amm.Element.prototype = {
     outComponentChange: function(component, oldComponent) {
         this._out('componentChange', component, oldComponent);
     },
-        
+    
     getClosestComponent: function() {
         return this._component;
     },
@@ -557,6 +586,19 @@ Amm.Element.prototype = {
                 continue;
             return s[i];
         }
+    },
+    
+    _getDefaultTraits: function() {
+        return [];
+    },
+    
+    /**
+     * Returns prototype, prototypes or instance or array of instances of 
+     * views, when requested by Amm.View.Html.Default.
+     * 
+     * To be overridden in concrete sub-classes.
+     */    
+    constructDefaultViews: function() {
     }
     
 };
