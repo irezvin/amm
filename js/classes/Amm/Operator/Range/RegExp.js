@@ -23,7 +23,7 @@ Amm.Operator.Range.RegExp.prototype = {
     OPERANDS: ['source', 'regexp'],
     
     supportsAssign: false,
-
+    
     _doEvaluate: function(again) {
         var source = this._getOperandValue('source', again);
         var regexp = this._getOperandValue('regexp', again);

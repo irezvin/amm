@@ -17,6 +17,10 @@ Amm.Operator.Range.prototype = {
     OPERANDS: ['source'],
     
     supportsAssign: false,
+    
+    getReportsContentChanged: function() {
+        return true;
+    },
 
     _setSource: function(source) {
         this._setOperand('source', source);

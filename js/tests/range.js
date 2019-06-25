@@ -1,4 +1,6 @@
 /* global Amm */
+/* global QUnit */
+
 (function() { 
     QUnit.module("Range");
     

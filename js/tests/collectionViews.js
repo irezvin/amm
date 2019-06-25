@@ -182,6 +182,8 @@
         assert.equal(updatedItems.length, 0, 'Splice w/ reinsert: no update');
         assert.equal(cont_c2.innerHTML, renderItems(items1), 'Splice w/ reinsert: HTML ok');
         
+        Amm.cleanup(vc1, vc2);
+        
     });
     
     //-----------------------------------------------------------------------
@@ -248,6 +250,10 @@
         dp.displayChildren[0].setDisplayParent(dp2);
         assert.equal(nDp.text(), 'xyz', 'Items removed from orig. DP when displayParent() prop changed');
         assert.equal(nDp2.text(), 'dcba', 'Items added to dest. DP when displayParent() prop changed');
+        
+        dp.displayChildren.setCleanupOnDissociate(true);
+        dp2.displayChildren.setCleanupOnDissociate(true);
+        Amm.cleanup(dp, dp2);
         
     });
     

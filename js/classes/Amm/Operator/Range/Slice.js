@@ -24,7 +24,7 @@ Amm.Operator.Range.Slice.prototype = {
     OPERANDS: ['source', 'start', 'end'],
     
     supportsAssign: false,
-
+    
     _doEvaluate: function(again) {
         var source = this._getOperandValue('source', again);
         var start = this._getOperandValue('start', again);

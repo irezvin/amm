@@ -85,6 +85,9 @@
         assert.deepEqual(t.a.getChecked(), true, 'checked when standalone checked value assinged');
         t.a.setValueIsStandalone(false);
         assert.deepEqual(val.a, ['a', 'c'], 'back to non-standalone value');
+        
+        Amm.cleanup(Object.values(t));
+        
     });
     
 }) ();

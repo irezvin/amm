@@ -1,7 +1,6 @@
 /* global Amm */
 
 Amm.ElementBound = function(options) {
-    Amm.registerItem(this);
     Amm.init(this, options);
 };
 
@@ -94,6 +93,7 @@ Amm.ElementBound.prototype = {
             this.setElement(null);
         }
         Amm.callMethods(this, '_cleanup_');
+        Amm.stopWaiting(undefined, undefined, this);
         Amm.unregisterItem(this);
     },
 

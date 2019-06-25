@@ -794,6 +794,8 @@
             ]
         ]);
         
+        Amm.cleanup(xp);
+        
     });
     
     QUnit.test("Expression.Sync", function(assert) {

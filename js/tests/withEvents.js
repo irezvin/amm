@@ -1,4 +1,6 @@
 /* global Amm */
+/* global QUnit */
+
 QUnit.module("WithEvents");
 
 (function() {

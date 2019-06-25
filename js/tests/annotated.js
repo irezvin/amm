@@ -30,6 +30,8 @@
         assert.ok(fx.find('.a_error')[0], 'Default annotation element w/o html container will have container created');
         assert.equal(fx.find('.a_error').html(), '<ul class="errors"><li class="error">foo</li><li class="error">bar</li><li class="error">baz</li></ul>', 
             'on-demand annotation element uses proper prototype');
+            
+        Amm.cleanup(anno);
         
     });
 }) ();

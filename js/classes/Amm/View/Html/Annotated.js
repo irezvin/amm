@@ -28,7 +28,7 @@ Amm.View.Html.Annotated.prototype = {
         var l = this.annotationClassPrefix.length, res = null;
         // begins with class prefix
         if (!l) res = htmlClass;
-        else if (htmlClass.slice(0, l) == this.annotationClassPrefix) {
+        else if (htmlClass.slice(0, l) === this.annotationClassPrefix) {
             res = htmlClass.slice(l);
         }
         return res;

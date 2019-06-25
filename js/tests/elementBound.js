@@ -1,5 +1,9 @@
 /* global Amm */
+/* global QUnit */
+
 (function() {
+    
+    QUnit.module("Amm.ElementBound");
     
     QUnit.test("Amm.ElementBound", function(assert) {
         
@@ -36,6 +40,8 @@
             'ElementBound cleanup on element cleanup');
         assert.equal(pathBound.getElement(), null, 
             'ElementBound cleanup on element cleanup');
+            
+        Amm.cleanup(elementA, pathBound);
         
     });
         

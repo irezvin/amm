@@ -36,9 +36,20 @@ Amm = {
     _autoBuilder: null,
     
     /**
-     * We maintain huge hash of all created items to reference them in appropriate places of the DOM (really?) or whatever
+     * Registry of items referenced from the DOM
      */
     _items: {},
+    
+    /**
+     * Additional info about referenced items
+     */
+    itemDebugInfo: {},
+    
+    /**
+     * Last item of itemDebugTag will be recorded into itemDebugInfo along with global item identifier
+     * Usage: itemDebugTag.push(value); ...do something.... itemDebugTag.pop(value)
+     */
+    itemDebugTag: [],
         
     /**
      * Cache of root-bound elements
@@ -81,11 +92,14 @@ Amm = {
         if (item._amm_id) return;
         item._amm_id = this.id + '_' + this._counter++;
         this._items[item._amm_id] = item;
+        if (this.itemDebugTag.length) {
+            this.itemDebugInfo[item._amm_id] = this.itemDebugTag[this.itemDebugTag.length - 1];
+        }
         return true;
     },
     
     unregisterItem: function(item) {
-        if (!item._amm_id) return; // no work
+        if (!item._amm_id) return; // nothing to do
         if (typeof item === 'string') item = this._items[item];
         if (item._amm_id && this._items[item._amm_id] !== item) {
             throw Error("Mismatch of _amm_id detected during the item de-registration");
@@ -98,6 +112,7 @@ Amm = {
         }
         this.stopWaiting(undefined, undefined, item);
         delete this._items[item._amm_id];
+        delete this.itemDebugInfo[item._amm_id];
         item._amm_id = null;
     },
     

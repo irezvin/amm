@@ -50,6 +50,10 @@ Amm.Operator.ScopeElement.prototype = {
     },
     
     supportsAssign: false,
+    
+    getReportsContentChanged: function() {
+        return true;
+    },
 
     _originEvents: function(origin, oldOrigin) {
         if (oldOrigin && oldOrigin['Amm.Element']) {

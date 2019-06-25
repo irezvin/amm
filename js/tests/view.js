@@ -96,7 +96,7 @@
         
             assert.ok(inputView2.getIsReady(), 'second dependent view was initialized immediately');
             
-        e.cleanup();
+        Amm.cleanup(e, inputView);
         
     });
     
@@ -178,6 +178,8 @@
         assert.equal(e.getClassName(), 'inputContainer');
         assert.equal(e.getValue(), 'theValue');
         
+        Amm.cleanup(e);
+        
     });
     
     QUnit.test("Amm.View.Html.Default", function(assert) {
@@ -254,7 +256,7 @@
         assert.equal(f.find('[data-amm-iid *= "amm_"]').length, 0, 
             'detach: All views released their HTMLElements');
             
-        e.cleanup();
+        Amm.cleanup(v, iv, e);
         
     });
     
@@ -349,7 +351,7 @@
         assert.equal(f.find('[data-amm-iid *= "amm_"]').length, 0, 
             'detach: All views released their HTMLElements');
             
-        e.cleanup();
+        Amm.cleanup(e, v, iv);
         
     });    
     

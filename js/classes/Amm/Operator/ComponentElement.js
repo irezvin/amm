@@ -48,6 +48,10 @@ Amm.Operator.ComponentElement.prototype = {
     },
     
     supportsAssign: false,
+    
+    getReportsContentChanged: function() {
+        return true;
+    },
 
     _componentEvents: function(component, oldComponent) {
         if (oldComponent && oldComponent['Component'])

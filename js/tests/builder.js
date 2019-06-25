@@ -284,6 +284,8 @@
         assert.ok(e1.findView('Amm.View.Html.Visual').getHtmlElement());
         assert.ok(e1.findView('Amm.View.Html.Content').getHtmlElement());
         
+        Amm.cleanup(e, e1);
+        
     });
     
     QUnit.test("Amm.Builder: return view prototypes", function(assert) {

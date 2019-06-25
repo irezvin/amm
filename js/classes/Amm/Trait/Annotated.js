@@ -194,6 +194,6 @@ Amm.Trait.Annotated.prototype = {
     
     setAnnotationValue: function(value, id) {
         return this.getAnnotationsContainer().getAnnotationElement(id).setContent(value);
-    }    
+    }
 
 };

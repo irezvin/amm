@@ -892,9 +892,6 @@
                 'z omega 30',
             ]], 'Push of 2 objects => still one change (and proper order)');
         
-        collection.cleanup();
-        Amm.cleanup(sam.items);
-            
     });
 
     QUnit.test("Collection - no side effect on setItems() or slice with same items", function(assert) {

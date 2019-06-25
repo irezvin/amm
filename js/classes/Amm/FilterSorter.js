@@ -320,6 +320,7 @@ Amm.FilterSorter.prototype = {
         if (!this._cacheProp) {
             Amm.registerItem(this);
             this._cacheProp = '_Amm.FilterSorter.' + this._amm_id;
+            Amm.unregisterItem(this);
         }
         for (var i = 0, l = indexes? indexes.length : this._objects.length; i < l; i++) {
             var idx = indexes? indexes[i] : i, 
@@ -362,7 +363,6 @@ Amm.FilterSorter.prototype = {
         }
         this._observers = [];
         this.setObservedObjects([]);
-        if (this._amm_id) Amm.unregisterItem(this);
     }
 
 };

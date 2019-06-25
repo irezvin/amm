@@ -325,6 +325,10 @@
         {
             this.setGroupParent(component); // component becomes group parent
         }
+    },
+    
+    _cleanup_Toggle: function() {
+        Amm.getRoot().unsubscribe('findToggleGroupItems', this._handleFindToggleGroupItems, this);
     }
      
  };

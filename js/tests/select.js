@@ -138,6 +138,8 @@
         var v3 = new Amm.View.Html.Select({element: sel3, htmlElement: fx.find('#sel3')[0]});
         assert.deepEqual(s(fx.find('#sel3')), sel3Initial, "No auto-detection when element data in place");
         
+        Amm.cleanup(sel1, sel2, sel3);
+        
     });
     
     QUnit.test("Trait.Select: select first item by default", function(assert) {

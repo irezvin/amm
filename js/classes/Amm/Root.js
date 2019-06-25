@@ -67,6 +67,14 @@ Amm.Root.prototype = {
             window.clearInterval(this._interval);
             this._interval = null;
         }
+    },
+    
+    subscribe: function(eventName, handler, scope, extra, decorator) {
+        if (Amm.itemDebugTag && Amm.itemDebugTag.length && Amm.getClass(scope)) {
+            if (!scope._root_sub) scope._root_sub = {};
+            scope._root_sub[eventName] = Amm.itemDebugTag[Amm.itemDebugTag.length - 1];
+        }
+        return Amm.WithEvents.prototype.subscribe.call(this, eventName, handler, scope, extra, decorator);
     }
     
 };
