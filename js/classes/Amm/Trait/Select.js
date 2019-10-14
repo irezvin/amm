@@ -49,6 +49,20 @@ Amm.Trait.Select.prototype = {
     
     _disabledProperty: null,
     
+    // If non-null and `multiple` is FALSE, extra first item is added with caption 
+    // `dummyLabel`, with value `dummyValue` (to substitute "nothing is selected")
+    _dummyLabel: null,
+    
+    _dummyValue: null,
+    
+    // Amm.Trait.Select.Option with `dummyLabel`/`dummyValue`; 
+    // get/setOptions() doesn't interfere with the instance.
+    _dummyOption: null,
+    
+    _optionPrototype: null,
+    
+    _sorter: null,
+    
     /**
      * @param {Array|Object} options
      * a - Amm.Trait.Select.Option instances
@@ -56,6 +70,7 @@ Amm.Trait.Select.prototype = {
      * c - hash {value: label, value2: label2...} 
     */
     setOptions: function(options) {
+        /* @TODO: setOptions() should always be processed AFTER setOptionPrototype */
         if (!options) options = [];
         var items = [];
         if (options instanceof Array || options['Amm.Array']) {
@@ -68,48 +83,96 @@ Amm.Trait.Select.prototype = {
         var instances = [];
         for (var i = 0; i < items.length; i++) {
             var item;
+            var proto = this._optionPrototype? Amm.overrideRecursive({}, this._optionPrototype) : {};
             if (typeof items[i] !== 'object') {
-                item = new Amm.Trait.Select.Option({label: items[i], value: items[i]});
+                proto.label = items[i];
+                proto.value = items[i];
             } else {
                 var c = Amm.getClass(items[i]);
-                if (!c) item = new Amm.Trait.Select.Option(items[i]);
-                    else item = items[i];
+                if (!c) proto = Amm.overrideRecursive(proto, items[i]);
+                else item = items[i];
             }
-            instances.push(item);
+            proto.component = this.getClosestComponent();
+            instances.push(Amm.constructInstance(proto, Amm.Trait.Select.Option));
         }
+        if (this._dummyOption) instances.unshift(this._dummyOption);
+        var sel = this.getSelectionCollection(), oldValue = this.getValue();
+        if (oldValue instanceof Array) oldValue = [].concat(oldValue);
+        sel.beginUpdate();
         this.getOptionsCollection().setItems(instances);
+        if (oldValue !== undefined) sel.setValue(oldValue);
+        //this.getSelectionCollection().setValue(oldValue);
+        sel.endUpdate();
+        if (!this._multiple && (this._value === null || this._value === undefined) && this._selectSize === 1) {
+            if (this._correctValueForSingleSelect()) return;
+        }
+    },
+    
+    _updateDummyOption: function(objectsMapper) {
+        var newOption = null;
+        objectsMapper = objectsMapper || this._objectsMapper;
+        if (!this._multiple 
+            && this._dummyLabel !== null 
+            && this._dummyLabel !== undefined
+        ) {
+            if (this._dummyOption) newOption = this._dummyOption;
+            else newOption = new Amm.Trait.Select.Option;
+            newOption.setLabel(this._dummyLabel);
+            newOption.setValue(this._dummyValue);
+        }
+        if (objectsMapper) {
+            objectsMapper.setDestExtra(newOption? [newOption] : null);
+            return;
+        }
+        if (!this.options) return; // nothing to do
+        
+        if (newOption && !this._dummyOption) {
+            this.options.splice(0, 0, newOption);
+        }
+        else if (!newOption && this._dummyOption) {
+            this.options.reject(this._dummyOption);
+        }
+        this._dummyOption = newOption;
     },
     
     getOptions: function() {
         if (!this.options) return undefined;
-        return this.getOptionsCollection().getItems();
+        var res = this.getOptionsCollection().getItems();
+        if (this._dummyOption) return res.slice(1);
+        return res;
     },
     
     getOptionsCollection: function() {
         if (this.options) return this.options;
         var proto = {
-            changeEvents: ['labelChange', 'valueChange', 'disabledChange'],
+            changeEvents: ['labelChange', 'valueChange', 'disabledChange', 'visibleChange', 'selectedChange'],
             requirements: ['Amm.Trait.Select.Option'],
             indexProperty: 'index',
             observeIndexProperty: true,
-            cleanupOnDissociate: true
+            cleanupOnDissociate: true,
+            sorter: this._sorter
         };
         this.options = new Amm.Collection(proto);
         if (this._cleanupList) this._cleanupList.push(this.options);
-        if (!this._selectionCollection) this.getSelectionCollection();
+        this.getSelectionCollection();
         this.options.subscribe('itemsChange', this._handleOptionsChange, this);
         return this.options;
+    },
+    
+    // stub; in practice this event never happens
+    outOptionsCollectionChange: function() {
     },
     
     getSelectionCollection: function() {
         if (this._selectionCollection) return this._selectionCollection;
         var proto = {
-            collection: this.getOptionsCollection(),
             multiple: this._multiple,
             valueProperty: 'value',
-            selectedProperty: 'selected'
+            selectedProperty: 'selected',
+            //ignoreExactMatches: true
         };
         this._selectionCollection = new Amm.Selection(proto);
+        this._selectionCollection.setCollection(this.getOptionsCollection());
         this._selectionCollection.subscribe('valueChange', this._handleSelfSelectionValueChange, this);
         this._selectionCollection.setValue(this._value);
         if (this._cleanupList) this._cleanupList.push(this._selectionCollection);
@@ -161,11 +224,13 @@ Amm.Trait.Select.prototype = {
     },
     
     _correctValueForSingleSelect: function() {
-        if (this._lockSingleValueCorrection) return;
+        if (this._selectionCollection && this._selectionCollection.getUpdateLevel()) {
+            return;
+        }
         var options = this.getOptionsCollection();
         for (var i = 0, l = options.length; i < l; i++) {
             var op = options[i];
-            if (!op.getDisabled()) {
+            if (!op.getDisabled() && op.getVisible()) {
                 this.setValue(op.getValue());
                 return true;
             }
@@ -177,6 +242,7 @@ Amm.Trait.Select.prototype = {
         var oldMultiple = this._multiple;
         if (oldMultiple === multiple) return;
         this._multiple = multiple;
+        this._updateDummyOption();
         if (this._selectionCollection)
             this._selectionCollection.setMultiple(multiple);
         this.outMultipleChange(multiple, oldMultiple);
@@ -196,7 +262,9 @@ Amm.Trait.Select.prototype = {
         }
         if (!(objects instanceof Array || Amm.is(objects, 'Amm.Array')))
             throw new Error("objects must be FALSEable, Array or Amm.Array; provided: " + Amm.describeType(objects));
-        if (!this._objectsMapper) this._objectsMapper = this._createObjectsMapper(objects);
+        if (!this._objectsMapper) {
+            this._objectsMapper = this._createObjectsMapper(objects);
+        }
     },
     
     getObjects: function() {
@@ -226,13 +294,9 @@ Amm.Trait.Select.prototype = {
         // TODO
     },
     
-    _lockSingleValueCorrection: false,
-    
     setValue: function(value) {
         var o = this._numChanges;
-        this._lockSingleValueCorrection = true;
         this.getSelectionCollection().setValue(value);
-        this._lockSingleValueCorrection = false;
         if (this._numChanges !== o) return true; // compat. with 'set' behaviour
     },
 
@@ -318,6 +382,10 @@ Amm.Trait.Select.prototype = {
         } else {
             optionProto['in__value'] = 'this.origin';
         }
+        optionProto['component'] = this.getClosestComponent();
+        if (this._optionPrototype) {
+            optionProto = Amm.overrideRecursive(optionProto, this._optionPrototype);
+        }
         return new Amm.Instantiator.Proto(optionProto, 'origin');
     },
     
@@ -325,9 +393,12 @@ Amm.Trait.Select.prototype = {
         var proto = {
             instantiator: this._createInstantiator(),
             dest: this.getOptionsCollection(),
-            src: src
         };
         var res = new Amm.ArrayMapper(proto);
+        res.beginUpdate();
+        res.setSrc(src);
+        this._updateDummyOption(res);
+        res.endUpdate();
         return res;
     },
     
@@ -337,8 +408,77 @@ Amm.Trait.Select.prototype = {
     
     _cleanup_AmmTraitSelect: function() {
         this._detachObjects();
-    }
+    },
     
+    setDummyLabel: function(dummyLabel) {
+        var oldDummyLabel = this._dummyLabel;
+        if (oldDummyLabel === dummyLabel) return;
+        this._dummyLabel = dummyLabel;
+        this._updateDummyOption();
+        this.outDummyLabelChange(dummyLabel, oldDummyLabel);
+        return true;
+    },
+
+    getDummyLabel: function() { return this._dummyLabel; },
+
+    outDummyLabelChange: function(dummyLabel, oldDummyLabel) {
+        this._out('dummyLabelChange', dummyLabel, oldDummyLabel);
+    },
+
+    setDummyValue: function(dummyValue) {
+        var oldDummyValue = this._dummyValue;
+        if (oldDummyValue === dummyValue) return;
+        this._dummyValue = dummyValue;
+        this._updateDummyOption();
+        this.outDummyValueChange(dummyValue, oldDummyValue);
+        return true;
+    },
+
+    getDummyValue: function() { return this._dummyValue; },
+
+    outDummyValueChange: function(dummyValue, oldDummyValue) {
+        this._out('dummyValueChange', dummyValue, oldDummyValue);
+    },
+
+    setOptionPrototype: function(optionPrototype) {
+        if (!optionPrototype) optionPrototype = null;
+        if (typeof optionPrototype === 'string') {
+            optionPrototype = {'class': optionPrototype};
+        } else if (typeof optionPrototype !== 'object') {
+            throw Error("optionProtoype must be null, a string or an object");
+        }
+        var oldOptionPrototype = this._optionPrototype;
+        if (oldOptionPrototype === optionPrototype) return;
+        this._optionPrototype = optionPrototype;
+        this.outOptionPrototypeChange(optionPrototype, oldOptionPrototype);
+        this._updateInstantiator();
+        return true;
+    },
+
+    getOptionPrototype: function() { return this._optionPrototype; },
+
+    outOptionPrototypeChange: function(optionPrototype, oldOptionPrototype) {
+        this._out('optionPrototypeChange', optionPrototype, oldOptionPrototype);
+    },
+    
+    _setClosestComponent_ammTraitSelect: function(component) {
+        var c = this.getOptionsCollection();
+        Amm.setProperty(c.getItems(), 'component', component);
+    },
+
+    /**
+     * @param {object|Amm.Sorter} sorter Sorter or its' prototype
+     */
+    setSorter: function(sorter) {
+        if (this.options) return this.options.setSorter(sorter);
+        this._sorter = sorter;
+    },
+
+    getSorter: function() {
+        if (this.options) return this.options.getSorter(); 
+        else return this._sorter; 
+    },
+
 };
 
 Amm.extend(Amm.Trait.Select, Amm.Trait.Input);

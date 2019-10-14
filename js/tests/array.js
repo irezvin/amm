@@ -276,6 +276,9 @@
         testArrayCompat(['a', 'b', 'c', 'd', 'e'], 'slice', 1, -1);
         testArrayCompat(['a', 'b', 'c', 'd', 'e'], 'slice', -3, -1);
         testArrayCompat(['a', 'b', 'c', 'd', 'e'], 'slice', -1, 1);
+        testArrayCompat(['a', 'b', 'c', 'd', 'e'], 'slice', -1);
+        testArrayCompat(['a', 'b', 'c', 'd', 'e'], 'slice', 0);
+        testArrayCompat(['a', 'b', 'c', 'd', 'e'], 'slice', 1);
 
         testArrayCompat(['a', 'b', 'c', 'd', 'e'], 'splice', 0, 2);
         testArrayCompat(['a', 'b', 'c', 'd', 'e'], 'splice', 1, -1);
@@ -656,6 +659,11 @@
         a.setItems([1, 2, 3, 4, 5, 6]); sepEvLog(allLog, specLog);
         a.splice(6, 0, 7, 8);
         assertReceivedEvent(allLog, null, 'appendItems', [7, 8]);
+
+        // smart splice - prepend
+        a.setItems([1, 2, 3, 4, 5, 6]); sepEvLog(allLog, specLog);
+        a.splice(0, 0, 0);
+        assertReceivedEvent(allLog, null, 'insertItem', 0, 0);
 
         // smart splice - insert
         a.setItems([1, 2, 3, 4, 5, 6]); sepEvLog(allLog, specLog);

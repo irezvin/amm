@@ -20,7 +20,7 @@ Amm.View.Html.DisplayParent.prototype = {
     
     scanForItems: true,
     
-    buildItems: true,
+    buildItems: false,
     
     scanForDisplayOrder: true,
     

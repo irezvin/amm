@@ -392,7 +392,92 @@
         
     });
         
-    
-    
+    QUnit.test("Builder externals: $ext", function(assert) {
+        
+        var fx = jQuery('#qunit-fixture');
+        window.d.tmp_ext_data = {
+            id: 'elem1',
+            extraTraits: ['t.Content'],
+            chain: {'$ext': 'd.tmp_ext_data3'}
+        };
+        window.d.tmp_ext_data2 = {
+            sub: {
+                'class': 'Amm.View.Html.Content'
+            }
+        };
+        window.d.tmp_ext_data3 = 'zzz';
+        fx.html(Amm.html([
+            {
+                $: 'div',
+                data_amm_e: '{$ext: d.tmp_ext_data}',
+                data_amm_v: '[v.Visual, {$ext: d.tmp_ext_data2.sub}]'
+            },
+        ]));
+        var proto = Amm.Builder.calcPrototypeFromSource(fx);
+        assert.equal(proto.id, 'elem1', 'Element prototype is resolved as external');
+        assert.deepEqual(proto.chain, {'$ext': 'd.tmp_ext_data3'}, '$ext is not processed inside other $ext\' value');
+        assert.deepEqual(proto.views[1].class, 'Amm.View.Html.Content', 'View prototype is resolved');
+        fx.html(Amm.html([
+            {
+                $: 'div',
+                data_amm_e: '{$ext: nonExistent}'
+            },
+        ]));
+        assert.throws(function() {
+            proto = Amm.Builder.calcPrototypeFromSource(fx);
+        }, /Cannot resolve/, 'Attempt to reference nonexistent $ext throws exception');
+        
+    });
+        
+    QUnit.test("Builder extensions: data-amm-x", function(assert) {
+        
+        var fx = jQuery('#qunit-fixture');
+        var testExt = {
+            builderExtension_simple: function(htmlElement, proto, arg) {
+                proto.id = htmlElement.getAttribute('id');
+                proto.views = ['v.Visual'];
+            },
+            builderExtension_multi_1: function(htmlElement, proto, arg) {
+                proto.prop__arg1 = arg;
+                proto.views = ['v.Visual'];
+            },
+            builderExtension_multi_2: function(htmlElement, proto, arg) {
+                proto.prop__arg2 = arg;
+            }
+        };
+        Amm.registerNamespace('testExt', testExt);
+        fx.html(Amm.html([
+            {
+                $: 'div',
+                id: 'thisWillBecomeElementId',
+                data_amm_x: 'testExt.simple',
+            },
+            {
+                $: 'div',
+                data_amm_x: {
+                    'testExt.multi_1': null, 
+                    'testExt.multi_2': ['argItem1', 'argItem2']
+                }
+            },
+        ]));
+        var b = new Amm.Builder(fx);
+        var p = b.build(true);
+        assert.deepEqual(p[0], {
+            'class': 'Amm.Element', 
+            id: 'thisWillBecomeElementId', 
+            views: ['v.Visual']
+        }, 'String-referenced builder extension was called');
+        assert.deepEqual(p[1].prop__arg1, null, 'Hash-referenced builder extensions called (1)');
+        assert.deepEqual(p[1].prop__arg2, ['argItem1', 'argItem2'], 'Hash-referenced builder extensions called (2), arguments set');
+        fx.html(Amm.html([
+            {
+                $: 'div',
+                data_amm_x: 'nonExistentId',
+            }
+        ]));
+        assert.throws(function() {
+            p = b.build();
+        }, /Unknown function|namespace/, 'Attempt to reference nonexistent extension throws exception');
+    });
     
 }) ();

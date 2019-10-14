@@ -7,15 +7,22 @@
 Amm.Element = function(options) {
     this._beginInit();
     this._cleanupList = [];
+    this._expressions = {};
     if (!options) {
         Amm.WithEvents.call(this);
         this._endInit();
         return;
     }
+    var expressions;
     var traits = this._getDefaultTraits(), hasTraits = options.traits;
     var views = [];
 
     options = Amm.Element._checkAndApplyOptionsBuilderSource(options);
+
+    if ('expressions' in options) { // we should init expressions last
+        expressions = options.expressions;
+        delete options.expressions;
+    }
     
     Amm.Element._checkAndApplyOptionsViews(options, views, hasTraits? null : traits);
     
@@ -60,6 +67,7 @@ Amm.Element = function(options) {
     if (extraProps) this.setProperties(extraProps);
     if (inProps.length) this._initInProperties(inProps);
     if (onHandlers) this._initOnHandlers(onHandlers);
+    if (expressions) this.setExpressions(expressions);
     this._endInit();
     if (views.length) {
         for (var i = 0, l = views.length; i < l; i++) {
@@ -151,6 +159,8 @@ Amm.Element.prototype = {
     
     // will reference `this` if `this` is component
     _closestComponent: null,
+    
+    _expressions: null,
     
     _beginInit: function() {
         if (this._initLevel === false)
@@ -599,7 +609,51 @@ Amm.Element.prototype = {
      * To be overridden in concrete sub-classes.
      */    
     constructDefaultViews: function() {
-    }
+    },
+    
+    setExpressions: function(expressions, id) {
+        var oldExpressions = this._expressions;
+        if (id !== undefined) {
+            var prev = this.expressions[id];
+            var inst;
+            if (!expressions) inst = null;
+            else {
+                if (typeof expressions === 'string') expressions = {src: expressions};
+                inst = Amm.constructInstance(inst, 'Amm.Expression', {expressionThis: this}, true);
+            }
+            this._expressions[id] = inst;
+            if (prev) prev.cleanup();
+            this.outExpressionsChange(expressions, oldExpressions);
+            return;
+        }
+        if (oldExpressions === expressions) return;
+        if (!expressions) {
+            expressions = {};
+        } else {
+            var exp = {}, curr;
+            for (var i in expressions) if (expressions.hasOwnProperty(i)) {
+                if (typeof expressions[i] === 'string') curr = {src: expressions[i]};
+                else curr = expressions[i];
+                exp[i] = Amm.constructInstance(curr, 'Amm.Expression', {expressionThis: this}, true);
+            }
+            expressions = exp;
+        }
+        this._expressions = expressions;
+        Amm.cleanup(Amm.values(oldExpressions));
+        this.outExpressionsChange(expressions, oldExpressions);
+        return true;
+    },
+
+    getExpressions: function(id) { 
+        if (id !== undefined) return this._expressions[id];
+        return this._expressions; 
+    },
+
+    outExpressionsChange: function(expressions, oldExpressions) {
+        this._out('expressionsChange', expressions, oldExpressions);
+    },
+
+    
     
 };
 

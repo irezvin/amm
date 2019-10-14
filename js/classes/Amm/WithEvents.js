@@ -296,6 +296,7 @@ Amm.WithEvents.prototype = {
     _extractOnHandlers: function(options) {
         var res = [];
         for (var i in options) {
+            // on__
             if (i[0] === 'o' && i[1] === 'n' && i[2] === '_' && i[3] === '_'
                 && options.hasOwnProperty(i)
             ) {

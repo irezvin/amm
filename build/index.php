@@ -6,24 +6,12 @@
         <script src="../js/vendor/jquery-3.1.1.js"></script>
         <script src="../js/vendor/relaxed-json.js"></script>
         <link rel="stylesheet" type="text/css" href="qunit/qunit-2.0.1.css" />
-<?php   require_once(dirname(__FILE__).'/list.php'); ?>
-<?php   if (isset($_REQUEST['min'])) { ?>
-        <script src="amm.min.js"></script>
-<?php   } else {
-            foreach (listAmmFiles() as $f) { 
-                echo "
-                <script src=\"../js/classes/{$f}\"></script>";
-            }
+<?php   require_once(dirname(__FILE__).'/list.php');
+        foreach (listAmmFiles(null, null, isset($_REQUEST['min']) && $_REQUEST['min']) as $f) {
+            $f = str_replace('../js/classes/../../build/', '', '../js/classes/'.$f);
+            echo "\n<script type='text/javascript' src='$f'></script>";
         }
 ?> 
-        <style type='text/css'>
-            /*h1 {
-                color: orangered;
-                font-weight: normal;
-                text-shadow: 0px 2px darkred;
-            }
-            html { min-height: 100%; background: linear-gradient(to top, #c1c1c1 0%,#515151 100%); }*/
-        </style>
     </head>
     <body>
     

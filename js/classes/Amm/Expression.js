@@ -40,6 +40,26 @@ Amm.Expression.compareByContextIdAndLevel = function(a, b) {
     return b[0].getLevel() - a[0].getLevel();
 };
 
+/**
+ * Never propagate expressionThis to Expression writeObject
+ */
+Amm.Expression.THIS_WRITE_NEVER = 0;
+
+/**
+ * Always propagate expressionThis to Expression writeObject
+ */
+Amm.Expression.THIS_WRITE_ALWAYS = 1;
+
+/**
+ * Once expressionThis was propagated, don't update it anymore
+ */
+Amm.Expression.THIS_WRITE_ONCE = 2;
+
+/**
+ * If expressionThis was already set, don't propagate. otherwise set to THIS_WRITE_ALWAYS
+ */
+Amm.Expression.THIS_WRITE_AUTO = 3;
+
 Amm.Expression.prototype = {
     
     'Amm.Expression': '__CLASS__',
@@ -70,7 +90,48 @@ Amm.Expression.prototype = {
     _updateQueueSorted: false,
     
     _currChangeInfo: null,
+
+    _writeToExpressionThis: Amm.Expression.THIS_WRITE_AUTO,
+
+    /** 
+     * If writeProperty is Amm.Expression, whether to sync this.`expressionThis` to this.`writeObject`.`expressionThis`
+     * One of Amm.Expression.THIS_WRITE_ALWAYS | THIS_WRITE_ONCE | THIS_WRITE_NEVER constants
+     * THIS_WRITE_ALWAYS: always update; 
+     * THIS_WRITE_ONCE: once updated, will set to THIS_WRITE_NEVER.
+     * THIS_WRITE_AUTO: set to NEVER is writeObject already has expressionThis set, otherwise behave as WRITE_ALWAYS
+     */
     
+    setWriteToExpressionThis: function(writeToExpressionThis) {
+        var oldWriteToExpressionThis = this._writeToExpressionThis;
+        if (oldWriteToExpressionThis === writeToExpressionThis) return;
+        this._writeToExpressionThis = writeToExpressionThis;
+        this._propagateExpressionThis();
+        return true;
+    },
+
+    getWriteToExpressionThis: function() { return this._writeToExpressionThis; },
+    
+    _propagateExpressionThis: function() {
+        if (!(
+                this._writeToExpressionThis && this._expressionThis 
+                && this._writeObject && this._writeObject['Amm.Expression']
+        )) {
+            return;
+        }
+        if (this._writeToExpressionThis === Amm.Expression.THIS_WRITE_AUTO) {
+            if (this._writeObject.getExpressionThis()) {
+                this._writeToExpressionThis = Amm.Expression.THIS_WRITE_NEVER;
+                return;
+            } else {
+                this._writeToExpressionThis = Amm.Expression.THIS_WRITE_ALWAYS;
+            }
+        }
+        this._writeObject.setExpressionThis(this._expressionThis);
+        if (this._writeToExpressionThis === Amm.Expression.THIS_WRITE_ONCE) {
+            this._writeToExpressionThis = Amm.Expression.THIS_WRITE_NEVER;
+        }
+    },
+
     STATE_SHARED: {
         _updateLevel: true,
         _updateQueue: true,
@@ -91,7 +152,7 @@ Amm.Expression.prototype = {
         if (expressionThis && expressionThis['Amm.WithEvents'] && expressionThis.hasEvent('cleanup')) {
             this._sub(expressionThis, 'cleanup', this._deleteCurrentContext, undefined, true);
         }
- 
+        this._propagateExpressionThis();
         this.outExpressionThisChange(expressionThis, oldExpressionThis);
         return true;
     },
@@ -110,6 +171,9 @@ Amm.Expression.prototype = {
         }
         if (this._writeProperty) Error("Can setWriteProperty() only once");
         if (!writeProperty) Error("writeProperty must be non-falseable");
+        if (typeof writeProperty === 'string') { // this is not a simple property name, so we assume it is expression definition
+            if (!writeProperty.match(/^\w+$/)) writeProperty = new Amm.Expression (writeProperty, this._expressionThis);
+        }
         if (writeProperty['Amm.Expression']) {
             if (writeObject || writeArgs) Error("When Amm.Expression is used as writeProperty, don't specify writeObject/writeArgs");
             writeObject = writeProperty;
@@ -130,6 +194,7 @@ Amm.Expression.prototype = {
             this._sub(writeObject, 'cleanup', this._deleteCurrentContext, undefined, true);
         }
         this._writeArgs = writeArgs;
+        this._propagateExpressionThis();
         this._write();
     },
     
@@ -280,6 +345,26 @@ Amm.Expression.prototype = {
     
     setSrc: function(src) {
         this.parse(src);
+    },
+    
+    /**
+     * Alias of setWriteProperty() for more intuitive usage
+     * @param {string|Amm.Expression} writeProperty
+     */
+    setDest: function(writeProperty) {
+        return this.setWriteProperty(writeProperty, null);
+    },
+    
+    /**
+     * Tries to work as symmetric 'getter' for this.getDest(). 
+     * Returns either this.getWriteProperty() 
+     * or this.getWriteObject() if Amm.Expression is used as write target.
+     * @returns {string|Amm.Expression}
+     */
+    getDest: function() {
+        if (this._writeObject && this._writeObject['Amm.Expression']) 
+            return this._writeObject;
+        if (this._writeProperty) return this._writeProperty;
     },
     
     getSrc: function(beginPos, endPos) {

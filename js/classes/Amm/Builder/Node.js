@@ -15,6 +15,8 @@ Amm.Builder.Node.prototype = {
     
     e: null,
     
+    x: null,
+    
     id: null,
     
     global: false,

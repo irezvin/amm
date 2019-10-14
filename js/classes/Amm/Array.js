@@ -100,7 +100,8 @@ Amm.Array.prototype = {
         start = start || 0; 
         if (start < 0) start = this.length + start;
         if (start < 0) start = 0;
-        end = end || this.length;
+        if (end === undefined) end = this.length;
+        if (!end) end = 0;
         if (end < 0) end = this.length + end;
         if (end < 0) end = 0;
         if (end > this.length) end = this.length;

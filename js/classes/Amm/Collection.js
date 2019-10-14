@@ -789,7 +789,7 @@ Amm.Collection.prototype = {
             toRemove = pa[4],
             toRemoveIdx = pa[6],
             insert = pa[5];
-            
+        
         var i, j, l, n;
         
         var inserts, sortIdx, cuts, goodSplice;
@@ -846,9 +846,13 @@ Amm.Collection.prototype = {
             var alloc = insert.length - (cut.length - toRemove.length);
             this._rotate(start, alloc);
             // we use "j" to iterate through newItems which we need to associate
-            for (i = 0, j = 0, l = insert.length, n = newInstances.length; i < l; i++) {
+            j = 0; 
+            l = insert.length; 
+            n = newInstances.length;
+            for (i = 0; i < l; i++) {
                 // j is always <= i because newInstances.length <= insert.length;
                 // `insert` is `newInstances` with scattered re-insert items
+                j = 0;
                 while(j <= i && insert[i] !== newInstances[j]) j++;
                 this[start + i] = insert[i];
                 if (insert[i] === newInstances[j]) {

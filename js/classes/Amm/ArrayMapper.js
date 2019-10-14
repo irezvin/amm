@@ -83,7 +83,7 @@ Amm.ArrayMapper.prototype = {
     
     _length: undefined,
     
-    // true if we have to calc slice (false if all passed items get to the dest)
+    // TRUE if we have to calc "slice" (`offset` and/or `length` are set)
     _hasSlice: false,
     
     _instantiator: null,
@@ -96,6 +96,12 @@ Amm.ArrayMapper.prototype = {
     
     // [ [refToSrcEntry, pass, orderValue, inSlice, dest ], ... ]
     _destEntries: null,
+    
+    /**
+     * Extra items in the dest. Will always be in the beginning of dest sequence.
+     * `offset` and `length` don't account for _destExtra items.
+     */ 
+    _destExtra: null,
     
     _updateLevel: 0,
     
@@ -158,6 +164,8 @@ Amm.ArrayMapper.prototype = {
 
     getSrcPrototype: function() { return this._srcPrototype; },
     
+    getSrcIsOwn: function() { return this._srcIsOwn; },
+    
     _createSrc: function(items) {
         var p = this._srcPrototype? Amm.override({}, this._srcPrototype) : {};
         if (items) p.items = items;
@@ -186,6 +194,24 @@ Amm.ArrayMapper.prototype = {
         if (oldDest) this._cleanupCollectionIfOwn(oldDest);
         return true;
     },
+    
+    setDestExtra: function(destExtra) {
+        if (destExtra === this._destExtra) return;
+        
+        if (destExtra instanceof Array && !destExtra.length) destExtra = null;
+        else if (!destExtra) destExtra = null;
+        
+        if (this._destExtra instanceof Array && destExtra instanceof Array 
+            && Amm.Array.equal(destExtra, this._destExtra)) return;
+        
+        this._destExtra = destExtra;
+        
+        this._remap();
+    },
+    
+    getDestExtra: function() {
+        return this._destExtra;
+    },
 
     /**
      * @returns {Amm.Array}
@@ -208,6 +234,8 @@ Amm.ArrayMapper.prototype = {
 
     getDestPrototype: function() { return this._destPrototype; },
     
+    getDestIsOwn: function() { return this._destIsOwn; },
+    
     _createDest: function() {
         var p = this._destPrototype? this._destPrototype : {};
         var res = Amm.constructInstance(p, this.destClass);
@@ -221,7 +249,7 @@ Amm.ArrayMapper.prototype = {
         if (oldFilter === filter) return;
         if (!filter) {
         } else if (typeof filter === 'object') {
-            Amm.is(filter, 'Amm.Filter', 'filter');
+            filter = Amm.constructInstance(filter, 'Amm.Filter', filter);
             this._filterIsFn = false;
         } else if (typeof filter === 'function') {
             this._filterIsFn = true;
@@ -323,7 +351,7 @@ Amm.ArrayMapper.prototype = {
         if (oldSort === sort) return;
         if (!sort) {
         } else if (typeof sort === 'object') {
-            Amm.is(sort, 'Amm.Sorter', 'sort');
+            sort = Amm.constructInstance(sort, 'Amm.Sorter');
             this._sortIsFn = false;
             if (this._sort && this._sort['Amm.Sorter']) this._unsubscribeSort();
         } else if (typeof sort === 'function') {
@@ -483,6 +511,7 @@ Amm.ArrayMapper.prototype = {
         else if ((typeof instantiator) === 'function') {
             instantiatorIsFn = true;
         } else if (typeof instantiator === 'object') {
+            if (instantiator['class']) instantiator = Amm.constructInstance(instantiator);
             Amm.meetsRequirements(instantiator, [['construct', 'destruct']], 'instantiator');
             instantiatorIsFn = false;
         } else {
@@ -772,7 +801,7 @@ Amm.ArrayMapper.prototype = {
             }
             srcEntry.splice(0, srcEntry.length);
             destEntry.splice(0, destEntry.length);
-            if (this._dest) this._dest.setItems([]);
+            if (this._dest) this._dest.setItems([] || this._destExtra);
         }
         this._srcEntries = [];
         this._destEntries = [];
@@ -843,6 +872,9 @@ Amm.ArrayMapper.prototype = {
         }
         
         if (!this._hasSlice) {
+            if (this._destExtra) {
+                destItems = this._destExtra.concat(destItems);
+            }
             this.getDest().setItems(destItems);
             return;
         }
@@ -870,6 +902,9 @@ Amm.ArrayMapper.prototype = {
             }       
         }
         
+        if (this._destExtra) {
+            destItems = this._destExtra.concat(destItems);
+        }
         this.getDest().setItems(destItems);
         
     },

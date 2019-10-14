@@ -508,19 +508,26 @@ Amm = {
         this.event = this._eventStack.pop();
     },
     
-    // returns TRUE if `element` has together setter, getter and change event for given `property`.
-    // if outCaps is object, then it will have 'setterName', 'getterName' and 'eventName' properties set to either
-    // respective value (i.e. getFoo, setFoo and fooChange) or NULL if such method or event doesn't exists 
-    // -- disregarding to the method result
-    
-    detectProperty: function(element, property, outCaps) {
+    /**
+     * Detects if object has Amm-style property (getter + setter + event methods)
+     * To have Amm-style property 'value', object must have three methods:
+     * setValue, getValue, outValueChange (more specifically, report
+     * hasEvent('valueChange') === true).
+     * 
+     * if outCaps an object, then it will have 'setterName', 'getterName',
+     * and 'eventName' properties set to names of respective object parts
+     * (event name is 'valueChange' instead of outValueChange)
+     * even if method retrns false.
+     */ 
+    detectProperty: function(object, property, outCaps) {
         var P = property[0].toUpperCase() + property.slice(1),
             getterName = 'get' + P, 
             setterName = 'set' + P, 
             eventName = property + 'Change';
-        if (typeof element[getterName] !== 'function') getterName = null;
-        if (typeof element[setterName] !== 'function') setterName = null;
-        if (typeof element.hasEvent !== 'function' || !element.hasEvent(eventName)) eventName = null;
+        if (typeof object[getterName] !== 'function') getterName = null;
+        if (typeof object[setterName] !== 'function') setterName = null;
+        if (typeof object.hasEvent !== 'function' || !object.hasEvent(eventName))
+            eventName = null;
         var res = eventName && getterName && setterName;
         if (outCaps && typeof outCaps === 'object') {
             outCaps.getterName = getterName;
@@ -530,20 +537,20 @@ Amm = {
         return res;
     },
     
-    getProperty: function(element, property, defaultValue, args) {
+    getProperty: function(object, property, defaultValue, args) {
         var res;
-        if (!element) return defaultValue;
-        if (element instanceof Array) {
+        if (typeof object !== 'object' || !object) return defaultValue;
+        if (object instanceof Array) {
             var r = [];
-            for (var i = 0; i < element.length; i++) {
-                r.push(this.getProperty(element[i], property, defaultValue));
+            for (var i = 0; i < object.length; i++) {
+                r.push(this.getProperty(object[i], property, defaultValue));
             }
             return r;
         }
         if (property instanceof Array) {
             var r = {};
             for (var i = 0; i < property.length; i++) {
-                r[property[i]] = (this.getProperty(element, property[i], defaultValue));
+                r[property[i]] = (this.getProperty(object, property[i], defaultValue));
             }
             return r;
         }
@@ -551,20 +558,26 @@ Amm = {
         if (args !== undefined && args !== null) {
             if (!(args instanceof Array)) args = [args];
         }
-        if (typeof element[getterName] === 'function') {
-            res = args? element[getterName].apply(element, args) : element[getterName]();
+        if (typeof object[getterName] === 'function') {
+            res = args? object[getterName].apply(object, args) : object[getterName]();
         }
-        else if (property in element) res = element[property];
-        else if (property === 'class') res = Amm.getClass(element);
+        else if (property in object) res = object[property];
+        else if (property === 'class') res = Amm.getClass(object);
         else res = defaultValue;
         return res;
     },
     
-    setProperty: function(element, property, value, throwIfNotFound, args) {
+    setProperty: function(object, property, value, throwIfNotFound, args) {
+        if (object instanceof Array) {
+            for (var i = 0, l = object.length; i < l; i++) {
+                Amm.setProperty(object[i], property, value, throwIfNotFound, args);
+            }
+            return;
+        }
         if (value === undefined && property && (typeof property === 'object')) {
             var res = {};
             for (var i in property) {
-                if (property.hasOwnProperty(i)) res[i] = Amm.setProperty(element, i, property[i], throwIfNotFound);
+                if (property.hasOwnProperty(i)) res[i] = Amm.setProperty(object, i, property[i], throwIfNotFound);
             }
             return res;
         }
@@ -574,10 +587,10 @@ Amm = {
             else args = [].concat(args);
             args.unshift(value);
         }
-        if (typeof element[setterName] === 'function') {
-            res = args? element[setterName].apply(element, args) : element[setterName](value);
+        if (typeof object[setterName] === 'function') {
+            res = args? object[setterName].apply(object, args) : object[setterName](value);
         }
-        else if (property in element) element[property] = value;
+        else if (property in object) object[property] = value;
         else if (throwIfNotFound) throw Error("No setter for property: `" + property + "`");
         return res;
     },
@@ -677,6 +690,12 @@ Amm = {
     keys: function(hash) {
         var res = [];
         for (var i in hash) if (hash.hasOwnProperty(i)) res.push(i);
+        return res;
+    },
+    
+    values: function(hash) {
+        var res = [];
+        for (var i in hash) if (hash.hasOwnProperty(i)) res.push(hash[i]);
         return res;
     },
     

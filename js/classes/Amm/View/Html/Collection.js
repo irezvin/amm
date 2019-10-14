@@ -143,24 +143,31 @@ Amm.View.Html.Collection.prototype = {
      */
     refreshItem: function(item) {
         if (!this._collection || !this._htmlElement) return;
-        var p = this._mappingProp, htmlElement = item[p], up = this.updateItemHtml(item, htmlElement);
+        var p = this._mappingProp, currNode = item[p], up = this.updateItemHtml(item, currNode);
         if (!up) return;
-        var r = jQuery(up)[0];
-        if (r) {
-            if (!r.nodeType) {
-                Error("updateItemHtml() returned something that is not an HTML Node");
-            }
-            if (r.parentNode && r.parentNode.nodeType !== 11) {
-                if (this.itemHtmlElementsMustBeOrphans) {
-                    Error("updateItemHtml() is supposed to create new nodes, but this one already has parentNode");
-                } else {
-                    r.parentNode.removeChild(r);
-                }
-            }
-            jQuery(htmlElement).replaceWith(r);
-            htmlElement[p] = null;
-            item[p] = r;
+        var newNode = jQuery(up)[0];
+        if (!newNode || newNode === currNode) return;
+        
+        // we need to replace old node with new node (returned by updateItemHtml)
+        if (!newNode.nodeType) {
+            Error("updateItemHtml() returned something that is not an HTML Node");
         }
+        if (newNode.parentNode && newNode.parentNode.nodeType !== 11) {
+            if (this.itemHtmlElementsMustBeOrphans) {
+                Error("updateItemHtml() is supposed to create new nodes, but this one already has parentNode");
+            } else {
+                newNode.parentNode.removeChild(newNode);
+            }
+        }
+        // check if new node isn't accidentally parent of current node 
+        // (we won't be able to replace current node then)
+        // example: when we wrap current node (as in Amm.View.Html.Select)
+        if(!jQuery(newNode).has(currNode).length) { 
+            jQuery(currNode).replaceWith(newNode);
+        }
+        currNode[p] = null;
+        newNode[p] = item;
+        item[p] = newNode;
     },
     
     _handleCollectionItemChange: function(item) {

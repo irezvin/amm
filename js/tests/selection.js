@@ -1,3 +1,5 @@
+/* global QUnit */
+
 (function() {
 
     var Item = function(name, value, selected) {
@@ -301,6 +303,40 @@
         assert.deepEqual(selB.getValue(), 'a',
             'init with item having setSelected(true) - reports proper value');
     });
+    
+    QUnit.test("Selection begin/endUpdate", function(assert) {
+
+        var log = [];
+        var e = new Amm.Element({
+            traits: 't.Select', 
+            multiple: true,
+            options: ['a', 'b', 'c'],
+            on__valueChange: function(value) {
+                log.push(value);
+            }
+        });
+        var s = e.getSelectionCollection();
+        s.beginUpdate();
+        e.options[0].setSelected(true);
+        e.options[1].setSelected(true);
+        e.options[2].setSelected(true);
+        s.endUpdate();
+        assert.equal(log.length, 1, 'Only one event was triggered when begin/endUpdate used');
+        log = [];
+        e.options[0].setSelected(false);
+        e.options[1].setSelected(false);
+        e.options[2].setSelected(false);
+        assert.equal(log.length, 3, 'Each options[i].setSelected() triggers valueChange event of Select w/o begin/endUpdate used');
+        
+        log = [];
+        e.setValue(['a', 'b', 'c']);
+        assert.equal(log.length, 1, 'Only one event was triggered when setValue() set for multiple options');
+        
+        assert.equal(e.options.getUniqueSubscribers('Amm.Selection').length, 1, 
+            'Only one unique Selection object was created and observes options collction');
+        
+    });
+    
     
     
 }) ();

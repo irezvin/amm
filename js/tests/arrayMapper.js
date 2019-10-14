@@ -75,6 +75,21 @@
         m.setInstantiator(null);
         assert.deepEqual(m.getDest().getItems(), m.getSrc().getItems());
         
+        var extra = ['_prefix'];
+        m.setDestExtra(extra);
+        assert.deepEqual(m.getDest().getItems(), extra.concat(m.getSrc().getItems()));
+        
+        m.getSrc().slice(1, 2);
+        assert.deepEqual(m.getDest().getItems(), extra.concat(m.getSrc().getItems()));
+        
+        m.getSrc().setItems([]);
+        assert.deepEqual(m.getDest().getItems(), extra);
+        
+        m.setDestExtra([]);
+        assert.deepEqual(m.getDest().getItems(), []);
+        assert.deepEqual(m.getDestExtra(), null);
+        
+        
     });
     
     QUnit.test("ArrayMapper with Instantiator", function(assert) {

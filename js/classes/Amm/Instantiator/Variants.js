@@ -6,6 +6,7 @@ Amm.Instantiator.Variants = function(options) {
     this._matches = [];
     this._objects = [];
     this._instances = [];
+    Amm.Instantiator.call(this);
     Amm.WithEvents.call(this, options);
     
 };
@@ -32,6 +33,12 @@ Amm.Instantiator.Variants.prototype = {
 
     _subscribeFilter: true,
     
+    _allowNullInstance: false,
+    
+    _assocProperty: null,
+    
+    _revAssocProperty: null,
+    
     setPrototypes: function(prototypes, match) {
         if (!prototypes || typeof prototypes !== 'object')
             throw Error("`prototypes` must be a non-null object");
@@ -48,9 +55,14 @@ Amm.Instantiator.Variants.prototype = {
     },
     
     setDefaultPrototype: function(defaultPrototype) {
-        if (!defaultPrototype || typeof defaultPrototype !== 'object')
-            throw Error("`defaultPrototype` must be a non-null object");
-        this._defaultPrototype = Amm.override({}, defaultPrototype);
+        if (typeof defaultPrototype !== 'object') {
+            throw Error("`defaultPrototype` must be a null or an object");
+        }
+        if (!defaultPrototype) {
+            this._defaultPrototype = null;
+        } else {
+            this._defaultPrototype = Amm.override({}, defaultPrototype);
+        }
     },
     
     getDefaultPrototype: function() {
@@ -77,9 +89,10 @@ Amm.Instantiator.Variants.prototype = {
             match = this._filter.evaluateMatch(object);
         }
         var res = this._build(object, match);
-        if (idx >= 0) {
+        if (!object) return res;
+        if (idx >= 0) { // we have already subscribed to this object
             this._matches[idx] = match;
-        } else {
+        } else { // we didn't subscribe yet
             idx = this._objects.length;
             this._objects.push(object);
             this._matches.push(match);
@@ -89,26 +102,54 @@ Amm.Instantiator.Variants.prototype = {
                 this._filter.observeObject(object);
             }
         }
-        this._instances[idx].push(res);
-        this._subscribeInstance(res);
+        if (!res && this._instances[idx][0] !== null) {
+            // we need to have non-empty list of instances
+            // to keep subscribed to the object. We keep NULL
+            // first item to always easily find it.
+            this._instances[idx].unshift(null); 
+        }
+        if (res) {
+            if (this._instances[idx][0] === null) {
+                this._instances[idx].splice(0, 1);
+            }
+            this._instances[idx].push(res);
+            this._subscribeInstance(res);
+        }
         return res;
     },
     
     _build: function(object, match) {
-        var proto;
+        
+        var proto, def = this._defaultPrototype;
+        /* TODO: test */
         if (this._prototypes[match]) {
-            if (this._defaultPrototype && this._overrideDefaultPrototype) {
-                proto = Amm.override({}, this._defaultPrototype, this._prototypes[match]);
+            proto = this._prototypes[match];
+            if (Amm.Builder.isPossibleBuilderSource(proto)) {
+                proto = Amm.Builder.calcPrototypeFromSource(proto, false);
+            }
+            if (def && this._overrideDefaultPrototype) {
+                def = this._defaultPrototype;
+                if (Amm.Builder.isPossibleBuilderSource(def)) {
+                    def = Amm.Builder.calcPrototypeFromSource(def, false);
+                }
+                proto = Amm.override({}, def, proto);
             } else {
-                proto = Amm.override({}, this._prototypes[match]);
+                proto = Amm.override({}, proto);
             }
         } else {
             if (!this._defaultPrototype) {
-                throw Error("No prototype for match '" + match + "' and `defaultPrototype` not set!");
-            } 
-            proto = Amm.override({}, this._defaultPrototype);
+                if (!this._allowNullInstance) {
+                    throw Error("No prototype for match '" + match + "' and `defaultPrototype` not set!");
+                }
+                return null;
+            }
+            if (Amm.Builder.isPossibleBuilderSource(def)) {
+                def = Amm.Builder.calcPrototypeFromSource(def, false);
+            } else {
+                proto = Amm.override({}, def);
+            }
         }
-        var assocProperty, revAssocProperty;
+        var assocProperty = this._assocProperty, revAssocProperty = this._revAssocProperty;
         if ('__assocProperty' in proto) {
             assocProperty = proto.__assocProperty;
             delete proto.__assocProperty;
@@ -119,7 +160,9 @@ Amm.Instantiator.Variants.prototype = {
         }
         var res = Amm.constructInstance(proto);
         if (assocProperty) Amm.setProperty(res, assocProperty, object);
-        if (revAssocProperty) Amm.setProperty(object, revAssocProperty, res);
+        if (revAssocProperty && typeof object === 'object' && object) {
+            Amm.setProperty(object, revAssocProperty, res);
+        }
         return res;
     },
     
@@ -233,11 +276,14 @@ Amm.Instantiator.Variants.prototype = {
     },
     
     forgetInstance: function(instance) {
+        if (!instance) return;
         var idx = this._findInstance(instance);
         if (!idx) return;
         this._unsubscribeInstance(instance);
         this._instances[idx[0]].splice(idx[1], 1);
-        if (!this._instances[idx[0]].length) this._forgetObject(idx[0]);
+        if (!this._instances[idx[0]].length) {
+            this._forgetObject(idx[0]);
+        }
         return true;
     },
     
@@ -246,7 +292,6 @@ Amm.Instantiator.Variants.prototype = {
         if (idx < 0) return [];
         return [].concat(this._instances[idx]);
     },
-    
     
     _subFilter: function(unsub) {
         if (unsub) {
@@ -272,6 +317,7 @@ Amm.Instantiator.Variants.prototype = {
     },
     
     _findObject: function(object) {
+        if (typeof object !== 'object' || !object) return -1;
         return Amm.Array.indexOf(object, this._objects);
     },
     
@@ -296,6 +342,7 @@ Amm.Instantiator.Variants.prototype = {
     },
     
     _subscribeObject: function(object) {
+        if (!object || typeof object !== 'object') return;
         if (object['Amm.WithEvents'] && object.hasEvent('cleanup')) {
             object.subscribe('cleanup', this._handleObjectCleanup, this);
         }
@@ -304,6 +351,15 @@ Amm.Instantiator.Variants.prototype = {
     _unsubscribeObject: function(object) {
         if (object['Amm.WithEvents'] && object.hasEvent('cleanup')) {
             object.unsubscribe('cleanup', this._handleObjectCleanup, this);
+        }
+    },
+    
+    _forgetObjectsWithoutInstances: function() {
+        for (var i = this._objects.length - 1; i >= 0; i--) {
+            if (this._instances[i][0] !== null) continue;
+            this._instances[i].splice(0, 1);
+            if (this._instances[i].length) continue;
+            this._forgetObject(i);
         }
     },
     
@@ -330,9 +386,54 @@ Amm.Instantiator.Variants.prototype = {
     
     _handleInstanceCleanup: function() {
         this.forgetInstance(Amm.event.origin);
-    }
+    },
+
+    /**
+     * if TRUE, no exception is thrown and NULL is returned 
+     * when there's no match of filter. In this case all objects
+     * passed to the instantiator will be tracked, and forgotten only
+     * with forgetObject() call (even if they don't have any instances).
+     * 
+     * @TODO: auto-disposal of objects with instances
+     * 
+     * @param {bool} allowNullInstance
+     * @return {Boolean|undefined}
+     */
+    setAllowNullInstance: function(allowNullInstance) {
+        allowNullInstance = !!allowNullInstance;
+        var oldAllowNullInstance = this._allowNullInstance;
+        if (oldAllowNullInstance === allowNullInstance) return;
+        this._allowNullInstance = allowNullInstance;
+        if (!allowNullInstance) this._forgetObjectsWithoutInstances();
+        return true;
+    },
+
+    getAllowNullInstance: function() { return this._allowNullInstance; },
+    
+    setAssocProperty: function(assocProperty) {
+        if (!assocProperty) assocProperty = null;
+        var oldAssocProperty = this._assocProperty;
+        if (oldAssocProperty === assocProperty) return;
+        this._assocProperty = assocProperty;
+        return true;
+    },
+
+    getAssocProperty: function() { return this._assocProperty; },
+
+    setRevAssocProperty: function(revAssocProperty) {
+        if (!revAssocProperty) revAssocProperty = null;
+        var oldRevAssocProperty = this._revAssocProperty;
+        if (oldRevAssocProperty === revAssocProperty) return;
+        this._revAssocProperty = revAssocProperty;
+        return true;
+    },
+
+    getRevAssocProperty: function() { return this._revAssocProperty; },
+
+    
     
 };
 
+Amm.extend(Amm.Instantiator.Variants, Amm.Instantiator);
 Amm.extend(Amm.Instantiator.Variants, Amm.WithEvents);
 

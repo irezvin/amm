@@ -87,7 +87,7 @@ if (!count(debug_backtrace())) {
     }
     
     if (count($vv) < 2) {
-        die("Usage: mk.php Class.Name base.Class.Name [prop1, prop2...]\n");
+        die("Usage: ".basename($_SERVER['argv'][0])." Class.Name base.Class.Name [prop1, prop2...]\n");
     }
     $dir = explode('/js/classes/', getcwd());
     if (count($dir) > 1 && strpos($vv[0], '.') === false) {

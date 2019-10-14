@@ -268,9 +268,101 @@
        var newValue = s1.getValue();
        assert.deepEqual(newValue, oldValue,
            'after valueProperty changed, selection remains the same');
+           
+       s1.setMultiple(false);
+       s1.setDummyLabel('(none)');
+       assert.equal(s1.options.getItems()[0].getLabel(), '(none)', 'dummy option appeared');
+       s1.setDummyLabel(null);
+       assert.notEqual(s1.options.getItems()[0].getLabel(), '(none)', 'dummy option disappeared');
        
        Amm.cleanup(s1, objects);
        
     });
+    
+    QUnit.test("Trait.Select: `dummyLabel`, `dummyValue`", function(assert) {
+       
+        var fx = jQuery('#qunit-fixture');
+        
+        fx.html('<select />');
+       
+        var s1 = new Amm.Element({
+            traits: ['Amm.Trait.Select'],
+            multiple: false,
+            options: {
+                foo: 'fooLabel',
+                bar: 'barLabel',
+                baz: 'bazLabel'
+            },
+            dummyLabel: '-empty-',
+            views: [{
+                'class': 'Amm.View.Html.Select',
+                htmlElement: fx.find('select')
+            }]
+        });
+        
+        assert.equal(fx.find('option').length, 4, 'Dummy option appeared');
+        
+        assert.equal(s1.getValue(), null, 'Select returns dummy value');
+        
+        assert.equal(fx.find('option')[0].selected, true, 'Dummy option selected');
+
+        s1.setValue('foo');
+        
+        assert.equal(fx.find('option')[0].selected, false, 'Dummy option no more selected');
+
+        s1.setValue(null);
+        
+        assert.equal(fx.find('option')[0].selected, true, 'Dummy option selected again');
+        
+        s1.setMultiple(true);
+        
+        assert.equal(fx.find('option').length, 3, 'Dummy option exists no more when multiple === true');
+        
+        s1.setDummyValue('zz');
+        
+        s1.setMultiple(false);
+        
+        assert.equal(fx.find('option').length, 4, 'Dummy option exists again when multiple === false');
+        
+        assert.equal(s1.getValue(), 'zz', 'Select value is dummy value');
+        
+        s1.cleanup();
+        
+    });
+    
+    QUnit.test("Trait.Select: preserve value during setOptions()", function(assert) {
+        
+        var e = new Amm.Element({
+            traits: 't.Select', 
+            multiple: true,
+            options: ['a', 'b', 'c'],
+            value: ['b', 'c']
+        });
+        
+        e.setOptions(['b', 'c', 'd']);
+        assert.deepEqual(e.getValue(), ['b', 'c'], 'Select value preserved during setOptions()');
+        e.setOptions(['c', 'd']);
+        assert.deepEqual(e.getValue(), ['c'], 'Select value preserved during setOptions(), but missing options aren\'t included into new value');
+        
+    });
+    
+    QUnit.test("Trait.Select.Option.get/setVisible", function(assert) {
+        
+        var fx = jQuery('#qunit-fixture');
+        fx.html("<select multiple='multiple' data-amm-e='' data-amm-v='v.Select'></select>");
+        var e = new Amm.Element(fx.find('select'));
+        e.setOptions(['a', 'b', 'c']);
+        e.setValue(['a', 'c']);
+        e.options[0].setVisible(false);
+        assert.equal(e.options[0].getSelected(), false, 'Invisible option not selected anymore');
+        assert.ok(fx.find('select span option[value=a]').length, 'hidden option was added into span element');
+        e.options[0].setVisible(true);
+        assert.equal(fx.find('select span option[value=a]').length, 0, 'visible option was removed from span element');
+        assert.equal(fx.find('select option[value=a]').length, 1, 'visible option remains children of select element');
+        Amm.cleanup(e);
+        
+    });
+       
+    
     
 }) ();

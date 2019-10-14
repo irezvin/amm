@@ -23,17 +23,16 @@ Amm.View.Html.Input.prototype = {
     
     _resolveHtmlElement: false,
     
+    _watchKeys: false,
+    
     _receiveEvent: function(event) {
         if (!this._element) return;
-        if (event.type === 'change') {
-            if (!this._element.getReadOnly()) {
-                this._element.setValue(this.getVValue());
-            }
-            return true;
-        } else if (event.type === 'focus') {
+        /** @TODO changeEvents property (that will be also added to event names) */
+        if (event.type === 'focus') {
             this._element.setFocusedView(this);
             return true;
-        } else if (event.type === 'blur') {
+        } 
+        if (event.type === 'blur') {
             var t = this;
             // in browser, focus switching from one element to another fires first 'blur' event, 
             // then 'focus'. Timeout is added to avoid flapping of `focused` propety when focus
@@ -45,6 +44,10 @@ Amm.View.Html.Input.prototype = {
             window.setTimeout(this._blurTimeoutHandler, 1);
             return true;
         }
+        if (!this._element.getReadOnly()) {
+            this._element.setValue(this.getVValue());
+        }
+        return true;
     },
     
     setVFocusedView: function(value) {
@@ -122,6 +125,20 @@ Amm.View.Html.Input.prototype = {
     
     getSuggestedTraits: function() {
         return [Amm.Trait.Input];
+    },
+    
+    setUpdateOnKeyUp: function(updateOnKeyUp) {
+        updateOnKeyUp = !!updateOnKeyUp;
+        var ev = this._eventName;
+        var hasKeyUp = this.getUpdateOnKeyUp();
+        if (updateOnKeyUp === hasKeyUp) return;
+        if (updateOnKeyUp && !hasKeyUp) ev += ' keyup';
+        else ev = ev.replace(/\bkeyup\b/g, '').replace(/ +/, ' ').replace(/^ +| +$/g, '');
+        this.setEventName(ev);
+    },
+    
+    getUpdateOnKeyUp: function() {
+        return !!this._eventName.match(/\bkeyup\b/);
     }
 
 };

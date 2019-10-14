@@ -339,5 +339,129 @@
         
     });
     
+    QUnit.test("Amm.View.Html.Collection: updateItemHtml() returns replacement nodes", function(assert) {
+        
+        var e1 = new Amm.Element({prop__name: 'e1', prop__value: 10});
+        var e2 = new Amm.Element({prop__name: 'e2', prop__value: 20});
+        var e3 = new Amm.Element({prop__name: 'e3', prop__value: 30});
+        
+        var c = new Amm.Collection({
+            items: [e1, e2, e3], 
+            changeEvents: ['nameChange', 'valueChange']
+        });
+        
+        var fx = jQuery('#qunit-fixture');
+        
+        fx.html('<div />');
+        
+        var d = fx.find('div');
+        
+        // replace | refresh | return | enclose | extract
+        var mode = 'replace';
+        
+        var cv = new Amm.View.Html.Collection({
+            collection: c,
+            createItemHtml: function(item) {
+                return '<p><b>' + item.getName() + '</b>: <i>' + item.getValue() + '</i></p>';
+            },
+            updateItemHtml: function(item, node) {
+                if (mode === 'replace') return this.createItemHtml(item);
+                jQuery(node).find('b').html(item.getName());
+                jQuery(node).find('i').html(item.getValue());
+                if (mode === 'enclose') return jQuery(node).wrap('<div></div>').parent('div');
+                if (mode === 'extract') {
+                    return jQuery(node).find('p')[0];
+                    
+                }
+                if (mode === 'return') return node;
+            },
+            htmlElement: d
+        });
+        
+        assert.deepEqual(d.html(),
+                '<p><b>e1</b>: <i>10</i></p>'
+            +   '<p><b>e2</b>: <i>20</i></p>'
+            +   '<p><b>e3</b>: <i>30</i></p>'
+    
+            ,   'Correct initial markup'
+        );
+
+        mode = 'refresh';
+        
+        var oldP = d.find('p')[0];
+        
+        e1.setName('a1');
+        
+        assert.deepEqual(d.html(),
+                '<p><b>a1</b>: <i>10</i></p>'
+            +   '<p><b>e2</b>: <i>20</i></p>'
+            +   '<p><b>e3</b>: <i>30</i></p>'
+        
+            ,   'New markup after item in-place update'
+        );
+
+        assert.ok(d.find('p')[0] === oldP, 'Old node still in place');
+
+        mode = 'return';
+        
+        e1.setName('a2');
+        
+        assert.deepEqual(d.html(),
+                '<p><b>a2</b>: <i>10</i></p>'
+            +   '<p><b>e2</b>: <i>20</i></p>'
+            +   '<p><b>e3</b>: <i>30</i></p>'
+        
+            ,   'New markup after item in-place update (with old node returned)'
+        );
+
+        assert.ok(d.find('p')[0] === oldP, 'Old node still in place');
+
+        mode = 'replace';
+        
+        e1.setName('a3');
+        
+        assert.deepEqual(d.html(),
+                '<p><b>a3</b>: <i>10</i></p>'
+            +   '<p><b>e2</b>: <i>20</i></p>'
+            +   '<p><b>e3</b>: <i>30</i></p>'
+        
+            ,   'New markup after item replace-update'
+        );
+
+        assert.ok(d.find('p')[0] !== oldP, 'Old node not in place anymore');
+
+        mode = 'enclose';
+        
+        oldP = d.find('p')[0];
+        
+        e1.setName('a4');
+        
+        assert.deepEqual(d.html(),
+                '<div><p><b>a4</b>: <i>10</i></p></div>'
+            +   '<p><b>e2</b>: <i>20</i></p>'
+            +   '<p><b>e3</b>: <i>30</i></p>'
+        
+            ,   'New markup after item enclosed'
+        );
+
+        assert.ok(d.find('p')[0] === oldP, 'Old node in place');
+        
+        mode = 'extract';
+        
+        e1.setName('a5');
+        
+        assert.deepEqual(d.html(),
+                '<p><b>a5</b>: <i>10</i></p>'
+            +   '<p><b>e2</b>: <i>20</i></p>'
+            +   '<p><b>e3</b>: <i>30</i></p>'
+        
+            ,   'New markup after item extracted from enclosing node'
+        );
+
+        assert.ok(d.find('p')[0] === oldP, 'Old node in place');
+        
+        Amm.cleanup(cv);
+        
+    });
     
 }) ();

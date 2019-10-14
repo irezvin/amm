@@ -929,5 +929,105 @@
             'writeProperty was set from provider expression');
     });
     
+    QUnit.test("Express.writeToExpressionThis", function(assert) {
+       
+        var a = new Amm.Element({
+            prop__val: 10,
+            prop__val2: null,
+            prop__id: 'a'
+        });
+        
+        var b = new Amm.Element({
+            prop__val: 11,
+            prop__val2: null,
+            prop__id: 'b'
+        });
+        
+        var c = new Amm.Element({
+            prop__val: 12,
+            prop__val2: null,
+            prop__id: 'c'
+        });
+        
+        var d = new Amm.Element({
+            prop__val: 13,
+            prop__val2: null,
+            prop__id: 'd'
+        });
+        
+        var e = new Amm.Expression({
+            src: 'this.val + 1',
+            dest: 'this.val2'
+        });
+        
+        assert.deepEqual(Amm.getClass(e.getWriteObject()), 'Amm.Expression',
+            'non-word writeProperty (setDest) is parsed as Amm.Expression');
+            
+        assert.ok(e.getDest() === e.getWriteObject(), 
+            'getDest() returns created Amm.Expression');
+            
+        assert.equal(e.getWriteToExpressionThis(), Amm.Expression.THIS_WRITE_AUTO,
+            'initial value of `writeToExpressionThis` is THIS_WRITE_AUTO');
+            
+        e.setExpressionThis(a);
+
+        assert.equal(e.getWriteToExpressionThis(), Amm.Expression.THIS_WRITE_ALWAYS,
+            'after propagation `writeToExpressionThis` THIS_WRITE_AUTO changed to THIS_WRITE_ALWAYS');
+        
+        assert.ok(e.getWriteObject().getExpressionThis() === e.getExpressionThis(),
+            'expressionThis was propagated with Amm.Expression.THIS_WRITE_AUTO');
+            
+        assert.deepEqual(a.getVal2(), a.getVal() + 1, 'Value updated');
+        
+        e.setExpressionThis(b);
+        
+        assert.ok(e.getWriteObject().getExpressionThis() === e.getExpressionThis(),
+            'THIS_WRITE_ALWAYS works');
+            
+        assert.deepEqual(b.getVal2(), b.getVal() + 1, 'Value updated');
+        
+        var e2 = new Amm.Expression({
+            src: 'this.val + 1',
+            writeToExpressionThis: Amm.Expression.THIS_WRITE_AUTO,
+            expressionThis: c,
+            writeProperty: new Amm.Expression ({
+                src: 'this.val2',
+                expressionThis: d
+            })
+        });
+        
+        assert.ok(e2.getExpressionThis() !== e2.getWriteObject().getExpressionThis(), 
+            'THIS_WRITE_AUTO doesn\'t update expressionThis which was set before'
+        );
+
+        e2.setWriteToExpressionThis(Amm.Expression.THIS_WRITE_ONCE);
+        
+        assert.ok(e2.getExpressionThis() === e2.getWriteObject().getExpressionThis(), 
+            'THIS_WRITE_ONCE did work'
+        );
+        
+        assert.equal(e2.getWriteToExpressionThis(), Amm.Expression.THIS_WRITE_NEVER,
+            'after first update THIS_WRITE_ONCE became THIS_WRITE_NEVER');
+            
+        e2.setExpressionThis(a);
+        
+        assert.ok(e2.getExpressionThis() !== e2.getWriteObject().getExpressionThis(), 
+            'THIS_WRITE_NEVER works'
+        );
+
+        var e3 = new Amm.Expression({
+            expressionThis: d,
+            src: 'this.val',
+            dest: 'val2'
+        });
+        
+        assert.deepEqual(e3.getDest(), 'val2', 'setDest() for word-string property sets property name, getDest() returns string');
+        assert.deepEqual(d.getVal2(), d.getVal(), 'src/dest: property values were sync\'d');
+
+        Amm.cleanup(a, b, c, d, e, e2);
+        
+
+    });
+    
 }) ();
 

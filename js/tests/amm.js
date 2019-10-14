@@ -4,7 +4,7 @@
 QUnit.module("Amm Global Object");
 QUnit.test("Amm get/set/destroy Item", function(assert) {
    
-    var a = Amm;
+    var a = window.Amm;
     var item = {
         cleanupCalled: false,
         cleanup: function() {
@@ -127,7 +127,11 @@ QUnit.test("Amm object inheritance support", function(assert) {
 
 QUnit.test("Amm init() and detect/get/set Property", function(assert) {
    
-    var ClassX = function() {};
+    var ClassX = function(foo, etc) {
+        if (foo !== undefined) this._foo = foo;
+        if (etc !== undefined) this._etc = etc;
+    };
+    
     ClassX.prototype = {
         
         _foo: null,
@@ -163,11 +167,11 @@ QUnit.test("Amm init() and detect/get/set Property", function(assert) {
         }, 
         
         getEtc: function(arg) {
-            return this._etc + (arg || 0);
+            return this._etc + (arg || '');
         },
         
         setEtc: function(quux, arg) {
-            this._etc = quux + (arg || 0);
+            this._etc = quux + (arg || '');
         },
         
         quux: undefined,
@@ -246,6 +250,27 @@ QUnit.test("Amm init() and detect/get/set Property", function(assert) {
     Amm.setProperty(x, 'etc', 5, false, 10);
     assert.equal(x._etc, 15);
     assert.equal(Amm.getProperty(x, 'etc', undefined, 5), 20);
+    
+    var xx = [
+        new ClassX('1foo', '1etc'),
+        new ClassX('2foo', '2etc'),
+        new ClassX('3foo', '3etc')        
+    ];
+    assert.deepEqual(Amm.getProperty(xx, 'foo'), ['1foo', '2foo', '3foo']);
+    assert.deepEqual(Amm.getProperty(xx, ['foo', 'etc']), 
+        [
+            {foo: '1foo', etc: '1etc'},
+            {foo: '2foo', etc: '2etc'},
+            {foo: '3foo', etc: '3etc'}
+        ]);
+       
+    Amm.setProperty(xx, 'foo', 5);
+    assert.equal(xx[0].getFoo() + ' ' + xx[1].getFoo() + ' ' + xx[2].getFoo() , '5 5 5');
+    
+    Amm.setProperty(xx, {foo: 6, bar: 7});
+    assert.equal(xx[0].getFoo() + ' ' + xx[1].getFoo() + ' ' + xx[2].getFoo() , '6 6 6');
+    assert.equal(xx[0]._bar + ' ' + xx[1]._bar + ' ' + xx[2]._bar , '7 7 7');
+    
 });
 
 QUnit.test("Amm getFunction / registerNamespace / registerFunction", function(assert) {
@@ -493,5 +518,19 @@ QUnit.test("Amm.html", function(assert) {
         <textarea>some pretty text here</textarea>\n\
     </div>\n\
 </div>");
+    
+    QUnit.test("Amm.misc", function(assert) {
+       
+        var obj = {
+            prop1: 'val1',
+            prop2: 'val2'
+        };
+        
+        assert.deepEqual(Amm.keys(obj), ['prop1', 'prop2'], 'Amm.keys() returns hash names');
+        assert.deepEqual(Amm.values(obj), ['val1', 'val2'], 'Amm.values() returns hash values');
+        
+    });
+   
+    
     
 });

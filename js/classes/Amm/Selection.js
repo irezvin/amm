@@ -7,6 +7,8 @@ Amm.Selection.ERR_NOT_IN_OBSERVED_COLLECTION = "Not in observed collection.";
 
 Amm.Selection.prototype = {
     
+    "Amm.Selection": "__CLASS__",
+    
     _multiple: true,
 
     _valueProperty: null,
@@ -20,7 +22,7 @@ Amm.Selection.prototype = {
     _unselectOnItemValueChange: false,
     
     _cacheValue: true,
-    
+
     _value: undefined,
     
     _suppressValueChangeEvent: 0,
@@ -154,7 +156,7 @@ Amm.Selection.prototype = {
     },
 
     outValueChange: function(value, oldValue) {
-        if (this._suppressValueChangeEvent) return;
+        if (this._suppressValueChangeEvent || this._updateLevel) return;
         this._out('valueChange', value, oldValue);
     },
 
@@ -310,44 +312,44 @@ Amm.Selection.prototype = {
         this._unsubscribeCollectionItems(cut);
         this._subscribeCollectionItems(insert);
         
-        var c = this.intersect(cut, true);
+        var toRemove = this.intersect(cut, true);
         
-        var canAdd = insert.length && (
+        var toAdd = Amm.Array.diff(insert, this);
+        
+        if (!toAdd.length && !toRemove.length) return; // nothing to do
+        
+        var canAdd = toAdd.length && (
             this._selectedProperty 
             || 
             // if not multiple we can't have more than one object anyway
             this._valueProperty && this.length && this._multiple 
         );
         
-        var deferEvents = (c.length && canAdd || canAdd && this._sameOrder);
-        
-        if (deferEvents) this.beginUpdate();
+        this.beginUpdate();
         
         // remove old items from selection
-        var toRemove = c;
-        if (toRemove.length) {
-            for (var i = 0, l = toRemove.length; i < l; i++)
-                this.reject(toRemove[i], false);
-        };
+        for (var i = 0, l = toRemove.length; i < l; i++)
+            this.reject(toRemove[i], false);
         
         // check if new items have a - selectedProperty or b - matching valueProperty
         
         if (canAdd) {
-            var toAdd = [];
+            var willAdd = [];
             var v = this._valueProperty? this.getValue() : null;
             // check items that we should add
-            for (var i = 0, l = insert.length; i < l; i++) {
-                var o = insert[i];
-                if (this._selectedProperty && Amm.getProperty(o, this._selectedProperty)) toAdd.push(o);
+            for (var i = 0, l = toAdd.length; i < l; i++) {
+                var o = toAdd[i];
+                if (this._selectedProperty && Amm.getProperty(o, this._selectedProperty)) willAdd.push(o);
                 else if (this._valueProperty && v && Amm.Array.indexOf(Amm.getProperty(o, this._valueProperty), v) >= 0)
-                    toAdd.push(o);
+                    willAdd.push(o);
             }
-            if (toAdd.length) {
-                this.acceptMany(toAdd);
+            if (willAdd.length) {
+                this.acceptMany(willAdd);
                 if (this._sameOrder) this._maintainOrder(true);
             }
         }
-        if (deferEvents) this.endUpdate();
+        
+        this.endUpdate();
     },
     
     _handleCollectionReorderItems: function(index, length, oldOrder) {
@@ -458,10 +460,12 @@ Amm.Selection.prototype = {
     },
     
     _handleItemSelectedPropertyChange: function(value, oldValue) {
+        this.beginUpdate();
         var item = Amm.event.origin;
         var hasItem = this.hasItem(item);
         if (hasItem && !value) {
             this.reject(item);
+            this.endUpdate();
             return;
         }
         else if (!hasItem && value) {
@@ -470,6 +474,7 @@ Amm.Selection.prototype = {
             else
                 this.setItems([item]);
         }
+        this.endUpdate();
     },
     
     _subscribeFirst_valueChange: function() {
@@ -523,7 +528,26 @@ Amm.Selection.prototype = {
             Amm.setProperty(item, this._selectedProperty, false);
         }
         return res;
-    }
+    },
+    
+    _oldValue: null,
+    
+    _doBeginUpdate: function() {
+        Amm.Collection.prototype._doBeginUpdate.call(this);
+        this._oldValue = this.getValue();
+        if (this._oldValue instanceof Array) this._oldValue = [].concat(this._oldValue);
+    },
+    
+    _doEndUpdate: function() {
+        this._suppressValueChangeEvent++;
+        Amm.Collection.prototype._doEndUpdate.call(this);
+        this._suppressValueChangeEvent--;
+        if (this._updateLevel) return;
+        var newValue = this.getValue(), oldValue = this._oldValue;
+        if (newValue instanceof Array && oldValue instanceof Array && Amm.Array.equal(newValue, oldValue)) return;
+        if (newValue === oldValue) return;
+        this.outValueChange(newValue, oldValue);
+    },    
     
 };
 

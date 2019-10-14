@@ -19,6 +19,8 @@ Amm.Trait.Select.Option.prototype = {
     
     _origin: null,
 
+    _visible: true,
+
     setValue: function(value) {
         var oldValue = this._value;
         if (oldValue === value) return;
@@ -67,7 +69,7 @@ Amm.Trait.Select.Option.prototype = {
 
     setSelected: function(selected) {
         selected = !!selected;
-        if (this._disabled) selected = false;
+        if (this._disabled || !this._visible) selected = false;
         var oldSelected = this._selected;
         if (oldSelected === selected) return;
         this._selected = selected;
@@ -108,7 +110,23 @@ Amm.Trait.Select.Option.prototype = {
 
     outOriginChange: function(origin, oldOrigin) {
         this._out('originChange', origin, oldOrigin);
-    }
+    },
+    
+    setVisible: function(visible) {
+        visible = !!visible;
+        var oldVisible = this._visible;
+        if (oldVisible === visible) return;
+        this._visible = visible;
+        if (!this._visible && this._selected) this.setSelected(false);
+        this.outVisibleChange(visible, oldVisible);
+        return true;
+    },
+
+    getVisible: function() { return this._visible; },
+
+    outVisibleChange: function(visible, oldVisible) {
+        this._out('visibleChange', visible, oldVisible);
+    },
     
 };
 

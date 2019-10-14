@@ -8,7 +8,7 @@ if (isset($_SERVER['argv'][1])) {
 }
 
 require(dirname(__FILE__).'/list.php');
-$r = listAmmFiles($dir);
+$r = listAmmFiles($dir, null, false);
 
 if (strlen($dir)) {
     foreach ($r as $i => $item)

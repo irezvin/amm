@@ -92,7 +92,10 @@ Amm.View.Html.Select.prototype = {
         var options = [];
         for (var i = 0; i < element.options.length; i++) {
             var htmlOption = element.options[i];
-            var elementOption = {label: jQuery(htmlOption).html(), value: htmlOption.value};
+            var elementOption = {
+                label: jQuery(htmlOption).html(), 
+                value: htmlOption.value
+            };
             if (htmlOption.disabled) elementOption.disabled = true;
             elementOption.selected = !!htmlOption.selected;
             options.push(elementOption);
@@ -122,9 +125,15 @@ Amm.View.Html.Select.prototype = {
                 }
                 if (item.getDisabled()) r.attr('disabled', 'disabled');
                 if (item.getSelected()) r.attr('selected', 'selected');
-                return r[0];
+                if (!item.getVisible()) return r.wrap('<span>').parent()[0];
+                else return r[0];
             },
             updateItemHtml: function(item, node) {
+                var wasSpan = false;
+                if (node.tagName === 'SPAN') {
+                    wasSpan = true;
+                    node = node.firstChild;
+                }
                 var selected = !!item.getSelected();
                 node.selected = selected;
                 node.disabled = t._element.getReadOnly() && !selected || !!item.getDisabled();
@@ -135,6 +144,13 @@ Amm.View.Html.Select.prototype = {
                     node.removeAttribute('value');
                 }
                 jQuery(node).html(item.getLabel());
+                if (!item.getVisible()) {
+                    if (!wasSpan) node = jQuery(node).wrap('<span></span>').parent()[0];
+                    else node = node.parentNode;
+                } else if (wasSpan) {
+                    node.parentNode.removeChild(node);
+                }
+                return node;
             }
         };
         this._collectionView = new Amm.View.Html.Collection(proto);

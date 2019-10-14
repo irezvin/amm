@@ -25,6 +25,8 @@ Amm.Builder = function(selector, options) {
     if (options) Amm.init(this, options);
 };
 
+Amm.Builder._EXT_NOT_FOUND = {};
+
 Amm.Builder.PROBLEM_SILENT = 0;
 
 Amm.Builder.PROBLEM_CONSOLE = 1;
@@ -45,9 +47,9 @@ Amm.Builder.prototype = {
     
     problemReportMode: undefined, // use global
     
-    sel: '[data-amm-id], [data-amm-e], [data-amm-v]',
+    sel: '[data-amm-id], [data-amm-e], [data-amm-v], [data-amm-x]',
 
-    selIgnore: '[data-amm-dont-build], [data-amm-dont-build] *',
+    selIgnore: '[data-amm-dont-build], [data-amm-dont-build] *, [data-amm-built]',
     
     // 'root' is Amm.Root
     topLevelComponent: null,
@@ -149,6 +151,7 @@ Amm.Builder.prototype = {
             rootNodes.push(this._parent);
             
             // line below calls infinite recursing with _detectChildrenConnectedByIds/_detectConnectedNodes
+            
             // allNodes.push(this._parent);
         }
         for (var i = 0, l = allNodes.length; i < l; i++) {
@@ -169,10 +172,27 @@ Amm.Builder.prototype = {
         return rootNodes;
     },
     
+    getExtData: function(entry, path, defaultValue) {
+        if (defaultValue === undefined) defaultValue = Amm.Builder._EXT_NOT_FOUND;
+        if (!(path instanceof Array)) path = ('' + path).split('.');
+        var curr = entry, prop, currPath = [].concat(path);
+        while ((prop = currPath.shift()) !== undefined) {
+            if (typeof curr !== 'object' || !(prop in curr)) return defaultValue;
+            curr = curr[prop];
+        }
+        return curr;
+    },
+    
     _replaceRefsAndInstaniateObjects: function(json, htmlElement) {
         if (!json || typeof json !== 'object') return json;
         var i, l;
         if ('$ref' in json) return new Amm.Builder.Ref(json, htmlElement);
+        if ('$ext' in json) {
+            var data = this.getExtData(window, json.$ext);
+            if (data === Amm.Builder._EXT_NOT_FOUND) throw Error("Cannot resolve '$ext' " + json.$ext);
+            if (json['$resolve']) json = data;
+            else return data;
+        }
         if (json instanceof Array) {
             for (i = 0, l = json.length; i < l; i++) {
                 if (json[i] && typeof json[i] === 'object') 
@@ -222,6 +242,8 @@ Amm.Builder.prototype = {
             n.id = a;
             n.connected.id = a; // add to shared array for speedup
         }
+        a = htmlElement.getAttribute('data-amm-x');
+        if (a && a.length) n.x = this._replaceRefsAndInstaniateObjects(json.parse(a), n.htmlElement);
         return n;
     },
 
@@ -288,12 +310,12 @@ Amm.Builder.prototype = {
         }
         this._detectConnectedRecursive(node.children);
         p = node.parent;
-        if (p && ((node.v && !node.e) || (p.v && !p.e))) {
+        if (p && (((node.v || node.x) && !node.e) || ((p.v || p.x) && !p.e))) {
             if (p && p.children.length === 1) {
                 var nodeHasElement = !!(node.e || node.connected.groupHasElement);
                 var parentHasElement = !!(p.e || p.connected.groupHasElement);
                 var acceptable = !(nodeHasElement && parentHasElement);
-                if (acceptable && (!p.id || !node.id) && ( p.e || p.v)) {
+                if (acceptable && (!p.id || !node.id) && (p.e || p.v || p.x)) {
                     this._connect(p, node);
                     node.conParent = true;
                     p.conChild = true;
@@ -312,7 +334,6 @@ Amm.Builder.prototype = {
                 }
         }
         return res;
-        
     },
     
     _detectConnectedRecursive: function(items) {
@@ -363,7 +384,7 @@ Amm.Builder.prototype = {
             if (!nodePrototypeOrElement.views) nodePrototypeOrElement.views = [];
             views = nodePrototypeOrElement.views;
         }
-            
+        
         views.push.apply(views, this._getAllViews(node));
         if (!views.length) views.push({'class': 'Amm.View.Html.Default', reportMode: this.reportMode});
         for (var i = 0, l = views.length; i < l; i++) {
@@ -378,6 +399,8 @@ Amm.Builder.prototype = {
             nodePrototypeOrElement.component = this.topLevelComponent;
         }
         
+        this._applyExtensions(nodePrototypeOrElement, node);
+        
         var element;
         
         if (nodePrototypeOrElement['Amm.Element']) { // we have prototype instance
@@ -386,13 +409,43 @@ Amm.Builder.prototype = {
             element = Amm.override({'class': 'Amm.Element'}, nodePrototypeOrElement);
         }
         
-        
         if (!prototypesOnly) {
             element = Amm.constructInstance(nodePrototypeOrElement, 'Amm.Element');
         }
-        if (topLevel && (!node.parent || node.parent === this._parent || node.conParent && !node.parent.parent)) topLevel.push(element);
+        if (topLevel && (!node.parent || node.parent === this._parent || node.conParent && !node.parent.parent)) {
+            topLevel.push(element);
+        }
         res.push(element);
         node.connected.alreadyBuilt = true;
+        return res;
+    },
+    
+    _applyExtensions: function(elementPrototype, node) {
+        for (var i = 0, l = node.connected.length; i < l; i++) {
+            if (node.connected[i].x) {
+                var parsed = this._parseExtensions(node.connected[i].x);
+                for (var j = 0, ll = parsed.length; j < ll; j++) {
+                    var res = parsed[j].fn(node.connected[i].htmlElement, elementPrototype, parsed[j].arg);
+                    if (res && typeof res === 'object') Amm.overrideRecursive(elementPrototype, res);
+                }
+            }
+        }
+    },
+    
+    _getExtension: function(path) {
+        path = path.replace(/(\.|^)(\w+)$/, "$1builderExtension_$2");
+        return Amm.getFunction(path);
+    },
+    
+    _parseExtensions: function(param) {
+        if (typeof param === 'string') return [{ fn: this._getExtension(param), arg: undefined }];
+        if (typeof param !== 'object') {
+            throw Error("data-amm-x must contain either string or an object");
+        }
+        var res = [];
+        for (var path in param) if (param.hasOwnProperty(path)) {
+            res.push({ fn: this._getExtension(path), arg: param[path] });
+        }
         return res;
     },
     

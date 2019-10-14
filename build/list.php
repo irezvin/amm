@@ -6,7 +6,6 @@ function listTests($dir = null) {
     $iterator = new RecursiveIteratorIterator($directory);
     $regex = new RegexIterator($iterator, '/^.+\.js$/i', RecursiveRegexIterator::GET_MATCH);
     // class name => file name
-    $files = array();
     foreach ($regex as $v) {
         $f = $v[0];
         $jsName = str_replace(DIRECTORY_SEPARATOR, '.', substr($f, strlen($dir) + 1));
@@ -16,7 +15,7 @@ function listTests($dir = null) {
     return $res;
 }
 
-function listAmmFiles($dir = null, $cacheFile = null) {
+function listAmmFiles($dir = null, $cacheFile = null, $minify = null) {
     if (is_null($dir)) $dir = dirname(__FILE__).'/../js/classes';
     $directory = new RecursiveDirectoryIterator($dir);
     $iterator = new RecursiveIteratorIterator($directory);
@@ -29,8 +28,7 @@ function listAmmFiles($dir = null, $cacheFile = null) {
         $files[$jsName] = $f;
     }
     $res = false;
-    if ($cacheFile === false) $cached = false;
-    else {
+    if ($cacheFile !== false) {
         $ts = max(array_map('filemtime', $files));
         if ($cacheFile === null) $cacheFile = dirname(__FILE__).'/.cache';
         if (is_file($cacheFile) && filemtime($cacheFile) > $ts) {
@@ -46,6 +44,19 @@ function listAmmFiles($dir = null, $cacheFile = null) {
         }
         foreach ($res as $i => $f) $res[$i] = substr($res[$i], strlen($dir) + 1);
         if (strlen($cacheFile)) file_put_contents($cacheFile, implode("\n", $res));
+    }
+    if ($minify || $minify === null && !(isset($_REQUEST['no_minify']) && $_REQUEST['no_minify'])) {
+        $srcPaths = array();
+        foreach ($res as $item) $srcPaths[] = dirname(__DIR__).'/js/classes/'.$item;
+        $filename = __DIR__.'/amm.min.js';
+        if (!isset($ts)) $ts = max(array_map('filemtime', $files));
+        if (!is_file($filename) || filemtime($filename) < $ts) {
+            $cmd = 'uglifyjs --mangle --source-map --output '.escapeshellarg($filename).' '.implode(' ', array_map('escapeshellarg', $srcPaths));
+            exec($cmd, $output, $return);
+            echo "<!--\n".$cmd."\n-->";
+            if ($return) throw new Exception("Cannot run uglifyjs: ".implode("\n", $output)."\n; command was:\n".$cmd);
+        }
+        return array('../../build/amm.min.js?t='.$ts);
     }
     return $res;
 }

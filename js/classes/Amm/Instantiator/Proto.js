@@ -2,14 +2,19 @@
 
 Amm.Instantiator.Proto = function(optionsOrProto, assocProperty, revAssocProperty) {
     
+    Amm.Instantiator.call(this);
     if (typeof optionsOrProto !== 'object' || optionsOrProto && !optionsOrProto.proto) {
         optionsOrProto = {
             proto: optionsOrProto
         };
     }
+    if (optionsOrProto && Amm.Builder.isPossibleBuilderSource(optionsOrProto.proto)) {
+        this.isElement = true;
+    }
     if (assocProperty) optionsOrProto.assocProperty = assocProperty;
     if (revAssocProperty) optionsOrProto.revAssocProperty = revAssocProperty;
     Amm.init(this, optionsOrProto);
+
 };
 
 Amm.Instantiator.Proto.prototype = {
@@ -18,6 +23,8 @@ Amm.Instantiator.Proto.prototype = {
     
     proto: null,
     
+    isElement: false,
+    
     assocProperty: null,
     
     revAssocProperty: null,
@@ -25,7 +32,9 @@ Amm.Instantiator.Proto.prototype = {
     construct: function(object) {
         if (!this.proto) throw Error("`proto` must be set");
         var proto = this.proto;
-        var res = Amm.constructInstance(proto, null);
+        var res;
+        if (this.isElement) res = new Amm.Element(proto);
+            else res = Amm.constructInstance(proto, null);
         if (this.assocProperty) Amm.setProperty(res, this.assocProperty, object);
         if (this.revAssocProperty) Amm.setProperty(object, this.revAssocProperty, res);
         return res;
@@ -40,4 +49,4 @@ Amm.Instantiator.Proto.prototype = {
 };
 
 
-// Amm.extend(Amm.Instantiator.Proto, Amm.Instantiator);
+Amm.extend(Amm.Instantiator.Proto, Amm.Instantiator);
