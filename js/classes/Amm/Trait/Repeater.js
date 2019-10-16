@@ -89,6 +89,7 @@ Amm.Trait.Repeater.prototype = {
     
     _createArrayMapper: function() {
         var old = this._arrayMapper, items;
+        this.displayChildren.setCleanupOnDissociate(true); // didn't find the better place
         if (old) {
             items = old.getSrcIsOwn()? old.getSrc().getItems() : old.getSrc();
             old.cleanup();
@@ -109,13 +110,13 @@ Amm.Trait.Repeater.prototype = {
         var instantiatorPrototype;
         if ((!conditions || !conditions.length) && defaultPrototype) {
             instantiatorPrototype = {
-                'class': 'Amm.Instantiator.Proto',
+                'class': Amm.Instantiator.Proto,
                 isElement: true,
                 proto: defaultPrototype
             };
         } else {
             instantiatorPrototype = {
-                'class': 'Amm.Instantiator.Variants',
+                'class': Amm.Instantiator.Variants,
                 prototypes: prototypes || [],
                 defaultPrototype: defaultPrototype || null
             };
@@ -123,7 +124,7 @@ Amm.Trait.Repeater.prototype = {
         var res = {
             dest: this.displayChildren,
             filter: {
-                'class': 'Amm.Filter',
+                'class': Amm.Filter,
                 conditions: conditions
             },
             instantiator: instantiatorPrototype
