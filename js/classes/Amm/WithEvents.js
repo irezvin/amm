@@ -100,7 +100,7 @@ Amm.WithEvents.invokeHandlers = function(eventName, args, subscribers, dontPush,
                 argsCpy = decorator.call(decorator, eventName, argsCpy, handler, scope, extra, this);
                 if (!(argsCpy instanceof Array)) continue;
             }
-            if (typeof handler !== 'function' && typeof handler.apply !== 'function') {
+            if (!handler || typeof handler !== 'function' && typeof handler.apply !== 'function') {
                 throw Error("Cannot call non-function handler or handler without .apply");
             }
             handler.apply(scope, argsCpy);
@@ -156,6 +156,7 @@ Amm.WithEvents.prototype = {
      * Accepts any number of additional arguments to be passed to event recipients
      */
     _out: function(eventName) {
+        if (!this._subscribers) return;
         var ss = this._subscribers[eventName];
         if (!ss || !ss.length) return; // no subscribers - so we're done
         var args = Array.prototype.slice.call(arguments, 1);

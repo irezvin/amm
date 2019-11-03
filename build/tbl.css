@@ -1,0 +1,90 @@
+* {
+    box-sizing: border-box;
+}
+
+table.data {
+    font-family: sans-serif;
+    font-size: 0.9em;
+    border-collapse: collapse;
+}
+
+table.data th {
+    white-space: nowrap;
+}
+
+table.data thead:first-of-type th:first-child {
+    border-radius: 1em 0 0 0;
+}
+
+table.data thead:first-of-type th:last-child {
+    border-radius: 0 1em 0 0;
+}
+
+table.data thead:first-of-type th {
+    padding-bottom: 0;
+}
+
+table.data thead:nth-child(2) th {
+    padding-top: 0;
+    padding-bottom: 1em;
+}
+
+table.data thead:first-of-type th:first-child {
+    border-radius: 1em 0 0 0;
+}
+
+table.data tbody:last-of-type tr:last-child td:last-child {
+    border-radius: 0 0 1em 0;
+}
+
+table.data tbody:last-of-type tr:last-child td:first-child {
+    border-radius: 0 0 0 1em;
+}
+
+table.data thead th, table.data tbody tr:nth-child(even) td {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+    
+table.data tbody tr:nth-child(odd) td {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+table.data thead:last-of-type th {
+}
+
+table.data th, table.data td {
+    padding: 0.5em;
+}
+
+table.data tbody tr:first-child td {
+}
+
+table.data tbody tr:hover td {
+    color: #333;
+    background-color: gold;
+}
+
+table input[type=text] {
+    background: none;
+    padding: 0.5em;
+    color: gold;
+    border-radius: 0.5em;
+    width: 100%;
+    border: 1px solid #555;
+}
+
+table input[type=text]:not(:placeholder-shown) {
+    font-weight: bold;
+}
+
+table input[type=text]:focus {
+    border: 1px solid gold;
+}
+
+table.data th:last-child, table.data td:last-child {
+    padding-right: 1em;
+}
+
+table.data th:first-child, table.data td:first-child {
+    padding-left: 1em;
+}
