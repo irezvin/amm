@@ -929,7 +929,7 @@
             'writeProperty was set from provider expression');
     });
     
-    QUnit.test("Express.writeToExpressionThis", function(assert) {
+    QUnit.test("Expression.writeToExpressionThis", function(assert) {
        
         var a = new Amm.Element({
             prop__val: 10,
@@ -1026,8 +1026,51 @@
 
         Amm.cleanup(a, b, c, d, e, e2);
         
-
     });
+    
+    QUnit.test("Expression.sub/unsub on cacheability change", function(assert) {
+        
+        var cacheableObject = new Amm.Element({
+            prop__val: 'cacheable'
+        });
+        
+        var nonCacheableObject = {
+            val: 'nonCacheable'
+        };
+        
+        var expr = new Amm.Expression({
+            src: '$obj.val'
+        });
+        
+            assert.equal(expr.getHasNonCacheable(), false, "Empty object reference: expression is cacheable");
+
+            assert.equal(Amm.getRoot().getSubscribers('interval', undefined, expr).length, 0, "...expression isn't subscribed");
+
+        
+        expr.setVars(nonCacheableObject, 'obj');
+        
+            assert.equal(expr.getHasNonCacheable(), true, "Plain object reference: expression isn't cacheable");
+
+            assert.equal(Amm.getRoot().getSubscribers('interval', undefined, expr).length, 1, "...expression is subscribed");
+        
+        
+        expr.setVars(cacheableObject, 'obj');
+        
+            assert.equal(expr.getHasNonCacheable(), false, "Element reference: expression is cacheable (again)");
+
+            assert.equal(Amm.getRoot().getSubscribers('interval', undefined, expr).length, 0, "...expression is unsubscribed (again)");
+
+        
+        expr.setVars(nonCacheableObject, 'obj');
+        
+            assert.equal(expr.getHasNonCacheable(), 1, "Plain object reference: expression isn't cacheable");
+
+            assert.equal(Amm.getRoot().getSubscribers('interval', undefined, expr).length, 1, "...expression is subscribed");
+        
+        Amm.cleanup(expr);
+        
+    });
+    
     
 }) ();
 

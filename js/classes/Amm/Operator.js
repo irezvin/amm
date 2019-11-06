@@ -916,6 +916,21 @@ Amm.Operator.prototype = {
                 this._instanceStateShared[observeVar] = true;
             }
         }
+    },
+    
+    getNonCacheableChildren: function(recursive) {
+        if (!this._hasNonCacheable) return [];
+        var res = [];
+        // TODO: all contexts? Is cacheability on per-context basis?
+        for (var i = 0, l = this.OPERANDS.length; i < l; i++) {
+            var operator = this.getOperator(this.OPERANDS[i]);
+            if (!operator) continue;
+            if (operator._nonCacheable) res.push(operator);
+            if (recursive && operator._hasNonCacheable) {
+                res = res.concat(operator.getNonCacheableChildren(true));
+            }
+        }
+        return res;
     }
     
 };

@@ -48,13 +48,16 @@ Amm.Element = function(options) {
     var inProps = [], extraProps;
     // create function handlers and expressions
     for (var i in options) if (options.hasOwnProperty(i)) { 
-        if (i[0] === 'i' && i.slice(0, 4) === 'in__') {
-            inProps.push([i.slice(4), options[i], false]);
+        if (i[0] === 'i' && i[2] === '_' && i.slice(0, 4) === 'in__') {
+            inProps.push([i.slice(4), options[i], Amm.Element.EXPROP_IN]);
             delete options[i];
-        } if (i[0] === 's' && i.slice(0, 6) === 'sync__') {
-            inProps.push([i.slice(6), options[i], true]);
+        } if (i[0] === 's' && i[4] === '_' && i.slice(0, 6) === 'sync__') {
+            inProps.push([i.slice(6), options[i], Amm.Element.EXPROP_SYNC]);
             delete options[i];
-        } else if (i[0] === 'p' && i.slice(0, 6) === 'prop__') {
+        } if (i[0] === 'e' && i[4] === '_' && i.slice(0, 6) === 'expr__') {
+            inProps.push([i.slice(6), options[i], Amm.Element.EXPROP_EXPR]);
+            delete options[i];
+        } else if (i[0] === 'p' && i[4] === '_' && i.slice(0, 6) === 'prop__') {
             extraProps = extraProps || {};
             extraProps[i.slice(6)] = options[i];
             delete options[i];
@@ -75,6 +78,39 @@ Amm.Element = function(options) {
         }
     }
 };
+
+/**
+ * Special type of Amm.Element pseudo-property: 
+ * in__`propName`: expressionDefinition
+ * Expression updates value in property `propName`
+ * (the property must exist)
+ * 
+ * @type Number
+ */
+Amm.Element.EXPROP_IN = 0;
+
+/**
+ * Special type of Amm.Element pseudo-property: 
+ * sync__`propName`: expressionDefinition
+ * there is two-way sync between Expression 
+ * and property `propName`. Update of any of them
+ * causes update of other.
+ * (the property must exist)
+ * 
+ * @type Number
+ */
+Amm.Element.EXPROP_SYNC = 1;
+
+
+/**
+ * Special type of Amm.Element pseudo-property: 
+ * expr__`propName`: expressionDefinition
+ * 
+ * (the property must NOT exist and will be created)
+ * 
+ * @type Number
+ */
+Amm.Element.EXPROP_EXPR = 2;
 
 Amm.Element._checkAndApplyOptionsBuilderSource = function(options) {
     if (Amm.Builder.isPossibleBuilderSource(options)) {
@@ -159,8 +195,6 @@ Amm.Element.prototype = {
     
     // will reference `this` if `this` is component
     _closestComponent: null,
-    
-    _expressions: null,
     
     _beginInit: function() {
         if (this._initLevel === false)
@@ -481,29 +515,29 @@ Amm.Element.prototype = {
         }
         var hh = [];
         for (var i in properties) if (properties.hasOwnProperty(i)) {
-            var defaultValue = properties[i], onChange = undefined;
+            var value = properties[i], onChange = undefined;
             if (i.slice(0, 4) === 'in__') {
                 i = i.slice(4);
-                hh.push([i, defaultValue]);
-                defaultValue = undefined;
-            } else if (defaultValue && typeof defaultValue === 'object'
-              && ('onChange' in defaultValue || 'defaultValue' in defaultValue || 'in__' in defaultValue)) {
-                if ('in__' in defaultValue) {
-                    hh.push([i, defaultValue.in__]);
+                hh.push([i, value, Amm.Element.EXPROP_IN]);
+                value = undefined;
+            } else if (value && typeof value === 'object'
+              && ('onChange' in value || 'defaultValue' in value || 'in__' in value)) {
+                if ('in__' in value) {
+                    hh.push([i, value.in__]);
                 }
-                onChange = defaultValue.onChange;
-                defaultValue = defaultValue.defaultValue;
+                onChange = value.onChange;
+                value = value.defaultValue;
             }
-            Amm.createProperty(this, i, defaultValue, onChange);
+            Amm.createProperty(this, i, value, onChange);
         }
         if (hh.length) this._initInProperties(hh);
     },
     
     _initInProperties: function(arrPropValues) {
         for (var i = 0, l = arrPropValues.length; i < l; i++) {
-            var propName = arrPropValues[i][0], 
-                definition = arrPropValues[i][1],
-                sync = arrPropValues[i][2];
+            var propName = arrPropValues[i][0];
+            var definition = arrPropValues[i][1];
+            var exprType = arrPropValues[i][2];
         
             // we may supply write-args to setters using double underscores
             // format of in-property is in__setter__arg1__arg2...
@@ -517,34 +551,83 @@ Amm.Element.prototype = {
             } else {
                 args = undefined;
             }
-            this._createExpression(definition, propName, args, sync);
+            this._createExpression(definition, propName, args, exprType);
         }
     },
     
-    _createExpression: function(definition, propName, args, isSync) {
-        var fn, expression;
-        if (typeof definition === 'string') { // expression?
-            if (definition.slice(0, 11) === 'javascript:') {
-                if (isSync) throw Error("Cannot use javascript function handler for sync-property");
-                var body = this._prepareFunctionHandlerBody(definition.slice(11));
-                fn = Function('g', 's', body);
-            } else {
-                expression = new (isSync? Amm.Expression.Sync : Amm.Expression)(definition, this, propName, undefined, args);
-            }
-        } else if (definition && (typeof definition === 'object')) {
-            if (definition['Amm.Expression']) expression = definition;
-            else expression = new (isSync? Amm.Expression.Sync : Amm.Expression)(definition, this, propName, undefined, args);
-        } else if (typeof definition === 'function') {
-            if (isSync) throw Error("Cannot use javascript function handler for sync-property");
+    _createExpression: function(definition, propName, args, exprType) {
+        var expression;
+        var fn, proto;
+        
+        if (typeof definition === 'function') {
             fn = definition;
+        } else if (typeof definition === 'string' && definition.slice(0, 11) === 'javascript:') {
+            var body = this._prepareFunctionHandlerBody(definition.slice(11));
+            fn = Function('g', 's', body);
+        } else if (typeof definition === 'string') {
+            proto = {
+                src: definition
+            };
+        } else if (definition && typeof definition === 'object') {
+            proto = definition;
         } else {
-            throw Error("in__<property> must be a string or a function");
+            throw Error("Expression-property (in__`prop`, sync__`prop`, expr__`prop`) "
+                + "must be a string, function or Amm.Expression prototype");
         }
+        
         if (fn) {
+            if (exprType !== Amm.Element.EXPROP_IN) {
+                throw Error("javascript function handler can be used only for in__`prop` expressions");
+            }
             expression = new Amm.Expression.FunctionHandler(fn, this, propName, undefined, args);
+            return expression;
         }
-        if (!expression) throw Error("Assertion");
+
+        if (!proto) throw Error('Logic error');
+        
+        // suppose if an insance was supplied, it's already configured in proper way
+        if (proto['Amm.Expression']) return proto;
+        
+        // 'class' can be specified in expression proto
+        var exprClass = exprType === Amm.Element.EXPROP_SYNC? Amm.Expression.Sync : Amm.Expression;
+        if (proto['class']) exprClass = Amm.getFunction(proto['class']);
+        var appliedPropName = propName;
+        if (exprType === Amm.Element.EXPROP_EXPR) appliedPropName = undefined;
+        expression = new exprClass (proto, this, appliedPropName, undefined, args);
+        if (exprType === Amm.Element.EXPROP_EXPR) {
+            this._configureExprExpression(expression, propName);
+        }
+        Amm.is(expression, exprType === Amm.Element.EXPROP_SYNC? 'Amm.Expression.Sync' : 'Amm.Expression', 'expression');
+        
         return expression;
+    },
+    
+    _configureExprExpression: function(expression, propName) {
+        var uPropName = propName.charAt(0).toUpperCase() + propName.slice(1);
+        var getter = 'get' + uPropName;
+        var setter = 'set' + uPropName;
+        var out = 'out' + uPropName + 'Change';
+        var priv = '_' + propName;
+        var e = [];
+        if (getter in this) e.push(getter);
+        if (setter in this) e.push(setter);
+        if (out in this) e.push(out);
+        if (priv in this) e.push(priv);
+        if (e.length) {
+            throw Error ("Cannot define expr__" + propName + " expression-property: " 
+                + "memeber(s) '" + e.join("', '") + " already defined");
+        }
+        this[getter] = function() {
+            return expression.getValue();
+        };
+        this[setter] = function(value) {
+            return expression.setValue(value);
+        };
+        this[out] = function(value, oldValue, changeInfo) {
+            return this._out(propName + 'Change', value, oldValue, changeInfo);
+        };
+        expression.subscribe('valueChange', this[out], this);
+        this[priv] = expression;
     },
     
     /** 
@@ -609,51 +692,7 @@ Amm.Element.prototype = {
      * To be overridden in concrete sub-classes.
      */    
     constructDefaultViews: function() {
-    },
-    
-    setExpressions: function(expressions, id) {
-        var oldExpressions = this._expressions;
-        if (id !== undefined) {
-            var prev = this.expressions[id];
-            var inst;
-            if (!expressions) inst = null;
-            else {
-                if (typeof expressions === 'string') expressions = {src: expressions};
-                inst = Amm.constructInstance(inst, 'Amm.Expression', {expressionThis: this}, true);
-            }
-            this._expressions[id] = inst;
-            if (prev) prev.cleanup();
-            this.outExpressionsChange(expressions, oldExpressions);
-            return;
-        }
-        if (oldExpressions === expressions) return;
-        if (!expressions) {
-            expressions = {};
-        } else {
-            var exp = {}, curr;
-            for (var i in expressions) if (expressions.hasOwnProperty(i)) {
-                if (typeof expressions[i] === 'string') curr = {src: expressions[i]};
-                else curr = expressions[i];
-                exp[i] = Amm.constructInstance(curr, 'Amm.Expression', {expressionThis: this}, true);
-            }
-            expressions = exp;
-        }
-        this._expressions = expressions;
-        Amm.cleanup(Amm.values(oldExpressions));
-        this.outExpressionsChange(expressions, oldExpressions);
-        return true;
-    },
-
-    getExpressions: function(id) { 
-        if (id !== undefined) return this._expressions[id];
-        return this._expressions; 
-    },
-
-    outExpressionsChange: function(expressions, oldExpressions) {
-        this._out('expressionsChange', expressions, oldExpressions);
-    },
-
-    
+    }
     
 };
 

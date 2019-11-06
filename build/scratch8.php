@@ -93,17 +93,15 @@
                                 requestProducer: 'names.php',
                                 auto: 2
                             },
-                            expressions: {
-                                substring: {
-                                    'src': 'search2.value',
-                                    'writeProperty': 'this.fetcher.requestProducer.uri::q'
-                                },
-                                selection: {
-                                    'src': 'this.value',
-                                    'writeProperty': 'this.fetcher.requestProducer.uri::v'
-                                },
+                            expr__substring: {
+                                'src': 'search2.value',
+                                'writeProperty': 'this.fetcher.requestProducer.uri::q'
                             },
-                            in__options: this.fetcher.response
+                            expr__selection: {
+                                'src': 'this.value',
+                                'writeProperty': 'this.fetcher.requestProducer.uri::v'
+                            },
+                            in__options: 'this.fetcher.response!!'
                         }" data-amm-v="[v.Visual, v.Select]" data-amm-e={} data-amm-id="items2">
                     </select>
                 </div>

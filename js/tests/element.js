@@ -1,4 +1,5 @@
 /* global Amm */
+/* global QUnit */
 
 (function() { 
     QUnit.module("Element");
@@ -18,7 +19,7 @@
                 },
                 in__d: 'this.a + this.b',
                 in__e: function(g) { return g('this.c')*g('this.a'); },
-                in__f: 'javascript: return({: this["c"] :} - {: this.b :})'
+                in__f: 'javascript: return({:this["c"]:} - {:this.b:})'
             },
             prop__x: 20,
             prop__in__y: 'this.x * 2'
@@ -76,6 +77,33 @@
         assert.equal(e.getSubscribers('aChange', f, null, null)[0][5], 0, 'First handler matches definition');
         assert.equal(e.getSubscribers('aChange', f, null, 'extra')[0][5], 1, 'Second handler matches definition');
         assert.equal(e.getSubscribers('aChange', f, scp1, 'extra2')[0][5], 2, 'Third handler matches definition');
+        
+    });
+    
+    QUnit.test("Element.expr__ expressions", function(assert) {
+        
+        var v = null;
+        
+        var e = new Amm.Element({
+            prop__a: 10,
+            prop__b: 20,
+            prop__c: 13,
+            expr__sum: 'this.a + this.b',
+            expr__cShortcut: 'this.c',
+            on__sumChange: function(val) { v = val; }
+        });
+        
+        assert.deepEqual(typeof e.getSum, 'function', 'getter was created');
+        assert.deepEqual(typeof e.setSum, 'function', 'setter was created');
+        assert.deepEqual(typeof e.outSumChange, 'function', 'event was created');
+        assert.deepEqual(Amm.getClass(e._sum), 'Amm.Expression', 'private property was set to an expression');
+        assert.deepEqual(e.getSum(), 30, 'returns proper value');
+        e.setA(15);
+        assert.deepEqual(v, 35, 'change event triggered');
+        e.setB(25);
+        assert.deepEqual(v, 40, 'change event triggered');
+        e.setCShortcut(14);
+        assert.deepEqual(e.getC(), 14, 'setter works for settable expression');
         
     });
     

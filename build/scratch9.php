@@ -30,6 +30,8 @@
                 id: cnt,
                 prop__records: {
                     __construct: Amm.Remote.Fetcher,
+                    firstDelay: 300,
+                    throttleDelay: 500,
                     requestProducer: 'data.php?h[]=description',
                     auto: true,
                 }
@@ -48,29 +50,23 @@
                 <thead class="flt">
                     <th><input type="text" data-amm-e="{
                         prop__q: name,
-                        expressions: {
-                            setQuery: {
-                                src: 'this.value.split(/ +/)',
-                                writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
-                            }
+                        expr__query: {
+                            src: 'this.value.split(/ +/)',
+                            writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
                         }
                     }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
                     <th><input type="text" data-amm-e="{
                         prop__q: procurementRef,
-                        expressions: {
-                            setQuery: {
-                                src: 'this.value.split(/ +/)',
-                                writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
-                            }
+                        expr__query: {
+                            src: 'this.value.split(/ +/)',
+                            writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
                         }
                     }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
                     <th><input type="text" data-amm-e="{
                         prop__q: location,
-                        expressions: {
-                            setQuery: {
-                                src: 'this.value.split(/ +/)',
-                                writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
-                            }
+                        expr__query: {
+                            src: 'this.value.split(/ +/)',
+                            writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
                         }
                     }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
                 </thead>
@@ -79,7 +75,7 @@
                        extraTraits: [t.Repeater, t.DisplayParent], 
                        assocProperty: src, 
                        withVariantsView: false, 
-                       in__items: cnt.records.response.items
+                       in__items: 'cnt.records.response.items!!'
                 }" data-amm-v="[v.Visual, v.DisplayParent]" data-amm-id="@rpt">
                 </tbody>
                 </table>
@@ -89,9 +85,9 @@
                 <table style="display: none">
                     <tbody data-amm-x="Amm.View.Html.Variants.build"  data-amm-id="@rpt">
                         <tr data-amm-dont-build="" data-amm-default="" data-amm-e="{prop__src: null, extraTraits: t.Component}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
-                            <td data-amm-e="{in__content: this.component.src.name}" data-amm-v="[v.Visual, v.Content]"></td>
-                            <td data-amm-e="{in__content: this.component.src.procurementRef}" data-amm-v="[v.Visual, v.Content]"></td>
-                            <td data-amm-e="{in__content: this.component.src.location}" data-amm-v="[v.Visual, v.Content]"></td>
+                            <td data-amm-e="{in__content: 'this.component.src.name!!'}" data-amm-v="[v.Visual, v.Content]"></td>
+                            <td data-amm-e="{in__content: 'this.component.src.procurementRef!!'}" data-amm-v="[v.Visual, v.Content]"></td>
+                            <td data-amm-e="{in__content: 'this.component.src.location!!'}" data-amm-v="[v.Visual, v.Content]"></td>
                         </tr>
                     </tbody>
                 </table>

@@ -532,6 +532,15 @@ Amm.Expression.prototype = {
     
 };
 
+Amm.Expression.getAllWatchers = function() {
+    var res = [];
+    var watches = Amm.getRoot().getUniqueSubscribers(Amm.Expression, 'interval');
+    for (var i = 0, l = watches.length; i < l; i++) {
+        res.push({expr: watches[i], nc: watches[i].getNonCacheableChildren(true)});
+    }
+    return res;
+};
+
 Amm.Expression._builder = null;
 Amm.Expression._parser = null;
 
