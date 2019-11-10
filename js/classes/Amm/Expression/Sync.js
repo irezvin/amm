@@ -25,6 +25,12 @@ Amm.Expression.Sync.prototype = {
     _lastError: false,
     
     setTranslator: function(translator) {
+        if (!translator) translator = null;
+        else if (!Amm.getClass(translator)) {
+            translator = Amm.constructInstance(translator, 'Amm.Translator');
+        } else {
+            Amm.is(translator, 'Amm.Translator', 'translator');
+        }
         var oldTranslator = this._translator;
         if (oldTranslator === translator) return;
         this._translator = translator;

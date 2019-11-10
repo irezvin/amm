@@ -6,9 +6,8 @@
         <script src="../js/vendor/jquery-3.1.1.js"></script>
         <script src="../js/vendor/relaxed-json.js"></script>
         <link rel="stylesheet" type="text/css" href="scratch.css" />
-        <link rel="stylesheet" type="text/css" href="tbl.css" />
 <?php 
-        require_once(__DIR__.'/list.php');
+        require_once(dirname(__FILE__).'/list.php');
         foreach (listAmmFiles() as $f) { 
             echo "
         <script src=\"../js/classes/{$f}\"></script>";
@@ -20,82 +19,87 @@
             Amm.getRoot().subscribe('bootstrap', function() {
                 console.log("Amm bootstrapped");
             });
+            window.cities = [
+                "Киев", "Харьков", "Одесса", "Днепр", "Донецк", "Запорожье", "Львов", "Кривой Рог", "Николаев", "Севастополь", "Мариуполь", "Луганск", "Винница", "Макеевка", "Симферополь", "Херсон", "Полтава", "Чернигов", "Черкассы", "Хмельницкий", "Черновцы", "Житомир", "Сумы", "Ровно", "Горловка", "Ивано-Франковск", "Каменское", "Кропивницкий", "Тернополь", "Кременчуг", "Луцк", "Белая Церковь", "Краматорск", "Мелитополь", "Керчь", "Ужгород", "Славянск", "Никополь", "Бердянск", "Алчевск", "Евпатория", "Бровары", "Павлоград", "Северодонецк", "Каменец-Подольский", "Лисичанск", "Александрия", "Красный Луч", "Енакиево", "Стаханов",  "Константиновка"
+            ];
         </script>
         
     </head>
     <body>
-        
-        <div data-amm-e="{
-                extraTraits: t.Component, 
-                id: cnt,
-                prop__records: {
-                    __construct: Amm.Remote.Fetcher,
-                    firstDelay: 300,
-                    throttleDelay: 500,
-                    requestProducer: 'data.php?h[]=description',
-                    auto: true,
-                }
-            }" data-amm-v="[v.StaticDisplayParent, v.Visual]">
-
-            
+        <div data-amm-e="{id: par, extraTraits: [t.Component]}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: false}]">
             <div>
-                
-                <!-- repeater children container -->
-                <table style="width: 100%" class="data">
-                <thead>
-                    <th style="width: available">Name</th>
-                    <th style="width: 100px">Procurement Ref</th>
-                    <th style="width: 100px">Location</th>
-                </thead>
-                <thead class="flt">
-                    <th><input type="text" data-amm-e="{
-                        prop__q: name,
-                        expr__query: {
-                            src: 'this.value.split(/ +/)',
-                            writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
-                        }
-                    }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
-                    <th><input type="text" data-amm-e="{
-                        prop__q: procurementRef,
-                        expr__query: {
-                            src: 'this.value.split(/ +/)',
-                            writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
-                        }
-                    }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
-                    <th><input type="text" data-amm-e="{
-                        prop__q: location,
-                        expr__query: {
-                            src: 'this.value.split(/ +/)',
-                            writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
-                        }
-                    }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
-                </thead>
-                <tbody data-amm-e="{
-                       id: rpt, 
-                       extraTraits: [t.Repeater, t.DisplayParent], 
-                       assocProperty: src, 
-                       withVariantsView: false, 
-                       in__items: 'cnt.records.response.items!!'
-                }" data-amm-v="[v.Visual, v.DisplayParent]" data-amm-id="@rpt">
-                </tbody>
-                </table>
-                
-                
-                <!-- repeater item prototypes -->
-                <table style="display: none">
-                    <tbody data-amm-x="Amm.View.Html.Variants.build"  data-amm-id="@rpt">
-                        <tr data-amm-dont-build="" data-amm-default="" data-amm-e="{prop__src: null, extraTraits: t.Component}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
-                            <td data-amm-e="{in__content: 'this.component.src.name!!'}" data-amm-v="[v.Visual, v.Content]"></td>
-                            <td data-amm-e="{in__content: 'this.component.src.procurementRef!!'}" data-amm-v="[v.Visual, v.Content]"></td>
-                            <td data-amm-e="{in__content: 'this.component.src.location!!'}" data-amm-v="[v.Visual, v.Content]"></td>
-                        </tr>
-                    </tbody>
-                </table>
-                
+                <div style="clear: both">
+                    <span style="color: gold; font-weight: bold; font-size: 20px; font-family: sans-serif; text-align: left" data-amm-id="clock" data-amm-e="{
+                            prop__fetcher: {
+                                __construct: Amm.Remote.Fetcher,
+                                requestProducer: 'echo.php?time=1',
+                                throttleDelay: 1000,
+                                auto: 1
+                            },
+                            in__content: 'this.fetcher.response.time',
+                            expr__poll: {
+                                src: 'poll.value',
+                                writeProperty: 'this.fetcher.poll',
+                            },
+                            expr__format: {
+                                src: 'format.value === \'custom:\'? custom.value: format.value',
+                                writeProperty: 'this.fetcher.requestProducer.uri::time',
+                            }
+                         }" data-amm-v="[v.Visual, v.Content]">
+                    </span>
+                    <label style="float: right" data-amm-id="custom" data-amm-e="{in__visible: 'format.value === \'custom:\''}" data-amm-v="[v.Visual]">
+                        Custom format: 
+                        <input type="text" data-amm-id="custom" data-amm-v="[{class: v.Input, updateOnKeyUp: true}]" />
+                    </label>
+                    <label style="float: right; margin-right: 1em">Format <select data-amm-e="{
+                        id: format, 
+                        options: [
+                            {value: 1, label: 'default'},  
+                            'd.m.Y',
+                            'H:i',
+                            'H:i:s',
+                            'custom:',
+                            ]}" data-amm-v="[v.Visual, v.Select]">
+                        </select>
+                    </label>
+                    <label style="float: right; min-width: 0; margin-right: 1em">Poll 
+                        <input type="checkbox" data-amm-e="{id: poll}" data-amm-v="[v.Visual, v.Toggle]" />
+                    </label>
+                </div>
+                <div style="max-width: 350px; float: left;">
+                    <div><label>Local search:<br /><input type='text' name="search" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" data-amm-id="search" /></label></div>
+                    <select size="26" data-amm-e="{multiple: true, 
+                            sorter: {
+                                criteria: ['selected desc', 'value asc']
+                            },
+                            optionPrototype: {
+                                in__label: '(this.selected? \'✓ \' : \'\') + this.value', 
+                                in__visible: '(this.selected || !search.value.length || this.value.indexOf(search.value) >= 0)'}, 
+                                options: {$ext: cities}
+                            }" data-amm-v="[v.Visual, v.Select]" data-amm-e="{}" data-amm-id="items">
+                    </select>
+                </div>
+                <div style="max-width: 350px; float: left; margin-left: 10px">
+                    <div><label>Remote Search:<br /><input type='text' name="search2" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" data-amm-id="search2" /></label></div>
+                    <select size="26" data-amm-e="{multiple: true, 
+                            prop__fetcher: {
+                                __construct: Amm.Remote.Fetcher,
+                                requestProducer: 'names.php',
+                                auto: 2
+                            },
+                            expr__substring: {
+                                'src': 'search2.value',
+                                'writeProperty': 'this.fetcher.requestProducer.uri::q'
+                            },
+                            expr__selection: {
+                                'src': 'this.value',
+                                'writeProperty': 'this.fetcher.requestProducer.uri::v'
+                            },
+                            in__options: 'this.fetcher.response!!'
+                        }" data-amm-v="[v.Visual, v.Select]" data-amm-e={} data-amm-id="items2">
+                    </select>
+                </div>
             </div>
-            
         </div>
-        
-        
     </body>
 </html>

@@ -57,7 +57,7 @@ Amm.Remote.Fetcher.AUTO_NONE = 0;
 Amm.Remote.Fetcher.AUTO_BOOTSTRAP = 1;
 
 /**
- * Start making requests once in STATE_IDLE
+ * Make first request once in STATE_IDLE
  */
 Amm.Remote.Fetcher.AUTO_ALWAYS = 2;
 
@@ -74,8 +74,6 @@ Amm.Remote.Fetcher.prototype = {
     _state: Amm.Remote.Fetcher.STATE_CONFIGURING,
     
     _error: null,
-    
-    _running: false,
     
     /**
      * Amm.Remote.Fetcher.AUTO_NONE: this.run() needed to call server.
@@ -102,12 +100,19 @@ Amm.Remote.Fetcher.prototype = {
 
     _runningRequest: null,
     
+    // is set before creating the request
+    _starting: 0,
+    
+    _gotResultOnStart: false,
+    
     _prevRequest: null,
 
     // function that calls this._doRequest()
     _timeoutCallback: null,
     
     _transport: null,
+
+    _poll: false,
     
     run: function() {
         this._doRequest();
@@ -194,7 +199,7 @@ Amm.Remote.Fetcher.prototype = {
         this._updateState();
     },
     
-    _scheduleAutoRequest: function() {
+    _scheduleAutoRequest: function(polling) {
         if (!this._auto) {
             return;
         }
@@ -206,7 +211,7 @@ Amm.Remote.Fetcher.prototype = {
         if (!this._constRequest) {
             return;
         }
-        var delay = this._runningRequest? this._throttleDelay : this._firstDelay;
+        var delay = this._runningRequest || polling? this._throttleDelay : this._firstDelay;
         var t = this;
         if (this._timeout) window.clearTimeout(this._timeout);
         if (this._runningRequest) {
@@ -243,26 +248,34 @@ Amm.Remote.Fetcher.prototype = {
             window.clearTimeout(this._timeout);
             this._timeout = null;
         }
+        this._starting++;
         this._runningRequest = this._doGetTransport().makeRequest(this._constRequest, this._requestDone, this._requestFail, this);
+        this._starting--;
         this.setError(null);
+        if (this._gotResultOnStart) {
+            this._prevRequest = this._runningRequest;
+            this._runningRequest = null;
+        }
         this._updateState();
         return;
     },
     
     _requestDone: function(data, textStatus) {
-        if (!this._runningRequest) return; // aborted - do not process
-        this._prevRequest = this._runningRequest;
-        this._runningRequest = null;
+        if (!this._runningRequest && !this._starting) return; // aborted - do not process
+        if (this._runningRequest) {
+            this._prevRequest = this._runningRequest;
+            this._runningRequest = null;
+        }
         this._parseResponse(data);
-        this._updateState();        
     },
     
     _requestFail: function(textStatus, errorThrown, httpCode) {
-        if (!this._runningRequest) return; // aborted - do not process
-        this._prevRequest = this._runningRequest;
-        this._runningRequest = null;
+        if (!this._runningRequest && !this._starting) return; // aborted - do not process
+        if (this._runningRequest) {
+            this._prevRequest = this._runningRequest;
+            this._runningRequest = null;
+        }
         this.setError(textStatus);
-        this._updateState();
     },
     
     _setState: function(state) {
@@ -294,7 +307,7 @@ Amm.Remote.Fetcher.prototype = {
         if (oldResponse === response) return;
         this._response = response;
         if (this._runningRequest) this._abort();
-        this.setError(null);
+        if (this._starting) this._gotResultOnStart = true;
         this._updateState();
         this.outResponseChange(response, oldResponse);
         return true;
@@ -319,6 +332,7 @@ Amm.Remote.Fetcher.prototype = {
             this.setResponse(undefined);
         }
         this._error = error;
+        if (this._starting) this._gotResultOnStart = true;        
         this._updateState();
         this.outErrorChange(error, oldError);
         return true;
@@ -374,7 +388,7 @@ Amm.Remote.Fetcher.prototype = {
     },
     
     cleanup: function() {
-        if (this._runningRequest) this._abort();
+        this.reset();
         if (this._requestProducer && this._requestProducerIsOwn && this._requestProducer.cleanup) {
             this._requestProducer.cleanup();
             this._requestProducer = null;
@@ -383,6 +397,7 @@ Amm.Remote.Fetcher.prototype = {
     },
     
     reset: function() {
+        if (this._poll) this.setPoll(false);
         if (this._runningRequest) this._abort();
         if (this._timeout) {
             window.clearTimeout(this._timeout);
@@ -392,7 +407,7 @@ Amm.Remote.Fetcher.prototype = {
         this._updateState();
     },
     
-    // single place to update state information
+    // single place to update state information. Also, if polling enabled, will schedule next request
     _updateState: function() {
         var newState;
         if (this._runningRequest) {
@@ -410,8 +425,32 @@ Amm.Remote.Fetcher.prototype = {
         } else {
             newState = Amm.Remote.Fetcher.STATE_IDLE;
         }
-        this._setState(newState);        
-    }
+        if (this._poll && (
+                newState === Amm.Remote.Fetcher.STATE_IDLE 
+                || newState === Amm.Remote.Fetcher.STATE_RECEIVED 
+                || newState === Amm.Remote.Fetcher.STATE_ERROR
+        ))  {
+            this._scheduleAutoRequest(true);
+        }
+        this._setState(newState);
+    },
+    
+    setPoll: function(poll) {
+        poll = !!poll;
+        var oldPoll = this._poll;
+        if (oldPoll === poll) return;
+        this._poll = poll;
+        this.outPollChange(poll, oldPoll);
+        if (poll) this._scheduleAutoRequest();
+        return true;
+    },
+
+    getPoll: function() { return this._poll; },
+
+    outPollChange: function(poll, oldPoll) {
+        this._out('pollChange', poll, oldPoll);
+    },
+    
 
 };
 

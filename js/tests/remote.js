@@ -294,5 +294,101 @@
                 'reset: getResponse() is null');
 
     });
+    
+    
+    QUnit.test("Amm.Remote.Fetcher: AUTO_ALWAYS / AUTO_BOOTSTRAP", function(assert) {
+        
+        Amm._bootstrapped = false;
+            
+            assert.notOk(Amm.getBootstrapped(), 'Amm isn\'t bootstrapped yet');
+        
+        
+        var rqLog = [];
+        var f1 = new Amm.Remote.Fetcher({
+            auto: Amm.Remote.Fetcher.AUTO_ALWAYS,
+            transport: getDebugTransport(rqLog),
+        });
+        var f2 = new Amm.Remote.Fetcher({
+            auto: Amm.Remote.Fetcher.AUTO_BOOTSTRAP,
+            transport: getDebugTransport(rqLog),
+        });
+        
+            assert.deepEqual(f1.getState(), Amm.Remote.Fetcher.STATE_CONFIGURING,
+                'No request: STATE_CONFIGURING');
+
+            assert.deepEqual(f2.getState(), Amm.Remote.Fetcher.STATE_CONFIGURING,
+                'No request: STATE_CONFIGURING');
+        
+        f1.setRequestProducer('?foo=bar');
+        
+            assert.deepEqual(f1.getState(), Amm.Remote.Fetcher.STATE_STARTED,
+                '`auto` = AUTO_ALWAYS: `state` = STATE_STARTED');
+                
+        f2.setRequestProducer('?baz=quux');
+        
+            assert.deepEqual(f2.getState(), Amm.Remote.Fetcher.STATE_PREINIT,
+                '`auto` = AUTO_BOOTSTRAP: `state` = STATE_PREINIT');
+                
+        Amm._doBootstrap();
+        
+            assert.ok(Amm.getBootstrapped(), 'Amm is bootstrapped');
+            
+            assert.deepEqual(f2.getState(), Amm.Remote.Fetcher.STATE_STARTED,
+                '`auto` = AUTO_BOOTSTRAP: `state` = STATE_STARTED');
+                
+    });
+    
+    QUnit.test("Amm.Remote.Fetcher: poll", function(assert) {
+        
+        var rqLog = [], rqLog2 = [], t = new Date;
+        
+        var f = new Amm.Remote.Fetcher({
+            transport: getDebugTransport(rqLog),
+            firstDelay: 0,
+            throttleDelay: 20,
+            poll: true,
+            auto: Amm.Remote.Fetcher.AUTO_ALWAYS
+        });
+        
+        var lastL = 0;
+        f.getTransport().replyTime = 1;
+        f.getTransport().subscribe('request', function(r) { 
+            var e = [rqLog2.length + 1, (new Date).getTime() - t, r.getConstRequest().getUri()];
+            //  console.log.apply(console, e); 
+            rqLog2.push(e);
+            t = new Date();
+        });
+        
+        var stage;
+        
+        runStory(assert, [
+            {time: 0, fn: function() {
+                
+                f.setRequestProducer('echo.php?arg=val');
+                    
+                    assert.equal(rqLog.length, 1, 'Sent request (1)');
+                
+            }},
+        
+            {time: 70, fn: (stage = function() {
+                assert.ok(rqLog2.length > lastL, 'More requests were done during some time');
+                lastL = rqLog2.length;
+            })},
+        
+            {time: 50, fn: stage},
+            
+            {time: 50, fn: function() {
+                f.setPoll(false);
+            }},
+        
+            {time: 50, fn: function() {
+                assert.deepEqual(f.getState(), Amm.Remote.Fetcher.STATE_RECEIVED)
+            }}
+        
+        
+        ]);
+        
+    });
+    
 
 }) ();

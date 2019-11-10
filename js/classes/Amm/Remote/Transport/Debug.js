@@ -83,7 +83,7 @@ Amm.Remote.Transport.Debug.prototype = {
         var t = this, f = function() {
             t.outRequest(runningRequest, t._successClosure, t._failureClosure);
         };
-        if (this.eventTime < 0) f();
+        if (this.eventTime <= 0) f();
         else {
             runningRequest._timeout = window.setTimeout(f, this.eventTime);
         }

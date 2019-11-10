@@ -23,9 +23,6 @@
             Amm.getRoot().subscribe('bootstrap', function() {
                 console.log("Amm bootstrapped");
             });
-            window.cities = [
-                "Киев", "Харьков", "Одесса", "Днепр", "Донецк", "Запорожье", "Львов", "Кривой Рог", "Николаев", "Севастополь", "Мариуполь", "Луганск", "Винница", "Макеевка", "Симферополь", "Херсон", "Полтава", "Чернигов", "Черкассы", "Хмельницкий", "Черновцы", "Житомир", "Сумы", "Ровно", "Горловка", "Ивано-Франковск", "Каменское", "Кропивницкий", "Тернополь", "Кременчуг", "Луцк", "Белая Церковь", "Краматорск", "Мелитополь", "Керчь", "Ужгород", "Славянск", "Никополь", "Бердянск", "Алчевск", "Евпатория", "Бровары", "Павлоград", "Северодонецк", "Каменец-Подольский", "Лисичанск", "Александрия", "Красный Луч", "Енакиево", "Стаханов",  "Константиновка"
-            ];
         </script>
         
     </head>
@@ -69,41 +66,6 @@
                 <div data-amm-dont-build="" data-amm-condition="{type: b}" data-amm-e="{prop__src: null}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
                     <h1>B</h1>
                 </div>
-                </div>
-            </div>
-            <div>
-                <div style="max-width: 350px; float: left;">
-                    <div><label>Search:<br /><input type='text' name="search" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" data-amm-id="search" /></label></div>
-                    <select size="26" data-amm-e="{multiple: true, 
-                            sorter: {
-                                criteria: ['selected desc', 'value asc']
-                            },
-                            optionPrototype: {
-                                in__label: '(this.selected? \'✓ \' : \'\') + this.value', 
-                                in__visible: '(this.selected || !search.value.length || this.value.indexOf(search.value) >= 0)'}, 
-                                options: {$ext: cities}
-                            }" data-amm-v="[v.Visual, v.Select]" data-amm-e="{}" data-amm-id="items">
-                    </select>
-                </div>
-                <div style="max-width: 350px; float: left; margin-left: 10px">
-                    <div><label>Search 2:<br /><input type='text' name="search2" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" data-amm-id="search2" /></label></div>
-                    <select size="26" data-amm-e="{multiple: true, 
-                            prop__fetcher: {
-                                __construct: Amm.Remote.Fetcher,
-                                requestProducer: 'names.php',
-                                auto: 2
-                            },
-                            expr__substring: {
-                                'src': 'search2.value',
-                                'writeProperty': 'this.fetcher.requestProducer.uri::q'
-                            },
-                            expr__selection: {
-                                'src': 'this.value',
-                                'writeProperty': 'this.fetcher.requestProducer.uri::v'
-                            },
-                            in__options: 'this.fetcher.response!!'
-                        }" data-amm-v="[v.Visual, v.Select]" data-amm-e={} data-amm-id="items2">
-                    </select>
                 </div>
             </div>
         </div>

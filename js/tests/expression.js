@@ -803,8 +803,25 @@
         var a = new Amm.Element({
             prop__src: null,
             prop__val: 'oldVal', 
-            prop__err: null
+            prop__err: null,
+            prop__boolVal: true,
+            prop__strVal: undefined,
+            sync__strVal: {
+                src: 'this.boolVal',
+                translator: {
+                    class: 'Amm.Translator.Bool',
+                    trueValue: 'TRUE',
+                    falseValue: 'FALSE',
+                    reverseMode: true,
+                }
+            }
         });
+        
+        assert.equal(a.getStrVal(), 'TRUE', 'Translator was instantiated and works forward');
+        
+        a.setStrVal('FALSE');
+        
+        assert.equal(a.getBoolVal(), false, 'Translator was instantiated and works backwards');
         
         var b = new Amm.Element({
             prop__x: 'bVal'
