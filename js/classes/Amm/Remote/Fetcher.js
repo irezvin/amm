@@ -113,6 +113,19 @@ Amm.Remote.Fetcher.prototype = {
     _transport: null,
 
     _poll: false,
+
+    /**
+     * If TRUE, setResponse / setError will compare JSON result with last one and, if it didn't change, 
+     * outResponseChange() / outErrorChange() won't be triggered
+     * 
+     * @type Boolean
+     * @see isDataChanged
+     */
+    _detectChanges: true,
+    
+    _lastResponseJson: undefined,
+    
+    _lastErrorJson: undefined,
     
     run: function() {
         this._doRequest();
@@ -266,7 +279,7 @@ Amm.Remote.Fetcher.prototype = {
             this._prevRequest = this._runningRequest;
             this._runningRequest = null;
         }
-        this._parseResponse(data);
+        this.setResponse(data);
     },
     
     _requestFail: function(textStatus, errorThrown, httpCode) {
@@ -275,7 +288,11 @@ Amm.Remote.Fetcher.prototype = {
             this._prevRequest = this._runningRequest;
             this._runningRequest = null;
         }
-        this.setError(textStatus);
+        this.setError({
+            textStatus: textStatus,
+            errorThrown: errorThrown,
+            httpCode: httpCode
+        });
     },
     
     _setState: function(state) {
@@ -292,10 +309,22 @@ Amm.Remote.Fetcher.prototype = {
         this._out('stateChange', state, oldState);
     },
 
-    _parseResponse: function(response) {
-        // TODO: use translator, filters etc
-        //console.log(response);
-        this.setResponse(response);
+    /**
+     * Is called when getDetectChange() === TRUE.
+     * Returns TRUE when provided result is changed.
+     * 
+     * May be replaced by user function.
+     * 
+     * @param {mixed} data
+     * @param {string} property Either 'response' or 'error'
+     * @returns {boolean}
+     */
+    isDataChanged: function(data, property) {
+        // _lastResponseJson or _lastErrorJson 
+        var lastData = '_last' + property.charAt(0).toUpperCase() + property.slice(1) + 'Json';
+        var json = JSON.stringify(data);
+        if (this[lastData] === json) return false;
+        this[lastData] = json;
         return true;
     },
 
@@ -305,12 +334,15 @@ Amm.Remote.Fetcher.prototype = {
     setResponse: function(response) {
         var oldResponse = this._response;
         if (oldResponse === response) return;
-        this._response = response;
         if (this._runningRequest) this._abort();
         if (this._starting) this._gotResultOnStart = true;
-        this._updateState();
-        this.outResponseChange(response, oldResponse);
-        return true;
+        var changed = !this._detectChanges || this.isDataChanged(response, 'response');
+        if (changed) this._response = response;
+        this._updateState();        
+        if (changed) {
+            this.outResponseChange(response, oldResponse);
+            return true;
+        }
     },
 
     getResponse: function() { return this._response; },
@@ -325,6 +357,7 @@ Amm.Remote.Fetcher.prototype = {
     setError: function(error) {
         var oldError = this._error;
         if (oldError === error) return;
+        if (this._detectChanges && !this.isDataChanged(error, 'error')) return;
         if (error) {
             if (this._runningRequest) {
                 this._abort();
@@ -450,7 +483,16 @@ Amm.Remote.Fetcher.prototype = {
     outPollChange: function(poll, oldPoll) {
         this._out('pollChange', poll, oldPoll);
     },
-    
+
+    setDetectChanges: function(detectChanges) {
+        detectChanges = !!detectChanges;
+        var oldDetectChanges = this._detectChanges;
+        if (oldDetectChanges === detectChanges) return;
+        this._detectChanges = detectChanges;
+        return true;
+    },
+
+    getDetectChanges: function() { return this._detectChanges; },
 
 };
 

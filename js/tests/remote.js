@@ -382,11 +382,73 @@
             }},
         
             {time: 50, fn: function() {
-                assert.deepEqual(f.getState(), Amm.Remote.Fetcher.STATE_RECEIVED)
+                assert.deepEqual(f.getState(), Amm.Remote.Fetcher.STATE_RECEIVED);
             }}
         
         
         ]);
+        
+    });
+    
+    QUnit.test("Amm.Remote.Fetcher: detectChanges", function(assert) {
+        
+        var rqLog = [], respLog = [], errLog = [];
+        
+        var f = new Amm.Remote.Fetcher({
+            transport: getDebugTransport(rqLog),
+            firstDelay: 0,
+            throttleDelay: 20,
+            poll: true,
+            auto: Amm.Remote.Fetcher.AUTO_ALWAYS,
+            on__responseChange: function(v, oldV) {
+                respLog.push([Amm.event.name, v]);
+            },
+            on__errorChange: function(v, oldV) {
+                errLog.push([Amm.event.name, v]);
+            }
+        });
+        
+        f.setRequestProducer('echo.php?arg=val');
+        
+        respLog = [];
+        f.setResponse({foo: 'bar'});
+            assert.deepEqual(respLog, [['responseChange', {foo: 'bar'}]]);
+            
+        respLog = [];
+        f.setResponse({foo: 'bar'});
+            assert.deepEqual(respLog, []);
+        
+        errLog = [];
+        f.setError({var: 'val'});
+            assert.deepEqual(errLog, [['errorChange', {var: 'val'}]]);
+            
+        errLog = [];
+        f.setError({var: 'val'});
+            assert.deepEqual(errLog, []);
+            
+        f.setDetectChanges(false);
+        
+        respLog = [];
+        f.setResponse({foo: 'bar'});
+            assert.deepEqual(respLog, [['responseChange', {foo: 'bar'}]]);
+            
+        respLog = [];
+        f.setResponse({foo: 'bar'});
+            assert.deepEqual(respLog, [['responseChange', {foo: 'bar'}]]);
+        
+        errLog = [];
+        f.setError({var: 'val'});
+            assert.deepEqual(errLog, [['errorChange', {var: 'val'}]]);
+            
+        errLog = [];
+        f.setError({var: 'val'});
+            assert.deepEqual(errLog, [['errorChange', {var: 'val'}]]);
+            
+        
+        
+        
+        
+        
         
     });
     
