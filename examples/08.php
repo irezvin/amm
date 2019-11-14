@@ -1,13 +1,13 @@
 <!DOCTYPE HTML>
 <html data-amm-build="">
     <head>
-        <title>A.M.M. Scratch 8</title>
+        <title>8. Instantiator and Repeater Traits &mdash; A.M.M. Example</title>
         <meta charset='utf-8'>
         <script src="../js/vendor/jquery-3.1.1.js"></script>
         <script src="../js/vendor/relaxed-json.js"></script>
-        <link rel="stylesheet" type="text/css" href="scratch.css" />
+        <link rel="stylesheet" type="text/css" href="example.css" />
 <?php 
-        require_once(dirname(__FILE__).'/list.php');
+        require_once(__DIR__.'/../build/list.php');
         foreach (listAmmFiles() as $f) { 
             echo "
         <script src=\"../js/classes/{$f}\"></script>";

@@ -726,4 +726,39 @@
         
     });
     
+    QUnit.test("Sorter.setCriteria, same matches, => outNeedSort()", function(assert) {
+        
+        var ns = 0;
+        
+        var s = new Amm.Sorter({'criteria': 'name ASC', on__needSort: function() { ns++; }});
+        
+        var sam = getSample();
+        
+        s.setObservedObjects(sam.people);
+        
+        var properMatches = [
+            ["Jane"],
+            ["Mike"],
+            ["John"],
+            ["Anna"],
+            ["Vika"],
+            ["Ivan"],
+            ["Buck"],
+            ["Dmitry"]
+        ];
+        
+        assert.deepEqual(s.getMatches(), properMatches, "original matches");
+        
+        ns = 0;
+        
+        s.setCriteria('name DESC');
+        
+        assert.deepEqual(s.getMatches(), properMatches, "matches didn't change");
+        
+        assert.ok(ns === 1, "outNeedSort() called");
+        
+        s.cleanup();
+        
+    });
+    
 }) ();

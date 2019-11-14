@@ -362,6 +362,61 @@
         Amm.cleanup(e);
         
     });
+    
+    QUnit.test("Trait.Select: non-scalar values (both objects and arrays)", function(assert) {
+        
+        var aValue = {name: 'objectA'};
+        
+        var bValue = ['objectB'];
+        
+        var cValue = ['objectC'];
+        
+        var sel = new Amm.Element({
+            traits: 't.Select', 
+            multiple: false,
+            selectSize: 1,
+            options: [
+                {
+                    label: 'a',
+                    value: aValue
+                },
+                {
+                    label: 'b',
+                    value: bValue
+                },
+                {
+                    label: 'c',
+                    value: cValue
+                }
+            ],
+        });
+        
+        d.sel = sel;
+        
+            assert.equal(sel.getValue(), aValue, 'First value selected');
+            assert.ok(sel.options[0].getSelected(), 'First option selected');
+        
+        sel.setValue(bValue);
+        
+            assert.equal(sel.getValue(), bValue, 'Second value selected');
+            assert.ok(sel.options[1].getSelected(), 'Second option selected');
+            
+        sel.setValue([cValue]);
+        
+            assert.equal(sel.getValue(), cValue, 'setValue([arrayValue]): properly accepted');
+            assert.ok(sel.options[2].getSelected(), 'Third option selected');
+            
+        sel.setMultiple(true);
+        sel.setValue([bValue, cValue]);
+        
+            assert.equal(sel.getValue()[0], bValue, 'Multiple: first option selected');
+            assert.equal(sel.getValue()[1], cValue, 'Multiple: second option selected');
+            
+            assert.ok(sel.options[1].getSelected(), 'Multiple: first option selected');
+            assert.ok(sel.options[2].getSelected(), 'Multiple: second option selected');
+            assert.notOk(sel.options[0].getSelected(), 'Multiple: non-selected option not selected');
+        
+    });
        
     
     

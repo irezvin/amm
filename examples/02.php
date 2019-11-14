@@ -1,12 +1,12 @@
 <!DOCTYPE HTML>
 <html>
     <head>
-        <title>A.M.M. Scratch</title>
+        <title>2. in__property &mdash; A.M.M. Examples</title>
         <meta charset='utf-8'>
         <script src="../js/vendor/jquery-3.1.1.js"></script>
-        <link rel="stylesheet" type="text/css" href="scratch.css" />
+        <link rel="stylesheet" type="text/css" href="example.css" />
 <?php 
-        require_once(dirname(__FILE__).'/list.php');
+        require_once(__DIR__.'/../build/list.php');
         foreach (listAmmFiles() as $f) { 
             echo "
         <script src=\"../js/classes/{$f}\"></script>";
@@ -16,7 +16,7 @@
     </head>
     <body>
         <div id="cc">
-            <em>Field #1:</em> <input type="text" id="field1" />
+            <em>Field #1:</em> <input type="text" id="field1" tabindex="0" />
             <div style="border: 1px solid silver; margin: 1em 0; padding: 1em">
                 Field #2: <input type="text" id="field2" />
             </div>

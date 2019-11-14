@@ -1,13 +1,13 @@
 <!DOCTYPE HTML>
 <html data-amm-build="">
     <head>
-        <title>A.M.M. Scratch 9</title>
+        <title>9. Remote.Fetcher, Select.Option.visible &mdash; A.M.M. Example</title>
         <meta charset='utf-8'>
         <script src="../js/vendor/jquery-3.1.1.js"></script>
         <script src="../js/vendor/relaxed-json.js"></script>
-        <link rel="stylesheet" type="text/css" href="scratch.css" />
+        <link rel="stylesheet" type="text/css" href="example.css" />
 <?php 
-        require_once(dirname(__FILE__).'/list.php');
+        require_once(__DIR__.'/../build/list.php');
         foreach (listAmmFiles() as $f) { 
             echo "
         <script src=\"../js/classes/{$f}\"></script>";
@@ -51,15 +51,13 @@
                         Custom format: 
                         <input type="text" data-amm-id="custom" data-amm-v="[{class: v.Input, updateOnKeyUp: true}]" />
                     </label>
-                    <label style="float: right; margin-right: 1em">Format <select data-amm-e="{
-                        id: format, 
-                        options: [
-                            {value: 1, label: 'default'},  
-                            'd.m.Y',
-                            'H:i',
-                            'H:i:s',
-                            'custom:',
-                            ]}" data-amm-v="[v.Visual, v.Select]">
+                    <label style="float: right; margin-right: 1em">Format
+                        <select data-amm-e="{id: format}" data-amm-v="[v.Visual, v.Select]">
+                            <option value="1">default</option>
+                            <option>d.m.Y</option>
+                            <option>H:i</option>
+                            <option>H:i:s</option>
+                            <option>custom:</option>
                         </select>
                     </label>
                     <label style="float: right; min-width: 0; margin-right: 1em">Poll 

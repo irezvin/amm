@@ -27,6 +27,8 @@ Amm.Sorter.prototype = {
     // [index in _observers => ascending]
     _directions: null,
     
+    _oldDirections: null,
+    
     _deleteCriterion: function(index, reorder) {
         if (!this._observers[index]) return;
         var instance = this._observers[index];
@@ -39,6 +41,8 @@ Amm.Sorter.prototype = {
     setCriteria: function(criteria, index) {
         
         if (index !== undefined) { // first type: add or replace one criterion
+            
+            this._directions = null;
             
             var targetIndex = index;
             if (targetIndex < 0) targetIndex = 0;
@@ -94,11 +98,15 @@ Amm.Sorter.prototype = {
 
             var proto = [], p;
 
+            if (!(criteria instanceof Array)) criteria = [criteria];
+            
+            this._directions = null;
+
             for (i = 0, l = criteria.length; i < l; i++) {
                 p = this._getCriterionPrototype(criteria[i], i);
                 proto.push(p);
             }
-
+            
             var newCriteria = Amm.constructMany(proto, 'Amm.Sorter.Criterion');
             newCriteria.sort(function(a, b) {
                 return a.getIndex() - b.getIndex();
@@ -234,8 +242,7 @@ Amm.Sorter.prototype = {
         if (!(a instanceof Array) && (b instanceof Array)) throw Error ("both matches must be Arrays");
         if (a.length !== b.length) throw Error ("both matches must have same length");
         if (!this._directions) {
-            this._directions = [];
-            for (i = 0, l = this._observers.length; i < l; i++) this._directions.push(this._observers[i].getAscending());
+            this._directions = this._getDirections();
         }        
         var res;
         for (i = 0, l = a.length; i < l; i++) {
@@ -258,6 +265,7 @@ Amm.Sorter.prototype = {
     },
     
     outNeedSort: function() {
+        this._oldDirections = null;
         return this._out('needSort');
     },
     
@@ -288,6 +296,28 @@ Amm.Sorter.prototype = {
     
     _hasChangeSubscribers: function() {
         return this._subscribers.matchesChange || this._subscribers.needSort;
+    },
+    
+    _getDirections: function() {
+        if (this._directions) return this._directions;
+        var res = [];
+        for (i = 0, l = this._observers.length; i < l; i++) res.push(this._observers[i].getAscending());
+        return res;
+    },
+    
+    beginUpdate: function() {
+        Amm.FilterSorter.prototype.beginUpdate.call(this);
+        if (this._updateLevel === 1) {
+            this._oldDirections = this._getDirections();
+        }
+    },
+    
+    endUpdate: function() {
+        Amm.FilterSorter.prototype.endUpdate.call(this);
+        if (this._oldDirections && !this._directions && !Amm.Array.equal(this._getDirections(), this._oldDirections)) {
+            this._directions = null;
+            this.outNeedSort();
+        }
     }
 
 

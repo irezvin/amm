@@ -1,21 +1,19 @@
 <!DOCTYPE HTML>
 <html data-amm-build="">
     <head>
-        <title>A.M.M. Scratch</title>
+        <title>6. ArrayMapper &mdash; A.M.M. Example</title>
         <meta charset='utf-8'>
         <script src="../js/vendor/jquery-3.1.1.js"></script>
         <script src="../js/vendor/relaxed-json.js"></script>
-        <link rel="stylesheet" type="text/css" href="scratch.css" />
+        <link rel="stylesheet" type="text/css" href="example.css" />
 <?php 
-        require_once(dirname(__FILE__).'/list.php');
+        require_once(__DIR__.'/../build/list.php');
         foreach (listAmmFiles() as $f) { 
             echo "
         <script src=\"../js/classes/{$f}\"></script>";
         
         }
-        
 ?> 
-        
         <script type="text/javascript">
             Amm.getRoot().subscribe('bootstrap', function() {
                 console.log("Amm bootstrapped");
@@ -33,51 +31,65 @@
                 </div>
                 <br />
                 <div class='itemProto' style='display: none' data-amm-dont-build="">
-                    <div class='outer' data-amm-e="{prop__item: null}" data-amm-v="['v.Visual', 'v.StaticDisplayParent']">
-                        Name: <input type="text" 
-                                     data-amm-v="['v.Visual', 'v.Input']" 
+                    <div class='outer' data-amm-e="{prop__item: null}" data-amm-v="['v.Visual', {'class': 'v.StaticDisplayParent', buildItems: true}]">
+                        <label>
+                            Name: <input type="text" 
+                                     data-amm-v="['v.Visual', {'class': 'v.Input', updateOnKeyUp: true}]" 
                                      data-amm-e="{sync__value: this.displayParent.item.name}" />
+                        </label>
+                        <label>
                         Age: <input type="text" 
-                                    data-amm-v="['v.Visual', 'v.Input']" 
+                                    data-amm-v="['v.Visual', {'class': 'v.Input', updateOnKeyUp: true}]" 
                                     data-amm-e="{sync__value: this.displayParent.item.age}" />
+                        </label>
+                        <button onclick="window.items.reject(Amm.findElement(this).getItem())">Delete</button>
                     </div>          
                 </div>
                 <div data-amm-v='v.DisplayParent'>
                 </div>
                 
         </div>
-        <!--select data-amm-id="sortModes" data-amm-v="[v.Select, v.Visual]" 
-            data-amm-e="{
-            options: [
-                {
-                    value: ['name'], 
-                    label: 'name ASC', 
-                },
-                {
-                    value: ['name DESC'], 
-                    label: 'name DESC', 
-                },
-                {
-                    value: ['age'], 
-                    label: 'age ASC', 
-                },
-                {
-                    value: ['age DESC'], 
-                    label: 'age DESC', 
-                }
-            ]
-        }"-->
-        </select>
-        <div data-amm-id="@list" data-amm-e="{
-                extraTraits: [t.DisplayParent],
-                prop__itemProto: { $ref: '.itemProto' }
-            }" data-amm-v='[v.Visual]' style="padding: 1em; margin: 1px">
-                <div class='itemProto' style='display: none' data-amm-dont-build="">
-                    <div class='itm' data-amm-e="{prop__item: null, in__content: 'this.item.name + (this.item.age? \', \' + this.item.age : \'\')'}" data-amm-v="['v.Visual', 'v.Content']">
+        <div style="padding-left: 1em; margin: 1px">
+            <p>List below shows mapped collection (with independent order):</p>
+            <label>Sort by: <select data-amm-id="sortMode" data-amm-v="[v.Select, v.Visual]"
+                data-amm-e="{
+                options: [
+                    {
+                        value: ['name'], 
+                        label: 'name ASC', 
+                    },
+                    {
+                        value: ['name DESC'], 
+                        label: 'name DESC', 
+                    },
+                    {
+                        value: ['age'], 
+                        label: 'age ASC', 
+                    },
+                    {
+                        value: ['age DESC'], 
+                        label: 'age DESC', 
+                    }
+                ]
+            }">
+            </select>
+            </label>
+            <div data-amm-id="@list" data-amm-e="{
+                    extraTraits: [t.DisplayParent],
+                    prop__itemProto: { $ref: '.itemProto' },
+                    prop__mapper: null,
+                    expr__mapperSort: {
+                        src: sortMode.value,
+                        writeProperty: this.mapper.sort.criteria
+                    }
+                }" data-amm-v='[v.Visual]' style='margin-top: 1em'>
+                    <div class='itemProto' style='display: none' data-amm-dont-build="">
+                        <div class='itm' style="position: relative; width: 200px" data-amm-e="{prop__item: null, in__content: 'this.item.name + (this.item.age? \', <span style=\\\'position: absolute; right: 0px;\\\'>\' + this.item.age : \'\')'}" data-amm-v="['v.Visual', 'v.Content']">
+                        </div>
                     </div>
-                </div>
-                <div data-amm-v='v.DisplayParent'>
-                </div>
+                    <div data-amm-v='v.DisplayParent'>
+                    </div>
+            </div>
         </div>
         <script type="text/javascript">
             Amm.getRoot().subscribe('bootstrap', function() {
@@ -92,6 +104,12 @@
                         }
                     })
                 });
+                window.items.setItems([
+                    new Amm.Element({prop__name: 'Bob', prop__age: 28}),
+                    new Amm.Element({prop__name: 'Alice', prop__age: 23}),
+                    new Amm.Element({prop__name: 'Igor', prop__age: 43}),
+                    new Amm.Element({prop__name: 'Frank', prop__age: 24}),
+                ]);
                 window.am = new Amm.ArrayMapper({
                     instantiator: new Amm.Instantiator.Proto({
                         'class': Amm.Element,
@@ -112,6 +130,7 @@
                         criteria: ['age', 'name']
                     })
                 });
+                window.list.setMapper(am2);
             });
         </script>
     </body>

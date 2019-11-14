@@ -1,14 +1,14 @@
 <!DOCTYPE HTML>
 <html data-amm-build="">
     <head>
-        <title>A.M.M. Scratch 10</title>
+        <title>10. Ajax Filters with Fetcher &mdash; A.M.M. Example</title>
         <meta charset='utf-8'>
         <script src="../js/vendor/jquery-3.1.1.js"></script>
         <script src="../js/vendor/relaxed-json.js"></script>
-        <link rel="stylesheet" type="text/css" href="scratch.css" />
+        <link rel="stylesheet" type="text/css" href="example.css" />
         <link rel="stylesheet" type="text/css" href="tbl.css" />
 <?php 
-        require_once(__DIR__.'/list.php');
+        require_once(__DIR__.'/../build/list.php');
         foreach (listAmmFiles() as $f) { 
             echo "
         <script src=\"../js/classes/{$f}\"></script>";

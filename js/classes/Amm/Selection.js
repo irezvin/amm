@@ -124,8 +124,12 @@ Amm.Selection.prototype = {
             empty = true;
             if (this._multiple) value = [];
         } else {
-            if (value instanceof Array || value['Amm.Array']) {
-                empty = !value.length;
+            if ((value instanceof Array || value['Amm.Array'])) {
+                if (this._findItemsWithValue([value]).length) {
+                    value = [value];
+                } else {
+                    empty = !value.length;
+                }
             } else {
                 value = [value];
             }

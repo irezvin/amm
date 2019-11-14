@@ -45,6 +45,7 @@ Amm.Sorter.Property.prototype = {
     },
     
     _handleChange: function() {
+        if (!this._filterSorter) return;
         var o = Amm.event.origin; // event origin must be our object
         
         // sub-optimal (eval all conditions for all observed change events)
