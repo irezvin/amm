@@ -3,3 +3,4 @@ build/.cache
 build/amm-compressed.js
 planning
 mong
+examples/todo.json
