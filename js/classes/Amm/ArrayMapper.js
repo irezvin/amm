@@ -383,8 +383,8 @@ Amm.ArrayMapper.prototype = {
             return;
         }
         if (!this._sort) return;
-        var idx = 0;
-        while ((idx = Amm.Array.indexOf(item, this._src, idx)) >= 0) {
+        var idx = -1;
+        while ((idx = Amm.Array.indexOf(item, this._src, idx + 1)) >= 0) {
             var dest = this._srcEntries[idx][Amm.ArrayMapper._SRC_REF_TO_DEST];
             var old = dest[Amm.ArrayMapper._DEST_SORT_VALUE];
             var n = value === undefined? this._getSortValue(idx) : value;
@@ -905,6 +905,7 @@ Amm.ArrayMapper.prototype = {
         if (this._destExtra) {
             destItems = this._destExtra.concat(destItems);
         }
+        
         this.getDest().setItems(destItems);
         
     },
