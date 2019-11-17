@@ -590,7 +590,10 @@ Amm.Element.prototype = {
         
         // 'class' can be specified in expression proto
         var exprClass = exprType === Amm.Element.EXPROP_SYNC? Amm.Expression.Sync : Amm.Expression;
-        if (proto['class']) exprClass = Amm.getFunction(proto['class']);
+        if (proto['class']) {
+            exprClass = Amm.getFunction(proto['class']);
+            delete proto['class'];
+        }
         var appliedPropName = propName;
         if (exprType === Amm.Element.EXPROP_EXPR) appliedPropName = undefined;
         expression = new exprClass (proto, this, appliedPropName, undefined, args);
