@@ -28,10 +28,11 @@ class TodoApi {
         if (strlen($buf)) $this->data = json_decode($buf, true);
         if (!is_array($this->data)) $this->data = json_decode(file_get_contents($this->origFile), true);
         if (!is_array($this->data)) $this->data = array();
+        $this->data = $this->indexData($this->data);
     }
     
     function save() {
-        if (!$this->handle) return;
+        if (!$this->handle) throw new Exception("Cannot save");
         fseek($this->handle, 0);
         ftruncate($this->handle, 0);
         fputs($this->handle, json_encode(array_values($this->data), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT ));
@@ -120,8 +121,8 @@ class TodoApi {
                 return [$this->data[$id]];
             return [];
         }
-        if (!strlen($filter)) {
-            return $this->data;
+        if (!strlen($filter) && !strlen($completed)) {
+            return array_values($this->data);
         }
         $res = array();
         foreach ($this->data as $item) {
@@ -226,6 +227,7 @@ class TodoApi {
         if ($this->handle) {
             flock($this->handle, LOCK_UN);
             fclose($this->handle);
+            $this->handle = false;
         }
     }
 

@@ -1,0 +1,65 @@
+h1 {
+    text-align: center;
+}
+
+div.completed > div > div {
+    text-decoration: line-through; color: #666;
+}
+
+.filters {
+    padding: 0.5em 0 1em 0;
+    margin-bottom: 1em;
+    border-bottom: 1px solid silver;
+    color: silver;
+}
+
+.cnt {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: rgba(0,0,0,0.7);    
+    padding: 1em;
+    border-radius: 20px;
+}
+
+div.item {
+    padding: 0.5em 0;
+    position: relative;
+}
+
+div.priority {
+    display: inline-block;
+    color: darkgray;
+}
+
+div.item > div > div {
+    display: inline-block;
+}
+
+.priority {
+    width: 10%;
+    text-align: right;
+    padding-right: 1em;
+    color: darkgray;
+}
+
+.toggle {
+    float: right;
+    margin-left: 0.5em;
+}
+
+.toggle a:visited, .toggleEdit a:hover {
+    color: gold;
+}
+
+.edit .task {
+    width: 60%;
+}
+
+.edit .priority input {
+    width: 80%;
+    text-align: right;
+}
+
+.edit .task input {
+    width: 100%;
+}
