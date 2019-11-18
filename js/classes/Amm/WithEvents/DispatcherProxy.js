@@ -82,17 +82,11 @@ Amm.WithEvents.DispatcherProxy.prototype = {
     doCallHandler: function(queueItem, eventName, args, extra) {
         var 
             scope = queueItem[1],
-            handler = queueItem[0],
+            handler = queueItem[0];
             // extra is passed to us
-            decorator = queueItem[3];
     
         var argsCpy = [].concat(args);
         
-        if (decorator) {
-            argsCpy = decorator.call(decorator, eventName, argsCpy, handler, scope, extra, this);
-            if (!(argsCpy instanceof Array)) return;
-        }
-
         if (!handler.apply) handler = scope[handler];
 
         if (extra !== undefined) argsCpy.push(extra); // extra is last one
@@ -139,7 +133,7 @@ Amm.WithEvents.DispatcherProxy.prototype = {
         
     },
     
-    subscribeObject: function(object, eventName, handler, scope, extra, decorator) {
+    subscribeObject: function(object, eventName, handler, scope, extra) {
         // find handlers
         var currHandlers = this._eventsProxy.getObjectSubscribers(object, eventName, this.dispatchEvent, this);
         
@@ -149,13 +143,12 @@ Amm.WithEvents.DispatcherProxy.prototype = {
             Error("Assertion: Amm.WithEvents.DispatcherProxy.dispatchEvent handler must be subscribed only once");
         
         if (extra === undefined) extra = null;
-        if (decorator === undefined) decorator = null;
         if (scope === undefined) scope = null;
         
         if (!currHandlers.length) { 
             // this is the first time we subscribe to this object
             this._subscriptions.push(object);
-            queue = [[handler, scope, extra, decorator]];
+            queue = [[handler, scope, extra]];
             queue.eventName = eventName;
             this._eventsProxy.subscribeObject(object, eventName, this.dispatchEvent, this, queue);
             return;
@@ -169,14 +162,13 @@ Amm.WithEvents.DispatcherProxy.prototype = {
                 queue[i][0] === handler
                 && queue[i][1] === scope
                 && !this.compareExtra(queue[i][2], extra)
-                && queue[i][3] === decorator
             ) return; // already subscribed
         }
-        queue.push([handler, scope, extra, decorator]);
+        queue.push([handler, scope, extra]);
     },
     
     // returns number of remaining subscribers
-    unsubscribeObject: function(object, eventName, handler, scope, extra, decorator) {
+    unsubscribeObject: function(object, eventName, handler, scope, extra) {
         if (!object) Error("`object` parameter is required");
         var currHandlers = this._eventsProxy.getObjectSubscribers(object, eventName, this.dispatchEvent, this);
         var opCount = 0; //number of remaining events to dispatch to operator `operator`
@@ -192,7 +184,6 @@ Amm.WithEvents.DispatcherProxy.prototype = {
                         (handler === undefined || queue[i][0] === handler)
                     &&  (scope === undefined || queue[i][1] === scope)
                     &&  (extra === undefined || !this.compareExtra(queue[i][2], extra))
-                    &&  (decorator === undefined || queue[i][3] === decorator)
                 ) {
                     queue.splice(i, 1);
                 } else {
@@ -200,14 +191,14 @@ Amm.WithEvents.DispatcherProxy.prototype = {
                 }
             }
             if (!queue.length) {
-                this._removeQueue(object, currHandlers[j][4], currHandlers[j][5]);
+                this._removeQueue(object, currHandlers[j][3], currHandlers[j][4]);
             }
         }
         
         return opCount;
     },
     
-    getObjectSubscribers: function(object, eventName, handler, scope, extra, decorator) {
+    getObjectSubscribers: function(object, eventName, handler, scope, extra) {
         
         if (!object) Error("`object` parameter is required");
         var currHandlers = this._eventsProxy.getObjectSubscribers(object, eventName, this.dispatchEvent, this);
@@ -216,7 +207,7 @@ Amm.WithEvents.DispatcherProxy.prototype = {
             Error("Assertion: Amm.WithEvents.DispatcherProxy.dispatchEvent handler must be subscribed only once");
         var res = [];
         for (var j = 0, hl = currHandlers.length; j < hl; j++) {
-            var currEventName = currHandlers[j][4], queue = currHandlers[j][2];
+            var currEventName = currHandlers[j][3], queue = currHandlers[j][2];
             if (!queue || !queue.eventName || (queue.eventName !== currEventName))
                 Error("Assertion: we found wrong queue array");
             for (var i = queue.length - 1; i >= 0; i--) {
@@ -224,7 +215,6 @@ Amm.WithEvents.DispatcherProxy.prototype = {
                         (handler === undefined || queue[i][0] === handler)
                     &&  (scope === undefined || queue[i][1] === scope)
                     &&  (extra === undefined || !this.compareExtra(queue[i][2], extra))
-                    &&  (decorator === undefined || queue[i][3] === decorator)
                 ) {
                     res.push([].concat(queue[i], [currEventName, i]));
                 }
@@ -273,7 +263,7 @@ Amm.WithEvents.DispatcherProxy.prototype = {
         queue.splice(index);
         
         if (!queue.length) {
-            this._removeQueue(object, eventName, currHandlers[0][5]);
+            this._removeQueue(object, eventName, currHandlers[0][4]);
         }
         
         return res;

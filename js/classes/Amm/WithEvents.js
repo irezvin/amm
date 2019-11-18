@@ -27,16 +27,6 @@ Amm.WithEvents = function(options, initOnHandlersOnly) {
  *          -   if the scope is not found after getByPath(), handler will be
  *              silently skipped.
  * {extra} is additional last argument that is added to the args (unless undefined)
- * {decorator} can be used to transform event arguments
- *      Event decorator is either a method, or object with "call" method.
- *      Call() args: decorator, eventName. args, handler, scope, extra, thisObject 
- *      
- *      Decorator method must return array that will be passed instead of original
- *      args to the {handler}. If decorator DOES NOT return an Array, handler 
- *      won't be called. It may be useful if decorator is going to call it itself.
- *      
- *      The supposed purpose of decorators is to re-map arguments to put output 
- *      of event into the input of already existing methods.
  *          
  *  Before the call, Amm.pushEvent() is called and, during the handler invocation,
  *  Amm.event to be set to following hash:
@@ -44,21 +34,19 @@ Amm.WithEvents = function(options, initOnHandlersOnly) {
  *  
  *  {dontPush} - don't populate Amm.event object
  */
-Amm.WithEvents.invokeHandler = function(eventName, args, handler, scope, extra, decorator, dontPush) {
-    return Amm.WithEvents.invokeHandlers.call(this, eventName, args, [[handler, scope, extra, decorator]], dontPush);
+Amm.WithEvents.invokeHandler = function(eventName, args, handler, scope, extra, dontPush) {
+    return Amm.WithEvents.invokeHandlers.call(this, eventName, args, [[handler, scope, extra]], dontPush);
 };
 
 /*
  * Invokes group of event handlers. See Amm.WithEvents.invokeHandler().
  * Subscribers is two-dimentional array, where second index corresponds 
- * to {handler}, {scope}, {extra} and {decorator} of Amm.WithEvents.invokeHandler():
+ * to {handler}, {scope}, {extra} of Amm.WithEvents.invokeHandler():
  * -    subscribers[i][0] is {handler}
  * -    subscribers[i][1] is {scope}
  * -    subscribers[i][2] is {extra}
- * -    subscribers[i][3] is {decorator}
- * {defaultDecorator} used to specify decorator when handler doesn't have one
  */
-Amm.WithEvents.invokeHandlers = function(eventName, args, subscribers, dontPush, defaultDecorator) {
+Amm.WithEvents.invokeHandlers = function(eventName, args, subscribers, dontPush) {
     if (!dontPush) {
         Amm.pushEvent({
             origin: this,
@@ -80,8 +68,7 @@ Amm.WithEvents.invokeHandlers = function(eventName, args, subscribers, dontPush,
                 h = s[i],
                 handler = h[0] || null,
                 scope = h[1] || this,
-                extra = h[2] || undefined,
-                decorator = h[3] || defaultDecorator || null;
+                extra = h[2] || undefined;
             
             if (typeof scope === 'string') { // this is an Element
                 if (typeof this.getByPath === 'function') scope = this.getByPath(scope);
@@ -96,10 +83,6 @@ Amm.WithEvents.invokeHandlers = function(eventName, args, subscribers, dontPush,
             }
             var argsCpy = [].concat(args);
             if (extra !== undefined) argsCpy.push(extra);
-            if (decorator) {
-                argsCpy = decorator.call(decorator, eventName, argsCpy, handler, scope, extra, this);
-                if (!(argsCpy instanceof Array)) continue;
-            }
             if (!handler || typeof handler !== 'function' && typeof handler.apply !== 'function') {
                 throw Error("Cannot call non-function handler or handler without .apply");
             }
@@ -164,13 +147,12 @@ Amm.WithEvents.prototype = {
     },
     
     // returns true if subscriber was added or undefined if was already present
-    subscribe: function(eventName, handler, scope, extra, decorator) {
+    subscribe: function(eventName, handler, scope, extra) {
         if (typeof eventName !== 'string' || !eventName.length) throw Error("`eventName` must be a non-empty string");
         scope = scope || null; // required by getSubscribers to work properly
         extra = extra || null;
-        decorator = decorator || null;
         if (this.strictEvents && !this.hasEvent(eventName)) {
-            var miss = this._handleMissingEvent(eventName, handler, scope, extra, decorator);
+            var miss = this._handleMissingEvent(eventName, handler, scope, extra);
             if (miss === undefined) throw Error("No such out event: '" + eventName+ "'");
             if (miss === false) return true;
         }
@@ -180,8 +162,8 @@ Amm.WithEvents.prototype = {
             isFirst = true;
         }
         var res;
-        if (!this.getSubscribers(eventName, handler, scope, extra, decorator).length) {
-            this._subscribers[eventName].push([handler, scope, extra, decorator]);
+        if (!this.getSubscribers(eventName, handler, scope, extra).length) {
+            this._subscribers[eventName].push([handler, scope, extra]);
             res = true;
         }
         if (isFirst) {
@@ -195,7 +177,7 @@ Amm.WithEvents.prototype = {
     // if returns FALSE, exception by subscribe() won't be raised, but event won't be added (this allow
     //      method to add event handler by itself)
     // any other result will cause event to be added by standard mechanism
-    _handleMissingEvent: function(eventName, handler, scope, extra, decorator) {
+    _handleMissingEvent: function(eventName, handler, scope, extra) {
     },
     
     /**
@@ -203,7 +185,7 @@ Amm.WithEvents.prototype = {
      * All arguments are optional
      * @return {Array[]}
      */ 
-    getSubscribers: function(eventName, handler, scope, extra, decorator) {
+    getSubscribers: function(eventName, handler, scope, extra) {
         var res = [], keys = null;
         if (eventName === undefined) keys = this._subscribers; else {
             keys = {};
@@ -215,7 +197,6 @@ Amm.WithEvents.prototype = {
                 if (handler !== undefined && handler !== arr[j][0]) continue;
                 if (scope !== undefined && scope !== arr[j][1]) continue;
                 if (extra !== undefined && extra !== arr[j][2]) continue;
-                if (decorator !== undefined && decorator !== arr[j][3]) continue;
                 res.push([].concat(arr[j], [i, j]));
             }
         }
@@ -270,18 +251,18 @@ Amm.WithEvents.prototype = {
      * 
      * Returns array with found subscribers
      */
-    unsubscribe: function(eventName, handler, scope, extra, decorator) {
+    unsubscribe: function(eventName, handler, scope, extra) {
         var subscribers;
         if (eventName instanceof Array && arguments.length === 1) {
             subscribers = eventName;
         } else {
-            subscribers = this.getSubscribers(eventName, handler, scope, extra, decorator);
+            subscribers = this.getSubscribers(eventName, handler, scope, extra);
         }
         for (var i = subscribers.length - 1; i >= 0; i--) {
             var r = subscribers[i];
-            this._subscribers[r[4]].splice(r[5], 1);
-            if (!this._subscribers[r[4]].length) {
-                delete this._subscribers[r[4]];
+            this._subscribers[r[3]].splice(r[4], 1);
+            if (!this._subscribers[r[3]].length) {
+                delete this._subscribers[r[3]];
                 var fn = '_unsubscribeLast_' + eventName;
                 if (this[fn] && typeof this[fn] === 'function') this[fn]();
             }
@@ -304,7 +285,7 @@ Amm.WithEvents.prototype = {
                 var handler = options[i];
                 if (!(handler instanceof Array)) handler = [handler];
                 var eventName = i.split('__')[1]; // ignore everything past second '__'
-                res.push([eventName, handler[0], handler[1], handler[2], handler[3]]);
+                res.push([eventName, handler[0], handler[1], handler[2]]);
                 delete options[i];
             }
         }
@@ -313,7 +294,7 @@ Amm.WithEvents.prototype = {
     
     _initOnHandlers: function(onHandlers) {
         for (var i = 0, l = onHandlers.length; i < l; i++) {
-            this.subscribe(onHandlers[i][0], onHandlers[i][1], onHandlers[i][2], onHandlers[i][3], onHandlers[i][4]);
+            this.subscribe(onHandlers[i][0], onHandlers[i][1], onHandlers[i][2], onHandlers[i][3]);
         }
     }
     

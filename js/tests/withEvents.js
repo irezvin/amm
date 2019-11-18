@@ -5,7 +5,7 @@ QUnit.module("WithEvents");
 
 (function() {
 
-    // create sample set of handlers and decorators
+    // create sample set of handlers
     var log2this = function() {
         this.log.push(Array.prototype.slice.call(arguments));
     };
@@ -44,21 +44,6 @@ QUnit.module("WithEvents");
         }
     };
     
-    var decoratorObjA = {
-        extraArg: 'foo',
-        call: function(decoratorScope, eventName, args, handler, scope, extra, thisObject) {
-            args.push(this.extraArg);
-            return args;
-        }
-    };
-    
-    // reverses args and calls handlers, skipping built-in call
-    var decoratorFnB = function(eventName, args, handler, scope, extra, thisObject) {
-        args.reverse();
-        handler.apply(scope, args);
-        return null;
-    };
-    
     clearLogs = function() {
         sub1.log.splice(0, sub1.log.length);
         globLog.splice(0, globLog.length);
@@ -75,11 +60,9 @@ QUnit.module("WithEvents");
         };
         
         var subscribers = [
-            // handler, scope, extra, decorator
+            // handler, scope, extra
             
             [handlerObj, handlerObj], // object with .apply method
-            [sub1.handlerA, sub1, 'withDecoratorObjA', decoratorObjA],
-            [sub1.handlerA, sub1, 'withDecoratorFnB', decoratorFnB]
         ];
 
         clearLogs();
@@ -128,34 +111,6 @@ QUnit.module("WithEvents");
         assert.deepEqual(handlerObj.log, [['arg1', 'arg2']], 
             'handlerObj with apply() method. Because I can');
             
-        clearLogs();
-        Amm.WithEvents.invokeHandlers.call(thisObj, 'fooEvent', ['arg1', 'arg2'],
-            [[handlerFn, null, 'extra1', decoratorObjA]]);
-        assert.deepEqual(globLog, [['arg1', 'arg2', 'extra1', 'foo']],
-            'decorator with .call() method');
-            
-        clearLogs();
-        Amm.WithEvents.invokeHandlers.call(thisObj, 'fooEvent', ['arg1', 'arg2'],
-            [[handlerFn, null, 'extra2', decoratorFnB]]);
-        assert.deepEqual(globLog, [['extra2', 'arg2', 'arg1']],
-            'decorator function that calls handler directly');
-            
-        clearLogs();
-        
-        Amm.WithEvents.invokeHandlers.call(thisObj, 'fooEvent', ['arg1', 'arg2'],
-            [
-                [handlerFn, null, 'extra1'],
-                [handlerFn, null, 'extra2']
-            ], 
-        false, decoratorFnB);
-        
-        assert.deepEqual(globLog, 
-            [
-                ['extra1', 'arg2', 'arg1'],
-                ['extra2', 'arg2', 'arg1']
-            ],  'defaultDecorator works too'
-        );
-        
     });
     
     QUnit.test("WithEvents add/delete/find events", function(assert) {
@@ -196,11 +151,6 @@ QUnit.module("WithEvents");
         assert.notOk(e.subscribe('eventA', sub1.handlerA, sub1, 'extraA'), 
             'Must not subscribe second time with same handler, scope, extra');
         
-        assert.ok(e.subscribe('eventA', sub1.handlerA, sub1, 'extraA', decoratorFnB),
-            'Subscribe (handler, scope, extra)');
-        assert.notOk(e.subscribe('eventA', sub1.handlerA, sub1, 'extraA', decoratorFnB), 
-            'Must not subscribe second time with same handler, scope, extra, decorator');
-        
         assert.ok(e.subscribe('eventB', sub1.handlerA, sub1, 'extraB'),
             'Subscribe (handler, scope, extra) / different event');
         
@@ -209,90 +159,72 @@ QUnit.module("WithEvents");
         
         assert.deepEqual(e.getSubscribers(), 
         [
-            [handlerFn, null, null, null, 'eventA', 0],
-            [sub1.handlerA, sub1, null, null, 'eventA', 1],
-            [sub2.handlerA, sub2, null, null, 'eventA', 2],
-            [sub1.handlerA, sub1, 'extraA', null, 'eventA', 3],
-            [sub1.handlerA, sub1, 'extraA', decoratorFnB, 'eventA', 4],
-            [sub1.handlerA, sub1, 'extraB', null, 'eventB', 0],
-            [sub1.handlerA, sub1, 'extraC', null, 'eventB', 1]
+            [handlerFn, null, null, 'eventA', 0],
+            [sub1.handlerA, sub1, null, 'eventA', 1],
+            [sub2.handlerA, sub2, null, 'eventA', 2],
+            [sub1.handlerA, sub1, 'extraA', 'eventA', 3],
+            [sub1.handlerA, sub1, 'extraB', 'eventB', 0],
+            [sub1.handlerA, sub1, 'extraC', 'eventB', 1]
         ], 'getSubscribers() w/o args return all subscribers + event names and indexes');
         
         assert.deepEqual(e.getSubscribers('eventA'), 
         [
-            [handlerFn, null, null, null, 'eventA', 0],
-            [sub1.handlerA, sub1, null, null, 'eventA', 1],
-            [sub2.handlerA, sub2, null, null, 'eventA', 2],
-            [sub1.handlerA, sub1, 'extraA', null, 'eventA', 3],
-            [sub1.handlerA, sub1, 'extraA', decoratorFnB, 'eventA', 4]
+            [handlerFn, null, null, 'eventA', 0],
+            [sub1.handlerA, sub1, null, 'eventA', 1],
+            [sub2.handlerA, sub2, null, 'eventA', 2],
+            [sub1.handlerA, sub1, 'extraA', 'eventA', 3],
         ], 'getSubscribers(event)');
         
         assert.deepEqual(e.getSubscribers('eventA', handlerFn), 
         [
-            [handlerFn, null, null, null, 'eventA', 0]
+            [handlerFn, null, null, 'eventA', 0]
         ], 'getSubscribers(event, handler)');
         
         
         assert.deepEqual(e.getSubscribers(undefined, undefined, sub2), 
         [
-            [sub2.handlerA, sub2, null, null, 'eventA', 2]
+            [sub2.handlerA, sub2, null, 'eventA', 2]
         ], 'getSubscribers(,,scope)');
         
         assert.deepEqual(e.getSubscribers(undefined, undefined, undefined, 'extraA'), 
         [
-            [sub1.handlerA, sub1, 'extraA', null, 'eventA', 3],
-            [sub1.handlerA, sub1, 'extraA', decoratorFnB, 'eventA', 4]
+            [sub1.handlerA, sub1, 'extraA', 'eventA', 3],
         ], 'getSubscribers(,,,extra)');
-        
-        assert.deepEqual(e.getSubscribers(undefined, undefined, undefined, undefined, decoratorFnB), 
-        [
-            [sub1.handlerA, sub1, 'extraA', decoratorFnB, 'eventA', 4]
-        ], 'getSubscribers(,,,,decorator)');
         
         e.unsubscribe('eventB');
         assert.deepEqual(e.getSubscribers(), 
         [
-            [handlerFn, null, null, null, 'eventA', 0],
-            [sub1.handlerA, sub1, null, null, 'eventA', 1],
-            [sub2.handlerA, sub2, null, null, 'eventA', 2],
-            [sub1.handlerA, sub1, 'extraA', null, 'eventA', 3],
-            [sub1.handlerA, sub1, 'extraA', decoratorFnB, 'eventA', 4]
+            [handlerFn, null, null, 'eventA', 0],
+            [sub1.handlerA, sub1, null, 'eventA', 1],
+            [sub2.handlerA, sub2, null, 'eventA', 2],
+            [sub1.handlerA, sub1, 'extraA', 'eventA', 3],
         ], 'unsubscribe(eventName)');
-        
-        e.unsubscribe(undefined, undefined, undefined, undefined, decoratorFnB);
-        assert.deepEqual(e.getSubscribers(), 
-        [
-            [handlerFn, null, null, null, 'eventA', 0],
-            [sub1.handlerA, sub1, null, null, 'eventA', 1],
-            [sub2.handlerA, sub2, null, null, 'eventA', 2],
-            [sub1.handlerA, sub1, 'extraA', null, 'eventA', 3]
-        ], 'unsubscribe(...decorator)');
         
         e.unsubscribe(undefined, undefined, sub2);
         assert.deepEqual(e.getSubscribers(), 
         [
-            [handlerFn, null, null, null, 'eventA', 0],
-            [sub1.handlerA, sub1, null, null, 'eventA', 1],
-            [sub1.handlerA, sub1, 'extraA', null, 'eventA', 2]
+            [handlerFn, null, null, 'eventA', 0],
+            [sub1.handlerA, sub1, null, 'eventA', 1],
+            [sub1.handlerA, sub1, 'extraA', 'eventA', 2]
         ], 'unsubscribe(...scope...)');
         
         e.unsubscribe(undefined, handlerFn);
         assert.deepEqual(e.getSubscribers(), 
         [
-            [sub1.handlerA, sub1, null, null, 'eventA', 0],
-            [sub1.handlerA, sub1, 'extraA', null, 'eventA', 1]
+            [sub1.handlerA, sub1, null, 'eventA', 0],
+            [sub1.handlerA, sub1, 'extraA', 'eventA', 1]
         ], 'unsubscribe(...handler...)');
         
         assert.deepEqual(e.unsubscribeByIndex('eventA', 10), [], 
             'unsubscribeByIndex /w n/x idx');
         
         assert.deepEqual(e.unsubscribeByIndex('eventA', 0), 
-            [[sub1.handlerA, sub1, null, null, 'eventA', 0]], 
+            [[sub1.handlerA, sub1, null, 'eventA', 0]], 
             'unsubscribeByIndex /w xtng.idx');
             
         assert.deepEqual(e.getSubscribers(), 
         [
-            [sub1.handlerA, sub1, 'extraA', null, 'eventA', 0]
+            [sub1.handlerA, sub1, 'extraA', 'eventA', 0]
         ]);
 
         var sub = e.getSubscribers();

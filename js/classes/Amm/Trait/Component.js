@@ -142,7 +142,7 @@ Amm.Trait.Component.prototype = {
             m = this._extractNameEventFromMethodName(hdl[0]);
             if (!m) continue;
             if (!namedOnly || m[0])
-                element.unsubscribe(hdl[4], hdl[0], this);
+                element.unsubscribe(hdl[3], hdl[0], this);
         }
     },
     
