@@ -17,8 +17,6 @@ Amm.ElementBound.prototype = {
      */
     _element: null,
     
-    _elementPath: null,
-    
     /**
      * Lock - means we don't need to unsubscribe from element events since element already
      * unsubscribed all its' subscriber since we are in the middle of his cleanup() procedure
@@ -30,35 +28,15 @@ Amm.ElementBound.prototype = {
      */
     cleanupWithElement: true,
     
-    setElementPath: function(elementPath) {
-        if (this._elementPath === elementPath) return;
-        if (this._element) {
-            if (this._element.getPath() === elementPath) return;
-            if (this._elementPath) {
-                Amm.stopWaiting(this._elementPath, this.setElement, this);
-                this._elementPath = null;
-            }
-            this.setElement(null);
-        }
-        var element = (typeof this.getByPath === 'function')? this.getByPath(elementPath) : Amm.p(elementPath);
-        if (!element) {
-            this._elementPath = elementPath;
-            Amm.waitFor(elementPath, this.setElement, this);
-        }
-        return true;
-    },
-    
     _doElementChange: function(element, oldElement) {
         if (oldElement && !this._isElementCleanup) {
             oldElement.unsubscribe('cleanup', this._handleElementCleanup, this);
         }
         this._element = element;
-        this._elementPath = null;
         if (this._element) this._element.subscribe('cleanup', this._handleElementCleanup, this);
     },
     
     setElement: function(element) {
-        if (typeof element === 'string') return this.setElementPath(element);
         if (element !== null) {
             if (this.requiredElementClass)
                 Amm.is(element, this.requiredElementClass, 'element');
@@ -93,7 +71,6 @@ Amm.ElementBound.prototype = {
             this.setElement(null);
         }
         Amm.callMethods(this, '_cleanup_');
-        Amm.stopWaiting(undefined, undefined, this);
         Amm.unregisterItem(this);
     },
 

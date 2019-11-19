@@ -178,9 +178,6 @@
             "a->b->c": 
                 ["ComponentElement",["ComponentElement",["Identifier","a"],["Constant","b"],null],["Constant","c"],null],
         
-            "a->>b->>c": 
-                ["ChildElement",["ChildElement",["Identifier","a"],["Constant","b"],null],["Constant","c"],null],
-    
             "a['foo']('m', $n + 15).baz":
                 ["PropertyAccess",["FunctionCall",["PropertyAccess",["Identifier","a"],["Subexpression",["Constant","foo"]],null,true,null],["List",[["Constant","m"],["Binary",["Variable","n"],"+",["Constant",15]]]],null],["Constant","baz"],null,false,null],
 

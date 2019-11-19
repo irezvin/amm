@@ -88,19 +88,19 @@
     
     var createTestStructure = function() {
        var a = new Amm.Element({
-           id: 'a', traits: ['Amm.Trait.Composite', 'Amm.Trait.Component'],
+           id: 'a', traits: ['Amm.Trait.Component'],
            handle__valueChange: rep('*'),
            handle__a1__valueChange: rep('a1')
        });
-       var a1 = new Amm.Element({id: 'a1', traits: ['Amm.Trait.Input'], parent: a});
-       var a2 = new Amm.Element({id: 'a2', traits: ['Amm.Trait.Input'], parent: a});
-       var a3 = new Amm.Element({id: 'a3', traits: ['Amm.Trait.Input'], parent: a});
+       var a1 = new Amm.Element({id: 'a1', traits: ['Amm.Trait.Input'], component: a});
+       var a2 = new Amm.Element({id: 'a2', traits: ['Amm.Trait.Input'], component: a});
+       var a3 = new Amm.Element({id: 'a3', traits: ['Amm.Trait.Input'], component: a});
        var adp = new Amm.Element({
            id: 'adp', traits: ['Amm.Trait.DisplayParent', 'Amm.Trait.Component'],
            handle__valueChange: rep('*'),
            handle__adp1__valueChange: rep('adp1'),
            handle__xx__valueChange: rep('xx'),
-           parent: a
+           component: a
        });
        var adp1 = new Amm.Element({id: 'adp1', traits: ['Amm.Trait.Input', 'Amm.Trait.Visual']});
        var adp2 = new Amm.Element({id: 'adp2', traits: ['Amm.Trait.Input', 'Amm.Trait.Visual']});
@@ -108,28 +108,17 @@
        adp.setDisplayChildren([adp1, adp2, adp3]);
        
        var ac = new Amm.Element({
-           id: 'ac', traits: ['Amm.Trait.Composite', 'Amm.Trait.Component'],
-           parent: a
+           id: 'ac', traits: ['Amm.Trait.Component'],
+           component: a
        });
        var ac1 = new Amm.Element({id: 'ac1', traits: ['Amm.Trait.Input'],
-           parent: ac});
+           component: ac});
        var ac2 = new Amm.Element({id: 'ac2', traits: ['Amm.Trait.Input'],
-           parent: ac});
+           component: ac});
        var ac3 = new Amm.Element({id: 'ac3', traits: ['Amm.Trait.Input'],
-           parent: ac});
+           component: ac});
        
-       var acc = new Amm.Element({
-           id: 'acc', traits: ['Amm.Trait.Composite'], parent: ac
-       });
-       var acc1 = new Amm.Element({id: 'acc1', traits: ['Amm.Trait.Input'], 
-           parent: acc});
-       var acc2 = new Amm.Element({id: 'acc2', traits: ['Amm.Trait.Input'],
-           parent: acc});
-       var acc3 = new Amm.Element({id: 'acc3', traits: ['Amm.Trait.Input'],
-           parent: acc});
-       
-       return [a, a1, a2, a3, adp, adp1, adp2, adp3, ac, ac1, ac2, ac3, acc, 
-            acc1, acc2, acc3];
+       return [a, a1, a2, a3, adp, adp1, adp2, adp3, ac, ac1, ac2, ac3];
         
     };
     
@@ -140,15 +129,15 @@
            'null': ['a'],
            'a': ['a1', 'a2', 'a3', 'ac', 'adp'],
            'adp': ['adp1', 'adp2', 'adp3'],
-           'ac': ['ac1', 'ac2', 'ac3', 'acc', 'acc1', 'acc2', 'acc3']
+           'ac': ['ac1', 'ac2', 'ac3']
        }, 'Initial components ownership');
        
        assert.deepEqual(ids(t.ac1.getUniqueSubscribers()), ['ac'], 'Component subscribed to the element');
-       t.ac1.setParent(t.a);
-       assert.equal(t.ac1.getComponent(), t.a, 'Composite: component changed with the parent');
+       t.ac1.setComponent(t.a);
+       assert.equal(t.ac1.getComponent(), t.a, 'Component changed');
        assert.deepEqual(ids(t.ac1.getUniqueSubscribers()), ['a'],
             'New component subscribed to the element (and old isn\'t)');
-       t.ac1.setParent(t.ac);
+       t.ac1.setComponent(t.ac);
        assert.deepEqual(ids(t.ac1.getUniqueSubscribers()), ['ac'],
             'Element successfully returned back');
        assert.ok(t.a1.getSubscribers('valueChange', undefined, t.a).length === 2,
@@ -161,41 +150,22 @@
             '...but when name changed back, got it again');
        t.ac.setIsComponent(false);
        assert.deepEqual(revIds(t.a.getElements()), {
-           'a': ['a1', 'a2', 'a3', 'ac', 'ac1', 'ac2', 'ac3', 'acc', 'acc1', 'acc2', 'acc3', 'adp']
-       }, 'composite.setIsComponent(false): children moved to the parent component');
+           'a': ['a1', 'a2', 'a3', 'ac', 'ac1', 'ac2', 'ac3', 'adp']
+       }, 'component.setIsComponent(false): children moved to the parent component');
        t.ac.setIsComponent(true);
-       assert.deepEqual(revIds(t.a.getElements().concat(t.ac.getElements())), {
-           'a': ['a1', 'a2', 'a3', 'ac', 'adp'],
-           'ac': ['ac1', 'ac2', 'ac3', 'acc', 'acc1', 'acc2', 'acc3']
-       }, 'composite.setIsComponent(true): children moved back');
-       t.acc.setPassChildrenToComponent(false);
-       assert.deepEqual(revIds(t.ac.getElements()), {
-           'ac': ['ac1', 'ac2', 'ac3', 'acc'/*, 'acc1', 'acc2', 'acc3'*/]
-       }, 'composite.setPassChildrenToComponent(false): children not in parent component anymore');
-       t.acc.setPassChildrenToComponent(true);
-       assert.deepEqual(revIds(t.ac.getElements()), {
-           'ac': ['ac1', 'ac2', 'ac3', 'acc', 'acc1', 'acc2', 'acc3']
-       }, 'composite.setPassChildrenToComponent(false): children added to the parent component');
-       t.acc.setParent(t.a);
-       assert.deepEqual(revIds(t.a.getElements()), {
-           'a': ['a1', 'a2', 'a3', 'ac', 'acc', 'acc1', 'acc2', 'acc3', 'adp']
-       }, 'composite parent change: children passed to new parent');
        t.adp.setIsComponent(false);
-       assert.deepEqual(revIds(t.a.getElements()), {
-           'a': ['a1', 'a2', 'a3', 'ac', 'acc', 'acc1', 'acc2', 'acc3', 'adp', 'adp1', 'adp2', 'adp3']
-       }, 'DisplayParent.setIsComponent: children passed to the parent component');
-       t.adp.setParent(t.ac);
+       t.adp.setComponent(t.ac);
        assert.deepEqual(revIds(t.a.getElements().concat(t.ac.getElements())), {
-           'a': ['a1', 'a2', 'a3', 'ac', 'acc', 'acc1', 'acc2', 'acc3'],
-           'ac': ['ac1', 'ac2', 'ac3', 'adp', 'adp1', 'adp2', 'adp3']
-       }, 'DisplayParent.setParent(): children passed to the parent component');
+           'a': ['a1', 'a2', 'a3', 'ac', 'ac1', 'ac2', 'ac3'],
+           'ac': ['adp', 'adp1', 'adp2', 'adp3']
+       }, 'DisplayParent.setComponent(): children passed to the component');
        t.ac.callElements('setValue', 1);
-       assert.deepEqual(Amm.getProperty([t.ac1, t.ac2, t.ac3, t.adp1, t.adp2, t.adp3], 'value'), [1, 1, 1, 1, 1, 1],
+       assert.deepEqual(Amm.getProperty([t.adp1, t.adp2, t.adp3], 'value'), [1, 1, 1],
         'callElements(methodName) works');
        var l = [];
        t.ac.callElements(function() { l.push(this.getId()); });
        l.sort();
-       assert.deepEqual(l, ['ac1', 'ac2', 'ac3', 'adp', 'adp1', 'adp2', 'adp3'], 'callElements(function) works');
+       assert.deepEqual(l, ['adp', 'adp1', 'adp2', 'adp3'], 'callElements(function) works');
        t.adp.setPassDisplayChildrenToComponent(false);
        assert.deepEqual(revIds([].concat(t.adp.getDisplayChildren().getItems())), {
            'null': ['adp1', 'adp2', 'adp3']
@@ -226,15 +196,15 @@
        var t = byIds(tsa);
        
        var adpc = new Amm.Element({
-           id: 'adpc', traits: ['Amm.Trait.Composite', 'Amm.Trait.Component', 'Amm.Trait.Visual'], 
+           id: 'adpc', traits: ['Amm.Trait.Component', 'Amm.Trait.Visual'], 
            displayParent: t.adp
        });
        var adpc1 = new Amm.Element({id: 'adpc1', traits: ['Amm.Trait.Input'], 
-           parent: adpc});
+           component: adpc});
        var adpc2 = new Amm.Element({id: 'adpc2', traits: ['Amm.Trait.Input'],
-           parent: adpc});
+           component: adpc});
        var adpc3 = new Amm.Element({id: 'adpc3', traits: ['Amm.Trait.Input'],
-           parent: adpc});
+           component: adpc});
        
         tsa.push(adpc, adpc1, adpc2, adpc3);
         

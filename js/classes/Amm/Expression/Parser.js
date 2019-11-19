@@ -14,7 +14,7 @@ Amm.Expression.Parser.prototype = {
      * 3 - number
      * 4 - tokens
      */
-    tokensRx: /^(?:(\s+)|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(!!|\?\?|\.\.|::|->>|->|&&|\|\||!==|!=|===|==|>=|<=|=>|[-&|+><\{\}$?!.,:\[\]()'"%*/])|(.))/,
+    tokensRx: /^(?:(\s+)|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(!!|\?\?|\.\.|::|->|&&|\|\||!==|!=|===|==|>=|<=|=>|[-&|+><\{\}$?!.,:\[\]()'"%*/])|(.))/,
     
     regexTokens: /^(?:(\.)|([[\]()\/])|([^\\\[n\]()\/]+))/,
     
@@ -372,7 +372,7 @@ Amm.Expression.Parser.prototype = {
         sub = 
                     this.parsePart(true, 'FunctionCall', value)
                 ||  this.parsePart(true, 'PropertyAccess', value) 
-                ||  this.parsePart(true, 'ElementOrChildElement', value) 
+                ||  this.parsePart(true, 'ComponentElement', value) 
                 ||  this.parsePart(true, 'Range', value);
         if (sub) {
             var right = this.parsePart(true, 'AccessOperator', sub);
@@ -480,14 +480,13 @@ Amm.Expression.Parser.prototype = {
         return this.genOp('PropertyArgs', args, isList);
     },
 
-    parseElementOrChildElement: function(value) {    
+    parseComponentElement: function(value) {    
         var token = this.fetch();
         if (!token) return;
-        if (!token.isSymbol('->', '->>')) {
+        if (!token.isSymbol('->')) {
             this.unfetch();
             return;
         }
-        var isChild = token.string === '->>';
         var specifier = undefined;
         var rangeOnly = false;
         token = this.fetch();
@@ -507,7 +506,7 @@ Amm.Expression.Parser.prototype = {
                 }
             }
         }
-        var op = this.genOp(isChild? 'ChildElement' : 'ComponentElement', value, specifier, null);
+        var op = this.genOp('ComponentElement', value, specifier, null);
         var range = this.parsePart('Range', op);
         return range || op;
     },

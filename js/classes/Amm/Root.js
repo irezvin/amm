@@ -1,7 +1,6 @@
 /* global Amm */
 
 Amm.Root = function(options) {
-    Amm.augment(this, Amm.Trait.Composite);
     Amm.augment(this, Amm.Trait.Component);
     Amm.Element.call(this, options);
 };
@@ -22,14 +21,6 @@ Amm.Root.prototype = {
     
     // Root is allowed to have ANY events to create global events
     strictEvents: false,
-    
-    getPath: function() {
-        return '^';
-    },
-    
-    setParent: function(parent) {
-        if (parent) throw Error("Cannot setParent() of root");
-    },
     
     setId: function(id) {
         if (id !== '^') Error("Cannot setId() of root to anything other than '^'");

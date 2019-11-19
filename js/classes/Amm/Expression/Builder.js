@@ -170,15 +170,6 @@ Amm.Expression.Builder.prototype = {
         );
     },
     
-    ChildElement: function(element, id, range) {
-        return new Amm.Operator.ChildElement(
-            this.unConst(element), 
-            this.unConst(id),
-            this.unConst(range),
-            id === undefined
-        );
-    },
-    
     LoopIdentifiers: function(varName, keyName) {
         return {keyVar: keyName, valueVar: varName};
     },
@@ -186,7 +177,6 @@ Amm.Expression.Builder.prototype = {
     Range: function(rangeType, value, arg1, arg2) {
         var simpleRangeSupport = value && 
                 (value['Amm.Operator.ComponentElement'] 
-                || value['Amm.Operator.ChildElement'] 
                 || value['Amm.Operator.ScopeElement']);
         var res;
         if (rangeType === 'All') {

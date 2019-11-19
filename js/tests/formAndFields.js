@@ -299,11 +299,9 @@
             traits: [
                 Amm.Trait.DisplayParent, 
                 Amm.Trait.Form, 
-                Amm.Trait.Composite, 
                 Amm.Trait.Component
             ],
             passDisplayChildrenToComponent: false,
-            passChildrenToComponent: false,
             fields: [f.d, f.e, f.f]            
         });
         
@@ -318,10 +316,10 @@
         f.a.setComponent(e);
         f.b.setComponent(e);
         
-        f.c.setParent(e);
+        f.c.setComponent(e);
         
         f.g.setComponent(e);
-        f.g.setParent(e);
+        f.g.setComponent(e);
         f.g.setDisplayParent(e);
         
         assert.equal(e.fields.length, 6, 'Form has 3 more fields');
@@ -337,7 +335,7 @@
         f.b.setComponent(null);
             assert.ok(f.b.getForm() === null, 'field was removed (no longer component)');
         
-        f.c.setParent(null);
+        f.c.setComponent(null);
             assert.ok(f.c.getForm() === null, 'field was removed (elementsAreFields := true)');
         
         f.a.setDisplayParent(e);
@@ -345,9 +343,6 @@
         
         e.setDisplayChildrenAreFields(false);
             assert.ok(f.a.getForm() === null, 'field was removed (displayChildrenAreFields := false)');
-        
-        e.setDisplayChildrenAreFields(true);
-            assert.ok(f.a.getForm() === e, 'field was added (displayChildrenAreFields := true)');
         
         f.b.setComponent(e);
             assert.ok(f.b.getForm() === e);
@@ -358,15 +353,6 @@
         e.setElementsAreFields(true);
             assert.ok(f.b.getForm() === e, 'field was added (elementsAreFields := true)');
         
-        f.c.setParent(e);
-            assert.ok(f.c.getForm() === e);
-        
-        e.setChildrenAreFields(false);
-            assert.ok(f.c.getForm() === null, 'field was removed (childrenAreFields := false)');
-        
-        e.setChildrenAreFields(true);
-            assert.ok(f.c.getForm() === e, 'field was added (childrenAreFields := true)');
-            
         Amm.cleanup(f.a, f.b, f.c, f.d, f.e, f.g, e);
         
     });

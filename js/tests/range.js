@@ -484,13 +484,15 @@
         var c = new Amm.Element({traits: ['Amm.Trait.Component'], properties: {name: 'c', v: 5}});
         var d = new Amm.Element({id: 'x', properties: {name: 'd', v: 10}, component: c});
         var e = new Amm.Element({properties: {name: 'e', v: 5}, component: c});
-        var f = new Amm.Element({traits: ['Amm.Trait.Composite'], properties: {name: 'f', v: 10}, component: c});
-        var g = new Amm.Element({id: 'x', properties: {name: 'g', v: 5}, parent: f});
+        var f = new Amm.Element({traits: ['Amm.Trait.Component'], properties: {name: 'f', v: 10}, isComponent: false, component: c});
+        var g = new Amm.Element({id: 'x', properties: {name: 'g', v: 5}, component: f});
         var h = new Amm.Element({id: 'x', properties: {name: 'h', v: 10}, component: c});
-        var i = new Amm.Element({properties: {name: 'i', v: 5}, parent: f});
+        var i = new Amm.Element({properties: {name: 'i', v: 5}, component: f});
         var j = new Amm.Element({properties: {name: 'j', v: 10}, component: c});
         
         var ex = new Amm.Expression("this->x{$item: $item.v == 10}", c);
+        window.d.ex = ex;
+        window.d.c = c;
         var v;
         ex.subscribe('valueChange', function(val) { v = val; });
         assert.deepEqual(Amm.getProperty(ex.getValue(), 'name'), ['d', 'h'], 'proper element access using range selector');
@@ -498,7 +500,7 @@
         assert.deepEqual(Amm.getProperty(v, 'name'), ['d', 'g', 'h'], 'element access + range value changed with properties');
         g.setV(5);
         assert.deepEqual(Amm.getProperty(v, 'name'), ['d', 'h'], 'element access + range value changed with properties');
-        
+       
         var ex1 = new Amm.Expression("this->x{*}", c);
         assert.deepEqual(Amm.getProperty(ex1.getValue(), 'name'), ['d', 'g', 'h'], 'proper element access using "all" range');
         
@@ -515,7 +517,9 @@
         g.setV(10);
         assert.deepEqual(Amm.getProperty(v3, 'name'), ['d', 'f', 'g', 'h'], 'proper element access using range w/o id > tracks changes');
         
-        Amm.cleanup(c, d, e, f, g, h, ex, ex1, ex2, ex3);
+        return;
+        
+        Amm.cleanup(c, d, e, f, g, h, i, j, ex, ex1, ex2, ex3);
         
     });
     

@@ -2,8 +2,6 @@
 
 Amm = {
     
-    ID_SEPARATOR: '/',
-    
     id: 'amm',
     
     domHolderAttribute: 'data-amm-iid',
@@ -52,16 +50,6 @@ Amm = {
     itemDebugTag: [],
         
     /**
-     * Cache of root-bound elements
-     */
-    _byPaths: {},
-
-    /**
-     * List of elementPath => function, scope
-     */
-    _waitList: {},
-    
-    /**
      * Shortcut to root element
      */
     r: null,
@@ -104,13 +92,6 @@ Amm = {
         if (item._amm_id && this._items[item._amm_id] !== item) {
             throw Error("Mismatch of _amm_id detected during the item de-registration");
         }
-        if (typeof item.getPath === 'function') {
-            var p = item.getPath();
-            if (p && p[0] === '^') {
-                delete this._byPaths[p];
-            }
-        }
-        this.stopWaiting(undefined, undefined, item);
         delete this._items[item._amm_id];
         delete this.itemDebugInfo[item._amm_id];
         item._amm_id = null;
@@ -362,68 +343,6 @@ Amm = {
             throw Error(argname + " must be an instance of " + className + "; given: " + Amm.describeType(item));
         }
         return res;
-    },
-    
-    getByPath: function(path) {
-        return this.p(path);
-    },
-    
-    p: function(path) {
-        if (path[0] === '^' && this._byPaths[path]) return this._byPaths[path];
-        return this.getRoot().getByPath(path);
-    },
-    
-    /**
-     * adds function and scope to wait for the element with given path to appear
-     */
-    waitFor: function(elementPath, fn, scope, extra) {
-        scope = scope || null;
-        extra = extra || null;
-        if (!this._waitList[elementPath]) this._waitList[elementPath] = [];
-        else {
-            for (var i = this._waitList[elementPath].length - 1; i >= 0; i--) {
-                // already waiting
-                if (
-                       this._waitList[elementPath][i][0] === fn 
-                    && this._waitList[elementPath][i][1] === scope 
-                    && this._waitList[elementPath][i][2] === extra
-                   ) 
-                    return false;
-            }
-        }
-        this._waitList[elementPath].push([fn, scope, extra]);
-    },
-            
-    notifyElementPathChanged: function(element, path, oldPath) {
-        if (oldPath && oldPath[0] === '^' && this._byPaths[oldPath] === element) delete this._byPaths[oldPath];
-        if (path && path[0] === '^') this._byPaths[path] = element;
-        if (!this._waitList[path]) return;
-        var v = this._waitList[path], l = v.length;
-        delete this._waitList[path];
-        for (var i = 0; i < l; i++) v[i][0].call(v[i][1] || element, element, path, v[i][2]);
-    },
-    
-    stopWaiting: function(elementPath, fn, scope, extra) {
-        elementPath = elementPath || null;
-        fn = fn || null;
-        var kk;
-        if (elementPath === null) kk = this._waitList;
-        else kk = { elementPath : true };
-        for (var i in kk) if (this._waitList.hasOwnProperty(i)) {
-            if (fn === undefined && scope === undefined && extra === undefined) {
-                delete this._waitList[i];
-            } else {
-                var v = this._waitList[elementPath];
-                for (var j = v.length - 1; j >= 0; j--) {
-                    if (    (fn === undefined || v[j][0] === fn) 
-                         && (scope === undefined || v[j][1] === scope) 
-                         && (extra === undefined || v[j][2] === extra)
-                        ) {
-                        v[i].splice(j, 1);
-                    }
-                }
-            }
-        }
     },
     
     /**

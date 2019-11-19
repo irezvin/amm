@@ -565,45 +565,6 @@
         
     });
     
-    QUnit.test("Operator.ChildElement", function(assert) {
-        
-        var p = new Amm.Element({id: 'p', traits: ['Amm.Trait.Composite']});
-        var a = new Amm.Element({id: 'a', parent: p});
-        var b = new Amm.Element({id: 'b', parent: p, traits: ['Amm.Trait.Composite']});
-        var bb = new Amm.Element({id: 'bb', parent: b, traits: ['Amm.Trait.Composite']});
-        
-        var v_a;
-        var e_a = new Amm.Expression('this->>a', p);
-        var f_a = e_a.toFunction();
-        e_a.subscribe('valueChange', function(v) {v_a = v;});
-        var v_b_cc;
-        var e_b_cc = new Amm.Expression('this->>b->>cc', p);
-        var f_b_cc = e_b_cc.toFunction();
-        e_b_cc.subscribe('valueChange', function(v) {v_b_cc = v;});
-        var v_cc;
-        var e_cc = new Amm.Expression('this->>cc', p);
-        var f_cc = e_cc.toFunction();
-        e_cc.subscribe('valueChange', function(v) {v_cc = v;});
-        
-        assert.ok(e_a.getValue() === a);
-        assert.ok(f_a() === a);
-        assert.ok(e_b_cc.getValue() === undefined);
-        assert.ok(f_b_cc() === undefined);
-        assert.ok(e_cc.getValue() === undefined);
-        assert.ok(f_cc() === undefined);
-        bb.setId('cc');
-        assert.ok(e_b_cc.getValue() === bb);
-        assert.ok(v_b_cc === bb);
-        assert.ok(f_b_cc() === bb);
-        bb.setParent(p);
-        assert.ok(e_b_cc.getValue() === undefined);
-        assert.ok(v_b_cc === undefined);
-        assert.ok(f_b_cc() === undefined);
-        assert.ok(e_cc.getValue() === bb);
-        assert.ok(v_cc === bb);
-        assert.ok(f_cc() === bb);
-    });
-    
     QUnit.test("Expression.Operator.contentChanged", function(assert) {
         var arr = ['a', 'b', 'c'];
         var exp = new Amm.Expression({

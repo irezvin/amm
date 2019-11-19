@@ -26,8 +26,6 @@ Amm.Trait.Form.prototype = {
 
     _displayChildrenAreFields: true,
 
-    _childrenAreFields: true,
-    
     _fieldsUpdateLevel: 0,
     
     _fieldMap: null,
@@ -92,8 +90,6 @@ Amm.Trait.Form.prototype = {
             if (this._elementsAreFields) this.setElementsAreFields(true, true);
         
             if (this._displayChildrenAreFields) this.setDisplayChildrenAreFields(true, true);
-        
-            if (this._childrenAreFields) this.setChildrenAreFields(true, true);
         
             this._endUpdateFields();
             
@@ -166,7 +162,7 @@ Amm.Trait.Form.prototype = {
         return newFields;
     },
     
-    _delFields: function(fields, xElements, xChildren, xDisplayChildren) {
+    _delFields: function(fields, xElements, xDisplayChildren) {
         
         var tmpFields = [];
         
@@ -182,20 +178,6 @@ Amm.Trait.Form.prototype = {
             && this._elements.length
         ) {
             tmpFields = Amm.Array.diff(tmpFields, this._elements);
-        }
-        
-        if (
-            xChildren 
-            && tmpFields.length
-            && this._childrenAreFields && this['Composite'] 
-            && this._children.length
-        ) {
-            for (var j = tmpFields.length - 1; j >= 0; j--) {
-                var id = tmpFields[j].getId();
-                if (this._children[id] === tmpFields[j]) {
-                    tmpFields.splice(j, 1);
-                }
-            }
         }
         
         if (
@@ -238,7 +220,7 @@ Amm.Trait.Form.prototype = {
             if (elementsAreFields) 
                 this._addFields(this._elements);
             else 
-                this._delFields(this._elements, false, true, true);
+                this._delFields(this._elements, false, true);
         }
         
         return true;
@@ -249,14 +231,11 @@ Amm.Trait.Form.prototype = {
     },
     
     _handleFieldComponentRejectedElements: function(fields) {
-        if (this._childrenAreFields && this['Composite'] && this._children.length) {
-            fields = Amm.Array.diff(fields, this._children);
-        }
         if (fields.length && this._displayChildrenAreFields && this['DisplayParent']
             && this.displayChildren.length) {
             fields = Amm.Array.diff(fields, this.displayChildren);
         }
-        if (fields.length) this._delFields(fields, false, true, true);
+        if (fields.length) this._delFields(fields, false, true);
     },
 
     getElementsAreFields: function() { return this._elementsAreFields; },
@@ -276,7 +255,7 @@ Amm.Trait.Form.prototype = {
             if (displayChildrenAreFields) 
                 this._addFields(this.displayChildren);
             else 
-                this._delFields(this.displayChildren, true, true, false);
+                this._delFields(this.displayChildren, true, false);
         }
         
         return true;
@@ -286,45 +265,12 @@ Amm.Trait.Form.prototype = {
         var del = Amm.Array.symmetricDiff(cut, insert);
         var add = Amm.Array.symmetricDiff(insert, cut);
         if (del.length && add.length) this._beginUpdateFields();
-        if (del.length) this._delFields(del, true, true, false);
+        if (del.length) this._delFields(del, true, false);
         if (add.length) this._addFields(add);
         if (del.length && add.length) this._endUpdateFields();
    },
 
     getDisplayChildrenAreFields: function() { return this._displayChildrenAreFields; },
-
-    setChildrenAreFields: function(childrenAreFields, force) {
-        
-        childrenAreFields = !!childrenAreFields;
-        
-        var oldChildrenAreFields = this._childrenAreFields;
-        if (oldChildrenAreFields === childrenAreFields && !force) return;
-        this._childrenAreFields = childrenAreFields;
-        if (!this.fields || this['Composite'] !== '__INTERFACE__') return true; // nothing to do
-        
-        var m = childrenAreFields? 'subscribe' : 'unsubscribe';
-        this[m]('childAdded', this._handleFieldCompositeChildAdded, this);
-        this[m]('childRemoved', this._handleFieldCompositeChildRemoved, this);
-        var c = this.getChildren();
-        if (c.length) {
-            if (childrenAreFields)
-                this._addFields(c);
-            else 
-                this._delFields(c, true, false, true);
-        }
-        
-        return true;
-    },
-    
-    _handleFieldCompositeChildAdded: function(child) {
-        this._addFields([child]);
-    },
-    
-    _handleFieldCompositeChildRemoved: function(child) {
-        this._delFields([child], true, false, true);
-    },
-    
-    getChildrenAreFields: function() { return this._childrenAreFields; },
 
     _cleanup_Model: function() {    
         this.fields.cleanup();
@@ -359,7 +305,7 @@ Amm.Trait.Form.prototype = {
         var toAdd = Amm.Array.diff(fields, this.fields);
         if (!toDel.length && !toAdd.length) return;
         this._beginUpdateFields();
-        if (toDel.length) this._delFields(toDel, true, true, true);
+        if (toDel.length) this._delFields(toDel, true, true);
         if (fields.length) this.fields.acceptMany(fields);
         this._endUpdateFields();
         
