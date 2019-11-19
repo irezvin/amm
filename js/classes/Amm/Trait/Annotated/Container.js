@@ -3,7 +3,6 @@
 // Not a trait (but used only by Amm.Trait.Annotated, therefore such name)
 Amm.Trait.Annotated.Container = function(options) {
     this._requireInterfaces('Annotated'); // our element must support annotated interface
-    Amm.augment(this, Amm.Trait.Composite);
     Amm.ElementBound.call(this);
     Amm.Element.call(this, options);
 };
@@ -12,10 +11,6 @@ Amm.Trait.Annotated.Container.prototype = {
 
     'Amm.Trait.Annotated.Container': '__CLASS__', 
     
-    _cleanupChildren: true,
-    
-    _cleanupWithParent: true,
-
     setElement: function(element) {
         if (this._element !== null && this._element !== element)
             Error("can setElement() only once in Amm.Trait.Annotated.Container");
@@ -25,11 +20,11 @@ Amm.Trait.Annotated.Container.prototype = {
     _passAnnotatedContentChange: function(value, oldValue) {
         if (this._element) Amm.setProperty(this._element, Amm.event.origin.getId(), value);
     },
-
+    
     createAnnotationElement: function(id) {
         var proto = this._element.getAnnotationElementPrototype(id);
         proto.id = id;
-        proto.parent = this;
+        proto.component = this;
         var res = new Amm.Element(proto);
         var prop = {};
         if (Amm.detectProperty(this._element, id, prop)) {
@@ -46,9 +41,15 @@ Amm.Trait.Annotated.Container.prototype = {
     
     // lazily returns annotation element
     getAnnotationElement: function(id, onlyIfExists) {
-        if (this.hasChild(id) || onlyIfExists) return this.getChild(id);
+        if (this._namedElements[id] || onlyIfExists) {
+            return this.getNamedElement(id, 0, true);
+        }
         return this.createAnnotationElement(id);
-    }
+    },
+    
+    _getDefaultTraits: function() {
+        return ['Amm.Trait.Component'];
+    },
     
 };
 

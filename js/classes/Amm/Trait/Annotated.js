@@ -54,28 +54,23 @@ Amm.Trait.Annotated.prototype = {
     // Element that contains Content elements showing annotations
     _annotationsContainer: undefined,
     
-    _annotatedIdChange: function(id, oldId) {
-        if ('' + id)
-            this._annotationsContainer.setId(id + 'Annotations');
-    },
-    
     getAnnotationsContainer: function() {
         if (this._annotationsContainer === undefined) {
-            var isSibling = !this['Amm.Element.Composite'], cntId = 'annotations';
-            if (isSibling && ('' + this._id))  {
-                cntId = this._id + 'Annotations';
-            } else {
-                cntId = 'annotations';
-            }
+            var cntId = 'annotations';
+            cntId = 'annotations';
             this._annotationsContainer = new Amm.Trait.Annotated.Container({
                 id: cntId,
-                parent: isSibling? this._parent : this,
+                component: this.getClosestComponent(),
                 element: this
             });
-            if (isSibling) this.subscribe('idChange', this._annotatedIdChange, this);
             this._assignDefaultAnnotations();
         }
+        this.subscribe('closestComponentChange', this._annotated_onSelfClosestComponentChange, this);
         return this._annotationsContainer;
+    },
+    
+    _annotated_onSelfClosestComponentChange: function(closestComponent) {
+        if (this._annotationsContainer) this._annotationsContainer.setComponent(closestComponent);
     },
     
     getAnnotationElementPrototype: function(id) {
@@ -168,7 +163,7 @@ Amm.Trait.Annotated.prototype = {
     },
 
     listAnnotations: function() {
-        return this.getAnnotationsContainer().listChildren();
+        return Amm.keys(this.getAnnotationsContainer().getAllNamedElements());
     },
     
     hasAnnotation: function(id) {
