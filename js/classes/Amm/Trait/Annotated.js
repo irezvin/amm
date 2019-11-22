@@ -1,6 +1,7 @@
 /* global Amm */
 
 Amm.Trait.Annotated = function() {
+    // these elements will always be created by annotated element html views
     this._defaultAnnotations = ['label', 'description', 'required', 'error'];
 };
 

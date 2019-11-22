@@ -1,4 +1,5 @@
 /* global Amm */
+/* global QUnit */
 
 (function() { 
     QUnit.module("Basic Annotated");
@@ -32,6 +33,23 @@
             'on-demand annotation element uses proper prototype');
             
         Amm.cleanup(anno);
-        
     });
+    
+    QUnit.test("Annotated: creation of HTML elements", function(assert) {
+        
+        var fx = jQuery('#qunit-fixture');
+        
+        var html1 = "<div id='annotated' data-amm-e='{label: foo, description: bar, required: true}' data-amm-v='v.Annotated'></div>";
+        
+        fx.html(html1);
+        
+        var anno = new Amm.Element(fx);
+        
+        assert.equal(fx.find('.a_label').html(), anno.getLabel(), 'Label element was created');
+        assert.equal(fx.find('.a_description').html(), anno.getDescription(), 'Description element was created');
+        assert.equal(fx.find('.a_required span').html(), '*');
+        
+        Amm.cleanup(anno);
+    });
+    
 }) ();
