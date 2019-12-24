@@ -6,7 +6,7 @@
         <script src="../js/vendor/jquery-3.1.1.js"></script>
         <script src="../js/vendor/relaxed-json.js"></script>
         <link rel="stylesheet" type="text/css" href="qunit/qunit-2.0.1.css" />
-<?php   require_once(dirname(__FILE__).'/list.php');
+<?php   require_once(__DIR__.'/list.php');
         foreach (listAmmFiles(null, null, isset($_REQUEST['min']) && $_REQUEST['min']) as $f) {
             $f = str_replace('../js/classes/../../build/', '', '../js/classes/'.$f);
             echo "\n<script type='text/javascript' src='$f'></script>";

@@ -29,7 +29,7 @@ function listAmmFiles($dir = null, $cacheFile = null, $minify = null) {
     }
     $res = false;
     if ($cacheFile !== false) {
-        $ts = max(array_map('filemtime', $files));
+        $ts = max(array_map('filemtime', array_merge($files, array(__FILE__))));
         if ($cacheFile === null) $cacheFile = dirname(__FILE__).'/.cache';
         if (is_file($cacheFile) && filemtime($cacheFile) > $ts) {
             $res = preg_split("/[\n\r]+/", file_get_contents($cacheFile));

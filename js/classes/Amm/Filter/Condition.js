@@ -34,6 +34,7 @@ Amm.Filter.Condition = function(filter, options) {
  * -    [`criterion`, `criterion`, `criterion`]: value meets at least one of specified criteria
  * -    { only: [`criterion`, `criterion`, `criterion`] }: when array `value` provided, all items should match at least one of specified criteria
  * -    { and: ['`criterion`, `criterion`, `criterion`] }: value must meet ALL of specified criteria; when array `value` provided, all items must match all specified criteria
+ * -    { typeof: `type` }: typeof value === `type`
  * -    { not: `criterion` }: TRUE if value does NOT meet specified criterion
  * -    function(value): callback that returns true if test is passed
  * -    { fn: function(value), [scope: object] }: callback that will be called with provided scope
@@ -42,7 +43,7 @@ Amm.Filter.Condition = function(filter, options) {
  * -    { validator: `validator` }: value passes Amm.Validator (prototype may be provided instead of instance)
  * -    Amm.Validator instance: value passes Amm.Validator
  * -    { rq: `requirements` }: Amm.meetsRequirements(value, `requirements`
- * -    { strict: `testValue` }: value === `value` (force strict comparison)
+ * -    { strict: `testValue` }: value === `testValue` (force strict comparison)
  * -    `otherCriterion`: value == `otherCriterion` (all other criterion values: non-strict comparison)
  */
 Amm.Filter.Condition.testValue = function(value, criterion) {
@@ -80,6 +81,9 @@ Amm.Filter.Condition.testValue = function(value, criterion) {
             return true;
         }
         if ('only' in criterion) return Amm.Filter.Condition.testValue(value, criterion.only);
+        if ('typeof' in criterion) {
+            return Amm.Filter.Condition.testValue(typeof value, criterion.typeof)
+        }
         if (typeof criterion.fn === 'function') return criterion.scope? criterion.fn.call(criterion.scope, value) : criterion.fn(value);
         if ('regExp' in criterion) return Amm.Filter.Condition.testValue(value, new RegExp(criterion.regExp, criterion.flags || ''));
         if ('validator' in criterion) {

@@ -32,7 +32,7 @@ Amm.Filter.prototype = {
         }
         if (id) {
             if (conditions) {
-                if (typeof conditions !== 'object') throw Error("setConditions(`conditions`, `id`): non-FALSEable `conditions` must be an object");
+                if (typeof conditions !== 'object') throw Error("setConditions(`conditions`, `id`): `conditions` must be a null or an object");
                 conditions._id = id;
                 condition = this._createCondition(conditions);
             }
@@ -119,6 +119,11 @@ Amm.Filter.prototype = {
     },
     
     _createCondition: function(condition) {
+
+        if (condition && typeof condition === 'string') {
+            console.log(condition);
+            condition = {_expr: condition};
+        }
 
         if (!condition || typeof condition !== 'object')
             throw Error("filter condition must be an object, given: " 

@@ -102,6 +102,10 @@
         assert.ok(Amm.Filter.Condition.testValue(3, '3'), comment);
         assert.notOk(Amm.Filter.Condition.testValue(2, 3), comment);
         
+        comment = "{ typeof: `type` }: typeof value === `type`";
+        assert.ok(Amm.Filter.Condition.testValue('foo', {'typeof': 'string'}), comment);
+        assert.notOk(Amm.Filter.Condition.testValue(3, {'typeof': 'string'}), comment);
+        
     });
     
     QUnit.test("Filter.basic", function(assert) {

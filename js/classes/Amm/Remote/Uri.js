@@ -110,7 +110,7 @@ Amm.Remote.Uri.prototype = {
         }
         this.beginUpdate();
         var c = {};
-        this._query = this._setByPath(this._query, this._pathToArray(part), uri, c);
+        this._query = Amm.Util.setByPath(this._query, this._pathToArray(part), uri, c);
         if (c.changed) this._strQuery = null;
         this.endUpdate();
     },
@@ -127,7 +127,7 @@ Amm.Remote.Uri.prototype = {
             return this._strQuery;
         }
         if (Amm.Remote.Uri._const[part]) return this[Amm.Remote.Uri._const[part]];
-        return this._getByPath(this._query, this._pathToArray(part));
+        return Amm.Util.getByPath(this._query, this._pathToArray(part));
     },
     
     _clone: function(otherUri) {
@@ -226,7 +226,7 @@ Amm.Remote.Uri.prototype = {
             var nameVal = pairs[i].split(eq, 2), path = nameVal[0].replace(']', '');
             path = path.replace(/\]/g, '').split('[');
             if (nameVal.length < 2) nameVal.push('');
-            res = this._setByPath(res, path, nameVal[1]);
+            res = Amm.Util.setByPath(res, path, nameVal[1]);
     	}
     	return res;
     },
@@ -239,98 +239,6 @@ Amm.Remote.Uri.prototype = {
     _arrayToPath: function(array) {
         var res = array;
         if (array instanceof Array) res = array.length > 1? array.join('][') + ']' : array[0];
-        return res;
-    },
-    
-    _getByPath: function(source, arrPath, defaultValue) {
-        var curr = source, ap = [].concat(arrPath), seg;
-        while (ap.length) {
-            seg = ap.shift();
-            if (!curr || typeof curr !== 'object' || !(seg in curr)) 
-                return defaultValue;
-            curr = curr[seg];
-        }
-        if (!ap.length) return curr;
-        return defaultValue;
-    },
-    
-    _setByPath: function(target, arrPath, value, changed) {
-		
-        if (!target && value === undefined) return;
-        
-        var l = arrPath.length;
-        changed = changed || {};
-        changed.changed = false;
-
-        if (!l) return value;
-        
-        if (typeof target !== 'object' || target === null) {
-            target = {};
-            changed.changed = true;
-        }
-        
-        var root = {dummy : target}, prev = root, prevKey = 'dummy', seg, nKey;
-
-        for (var i = 0; i < l; i++) {
-            var last = (i >= (l - 1)), curr = prev[prevKey];
-            seg = '' + arrPath[i], nKey = parseInt(seg);
-            if (!seg.length) {
-                if (curr instanceof Array) nKey = curr.length;
-                else {
-                    nKey = 0; 
-                    for (var prop in curr) 
-                        if (curr.hasOwnProperty(prop)) {
-                            var idx = parseInt(prop);
-                            if (idx >= nKey) nKey = idx + 1;
-                        }
-                }
-                seg = nKey; // we need this to make next if() work
-            }
-            if ((nKey >= 0) && (('' + nKey) == seg)) { // we have numeric key!
-                if (last) {
-                    if (curr[nKey] !== value) {
-                        curr[nKey] = value;
-                        changed.changed = true;
-                    }
-                } else {
-                    if (curr[nKey] === undefined) {
-                        curr[nKey] = [];
-                        changed.changed = true;
-                    }
-                }
-                prev = curr;
-                prevKey = nKey;
-            } else {
-                // it's a string key
-                if (curr instanceof Array) {
-                    changed.changed = true;
-                    prev[prevKey] = this._arrayToObject(prev[prevKey]);
-                    curr = prev[prevKey];
-                }
-                if (last) {
-                    if (curr[seg] !== value) {
-                        changed.changed = true;
-                        curr[seg] = value;
-                    }
-                } else {
-                    if (curr[seg] === undefined) {
-                        curr[seg] = [];
-                        changed.changed = true;
-                    }
-                    prev = curr;
-                    prevKey = seg;
-                }
-            }
-        }
-        
-        return root.dummy;
-    },
-
-    _arrayToObject: function(arr) { 
-        var res = {}, l = arr.length; 
-        for (var i = 0; i < l; i++) {
-            if (arr[i] !== undefined) res[i] = arr[i];
-        }
         return res;
     },
             
