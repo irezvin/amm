@@ -64,7 +64,7 @@ Amm.Remote.RequestProducer.prototype = {
             this._data = data;
         } else {
             if ((data === undefined || data === null) && this._data === null) return; // unset in empty hash has no effect
-            var arrPath = this._pathToArray(path);
+            var arrPath = Amm.Util.pathToArray(path);
             var c = {};
             oldData = this._data? Amm.override({}, this._data) : this._data;
             if (!this._data) this._data = {};
@@ -85,7 +85,7 @@ Amm.Remote.RequestProducer.prototype = {
     getData: function(path) {
         if (path === undefined) return this._data;
         if (!this._data) return undefined;
-        var arrPath = this._pathToArray(path);
+        var arrPath = Amm.Util.pathToArray(path);
         return this._getByPath(this._data, arrPath);
     },
     

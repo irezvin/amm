@@ -110,7 +110,7 @@ Amm.Remote.Uri.prototype = {
         }
         this.beginUpdate();
         var c = {};
-        this._query = Amm.Util.setByPath(this._query, this._pathToArray(part), uri, c);
+        this._query = Amm.Util.setByPath(this._query, Amm.Util.pathToArray(part), uri, c);
         if (c.changed) this._strQuery = null;
         this.endUpdate();
     },
@@ -127,7 +127,7 @@ Amm.Remote.Uri.prototype = {
             return this._strQuery;
         }
         if (Amm.Remote.Uri._const[part]) return this[Amm.Remote.Uri._const[part]];
-        return Amm.Util.getByPath(this._query, this._pathToArray(part));
+        return Amm.Util.getByPath(this._query, Amm.Util.pathToArray(part));
     },
     
     _clone: function(otherUri) {
@@ -229,17 +229,6 @@ Amm.Remote.Uri.prototype = {
             res = Amm.Util.setByPath(res, path, nameVal[1]);
     	}
     	return res;
-    },
-    
-    _pathToArray: function(string) { 
-        if (string instanceof Array) return string;
-        return string.replace(/\]/g, '').split('[');
-    },
-    
-    _arrayToPath: function(array) {
-        var res = array;
-        if (array instanceof Array) res = array.length > 1? array.join('][') + ']' : array[0];
-        return res;
     },
             
     toString: function() {

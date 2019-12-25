@@ -63,27 +63,27 @@ QUnit.module("Decorator");
             actions: {
                 
                 type1: [
-                    { src: ['problem'], dest: ['error'] },
+                    { src: 'problem', dest: 'error' },
                 ],
                 
                 type2: [
-                    { src: ['response', 'content'], dest: ['error'] },
+                    { src: 'response[content]', dest: 'error' },
                 ],
                 
                 type3: [
-                    { src: ['code'], dest: ['error', 'httpCode'] },
-                    { src: ['content'], dest: ['error', 'message'] },
+                    { src: 'code', dest: 'error[httpCode]' },
+                    { src: 'content', dest: 'error[message]' },
                 ],
                 
                 type4: [
-                    { src: ['error'], dest: ['error', 'data'] },
+                    { src: 'error', dest: 'error[data]' },
                 ],
                 
                 type5: [
-                    { src: ['response', 'data'], dest: ['data'] },
+                    { src: 'response[data]', dest: 'data' },
                 ],
                 
-                default: { def: { issue: 'noMatch' }, dest: '' }
+                default: { def: { issue: 'noMatch' }, dest: null }
                 
             }
             

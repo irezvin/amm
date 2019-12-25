@@ -109,13 +109,48 @@ Amm.Util = {
         
         return root.dummy;
     },
-    
+
+    /**
+     * Converts Array instance into generic object with same key-value pairs as
+     * indexes in array (i.e. ['foo', 'bar'] converted to {'0': 'foo', '1': 'bar'}
+     * (sometimes used in Uri parameters serializarion and deserialization)
+     * 
+     * @param {Array} array
+     * @returns {object}
+     */
     arrayToHash: function(array) { 
         var res = {}, l = array.length; 
         for (var i = 0; i < l; i++) {
             if (array[i] !== undefined) res[i] = array[i];
         }
         return res;
+    },
+    
+    /**
+     * Converts php-style square-bracketed path to array
+     * i.e. foo[bar][baz][] will be converted to ['foo', 'bar', baz', '']
+     * and foo will be converted to ['foo']
+     * 
+     * @param {string} string
+     * @returns {Array}
+     */
+    pathToArray: function(string) { 
+        if (string instanceof Array) return string;
+        return string.replace(/\]/g, '').split('[');
+    },
+    
+    /**
+     * Converts array to php-style square-bracketed path i.e.
+     * ['foo', 'bar'] will be converted to foo[bar]
+     * and ['foo', 'bar', ''] will be converted to foo[bar][] (hello, PHP)
+     * 
+     * @param {Array} array Path like ['foo', 'bar', 'baz']
+     * @returns {string}
+     */
+    arrayToPath: function(array) {
+        var res = array;
+        if (array instanceof Array) res = array.length > 1? array.join('][') + ']' : array[0];
+        return '' + res;
     },
     
 };
