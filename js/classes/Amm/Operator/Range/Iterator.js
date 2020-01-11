@@ -1,9 +1,11 @@
 /* global Amm */
 
 Amm.Operator.Range.Iterator = function(condition, keyVar, valueVar) {
+    this._isEvaluating++;
     Amm.Operator.VarsProvider.call(this, condition);
     this.keyVar = keyVar || null;
     this.valueVar = valueVar || null;
+    this._isEvaluating--;
 };
 
 Amm.Operator.Range.Iterator.prototype = {

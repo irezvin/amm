@@ -114,16 +114,6 @@ Amm = {
         }
     },
     
-    destroyItem: function(item) {
-        if (typeof item === 'string') item = this._items[item];
-        if (typeof item.cleanup === 'function') item.cleanup();
-        for (var i in this._items) if (this._items.hasOwnProperty(i)) {
-            if (typeof this._items[i].unsubscribe === 'function')
-                this._items[i].unsubscribe(undefined, undefined, item);
-        }
-        this.unregisterItem(item);
-    },
-    
     extend: function(subClass, parentClass, dontIndicateParent) {
         if (typeof subClass !== 'function') {
             throw Error("Amm.extend: `subClass` is not a function");
@@ -153,11 +143,10 @@ Amm = {
      *  if such function exists.
     
      *  It is implemented to allow traits to pick-and-delete options that don't
-     *  have corresponding members (notably Amm.Trait.Fielderty's val__{name}
+     *  have corresponding members (notably Amm.Trait.Field's val__{name}
      *  validation expressions)
      */
     augment: function(instance, trait, options) {
-        var l = arguments.length;
         var traitInstance, proto;
         if (typeof trait === 'string') {
             trait = Amm.getFunction(trait);
@@ -381,7 +370,7 @@ Amm = {
         }
     },
     
-    getFunction: function(strName) {
+    getFunction: function(strName, dontThrow) {
         if (typeof strName === 'function') return strName;
         if (typeof strName !== 'string') {
             throw Error("`strName` must be a string, given: " + this.describeType(strName));
@@ -394,10 +383,13 @@ Amm = {
             r = r[h];
         }
         if (!r) {
+            if (dontThrow) return null;
             if (p.length) {
                 throw Error("Unknown namespace '" + s.join('.') + "' (when trying to locate function '" + strName + "')");
             } 
-            else throw Error("Unknown function '" + s.join('.') + "'");
+            else {
+                throw Error("Unknown function '" + s.join('.') + "'");
+            }
         }
         return r;
     },
@@ -595,12 +587,19 @@ Amm = {
         for (var j = s, al = arguments.length; j < al; j++) {
             itemOrItems = arguments[j];
             if (!itemOrItems) continue;
-            if (typeof itemOrItems.cleanup === 'function') itemOrItems.cleanup();
-            else if (itemOrItems instanceof Array) {
+            var hadCleanup = false;
+            if (typeof itemOrItems.cleanup === 'function') {
+                itemOrItems.cleanup();
+                hadCleanup = true;
+            }
+            if (itemOrItems instanceof Array) {
                 for (var i = s, l = itemOrItems.length; i < l; i++)
                     this.cleanup(itemOrItems[i]);
-            } else {
-                if (!noThrow)
+                return;
+            }
+            if ('_amm_id' in itemOrItems) this.unregisterItem(itemOrItems);
+            else {
+                if (!hadCleanup && !noThrow)
                     throw Error('`itemOrItems` must be either an object with .cleanup() method or an Array');
             }
         }

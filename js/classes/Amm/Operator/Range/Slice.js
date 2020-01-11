@@ -5,10 +5,12 @@
  * If $index is zero (0) and $source is NOT an array, will return the $source
  */
 Amm.Operator.Range.Slice = function(source, start, end) {
+    this._isEvaluating++;
     Amm.Operator.Range.call(this);
     if (source !== undefined) this._setOperand('source', source);
     if (start !== undefined) this._setOperand('start', start);
     if (end !== undefined) this._setOperand('end', end);
+    this._isEvaluating--;
 };
 
 Amm.Operator.Range.Slice.prototype = {

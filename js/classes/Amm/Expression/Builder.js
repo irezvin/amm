@@ -103,7 +103,8 @@ Amm.Expression.Builder.prototype = {
         if (operand.Const) {
             if (operator === '!') return this.const(!this.unConst(operand));
             else if (operator === '-') return this.const(- this.unConst(operand));
-            else Error("Unknown unary operator: '" + operator + "'");
+            else if (operator === '!!') return this.const(!! this.unConst(operand));
+            else throw Error("Unknown unary operator: '" + operator + "'");
         } else {
             return new Amm.Operator.Unary(
                 operator, 
@@ -131,6 +132,18 @@ Amm.Expression.Builder.prototype = {
         return new Amm.Operator.FunctionCall(this.unConst(value), args, cacheability);
     },
     
+    New: function(value) {
+        if (value && value['Amm.Operator.Property'] && !value._parenthesis && value.getIsCall()) {
+            value.promoteToNew();
+            return value;
+        }
+        if (value && value['Amm.Operator.FunctionCall'] && !value._parenthesis) {
+            value._isNew = true;
+            return value;
+        }
+        return new Amm.Operator.FunctionCall(this.unConst(value), null, true, true);
+    },
+    
     PropertyAccess: function(object, property, args, brackets, cacheability) {
         return new Amm.Operator.Property(
             this.unConst(object), 
@@ -149,6 +162,9 @@ Amm.Expression.Builder.prototype = {
     },
     
     Parenthesis: function(expr) {
+        if (expr['Amm.Operator']) {
+            expr._parenthesis = true;
+        }
         return expr;
     },
     

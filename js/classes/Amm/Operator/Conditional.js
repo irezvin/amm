@@ -1,10 +1,12 @@
 /* global Amm */
 
 Amm.Operator.Conditional = function(condition, trueValue, falseValue) {
+    this._isEvaluating++;
     Amm.Operator.call(this);
     if (condition !== undefined) this._setOperand('condition', condition);
     if (trueValue !== undefined) this._setOperand('trueValue', trueValue);
     if (falseValue !== undefined) this._setOperand('falseValue', falseValue);
+    this._isEvaluating--;
 };
 
 // returns Expression variable with the name that matches the operand

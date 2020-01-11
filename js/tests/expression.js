@@ -1049,6 +1049,154 @@
         
     });
     
+    QUnit.test("Operator New", function(assert) {
+        
+        var e, el, res;
+        
+        e = new Amm.Expression('new "RegExp"');
+        
+            assert.ok(e.getValue() instanceof RegExp, 'basic New operator works');
+        
+        e.cleanup();
+        
+        e = new Amm.Expression({
+            src: 'new $class ($arg)',
+            vars: {
+                'class': window.RegExp,
+                'arg': '2020-01-11'
+            },
+            on__valueChange: function(v) { res = v; }
+        });
+        
+            assert.ok(res instanceof RegExp, 'Proper constructor was used');
+            assert.deepEqual(res + '', '/2020-01-11/', 'Constructor received proper argument');
+
+        e.setVars('2016-12-20', 'arg');
+        
+            assert.deepEqual(res + '', '/2016-12-20/', 'Change to arg: new instance was created');
+        
+
+        e.setVars(window.Date, 'class');
+        
+            assert.ok(res instanceof Date, 'Change to class: new instance was created');
+            assert.deepEqual(res + '', (new Date('2016-12-20') + ''), 'Change to class: constructor received proper argument');
+            
+        e.cleanup();
+            
+        var strConstructor = function(arg) { return arg || 'RegExp'; };
+            
+        el = new Amm.Element({
+            prop__cls: window.RegExp,
+            getCon: function(arg) { return arg || 'RegExp'; }
+        });
+        
+        res = null;
+        
+        e = new Amm.Expression({
+            src: 'new this.cls("2011-04-27")',
+            expressionThis: el,
+            on__valueChange: function(v) { res = v; }
+        });
+        
+            assert.ok(res instanceof RegExp, 'Proper instance was created');
+            assert.deepEqual(res + '', '/2011-04-27/', 'Instance received proper params');
+            
+        el.setCls('Date');
+        
+            assert.ok(res instanceof Date, 'property changed => new instance');
+            assert.deepEqual(res + '', (new Date('2011-04-27')) + '', 'new instance has proper args');
+            
+        e.cleanup();
+                
+        res = null;
+        
+        e = new Amm.Expression({
+            src: 'new (this.getCon($cl)) ($arg)',
+            expressionThis: el,
+            vars: {
+                cl: 'Date',
+                arg: '1981-12-23'
+            },
+            on__valueChange: function(v) { res = v; }
+        });
+        
+            assert.ok(res instanceof Date, 'Proper instance was created');
+            assert.equal(res + '', new Date('1981-12-23') + '', 'Proper arg was passed');
+            
+        e.setVars('RegExp', 'cl');
+        
+            assert.ok(res instanceof RegExp, 'Class => diff instance was created');
+            assert.equal(res + '', new RegExp('1981-12-23') + '', 'Class change => same arg');
+            
+        e.setVars('1982-04-11', 'arg');
+            
+            assert.equal(res + '', new RegExp('1982-04-11'), 'Arg change => new instance');
+            
+        e.cleanup();
+        el.cleanup();
+            
+        var cleanup1 = 0;
+        var cleanup2 = 0;
+            
+        var proto1 = { prop__p: 1, on__cleanup: function() { cleanup1++; } };
+        var proto2 = { prop__q: 2, on__cleanup: function() { cleanup2++; } };
+        
+        res = null;
+        
+        e = new Amm.Expression({
+            src: 'new "Amm.Element"($proto)',
+            vars: { proto: Amm.override({}, proto1) },
+            on__valueChange: function(v) { res = v; }
+        });
+        
+            assert.ok (res instanceof Amm.Element, 'Element created');
+            assert.equal (res.getP(), 1, 'Element had proper prototype');
+        
+        e.setVars(Amm.override({}, proto2), 'proto');
+            
+            assert.ok (res instanceof Amm.Element, 'Second element created');
+            assert.equal (res.getQ(), 2, 'Second element had proper prototype');
+            assert.equal (cleanup1, 1, 'First element cleanup');
+        
+        e.setVars(Amm.override({}, proto1), 'proto');
+            
+            assert.equal (cleanup2, 1, 'Second element cleanup');
+            
+        Amm.cleanup(res, e);
+        
+        el.setCls('Amm.Element');
+        
+        res = null;
+        cleanup1 = 0;
+        cleanup2 = 0;
+        
+        e = new Amm.Expression({
+            src: 'new this.cls($proto)',
+            vars: { proto: Amm.override({}, proto1) },
+            expressionThis: el,
+            on__valueChange: function(v) { res = v; }
+        });
+        
+            d.e = e;
+        
+            assert.ok (res instanceof Amm.Element, 'Element created');
+            assert.equal (res.getP(), 1, 'Element had proper prototype');
+        
+        e.setVars(Amm.override({}, proto2), 'proto');
+            
+            assert.ok (res instanceof Amm.Element, 'Second element created');
+            assert.equal (res.getQ(), 2, 'Second element had proper prototype');
+            assert.equal (cleanup1, 1, 'First element cleanup');
+        
+        e.setVars(proto1, 'proto');
+            
+            assert.equal (cleanup2, 1, 'Second element cleanup');
+            
+        Amm.cleanup(res, e, el);
+        
+        
+    });
+    
     
 }) ();
 

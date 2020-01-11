@@ -153,4 +153,18 @@ Amm.Util = {
         return '' + res;
     },
     
+    /**
+     * Swaps keys and values in the hash (i.e. converts { a: 'Ayval', b: 'Beeval' } to { Ayval: 'a', Beeval: 'b' }. 
+     * Doesn't do checks for invalid or duplicate values.
+     * 
+     * @param {object} hash Object to have keys and values reversed
+     * @return {object}
+     */
+    swapKeysValues: function(hash) {
+       if (!hash || (typeof hash !== 'object')) throw Error("`hash` must be a non-null object");
+       var res = {};
+       for (var i in hash) if (hash.hasOwnProperty(i)) res[hash[i]] = i;
+       return res;
+    }
+    
 };

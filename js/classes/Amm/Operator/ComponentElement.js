@@ -5,12 +5,14 @@
  *  Range is either index or '*' (means array will be returned)
  */
 Amm.Operator.ComponentElement = function(component, id, range, componentOnly, allElements) {
+    this._isEvaluating++;
     Amm.Operator.call(this);
     this._componentOnly = componentOnly;
     if (component !== undefined) this._setOperand('component', component);
     if (id !== undefined) this._setOperand('id', id);
     if (range !== undefined) this._setOperand('range', range);
     if (allElements !== undefined) this._allElements = !!allElements;
+    this._isEvaluating--;
 };
 
 Amm.Operator.ComponentElement.prototype = {

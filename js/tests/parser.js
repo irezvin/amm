@@ -1,4 +1,6 @@
 /* global Amm */
+/* global QUnit */
+
 (function() { 
     QUnit.module("Parser");
     
@@ -201,7 +203,19 @@
             
 
             "/^([a-z])[a-z0-9]+$/i.exec($z)[1]":
-                ["PropertyAccess",["FunctionCall",["PropertyAccess",["Constant",/^([a-z])[a-z0-9]+$/i],["Constant","exec"],null,false,null],["List",[["Variable","z"]]],null],["Subexpression",["Constant",1]],null,true,null]
+                ["PropertyAccess",["FunctionCall",["PropertyAccess",["Constant",/^([a-z])[a-z0-9]+$/i],["Constant","exec"],null,false,null],["List",[["Variable","z"]]],null],["Subexpression",["Constant",1]],null,true,null],
+        
+            "new foo":
+                ["New",["Identifier","foo"]],
+        
+            "new new foo":
+                ["New",["New",["Identifier","foo"]]],
+            
+            "new foo(arg)":
+                ["New",["FunctionCall",["Identifier","foo"],["List",[["Identifier","arg"]]],null]],
+        
+            "new foo.bar(arg)":
+                ["New",["FunctionCall",["PropertyAccess",["Identifier","foo"],["Constant","bar"],null,false,null],["List",[["Identifier","arg"]]],null]]
         };
         var resp;
         for (var i in ss) if (ss.hasOwnProperty(i)) {

@@ -1,10 +1,13 @@
 /* global Amm */
+// Amm.extend(Amm.Expression.Token, Amm.Util)
 
 Amm.Expression.Token = function(string, type, value, offset) {
     this.string = string;
     this.type = type;
     this.value = value;
     this.offset = offset;
+    var s = this.string.toLowerCase();
+    if (Amm.Expression.Token._swappedKeywords[s]) this.string = s;
 };
 
 Amm.Expression.Token.Type = {
@@ -18,6 +21,14 @@ Amm.Expression.Token.Type = {
     DOUBLE_QUOTED_STRING: 16,
     REGEXP: 17
 };
+
+Amm.Expression.Token.Keyword = {
+    NEW: 'new',
+    INSTANCEOF: 'instanceof',
+    TYPEOF: 'typeof'
+};
+
+Amm.Expression.Token._swappedKeywords = Amm.Util.swapKeysValues(Amm.Expression.Token.Keyword);
 
 Amm.Expression.Token.prototype = {
 
@@ -43,7 +54,15 @@ Amm.Expression.Token.prototype = {
     },
     
     isIdentifier: function() {
-        return this.type === Amm.Expression.Token.Type.WORD; 
+        return this.type === Amm.Expression.Token.Type.WORD && !Amm.Expression.Token._swappedKeywords[this.string];
+    },
+    
+    isKeyword: function(oneOf) {
+        if (!this.type === Amm.Expression.Token.Type.WORD && Amm.Expression.Token._swappedKeywords[this.string]) return false;
+        if (!oneOf) return this.string;
+        if (oneOf instanceof Array && Amm.Array.indexOf(this.string, oneOf) >= 0) return this.string;
+        if (oneOf === this.string) return this.string;
+        return false;
     },
     
     isConstant: function() {

@@ -1,8 +1,10 @@
 /* global Amm */
 
 Amm.Operator.Var = function(varName) {
+    this._isEvaluating++;
     Amm.Operator.call(this);
     if (varName !== undefined) this._setOperand('varName', varName);
+    this._isEvaluating--;
 };
 
 // returns Expression variable with the name that matches the operand

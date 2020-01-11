@@ -88,7 +88,8 @@ Amm.Operator.prototype = {
         STATE_SHARED: true,
         STATE_VARS: true,
         STATE_PROTO: true,
-        OPERANDS: true
+        OPERANDS: true,
+        _parenthesis: true,
     },
     
     // link to current instance prototype
@@ -102,6 +103,9 @@ Amm.Operator.prototype = {
     _contextState: null,
     _contextId: '0',
     _numCtx: 1, // we have default context
+
+    // sole purpose is tag expressions that are in parenthesis
+    _parenthesis: false,
     
     setExpression: function(expression) {
         Amm.is(expression, 'Amm.Expression', 'Expression');
@@ -645,8 +649,9 @@ Amm.Operator.prototype = {
         // should - and how we should? - switch context here???
         if (opr && opr._contextId !== this._contextId)
             this._propagateContext(operand, opr, true);
-        if (opr && (again || !this[hasValueVar] || opr._hasNonCacheable))
+        if (opr && (again || !this[hasValueVar] || opr._hasNonCacheable)) {
             this._setOperandValue(operand, opr.getValue(again));
+        }
         if (this[hasValueVar])
             return this[valueVar];
         return undefined;

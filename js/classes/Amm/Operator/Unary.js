@@ -1,12 +1,15 @@
 /* global Amm */
 
 Amm.Operator.Unary = function(operator, operand) {
+    this._isEvaluating++;
     Amm.Operator.call(this);
     this._setOperator(operator);
     if (operand !== undefined) this._setOperand('operand', operand);
+    this._isEvaluating--;
 };
 
 Amm.Operator.Unary.Unary_OPERATORS = {
+    '!!': function(operand) { return !!operand; },
     '!': function(operand) { return !operand; },
     '-': function(operand) { return -operand; }
 };

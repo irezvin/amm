@@ -1,18 +1,19 @@
 /* global Amm */
 
-Amm.Operator.Property = function(object, property, args, cacheability, isCall) {
+Amm.Operator.Property = function(object, property, args, cacheability, isCall, isNew) {
     this._isEvaluating++;
     Amm.Operator.call(this);
-    if (object !== undefined) this._setOperand('object', object);
-    if (property !== undefined) this._setOperand('property', property);
-    if (args !== undefined) this._setOperand('arguments', args);
-    if (isCall) {
+    if (isCall || isNew) {
         this._isCall = true;
         this.supportsAssign = false;
     }
     if (cacheability !== undefined && cacheability !== null) {
         this._cacheability = !!cacheability;
     }
+    this._isNew = !!isNew;
+    if (object !== undefined) this._setOperand('object', object);
+    if (property !== undefined) this._setOperand('property', property);
+    if (args !== undefined) this._setOperand('arguments', args);
     this._isEvaluating--;
 };
 
@@ -42,6 +43,8 @@ Amm.Operator.Property.prototype = {
     
     _isCall: false,
     
+    _isNew: false,
+    
     _cacheability: null,
     
     _eventName: false,
@@ -53,7 +56,8 @@ Amm.Operator.Property.prototype = {
     STATE_SHARED: {
         _isCall: true,
         _cacheability: true,
-        supportsAssign: true
+        supportsAssign: true,
+        _isNew: true
     },
     
     setObject: function(object) {
@@ -72,6 +76,20 @@ Amm.Operator.Property.prototype = {
         }
         if (args !== undefined) this._setOperand('arguments', args);
         this._isEvaluating--;
+    },
+    
+    getIsCall: function() {
+        return this._isCall;
+    },
+    
+    getIsNew: function() {
+        return this._isNew;
+    },
+    
+    promoteToNew: function() {
+        if (this._hasValue) Error("Cannot promoteToNew(): already evaluated");
+        if (!this._isCall) Error("Cannot promoteToNew(): not is call");
+        this._isNew = true;
     },
     
     hasArguments: function() {
@@ -100,7 +118,7 @@ Amm.Operator.Property.prototype = {
         if (oldObject) this._unsub(oldObject);
         if (!object) {
             this._setNonCacheable(this._nonCacheable & ~Amm.Operator.NON_CACHEABLE_VALUE); // always-null cacheable value
-        } else if (this._isCall || (object && !object['Amm.WithEvents'])) {
+        } else if (this._isCall && !this._isNew || (object && !object['Amm.WithEvents'])) {
             // we don't watch for properties that return method calls
             var cacheability = this._cacheability;
             if (cacheability === null) cacheability = this._isCall;
@@ -163,13 +181,12 @@ Amm.Operator.Property.prototype = {
         property = '' + property;
         
         var object = this._getOperandValue('object', again);
+        
         if (!object) return;
         
-        var args;
-        
-        if (this._isCall) {
+        if (this._isCall && !this._isNew) {
             
-            if (typeof object[property] !== 'function') Error("cannot call a non-function property");
+            if (typeof object[property] !== 'function') throw Error("cannot call a non-function property");
             args = this._getOperandValue('arguments', again);
             if (args === null || args === undefined) return object[property]();
             else if (args instanceof Array) return object[property].apply(object, args);
@@ -177,10 +194,23 @@ Amm.Operator.Property.prototype = {
         }
         
         var getter = 'get' + property[0].toUpperCase() + property.slice(1);
-
+        
+        if (this._isNew) {
+            var constructor;
+            if (typeof object[getter] !== 'function') constructor = object[property];
+            else constructor = object[getter]();
+            
+            if (!constructor) return;
+            
+            constructor = Amm.Operator.FunctionCall.getFunction(constructor);
+            args = this._getOperandValue('arguments', again);
+            
+            return Amm.Operator.FunctionCall.newVarArgs(constructor, args);
+        }
+        
         if (typeof object[getter] !== 'function') return object[property];
 
-        var args = this._getOperandValue('arguments', again);
+        args = this._getOperandValue('arguments', again);
 
         if (args === null || args === undefined) {
 
@@ -199,6 +229,7 @@ Amm.Operator.Property.prototype = {
         var _property = this._operandFunction('property');
         var _object = this._operandFunction('object');
         var _args = this._operandFunction('arguments');
+        var _isNew = this._isNew;
 
         if (this._isCall) return function(e) {
             var property = _property(e);
@@ -210,7 +241,7 @@ Amm.Operator.Property.prototype = {
             
             if (typeof object[property] !== 'function') Error("cannot call a non-function property");
             var args = _args(e);
-            
+            if (_isNew) return Amm.Operator.FunctionCall.newVarArgs(object[property], args);
             if (args === null || args === undefined) return object[property]();
             else if (args instanceof Array) return object[property].apply(object, args);
             return object[property](args);
@@ -339,7 +370,14 @@ Amm.Operator.Property.prototype = {
     _isValueObservable: function(operand, value) {
         if (operand === 'arguments') return false; // array result of "list" operator DOES NOT change
         return Amm.Operator.prototype._isValueObservable.call(this, operand, value);
-    }
+    },
+    
+    _reportChange: function(oldValue) {
+        Amm.Operator.prototype._reportChange.call(this, oldValue);
+        if (this._isNew && oldValue && typeof oldValue.cleanup === 'function') {
+            oldValue.cleanup();
+        }
+    },
 
 };
 

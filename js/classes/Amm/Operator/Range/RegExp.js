@@ -5,9 +5,11 @@
  * If $index is zero (0) and $source is NOT an array, will return the $source
  */
 Amm.Operator.Range.RegExp = function(source, regexp) {
+    this._isEvaluating++;
     Amm.Operator.Range.call(this);
     if (source !== undefined) this._setOperand('source', source);
     if (regexp !== undefined) this._setOperand('regexp', regexp);
+    this._isEvaluating--;
 };
 
 Amm.Operator.Range.RegExp.prototype = {

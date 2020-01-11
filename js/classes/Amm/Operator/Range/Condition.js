@@ -8,6 +8,7 @@
  * $rows{$i => : $i % 2 == 0} // only even rows
  */
 Amm.Operator.Range.Condition = function(source, condition, keyVar, valueVar) {
+    this._isEvaluating++;
     this._map = [];
     Amm.Operator.Range.call(this, source);
     this._value = [];
@@ -16,6 +17,7 @@ Amm.Operator.Range.Condition = function(source, condition, keyVar, valueVar) {
     if (valueVar !== undefined) this.valueVar = valueVar;
     var iterator = new Amm.Operator.Range.Iterator(condition, keyVar, valueVar);
     this._setOperand('iterator', iterator);
+    this._isEvaluating--;
 };
 
 Amm.Operator.Range.Condition.prototype = {

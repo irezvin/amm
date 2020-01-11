@@ -1,10 +1,12 @@
 /* global Amm */
 
 Amm.Operator.Binary = function(left, operator, right) {
+    this._isEvaluating++;
     Amm.Operator.call(this);
     this._setOperator(operator);
     if (left !== undefined) this._setOperand('left', left);
     if (right !== undefined) this._setOperand('right', right);
+    this._isEvaluating--;
 };
 
 Amm.Operator.Binary.BINARY_OPERATORS = {

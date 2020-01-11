@@ -4,12 +4,14 @@
  * Provides variables for child Operator. 
  */
 Amm.Operator.VarsProvider = function(operator, vars) {
+    this._isEvaluating++;
     if (vars && typeof vars !== 'object') {
         Error("`vars` must be an object");
     }
     this._vars = vars || {};
     Amm.Operator.call(this);
     if (operator) this.setOperator(operator);    
+    this._isEvaluating--;
 };
 
 Amm.Operator.VarsProvider.prototype = {

@@ -31,10 +31,10 @@ QUnit.test("Amm get/set/destroy Item", function(assert) {
         a.getItem("nonExistent", true);
     }, "Amm.getItem /w throwIfNotFound");
     assert.ok(a.getItem("nonExistent") === undefined);
-    a.destroyItem(item);
+    a.cleanup(item);
     assert.equal(item.cleanupCalled, true);
     var id = item._amm_id;
-    a.destroyItem(itemNoCleanup);
+    a.unregisterItem(itemNoCleanup);
     assert.equal(a.getItem(id), undefined);
 });
 

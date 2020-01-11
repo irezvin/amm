@@ -205,5 +205,6 @@ Amm.View.Html.Default.prototype = {
     
 };
 
+//Amm.extend(Amm.View.Html.Default, Amm.Builder);
 Amm.extend(Amm.View.Html.Default, Amm.View.Html);
 Amm.extend(Amm.View.Html.Default, Amm.View.Abstract);

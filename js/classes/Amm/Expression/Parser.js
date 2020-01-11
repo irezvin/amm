@@ -331,13 +331,13 @@ Amm.Expression.Parser.prototype = {
     parseUnary: function() {
         var token = this.fetch();
         if (!token) return;
-        if (token.isSymbol('!', '-')) {
+        if (token.isSymbol('!', '-', '!!')) {
             var expr = this.parsePart('Unary');
             if (!expr) Error("Expected: unary");
             return this.genOp('Unary', token.string, expr);
         } else {
             this.unfetch();
-            return this.parsePart('Item');
+            return this.parsePart('New');
         }
     },
     
@@ -360,6 +360,18 @@ Amm.Expression.Parser.prototype = {
         return this.genOp('List', exps);
     },
     
+    parseNew: function() {
+        var token = this.fetch();
+        if (!token.isKeyword(Amm.Expression.Token.Keyword.NEW)) {
+            this.unfetch();
+            return this.parsePart('Item');
+        }
+        var op = this.parseNew();
+        if (!op) op = this.parsePart('Item');
+        if (!op) throw Error("Expected: new or value");
+        return this.genOp('New', op);
+    },
+    
     parseItem: function() {
         var value = this.parsePart(true, 'Value');
         var op = this.parsePart(true, 'AccessOperator', value);
@@ -374,6 +386,7 @@ Amm.Expression.Parser.prototype = {
                 ||  this.parsePart(true, 'PropertyAccess', value) 
                 ||  this.parsePart(true, 'ComponentElement', value) 
                 ||  this.parsePart(true, 'Range', value);
+        
         if (sub) {
             var right = this.parsePart(true, 'AccessOperator', sub);
             if (right) return right;

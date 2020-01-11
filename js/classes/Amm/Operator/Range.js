@@ -1,7 +1,9 @@
 /* global Amm */
 Amm.Operator.Range = function(source) {
+    this._isEvaluating++;
     Amm.Operator.call(this);
     if (source !== undefined) this._setOperand('source', source);
+    this._isEvaluating--;
 };
 
 Amm.Operator.Range.prototype = {

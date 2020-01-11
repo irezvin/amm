@@ -1,9 +1,11 @@
 /* global Amm */
 
 Amm.Operator.List = function(items) {
+    this._isEvaluating++;
     this.OPERANDS = []; // each instance has own number of operands
     Amm.Operator.call(this);
     if (items !== undefined) this.setItems(items);
+    this._isEvaluating--;
 };
 
 // zero or many arguments. Expression result is always an array
