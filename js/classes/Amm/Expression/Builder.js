@@ -104,6 +104,7 @@ Amm.Expression.Builder.prototype = {
             if (operator === '!') return this.const(!this.unConst(operand));
             else if (operator === '-') return this.const(- this.unConst(operand));
             else if (operator === '!!') return this.const(!! this.unConst(operand));
+            else if (operator === 'typeof') return typeof this.unConst(operand);
             else throw Error("Unknown unary operator: '" + operator + "'");
         } else {
             return new Amm.Operator.Unary(

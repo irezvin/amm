@@ -14,7 +14,7 @@ Amm.Expression.Parser.prototype = {
      * 3 - number
      * 4 - tokens
      */
-    tokensRx: /^(?:(\s+)|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(!!|\?\?|\.\.|::|->|&&|\|\||!==|!=|===|==|>=|<=|=>|[-&|+><\{\}$?!.,:\[\]()'"%*/])|(.))/,
+    tokensRx: /^(?:(\s+)|(typeof|instanceof|new|!!|\?\?|\.\.|::|->|&&|\|\||!==|!=|===|==|>=|<=|=>|[-&|+><\{\}$?!.,:\[\]()'"%*/])|([_a-zA-Z][_a-zA-Z0-9]*)|(0[xX]?[0-9]+)|([0-9]+(?:\.[0-9+])?(?:e[+-]?[0-9]+)?)|(.))/,
     
     regexTokens: /^(?:(\.)|([[\]()\/])|([^\\\[n\]()\/]+))/,
     
@@ -141,31 +141,31 @@ Amm.Expression.Parser.prototype = {
             Error("Assertion: match next token (shouldn't happen)");
         }
         if (rx[1]) id = Amm.Expression.Token.Type.WHITESPACE;
-        else if (rx[2]) id = Amm.Expression.Token.Type.WORD;
-        else if (rx[3]) {
-            id = Amm.Expression.Token.Type.INTEGER;
-            if (rx[3][0] === '0' && (rx[3][1] !== 'x' && rx[3][1] !== 'X'))
-                value = parseInt(rx[3], 8);
-            else value = parseInt(rx[3]);
-            
-        }
-        else if (rx[4]) {
-            id = Amm.Expression.Token.Type.FLOAT;
-            value = parseFloat(rx[4]);
-        }
-        else if (rx[5]) {
-            if (rx[5] === '"' || rx[5] === "'") {
+        else if (rx[2]) {
+            if (rx[2] === '"' || rx[2] === "'") {
                 var sc = this.getStringConstantToken(string);
                 if (sc) {
                     return sc;
                 }
-            } else if (rx[5] === '/') {
+            } else if (rx[2] === '/') {
                 if (!lastNonWhitespace || this.regexPossible(lastNonWhitespace)) {
                     var regex = this.getRegex(string);
                     if (regex) return regex;
                 }
             }
             id = Amm.Expression.Token.Type.SYMBOL;
+        }
+        else if (rx[3]) id = Amm.Expression.Token.Type.WORD;
+        else if (rx[4]) {
+            id = Amm.Expression.Token.Type.INTEGER;
+            if (rx[4][0] === '0' && (rx[4][1] !== 'x' && rx[4][1] !== 'X'))
+                value = parseInt(rx[4], 8);
+            else value = parseInt(rx[4]);
+            
+        }
+        else if (rx[5]) {
+            id = Amm.Expression.Token.Type.FLOAT;
+            value = parseFloat(rx[5]);
         } else if (rx[6]) id = Amm.Expression.Token.Type.ILLEGAL;
         var res = new Amm.Expression.Token(rx[0], id, value);
         return res;
@@ -249,7 +249,8 @@ Amm.Expression.Parser.prototype = {
         ['!==', '===', '!=', '=='],
         ['>', '<', '>=', '<='],
         ['+', '-'],
-        ['*', '/', '%']
+        ['*', '/', '%'],
+        ['instanceof']
     ],
     
     genOp: function(opType, _) {
@@ -331,7 +332,7 @@ Amm.Expression.Parser.prototype = {
     parseUnary: function() {
         var token = this.fetch();
         if (!token) return;
-        if (token.isSymbol('!', '-', '!!')) {
+        if (token.isSymbol('!', '-', '!!', 'typeof')) {
             var expr = this.parsePart('Unary');
             if (!expr) Error("Expected: unary");
             return this.genOp('Unary', token.string, expr);
@@ -362,7 +363,7 @@ Amm.Expression.Parser.prototype = {
     
     parseNew: function() {
         var token = this.fetch();
-        if (!token.isKeyword(Amm.Expression.Token.Keyword.NEW)) {
+        if (!token.isSymbol(Amm.Expression.Token.Keyword.NEW)) {
             this.unfetch();
             return this.parsePart('Item');
         }

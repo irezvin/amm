@@ -26,7 +26,8 @@ Amm.Operator.Binary.BINARY_OPERATORS = {
     '&': function(left, right) {return left & right; },
     '|': function(left, right) {return left | right; },
     '&&': function(left, right) {return left && right; },
-    '||': function(left, right) {return left || right; }
+    '||': function(left, right) {return left || right; },
+    'instanceof': function(left, right) { return Amm.Operator.Binary.instanceof(left, right); }
 };
     
 
@@ -96,4 +97,19 @@ Amm.Operator.Binary.prototype = {
 };
 
 Amm.extend(Amm.Operator.Binary, Amm.Operator);
+
+Amm.Operator.Binary.instanceof = function(object, constructor) {
+    if (!constructor) return false;
+    if (!object && typeof object !== 'object') return false;
+    if (typeof constructor === 'string') {
+        constructor = Amm.Operator.FunctionCall.getFunction(constructor, true);
+        if (!constructor) return false;
+    }
+    if (typeof constructor !== 'function') {
+        throw Error("right-side of instanceof must be either string or function");
+    }
+    if (object instanceof constructor) return true;
+    return Amm.is(object, constructor);
+};
+
 

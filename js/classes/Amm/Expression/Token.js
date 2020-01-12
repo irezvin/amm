@@ -6,16 +6,14 @@ Amm.Expression.Token = function(string, type, value, offset) {
     this.type = type;
     this.value = value;
     this.offset = offset;
-    var s = this.string.toLowerCase();
-    if (Amm.Expression.Token._swappedKeywords[s]) this.string = s;
 };
 
 Amm.Expression.Token.Type = {
     WHITESPACE: 1,
-    WORD: 2,
-    INTEGER: 3,
-    FLOAT: 4,
-    SYMBOL: 5,
+    SYMBOL: 2,
+    WORD: 3,
+    INTEGER: 4,
+    FLOAT: 5,
     ILLEGAL: 6,
     SINGLE_QUOTED_STRING: 15,
     DOUBLE_QUOTED_STRING: 16,
@@ -54,15 +52,7 @@ Amm.Expression.Token.prototype = {
     },
     
     isIdentifier: function() {
-        return this.type === Amm.Expression.Token.Type.WORD && !Amm.Expression.Token._swappedKeywords[this.string];
-    },
-    
-    isKeyword: function(oneOf) {
-        if (!this.type === Amm.Expression.Token.Type.WORD && Amm.Expression.Token._swappedKeywords[this.string]) return false;
-        if (!oneOf) return this.string;
-        if (oneOf instanceof Array && Amm.Array.indexOf(this.string, oneOf) >= 0) return this.string;
-        if (oneOf === this.string) return this.string;
-        return false;
+        return this.type === Amm.Expression.Token.Type.WORD;
     },
     
     isConstant: function() {

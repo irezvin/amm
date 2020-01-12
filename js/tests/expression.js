@@ -1197,6 +1197,45 @@
         
     });
     
+    QUnit.test("typeof, instanceof", function(assert) {
+       
+        
+        var e;
+        
+        e = new Amm.Expression("typeof 10");
+            
+            assert.equal(e.getValue(), "number", "typeof constant works");
+        
+        e = new Amm.Expression("typeof $v");
+            
+            assert.equal(e.getValue(), "undefined", "typeof undefined var");
+            
+        e.setVars({}, "v");
+            
+            assert.equal(e.getValue(), "object", "typeof object var");
+        
+        e = new Amm.Expression("(new 'Date') instanceof $v");
+        
+            assert.equal(e.getValue(), false, "foo instanceof undefined === false");
+        
+        e.setVars(window.Date, 'v');
+        
+            assert.equal(e.getValue(), true, "foo instanceof <func>");
+            
+        e.setVars(window.RegExp, 'v');
+        
+            assert.equal(e.getValue(), false, "foo instanceof <func> (2)");
+            
+        e.setVars("Date", 'v');
+        
+            assert.equal(e.getValue(), true, "foo instanceof <string with existing class name> (find func)");
+            
+        e.setVars("non-existent", 'v');
+        
+            assert.equal(e.getValue(), false, "foo instanceof <string with non-existent class name> (find func)");
+            
+    });
+    
     
 }) ();
 

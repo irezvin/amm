@@ -100,17 +100,19 @@ Amm.Operator.FunctionCall.prototype = {
 
 Amm.extend(Amm.Operator.FunctionCall, Amm.Operator);
 
-Amm.Operator.FunctionCall.getFunction = function(fn) {
+Amm.Operator.FunctionCall.getFunction = function(fn, dontThrow) {
+    var res;
     if (typeof fn === 'function') return fn;
     else if (typeof fn === 'string') {
-        var res = Amm.getFunction(fn, true);
+        res = Amm.getFunction(fn, true);
         if (!res) {
             if (Amm.Array.indexOf(fn, Amm.Operator.FunctionCall.WINDOW_PASSTHROUGH) >= 0) {
                 res = window[fn];
             }
         }
-        if (!res) Amm.getFunction(fn); // just to throw the exception
+        if (!res && !dontThrow) Amm.getFunction(fn); // just to throw the exception
     } else {
+        if (dontThrow) return;
         throw Error("Callee must be either function or string, given: "
                 + Amm.describeType(fn));
     }

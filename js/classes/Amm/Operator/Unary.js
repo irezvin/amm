@@ -11,7 +11,8 @@ Amm.Operator.Unary = function(operator, operand) {
 Amm.Operator.Unary.Unary_OPERATORS = {
     '!!': function(operand) { return !!operand; },
     '!': function(operand) { return !operand; },
-    '-': function(operand) { return -operand; }
+    '-': function(operand) { return -operand; },
+    'typeof': function(operand) { return typeof operand; }
 };
     
 
