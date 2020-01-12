@@ -106,5 +106,19 @@
         assert.deepEqual(e.getC(), 14, 'setter works for settable expression');
         
     });
+
+    QUnit.test("Element: immutable constructor", function(assert) {
+
+        var proto = {
+            prop__foo: 'bar'
+        };
+        
+        var oldProto = Amm.override({}, proto);
+        
+        var e = new Amm.Element(proto);
+        
+        assert.deepEqual(proto, oldProto, 'Prototype isn\'t changed by element constructor');
+        
+    });
     
 }) ();

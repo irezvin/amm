@@ -5,6 +5,7 @@
  * @constructor
  */
 Amm.Element = function(options) {
+    
     this._beginInit();
     this._cleanupList = [];
     this._expressions = {};
@@ -18,6 +19,11 @@ Amm.Element = function(options) {
     var views = [];
 
     options = Amm.Element._checkAndApplyOptionsBuilderSource(options);
+    
+    // since we delete keys in options, we must clone the hash in case it will be reused
+    if (options && typeof options === 'object') {
+        options = Amm.override({}, options);
+    }
 
     if ('expressions' in options) { // we should init expressions last
         expressions = options.expressions;

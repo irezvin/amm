@@ -1145,20 +1145,20 @@
         
         e = new Amm.Expression({
             src: 'new "Amm.Element"($proto)',
-            vars: { proto: Amm.override({}, proto1) },
+            vars: { proto: proto1 },
             on__valueChange: function(v) { res = v; }
         });
         
             assert.ok (res instanceof Amm.Element, 'Element created');
             assert.equal (res.getP(), 1, 'Element had proper prototype');
         
-        e.setVars(Amm.override({}, proto2), 'proto');
+        e.setVars(proto2, 'proto');
             
             assert.ok (res instanceof Amm.Element, 'Second element created');
             assert.equal (res.getQ(), 2, 'Second element had proper prototype');
             assert.equal (cleanup1, 1, 'First element cleanup');
         
-        e.setVars(Amm.override({}, proto1), 'proto');
+        e.setVars(proto1, 'proto');
             
             assert.equal (cleanup2, 1, 'Second element cleanup');
             
@@ -1172,7 +1172,7 @@
         
         e = new Amm.Expression({
             src: 'new this.cls($proto)',
-            vars: { proto: Amm.override({}, proto1) },
+            vars: { proto: proto1 },
             expressionThis: el,
             on__valueChange: function(v) { res = v; }
         });
@@ -1182,7 +1182,7 @@
             assert.ok (res instanceof Amm.Element, 'Element created');
             assert.equal (res.getP(), 1, 'Element had proper prototype');
         
-        e.setVars(Amm.override({}, proto2), 'proto');
+        e.setVars(proto2, 'proto');
             
             assert.ok (res instanceof Amm.Element, 'Second element created');
             assert.equal (res.getQ(), 2, 'Second element had proper prototype');
