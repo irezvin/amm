@@ -180,15 +180,22 @@ Amm = {
         return object;
     },
     
-    overrideRecursive: function(modifiedObject, overrider, noOverwrite) {
+    overrideRecursive: function(modifiedObject, overrider, noOverwrite, deduplicate) {
         if (typeof modifiedObject !== 'object' || typeof overrider !== 'object')
             throw Error('Both modifiedObject and overrider must be objects');
 
         for (var i in overrider) if (overrider.hasOwnProperty(i)) {
             if (modifiedObject[i] instanceof Array && overrider[i] instanceof Array) {
-                modifiedObject[i] = modifiedObject[i].concat(overrider[i]);
+                if (!deduplicate || !modifiedObject[i].length) {
+                    modifiedObject[i] = modifiedObject[i].concat(overrider[i]);
+                    continue;
+                }
+                for (var j = 0, l = overrider[i].length; j < l; j++) {
+                    if (Amm.Array.indexOf(overrider[i][j], modifiedObject[i]) >= 0) continue;
+                    modifiedObject[i].push(overrider[i][j]); 
+                }
             } else if (typeof modifiedObject[i] === 'object' && typeof overrider[i] === 'object')  {
-                this.overrideRecursive(modifiedObject[i], overrider[i], noOverwrite);
+                this.overrideRecursive(modifiedObject[i], overrider[i], noOverwrite, deduplicate);
             } else if (!noOverwrite || !(i in modifiedObject)) {
                 modifiedObject[i] = overrider[i];
             }

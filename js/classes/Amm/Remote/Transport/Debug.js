@@ -4,8 +4,8 @@ Amm.Remote.Transport.Debug = function(options) {
     Amm.Remote.Transport.call(this, {});
     Amm.WithEvents.call(this, options);
     var t = this;
-    this._successClosure = function(data, textStatus) { return t.success(data, textStatus); };
-    this._failureClosure = function(textStatus, errorThrown, httpCode) { return t.failure(textStatus, errorThrown, httpCode); };
+    this._successClosure = function(data, textStatus) { return t.success.apply(t, Array.prototype.slice.call(arguments)); };
+    this._failureClosure = function(textStatus, errorThrown, httpCode) { return t.failure.apply(t, Array.prototype.slice.call(arguments)) };
 };
 
 Amm.Remote.Transport.Debug.prototype = {
@@ -50,7 +50,10 @@ Amm.Remote.Transport.Debug.prototype = {
             return;
         }
         if (typeof data === 'function') data = data(this._lastRequest);
-        this.reply(this._lastRequest, true, timeout, data, textStatus);
+        var args = Array.prototype.slice.call(arguments);
+        args.splice(2, 1); // delete 'timeout' arg
+        args.unshift(this._lastRequest, true, timeout);
+        this.reply.apply(this, args);
     },
     
     failure: function(textStatus, errorThrown, httpCode, timeout) {
@@ -59,7 +62,10 @@ Amm.Remote.Transport.Debug.prototype = {
             this._pendingSuccess = null;
             return;
         }
-        this.reply(this._lastRequest, false, timeout, textStatus, errorThrown, httpCode);
+        var args = Array.prototype.slice.call(arguments);
+        args.splice(3, 1); // delete 'timeout' arg
+        args.unshift(this._lastRequest, false, timeout);
+        this.reply.apply(this, args);
     },
     
     outRequest: function(runningRequest, success, failure) {

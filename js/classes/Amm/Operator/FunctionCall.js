@@ -15,7 +15,7 @@ Amm.Operator.FunctionCall = function(func, args, cacheability, isNew) {
 
 // functions that can be accessed using string identifiers
 Amm.Operator.FunctionCall.WINDOW_PASSTHROUGH = [
-    'RegExp', 'Intl', 'JSON', 'Math', 'Date'
+    'RegExp', 'Intl', 'JSON', 'Math', 'Date', 'isNaN', 'isFinite', 'parseInt', 'parseFloat'
 ];
 
 // returns Expression variable with the name that matches the operand

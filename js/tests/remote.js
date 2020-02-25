@@ -1,5 +1,6 @@
 /* global Amm */
 /* global QUnit */
+/* global TestUtils */
 
 (function() {
     
@@ -15,30 +16,7 @@
      * 
      */
     
-    var runStory = function(assert, story) {
-        var stepNo = 0;
-        var done = assert.async(story.length);
-        var invokeStep = function() {
-            var step = story[stepNo];
-            stepNo++;
-            runStory.currStepName = step.name;
-            var timeoutHandler = function() {
-                step.fn();
-                if (stepNo < story.length) {
-                    invokeStep();
-                }
-                done();
-            };
-            var time = step.time;
-            if (typeof time === 'function') time = time();
-            if (time > 0) {
-                window.setTimeout(timeoutHandler, time);
-            } else {
-                timeoutHandler();
-            }
-        };
-        invokeStep();
-    };
+    var runStory = TestUtils.runStory;
     
     var getDebugTransport = function(requestsLog) {
         
@@ -443,14 +421,25 @@
         errLog = [];
         f.setError({var: 'val'});
             assert.deepEqual(errLog, [['errorChange', {var: 'val'}]]);
-            
-        
-        
-        
-        
-        
         
     });
+    
+    
+    QUnit.test("Amm.Remote.Fetcher: detectChanges", function(assert) {
+        
+        assert.deepEqual(Amm.Remote.Transport.JqXhr.parseResponseHeaders(
+                
+            "header1: value1\n" + "Header2:value1\n" + "hEader2 :  Value2\n"
+            + "xXx\n" + "yyy\n"
+                
+        ), {
+            "header1": "value1",
+            "header2": ["value1", "Value2"],
+            "": ["xXx", "yyy"]
+        }, "headers are correctly parsed");
+        
+    });
+    
     
 
 }) ();

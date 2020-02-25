@@ -17,7 +17,9 @@ Amm.Decorator.Data.prototype = {
     _conditions: null,
 
     setConditions: function(conditions) {
-        if (!conditions && typeof conditions === 'object') throw Error ("`conditions` must be a non-null object");
+        if (!conditions && typeof conditions === 'object') {
+            throw Error ("`conditions` must be a non-null object");
+        }
         if (!Amm.keys(conditions).length) {
             conditions = null;
         }

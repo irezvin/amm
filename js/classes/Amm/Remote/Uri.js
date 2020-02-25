@@ -130,6 +130,23 @@ Amm.Remote.Uri.prototype = {
         return Amm.Util.getByPath(this._query, Amm.Util.pathToArray(part));
     },
     
+    setUriOverrides: function(uriOverrides) {
+        if (!uriOverrides) return;
+        if (typeof uriOverrides !== 'object')
+            throw Error("uriOverrides must be an object");
+        var o = uriOverrides? Amm.override({}, uriOverrides) : {};
+        this.beginUpdate();
+        for (var i in o) if (o.hasOwnProperty(i)) {
+            if (Amm.Remote.Uri._const[i]) {
+                this.setUri(o[i], i);
+                delete o[i];
+            }
+        }
+        if (!this._query) this._query = {};
+        Amm.overrideRecursive(this._query, o);
+        this.endUpdate();
+    },
+    
     _clone: function(otherUri) {
         if (this._subscribers) this.beginUpdate();
         for (var i in Amm.Remote.Uri._const) {
@@ -394,4 +411,3 @@ Amm.Remote.Uri.prototype = {
 };
 
 Amm.extend(Amm.Remote.Uri, Amm.WithEvents);
-

@@ -28,7 +28,7 @@ Amm.Remote.RequestProducer.prototype = {
     setMethod: function(method) {
         method = ('' + method).toUpperCase();
         if (!(method in Amm.Remote.RequestProducer._allowedMethods)) {
-            throw Error("Invalid 'method' value; allowed values are " 
+            throw Error("Invalid 'method' value '" + method + "'; allowed values are " 
                 + Amm.keys(Amm.Remote.RequestProducer._allowedMethods).join('|'));
         }
         var oldMethod = this._method;
@@ -68,7 +68,7 @@ Amm.Remote.RequestProducer.prototype = {
             var c = {};
             oldData = this._data? Amm.override({}, this._data) : this._data;
             if (!this._data) this._data = {};
-            this._setByPath(this._data, arrPath, data, c);
+            Amm.Util.setByPath(this._data, arrPath, data, c);
             var hasKeys = false;
             for (var key in this._data) if (this._data.hasOwnProperty(key)) {
                 hasKeys = true;
@@ -89,6 +89,15 @@ Amm.Remote.RequestProducer.prototype = {
         return this._getByPath(this._data, arrPath);
     },
     
+    setDataOverrides: function(dataOverrides) {
+        if (!dataOverrides) return;
+        if (typeof dataOverrides !== 'object')
+            throw Error("dataOverrides must be an object");
+        var newData = Amm.overrideRecursive({}, this._data);
+        Amm.overrideRecursive(newData, dataOverrides);
+        this.setData(newData);
+    },
+    
     outDataChange: function(data, oldData) {
         return this._out('dataChange', data, oldData);
     }
@@ -96,4 +105,3 @@ Amm.Remote.RequestProducer.prototype = {
 };
 
 Amm.extend(Amm.Remote.RequestProducer, Amm.Remote.Uri);
-

@@ -6,7 +6,7 @@
         <script src="../js/vendor/jquery-3.1.1.js"></script>
         <script src="../js/vendor/relaxed-json.js"></script>
         <link rel="stylesheet" type="text/css" href="qunit/qunit-2.0.1.css" />
-<?php   require_once(__DIR__.'/list.php');
+<?php   require_once(__DIR__.'/list.php'); 
         foreach (listAmmFiles(null, null, isset($_REQUEST['min']) && $_REQUEST['min']) as $f) {
             $f = str_replace('../js/classes/../../build/', '', '../js/classes/'.$f);
             echo "\n<script type='text/javascript' src='$f'></script>";
@@ -18,6 +18,7 @@
         <div id="qunit"></div>
         <div id="qunit-fixture"></div>
         <script src="qunit/qunit-2.0.1.js"></script>
+        <script src="TestUtils.js"></script>
         <script type='text/javascript'>
             // registry of tests which created global refs in Amm._items
             window.stats = {

@@ -11,6 +11,7 @@ Amm.Util = {
     },
     
     getByPath: function(source, arrPath, defaultValue) {
+        if (!(arrPath instanceof Array)) arrPath = Amm.Util.pathToArray(arrPath);
         var curr = source, ap = [].concat(arrPath), seg;
         while (ap.length) {
             seg = ap.shift();
@@ -25,6 +26,8 @@ Amm.Util = {
     setByPath: function(target, arrPath, value, changed, merge) {
 		
         if (!target && value === undefined) return;
+        
+        if (!(arrPath instanceof Array)) arrPath = Amm.Util.pathToArray(arrPath);
         
         var l = arrPath.length;
         changed = changed || {};
@@ -135,6 +138,7 @@ Amm.Util = {
      * @returns {Array}
      */
     pathToArray: function(string) { 
+        if (!string.length) return [];
         if (string instanceof Array) return string;
         return string.replace(/\]/g, '').split('[');
     },
@@ -148,6 +152,7 @@ Amm.Util = {
      * @returns {string}
      */
     arrayToPath: function(array) {
+        if (!array.length) return '';
         var res = array;
         if (array instanceof Array) res = array.length > 1? array.join('][') + ']' : array[0];
         return '' + res;
