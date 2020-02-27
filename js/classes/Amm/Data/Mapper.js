@@ -81,7 +81,6 @@ Amm.Data.Mapper.prototype = {
         if (oldObjectPrototype === objectPrototype) return;
         if (oldObjectPrototype !== null) throw Error("can setObjectPrototype() only once");
         this._objectPrototype = objectPrototype;
-        this.outObjectPrototypeChange(objectPrototype, oldObjectPrototype);
         return true;
     },
 

@@ -921,4 +921,140 @@
         
     });
     
+    QUnit.test("Data.Object: lifecycle template methods", function(assert) {
+        
+        var log = [];
+        var ret = undefined, res;
+        var tpl = function(methodName, args) {
+            var aa = args? Array.prototype.slice.apply(args) : [];
+            var l = [methodName].concat(aa);
+            log.push(l);
+            //console.log.apply(console, l);
+            //console.trace();
+            if (ret !== undefined) {
+                var tmp = ret;
+                if (typeof tmp === 'function') return tmp.apply(this, aa);
+                ret = undefined;
+                return tmp;
+            }
+        };
+        
+        var mkTpl = function(methodName) {
+            var m = methodName;
+            return function() {
+                return tpl(methodName, arguments);
+            };
+        };
+        
+        var ovr = {};
+        for (var i in Amm.Data.Object.prototype) if (Amm.Data.Object.prototype.hasOwnProperty(i)) {
+            if (i.slice(0, 3) !== '_do') continue;
+            ovr[i] = mkTpl(i);
+        }
+        
+        var t = new Amm.Remote.Transport.Debug({
+            replyTime: 10,
+            on__request: function(request) {
+                currentRequest = request;
+            }
+        });
+       
+        var m = new Amm.Data.Mapper({
+            objectPrototype: ovr,
+            uri: 'dummy.php',
+            transactionPrototypes: {
+                'default': {
+                    transport: t,
+                    typePath: 'action'
+                }
+            }
+        });
+        var d = new Amm.Data.Object({
+            __mapper: m,
+        });
+        
+        
+        
+        d.lm.hydrate({id: 10, name: 'john'});
+        
+            assert.deepEqual(log, [['_doOnActual', false]], '_doOnActual(false) called on hydrate');
+            
+        log = [];
+        
+        d.name = 'j2';
+        d.lm.check();
+        
+            assert.deepEqual(log, [['_doOnCheck']], '_doOnCheck called on check()');
+            
+        log = [];
+        ret = false;
+        res = d.lm.save();
+        
+            assert.deepEqual(log, [['_doBeforeSave']], '_doBeforeSave called on save()');
+            assert.notOk(res, 'save() returned false because _doBeforeSave() returned false');
+            assert.notOk(!!d.lm.getRunningTransaction(), 'Transaction is not running');
+
+        log = [];
+        ret = undefined;
+        d.lm.save();
+        
+            assert.deepEqual(log, [['_doBeforeSave']], '_doBeforeSave called on save()');
+            assert.notOk(res, 'save() returned true because _doBeforeSave() didn\'t return false');
+            assert.ok(!!d.lm.getRunningTransaction(), 'transaction is running');
+            
+        log = [];
+            
+            t.success({data: {surname: 'Doe'}}, "ok", 0);
+            assert.deepEqual(log, [['_doAfterSave', false], ['_doOnActual', true]], 
+                'both _doBeforeSave and _doOnActual called on save()');
+                
+        log = [];
+        ret = false;
+
+        res = d.lm.load('someKey');
+        
+            assert.deepEqual(log, [['_doBeforeLoad', 'someKey']], '_doBeforeLoad called on load');
+            assert.deepEqual(res, false, 'load() returned false because _doBeforeLoad() returned false');
+            assert.notOk(!!d.lm.getRunningTransaction(), 'Request isn\'t running');
+        
+        log = [];
+        ret = 23;
+        
+        d.lm.load('someKey');
+            
+            assert.deepEqual(log, [['_doBeforeLoad', 'someKey']], '_doBeforeLoad called on load');
+            assert.deepEqual(t.getRequest().getConstRequest().getUri(), 'dummy.php?action=load&id=23',
+                'Load transaction has altered key');
+
+        log = [];
+        t.success({data: {id: 23, name: 'Jane', surname: 'Doe'}}, "ok", 0);
+            
+            assert.deepEqual(log, [['_doAfterLoad'], ['_doOnActual', false]],
+                '_doAfterLoad and _doOnActual called after load');
+
+        
+        log = [];
+        ret = false;
+
+        res = d.lm.delete();
+        
+            assert.deepEqual(log, [['_doBeforeDelete']], '_doBeforeDelete called on delete()');
+            assert.deepEqual(res, false, 'delete() returned false because _doBeforeDelete() returned false');
+            assert.notOk(!!d.lm.getRunningTransaction(), 'Request isn\'t running');
+        
+        log = [];
+        d.lm.delete();
+            
+            assert.deepEqual(log, [['_doBeforeDelete']], '_doBeforeDelete called on delete()');
+            assert.ok(!!d.lm.getRunningTransaction(),
+                'Delete transaction is running');
+
+        log = [];
+        t.success({}, "ok", 0);
+            
+            assert.deepEqual(log, [['_doAfterDelete']],
+                '_doAfterDelete called after successful delete');
+    });
+    
+    
 }) ();

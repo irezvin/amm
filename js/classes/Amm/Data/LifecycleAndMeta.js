@@ -65,9 +65,12 @@ Amm.Data.LifecycleAndMeta.prototype = {
             this.o._old[i] = data[i];
             this.o._data[i] = data[i];
         }
-        if (this.getKey()) this.setState(Amm.Data.STATE_EXISTS);
-            else this.setState(Amm.Data.STATE_NEW);
-        if (!noTrigger) this.o._doOnActual();
+        if (this.getKey()) {
+            this.setState(Amm.Data.STATE_EXISTS);
+            if (!noTrigger) this.o._doOnActual(false);
+        } else {
+            this.setState(Amm.Data.STATE_NEW);
+        }
         this.outHydrate();
         this.endUpdate();
     },
@@ -665,13 +668,14 @@ Amm.Data.LifecycleAndMeta.prototype = {
     
     _hydrateFromTransactionDataAndTrigger: function(forSave, newState, partial) {
         var result = this._runningTransaction.getResult();
+        var wasCreated = (this.o._state === Amm.Data.STATE_NEW);
         this.beginUpdate();
         this.setRemoteErrors({});
         var data = result.getData();
         if (data) this.hydrate(data, partial, true);
         if (newState) this.setState(newState);
         if (forSave) {
-            this._o._doAfterSave();
+            this._o._doAfterSave(wasCreated);
         } else {
             this._o._doAfterLoad();
         }
@@ -786,7 +790,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
             this.setState(Amm.Data.STATE_DELETED);
             return true;
         }
-        if (this._o._doBeforeDelete() === false) return;
+        if (this._o._doBeforeDelete() === false) return false;
         key = this.getKey();
         tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_DELETE, this.getKey());
         this._runTransaction(tr);
@@ -794,7 +798,9 @@ Amm.Data.LifecycleAndMeta.prototype = {
     },
     
     load: function(key) {
-        if (this._o._doBeforeLoad(key) === false) return false;
+        var newKey = this._o._doBeforeLoad(key);
+        if (newKey === false) return false;
+        if (newKey !== undefined) key = newKey;
         if (key === undefined) key = this.getKey();
         if (!key) throw new Error ("Cannot load(): key not provided");
         var tr;

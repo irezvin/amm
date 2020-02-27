@@ -108,9 +108,11 @@ Amm.Data.Object.prototype = {
     _doOnActual: function(forSave) {
     },
     
-    _doOnCreate: function() {
-    },
-    
+    /**
+     * possible return values: 
+     * - FALSE to abort loading; 
+     * - any other value than undefined will replace the key that will be used to load record
+     */
     _doBeforeLoad: function(keyArg) {
     },
     
