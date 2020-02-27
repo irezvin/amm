@@ -596,13 +596,13 @@
                 time: 0, 
                 fn: function() {        
                     o.lm.load(10);
-                    assert.ok(!!o.lm.getRunningTransaction(), 'Transaction is running');
+                    assert.ok(!!o.lm.getTransaction(), 'Transaction is running');
                 }
             },
             {
                 time: 11, 
                 fn: function() {
-                    assert.notOk(!!o.lm.getRunningTransaction(), 'Transaction is not running');
+                    assert.notOk(!!o.lm.getTransaction(), 'Transaction is not running');
                     assert.deepEqual(o.lm.getState(), Amm.Data.STATE_EXISTS, 'After load, state is STATE_EXISTS');
                     assert.deepEqual(o.lm.getData(), data, 'Data is same as returned');
                 }
@@ -730,7 +730,7 @@
                     
                         assert.ok(opRes, 'save() returned true');
                         assert.ok(d.lm.getChecked(), 'object became checked on save');
-                        assert.ok(!!d.lm.getRunningTransaction(), 'Transaction is running');
+                        assert.ok(!!d.lm.getTransaction(), 'Transaction is running');
                         assert.ok(currentRequest, 'request was issued');
                         assert.ok(currentRequest.getConstRequest().getMethod(), 'POST', 'method is post');
                         assert.deepEqual(currentRequest.getConstRequest().getUri(), 'dummy.php?action=create' ,
@@ -744,7 +744,7 @@
             {
                 time: 11, 
                 fn: function() {
-                        assert.notOk(!!d.lm.getRunningTransaction(), 'Transaction is not running');
+                        assert.notOk(!!d.lm.getTransaction(), 'Transaction is not running');
                         assert.deepEqual(d.lm.getState(), Amm.Data.STATE_EXISTS, 'After save, state is STATE_EXISTS');
                         assert.deepEqual(d.id, 10, 'After save, key field was set');
                         assert.deepEqual(d.lm.getData(), {
@@ -784,7 +784,7 @@
                 time: 11,
                 fn: function() {
                     
-                        assert.notOk(!!d.lm.getRunningTransaction(), 'transaction is finished');
+                        assert.notOk(!!d.lm.getTransaction(), 'transaction is finished');
                         assert.deepEqual(tfLog.length, 1, 'Transaction was failed');
                         assert.deepEqual(d.lm.getRemoteErrors(), {
                             'surname': ['surname is required']
@@ -802,7 +802,7 @@
                     
                     d.lm.save();
                     
-                        assert.ok(!!d.lm.getRunningTransaction(), 'Transaction is running again');
+                        assert.ok(!!d.lm.getTransaction(), 'Transaction is running again');
                     
                 },
             },
@@ -810,7 +810,7 @@
                 time: 11,
                 fn: function() {
 
-                        assert.notOk(!!d.lm.getRunningTransaction(), 'transaction is finished');
+                        assert.notOk(!!d.lm.getTransaction(), 'transaction is finished');
                         assert.deepEqual(tfLog.length, 0, 'Transaction was not failed');
                         assert.deepEqual(d.lm.getRemoteErrors(), {}, 'no remote errors');
                         assert.deepEqual(d.lm.getData(), {
@@ -879,7 +879,7 @@
                     opRes = d.lm.delete();
                     
                         assert.ok(opRes, 'delete() returned true');
-                        assert.ok(!!d.lm.getRunningTransaction(), 'Transaction is running');
+                        assert.ok(!!d.lm.getTransaction(), 'Transaction is running');
                         assert.ok(currentRequest, 'request was issued');
                         assert.ok(currentRequest.getConstRequest().getMethod(), 'POST', 'method is post');
                         assert.deepEqual(currentRequest.getConstRequest().getUri(), 'dummy.php?action=delete&id=10' ,
@@ -889,7 +889,7 @@
             {
                 time: 11, 
                 fn: function() {
-                        assert.notOk(!!d.lm.getRunningTransaction(), 'Transaction is not running');
+                        assert.notOk(!!d.lm.getTransaction(), 'Transaction is not running');
                         assert.deepEqual(d.lm.getState(), Amm.Data.STATE_EXISTS, 'State is still STATE_EXISTS');
                         assert.deepEqual(d.lm.getRemoteErrors(), {
                             'ERROR_GENERIC': ['Cannot delete object']
@@ -902,7 +902,7 @@
                     
                     d.lm.delete();
                     
-                    assert.ok(!!d.lm.getRunningTransaction(), 'Transaction is running again');
+                    assert.ok(!!d.lm.getTransaction(), 'Transaction is running again');
                     
                 },
             },
@@ -910,7 +910,7 @@
                 time: 11,
                 fn: function() {
 
-                        assert.notOk(!!d.lm.getRunningTransaction(), 'transaction is finished');
+                        assert.notOk(!!d.lm.getTransaction(), 'transaction is finished');
                         assert.deepEqual(tfLog.length, 0, 'Transaction was not failed');
                         assert.deepEqual(d.lm.getRemoteErrors(), {}, 'no remote errors');
                         assert.deepEqual(d.lm.getState(), Amm.Data.STATE_DELETED, 'State is now STATE_DELETED');
@@ -992,7 +992,7 @@
         
             assert.deepEqual(log, [['_doBeforeSave']], '_doBeforeSave called on save()');
             assert.notOk(res, 'save() returned false because _doBeforeSave() returned false');
-            assert.notOk(!!d.lm.getRunningTransaction(), 'Transaction is not running');
+            assert.notOk(!!d.lm.getTransaction(), 'Transaction is not running');
 
         log = [];
         ret = undefined;
@@ -1000,7 +1000,7 @@
         
             assert.deepEqual(log, [['_doBeforeSave']], '_doBeforeSave called on save()');
             assert.notOk(res, 'save() returned true because _doBeforeSave() didn\'t return false');
-            assert.ok(!!d.lm.getRunningTransaction(), 'transaction is running');
+            assert.ok(!!d.lm.getTransaction(), 'transaction is running');
             
         log = [];
             
@@ -1015,7 +1015,7 @@
         
             assert.deepEqual(log, [['_doBeforeLoad', 'someKey']], '_doBeforeLoad called on load');
             assert.deepEqual(res, false, 'load() returned false because _doBeforeLoad() returned false');
-            assert.notOk(!!d.lm.getRunningTransaction(), 'Request isn\'t running');
+            assert.notOk(!!d.lm.getTransaction(), 'Request isn\'t running');
         
         log = [];
         ret = 23;
@@ -1040,13 +1040,13 @@
         
             assert.deepEqual(log, [['_doBeforeDelete']], '_doBeforeDelete called on delete()');
             assert.deepEqual(res, false, 'delete() returned false because _doBeforeDelete() returned false');
-            assert.notOk(!!d.lm.getRunningTransaction(), 'Request isn\'t running');
+            assert.notOk(!!d.lm.getTransaction(), 'Request isn\'t running');
         
         log = [];
         d.lm.delete();
             
             assert.deepEqual(log, [['_doBeforeDelete']], '_doBeforeDelete called on delete()');
-            assert.ok(!!d.lm.getRunningTransaction(),
+            assert.ok(!!d.lm.getTransaction(),
                 'Delete transaction is running');
 
         log = [];

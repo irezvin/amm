@@ -25,7 +25,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
     
     _modified: null,
     
-    _runningTransaction: null,
+    _transaction: null,
 
     _lastTransaction: null,
     
@@ -598,48 +598,48 @@ Amm.Data.LifecycleAndMeta.prototype = {
         console.warn("setErrors has no effect; use either setLocalErrors() or setRemoteErrors()");
     },
 
-    _setRunningTransaction: function(runningTransaction) {
-        if (runningTransaction) Amm.is(runningTransaction, 'Amm.Data.Transaction');
-        else runningTransaction = null;
+    _setTransaction: function(transaction) {
+        if (transaction) Amm.is(transaction, 'Amm.Data.Transaction');
+        else transaction = null;
         
-        var oldRunningTransaction = this._runningTransaction;
-        if (oldRunningTransaction === runningTransaction) return;
+        var oldTransaction = this._transaction;
+        if (oldTransaction === transaction) return;
         
-        if (oldRunningTransaction) oldRunningTransaction.unsubscribe(undefined, undefined, this);
-        if (runningTransaction) runningTransaction.subscribe('stateChange', this._notifyRunningTransactionStateChange, this);
+        if (oldTransaction) oldTransaction.unsubscribe(undefined, undefined, this);
+        if (transaction) transaction.subscribe('stateChange', this._notifyTransactionStateChange, this);
         
-        this._runningTransaction = runningTransaction;
+        this._transaction = transaction;
 
-        this.outRunningTransactionChange(runningTransaction, oldRunningTransaction);
-        if (oldRunningTransaction) this._setLastTransaction(oldRunningTransaction);
+        this.outTransactionChange(transaction, oldTransaction);
+        if (oldTransaction) this._setLastTransaction(oldTransaction);
         
         return true;
     },
 
-    getRunningTransaction: function() { return this._runningTransaction; },
+    getTransaction: function() { return this._transaction; },
 
-    outRunningTransactionChange: function(runningTransaction, oldRunningTransaction) {
-        this._out('runningTransactionChange', runningTransaction, oldRunningTransaction);
+    outTransactionChange: function(transaction, oldTransaction) {
+        this._out('transactionChange', transaction, oldTransaction);
     },
     
-    _notifyRunningTransactionStateChange: function(state, oldState) {
+    _notifyTransactionStateChange: function(state, oldState) {
         // ignore if we don't track this transaction anymore
-        if (!this._runningTransaction || Amm.event.origin !== this._runningTransaction) return;
+        if (!this._transaction || Amm.event.origin !== this._transaction) return;
         if (state === Amm.Data.Transaction.STATE_RUNNING) {
             // don't handle transaction start event
             return;
         }
         if (state === Amm.Data.Transaction.STATE_CANCELLED) { // business as usual
-            this._setRunningTransaction(null);
+            this._setTransaction(null);
             return;
         }
         
-        if (this._handleRunningTransactionFinished(state)) {
-            this._setRunningTransaction(null);
+        if (this._handleTransactionFinished(state)) {
+            this._setTransaction(null);
         }
     },
     
-    _handleRunningTransactionFinished: function(state) {
+    _handleTransactionFinished: function(state) {
         
         if (state === Amm.Data.Transaction.STATE_CANCELLED) return true;
         
@@ -654,7 +654,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
         
         if (!success) return;
         
-        var type = this._runningTransaction.getType() + '';
+        var type = this._transaction.getType() + '';
         
         var method = '_handle' + type[0].toUpperCase() + type.slice(1) + 'Success';
         
@@ -667,7 +667,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
     },
     
     _hydrateFromTransactionDataAndTrigger: function(forSave, newState, partial) {
-        var result = this._runningTransaction.getResult();
+        var result = this._transaction.getResult();
         var wasCreated = (this.o._state === Amm.Data.STATE_NEW);
         this.beginUpdate();
         this.setRemoteErrors({});
@@ -684,7 +684,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
     },
     
     _handleGenericTransactionFailure: function() {
-        var result = this._runningTransaction.getResult();
+        var result = this._transaction.getResult();
         var remoteErrors = result.getErrorData(), tmp, 
                 error = result.getError(), exception = result.getException();
         if (!remoteErrors) remoteErrors = {};
@@ -712,7 +712,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
         
         this.setRemoteErrors(remoteErrors);
         
-        this.outTransactionFailure (this._runningTransaction);
+        this.outTransactionFailure (this._transaction);
     },
     
     outTransactionFailure: function(transaction) {
@@ -761,7 +761,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
     },
     
     _runTransaction: function(transaction) {
-        this._setRunningTransaction(transaction);
+        this._setTransaction(transaction);
         transaction.run();
         if (transaction.getState() === Amm.Data.Transaction.STATE_FAILURE) {
             var x = transaction.getResult().getException();
