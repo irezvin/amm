@@ -3,6 +3,7 @@
 Amm.Data.LifecycleAndMeta = function(object) {
     this._o = object;
     this._mapper = object._mapper;
+    this._mapper.subscribe('metaChange', this._handleMapperMetaChange, this);
     Object.defineProperty(this, 'o', {value: object, writable: false});
     Amm.WithEvents.call(this);
 };
@@ -32,6 +33,8 @@ Amm.Data.LifecycleAndMeta.prototype = {
     _oldState: null,
     
     _checked: false,
+    
+    _cu: false,
     
     /**
      * Means doOnCheck will occur every time when get*Errors() or, when anything is subscribed
@@ -150,16 +153,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
         var propName = this.o._propNames[field];
         var outName = 'out' + propName.charAt(0).toUpperCase() + propName.slice(1) + 'Change';
         
-        if (this._autoCheck === Amm.Data.AUTO_CHECK_SMART && (val || oldVal)) {
-            this._beginUpdateErrors();
-            this.setChecked(false);
-            this._coreCheckFields(field);
-            this._endUpdateErrors();
-        } else if (this._autoCheck === Amm.Data.AUTO_CHECK_ALWAYS) {
-            this._instaCheck(true);
-        } else {
-            this.setChecked(false);
-        }
+        this._correctCheckStatus(field, val || oldVal);
         
         this.o[outName](val, oldVal);
         if (!dontReportModified) {
@@ -307,7 +301,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
     
     _coreCheckFields: function(field) {
         // check individual fields first
-        var fieldValidators = this._mapper.getFieldValidators();
+        var fieldValidators = this._mapper.getFieldValidators(true);
         var hasFieldCheckFn = this._o._checkField !== Amm.Data.Object.prototype._checkField;
         // everything a-ok
         if (!hasFieldCheckFn && !(fieldValidators && (!field || fieldValidators[field]))) return; 
@@ -332,14 +326,16 @@ Amm.Data.LifecycleAndMeta.prototype = {
             if (!fieldValidators || !(i in fieldValidators)) continue;
             validators = fieldValidators[i];
             if (!(validators instanceof Array)) validators = [validators];
+            var label = this._mapper.getMeta(i, 'label') || i;
             for (var j = 0, l = validators.length; j < l; j++) {
                 if (typeof validators[j] === 'function') {
-                    err = validators[j](v, i);
+                    err = validators[j](v, label);
                 }
                 else if (typeof validators[j].getError === 'function') {
-                    err = validators[j].getError(v, i);
+                    err = validators[j].getError(v, label);
                 }
                 if (err) {
+                    err = err.replace(/%field/g, label);
                     // we stop on first error
                     this.addError(err, i);
                     break;
@@ -431,6 +427,19 @@ Amm.Data.LifecycleAndMeta.prototype = {
         if (this._modified || this.getState() !== Amm.Data.STATE_EXISTS) return;
         if (resetErrors) this.setLocalErrors({});
         return true;
+    },
+    
+    _correctCheckStatus: function(field, hasValue) {
+        if (this._autoCheck === Amm.Data.AUTO_CHECK_SMART && hasValue) {
+            this._beginUpdateErrors();
+            this.setChecked(false);
+            this._coreCheckFields(field);
+            this._endUpdateErrors();
+        } else if (this._autoCheck === Amm.Data.AUTO_CHECK_ALWAYS) {
+            this._instaCheck(true);
+        } else {
+            this.setChecked(false);
+        }
     },
     
     _instaCheck: function(recheck) {
@@ -808,7 +817,36 @@ Amm.Data.LifecycleAndMeta.prototype = {
         this._runTransaction(tr);
         return true;
     },
-
+    
+    _handleMapperMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
+        // we know _that_ meta-property isn't validation-related
+        if (property 
+            && property !== 'required'      // requiredness affects validation
+            && property !== 'label'         // label may affect error messages
+            && property !== 'validators'    // validators affect validation
+        ) return;
+        var hasValue = field && this._o._data[field] || this._o._old[field];
+        var shouldCheck = hasValue || property === 'required' && !value;
+        this._correctCheckStatus(field, shouldCheck);
+    },
+    
+    cleanup: function() {
+        if (this._cu) return;
+        this._cu = true;
+        if (this._transaction) {
+            this._transaction.cleanup();
+            this._transaction = null;
+        }
+        if (this._lastTransaction) {
+            this._lastTransaction.cleanup();
+            this._lastTransaction = null;
+        }
+        if (this._mapper) this._mapper.unsubscribe(undefined, undefined, this);
+        this._o.cleanup();
+        Amm.WithEvents.prototype.cleanup.call(this);
+    }
+    
+    
 };
 
 Amm.extend(Amm.Data.LifecycleAndMeta, Amm.WithEvents);

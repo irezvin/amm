@@ -512,7 +512,23 @@ Amm = {
         else if (throwIfNotFound) throw Error("No setter for property: `" + property + "`");
         return res;
     },
-    
+
+    /**
+     * 
+     * onChange may be either function or {before: function, after: function}.
+     * 
+     * when before handler returns non-undefined result, it will be used insetad
+     * of value.
+     * 
+     * when no before handler is provided, onChange will be ran assigning internal value.
+     * 
+     * @param {type} target
+     * @param {type} propName
+     * @param {type} defaultValue
+     * @param {null|function|object} onChange
+     * @param {type} defineProperty
+     * @returns {undefined}
+     */
     createProperty: function(target, propName, defaultValue, onChange, defineProperty) {
         
         if (!target || typeof target !== 'object') 
@@ -527,20 +543,29 @@ Amm = {
             outName = 'out' + u + 'Change',
             eventName = l + 'Change',
             memberName = '_' + l;
-        
+
         if (!(memberName in target)) target[memberName] = defaultValue;
         if (!(getterName in target)) {
             target[getterName] = function() { 
                 return this[memberName]; 
             };
         }
+        
+        var beforeChange = onChange? onChange.before : null;
+        var afterChange = onChange? onChange.after || onChange : null;
+        if (typeof afterChange !== 'function') afterChange = null;
+        
         if (!(setterName in target)) {
             target[setterName] = function(value) { 
-                var old = this[memberName];
+                var old = this[memberName], ret;
+                if (beforeChange) {
+                    ret = beforeChange.call(this, value, old, propName);
+                    if (ret !== undefined) value = ret;
+                }
                 if (old === value) return;
                 this[memberName] = value;
-                if (onChange) {
-                    onChange.call(this, value, old, memberName);
+                if (afterChange) {
+                    afterChange.call(this, value, old, propName);
                     if (this[memberName] !== old) {
                         this[outName](this[memberName], old);
                     }
@@ -550,9 +575,11 @@ Amm = {
                 return true;
             };
         }
-        if (!(outName in target)) {
+        if (outName && !(outName in target)) {
             target[outName] = function(value, oldValue) {
-                this._out(eventName, value, oldValue);
+                if (typeof this._out === 'function') {
+                    this._out(eventName, value, oldValue);
+                }
             };
         }
         if (defineProperty) {

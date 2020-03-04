@@ -22,9 +22,7 @@ Amm.Data.Object = function(options) {
     options = Amm.override(this._mapper.getObjectPrototype(), options);
     delete options.__mapper;
     if (options.lm && typeof options.lm === 'object') {
-        var lmHandlers = this._extractOnHandlers(options.lm);
-        if (lmHandlers) this.lm._initOnHandlers(lmHandlers);
-        delete options.lm;
+        Amm.init(this.lm, options.lm);
     }
     // all options except "on__" and functions are considered properties
     Amm.WithEvents.call(this, options, true);
@@ -72,6 +70,12 @@ Amm.Data.Object.prototype = {
      * @type Amm.Data.LifecycleAndMeta
      */
     _lm: null,
+    
+    /**
+     * Whether cleanup in progress
+     * @type bool
+     */
+    _cu: false,
     
     _state: Amm.Data.STATE_NEW,
     
@@ -144,6 +148,15 @@ Amm.Data.Object.prototype = {
         // AFTER the event handlers are attached
         
         if (eventName.match(/Change$/)) return true;
+    },
+    
+    cleanup: function() {
+        if (this._cu) return;
+        this._cu = true;
+        this.lm.cleanup();
+        this._data = {};
+        this._old = {};
+        Amm.WithEvents.prototype.cleanup.call(this);
     }
     
 };

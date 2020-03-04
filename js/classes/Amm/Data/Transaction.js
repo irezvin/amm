@@ -246,6 +246,11 @@ Amm.Data.Transaction.prototype = {
      */
     outParseResponse: function(unparsedResponse, tr) {
         return this._out(unparsedResponse, tr);
+    },
+    
+    cleanup: function() {
+        if (this._state === Amm.Data.Transaction.STATE_RUNNING) this.cancel();
+        Amm.WithEvents.prototype.cleanup.call(this);
     }
     
 };

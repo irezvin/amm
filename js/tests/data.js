@@ -1056,5 +1056,152 @@
                 '_doAfterDelete called after successful delete');
     });
     
+    QUnit.test("Data.Meta", function(assert) {
+        
+        var log = [];
+        var mLog = [];
+        
+        var mapper = new Amm.Data.Mapper({
+            on__metaChange: function(meta, oldMeta, field, property, value, oldValue) {
+                var args = Array.prototype.slice.apply(arguments);
+                
+                // first two arguments are always the same, so we skip them
+                args.shift();
+                args.shift();
+                for (var i = 0; i < args.length; i++) {
+                    var c = Amm.getClass(args[i]);
+                    if (c) {
+                        args[i] = c;
+                    }
+                }
+                mLog.push(args);
+                //console.log.apply(console, args);
+            }
+        });
+        
+        var meta = new Amm.Data.Meta();
+        
+        meta._notify = function(value, oldValue, name) {
+            log.push([name, value, oldValue]);
+            Amm.Data.Meta.prototype._notify.apply(this, Array.prototype.slice.apply(arguments));
+        };
+        
+        mapper.setMeta(meta, 'theProp');
+        
+        assert.deepEqual(mLog, [['theProp', undefined, Amm.getClass(meta), undefined]], 
+            'Mapper triggered event when meta-field was added');
+        
+        log = [];
+        mLog = [];
+        
+        meta.setProperty('xxx', 'foo');
+        
+            assert.ok('foo' in meta, 'meta-property created');
+            assert.deepEqual(meta.foo, 'xxx', 'meta-property returns the value');
+            
+            assert.deepEqual(log, [['foo', 'xxx', undefined]], 
+                'meta-property triggered change notification');
+                
+            assert.deepEqual(mLog, [['theProp', 'foo', 'xxx', undefined]], 
+                'meta-property change event raised by the mapper');
+        
+        log = [];
+        mLog = [];
+        
+            meta.foo = 'yyy';
+            assert.deepEqual(log, [['foo', 'yyy', 'xxx']], 
+                'meta-property change notification');
+            assert.deepEqual(mLog, [['theProp', 'foo', 'yyy', 'xxx']],
+                'meta-property change event raised by the mapper');
+            
+        log = [];
+        mLog = [];
+        
+            mapper.setMeta('The Label', 'theProp', 'label');
+            
+            assert.deepEqual(log, [['label', 'The Label', null]],
+                'meta-property change notification');
+            assert.deepEqual(mLog, [['theProp', 'label', 'The Label', null]],
+                'meta-property change event raised by the mapper');
+
+            assert.ok(mapper.getMeta().theProp === meta,
+                'mapper.getMeta() returns all meta-fields');
+        
+            assert.ok(mapper.getMeta('theProp') === meta,
+                'mapper.getMeta(field) returns meta-field');
+                
+            assert.deepEqual(mapper.getMeta('theProp', 'label'), 'The Label',
+                'mapper.getMeta(field, property) returns meta-property value');
+                
+            assert.deepEqual(mapper.getMeta('theProp', '<no such meta-prop>'), undefined,
+                'mapper.getMeta returns undefined for non-existent meta-property');
+            
+            assert.deepEqual(mapper.getMeta('<no such prop>'), undefined,
+                'mapper.getMeta returns undefined for non-existent meta-field');
+                
+        mapper.setFieldValidators({
+            email: function(v) { 
+                if (v && !v.match(/@/)) return "%field must be a valid e-mail"; 
+            }
+        });
+                
+        mapper.setMeta({
+            name: {
+                label: 'Name',
+                required: true
+            },
+            age: {
+                label: 'Age',
+                required: true,
+                validators: [
+                    {
+                        'class': 'Amm.Validator.Number',
+                        ge: 0
+                    }
+                ]
+            },
+            email: {
+                label: 'E-mail',
+                required: true,
+            }
+        });
+        
+        var o = new Amm.Data.Object({
+            __mapper: mapper, name: '', age: '', email: '',
+            lm: { autoCheck: Amm.Data.AUTO_CHECK_SMART }
+        });
+        
+        d.m = mapper;
+        d.o = o;
+        o.lm.check();
+        assert.deepEqual(o.lm.getErrors(), {
+            name: ['Name is required'],
+            age: ['Age is required'],
+            email: ['E-mail is required']
+        }, 'Empty required fields produce errors');
+        
+        mapper.setMeta(false, 'email', 'required');
+        
+        assert.deepEqual(o.lm.getErrors(), {
+            name: ['Name is required'],
+            age: ['Age is required'],
+        }, 'Field required meta-property set to false => error disappeared');
+        
+        o.age = -1;
+        o.email = 'zz';
+        o.name = 'Foo';
+        
+        assert.deepEqual(o.lm.getErrors(), {
+            age: ['Age must not be less than 0'],
+            email: ['E-mail must be a valid e-mail']
+        }, 'Validation works');
+        
+        mapper.setMeta('The Age', 'age', 'label');
+        
+        assert.deepEqual(o.lm.getErrors('age'), ['The Age must not be less than 0'],
+            'Label changed -> object re-validated and error message updated');
+        
+    });
+    
     
 }) ();

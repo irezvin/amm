@@ -1,6 +1,9 @@
 /* global Amm */
 
 Amm.Data.Mapper = function(options) {
+    this._meta = {};
+    // set it first so setMeta() will instantiate objects with proper classes
+    if (options && 'metaClass' in options) this.metaClass = options.metaClass; 
     Amm.WithEvents.call(this, options);
 };
 
@@ -53,6 +56,8 @@ Amm.Data.Mapper.prototype = {
     
     _uri: null,
     
+    _meta: null,
+    
     requireLoadDataNotEmpty: true,
     
     requireLoadDataHasKey: true,
@@ -62,6 +67,12 @@ Amm.Data.Mapper.prototype = {
     partialHydrateOnCreate: true,
     
     partialHydrateOnUpdate: true,
+    
+    metaClass: 'Amm.Data.Meta',
+    
+    requiredValidatorPrototype: null,
+    
+    _requiredValidator: null,
     
     setId: function(id) {
         if (typeof id !== 'string' || !id) throw Error("`id` must be a non-empty string");
@@ -137,13 +148,28 @@ Amm.Data.Mapper.prototype = {
             throw Error("fieldValidators must be an object or null");
         }
         this._allFieldValidators = null;
-        this._fieldValidators = this._checkValidatorsHash(fieldValidators, 'fieldValidators');
+        this._fieldValidators = Amm.Data.Mapper.checkValidatorsHash(fieldValidators, 'fieldValidators');
         return true;
     },
     
     _combineFieldValidators: function() {
-        // TODO: combine with metadata
-        this._allFieldValidators = this._fieldValidators || {};
+        this._allFieldValidators = {};
+        var i, val;
+        for (i in this._fieldValidators) if (this._fieldValidators.hasOwnProperty(i)) {
+            val = [].concat(this._fieldValidators[i]);
+            if (i in this._meta) {
+                // when field is marked as required,
+                // required validator is added before other validators 
+                if (this._meta[i].required) val.unshift(this.getRequiredValidator());
+                val = val.concat(this._meta[i].getValidators());
+            }
+            this._allFieldValidators[i] = val;
+        }
+        for (i in this._meta) if (this._meta.hasOwnProperty(i) && !(i in this._fieldValidators)) {
+            val = this._meta[i].getValidators();
+            if (this._meta[i].required) val.unshift(this.getRequiredValidator());
+            if (val.length) this._allFieldValidators[i] = val;
+        }
     },
 
     getFieldValidators: function(includeMeta) { 
@@ -152,38 +178,6 @@ Amm.Data.Mapper.prototype = {
         return this._allFieldValidators;
     },
     
-    _checkValidatorsHash: function(validators, name) {
-        if (!validators) return {};
-        var res = {}, validatorsArray;
-        for (var i in validators) if (validators.hasOwnProperty(i)) {
-            validatorsArray = validators[i];
-            if (!validatorsArray) continue;
-            if (!(validatorsArray instanceof Array)) validatorsArray = [validatorsArray];
-            if (!validatorsArray.length) continue;
-            res[i] = this._checkValidatorsArray(validatorsArray, name + "['" + i + "']");
-        }
-        return res;
-    },
-    
-    _checkValidatorsArray: function(validators, name) {
-        var res = [], i, l = validators.length;
-        for (i = 0; i < l; i++) {
-            var v = validators[i];
-            if (typeof v === 'function') {
-            } else if (typeof v === 'string') {
-                if (Amm.getFunction(v, true)) v = Amm.constructInstance(v, 'Amm.Validator');
-                else v = new Amm.Expression(v);
-            } else if (v && (typeof v === 'object')) {
-                if (v.class) v = Amm.constructInstance(v);
-                Amm.meetsRequirements(v, ['Amm.Expression', 'Amm.Validator'], name + '[' + i + ']');
-            } else {
-                throw new Error("name[" + i + "] must be a function, a string or a non-null object");
-            }
-            res.push(v);
-        }
-        return res;
-    },
-
     setCommonValidators: function(commonValidators) {
         if (typeof commonValidators !== 'object') {
             throw Error("commonValidators must be an object or null");
@@ -273,6 +267,143 @@ Amm.Data.Mapper.prototype = {
         transaction.unsubscribe('validateResult', this._validateTransactionResult, this);
     },
     
+    _metaUpdating: 0,
+    _metaChanged: false,
+    
+    beginUpdateMeta: function() {
+        this._metaUpdating++;
+    },
+    
+    endUpdateMeta: function() {
+        if (!this._metaUpdating) throw Error("Cannot call endUpdateMeta() without prior call to beginUpdateMeta()");
+        this._metaUpdating--;
+        if (!this._metaUpdating && this._metaChanged) {
+            this._metaChanged = false;
+            this.outMetaChange(this._meta);
+        }
+    },
+    
+    _createMetas: function(defs, noAssign) {
+        var res = {}, i;
+        for (i in defs) if (defs.hasOwnProperty(i)) {
+            res[i] = this._createMeta(defs[i], i, true);
+        }
+        if (noAssign) return res;
+        this.beginUpdateMeta();
+        this._meta = {};
+        for (i in res) if (res.hasOwnProperty(i)) {
+            this._assignMeta(res[i], i);
+        }
+        this.endUpdateMeta();
+        return res;
+    },
+    
+    _createMeta: function(definition, name, noAssign) {
+        var def = {};
+        if (name !== undefined) def.name = name;
+        def.mapper = this;
+        var res = Amm.constructInstance(definition, this.metaClass, def, true);
+        name = res.getName();
+        if (!noAssign && name) this._assignMeta(res, name);
+        return res;
+    },
+    
+    _assignMeta: function(meta, field) {
+        var old = this._meta[field];
+        if (old === meta) return;
+        delete this._meta[field];
+        if (old) old.setMapper(null); 
+        this._meta[field] = meta;
+        this.outMetaChange(this._meta, {}, field, undefined, meta, old);
+    },
+    
+    setMeta: function(meta, field, property) {
+        // form1: setMeta(meta) -- replace everything
+        if (!field) {
+            this._createMetas(meta);
+            return true;
+        }
+        if (!property) {
+            this._createMeta(meta, field);
+            return true;
+        }
+        if (!(field in this._meta)) {
+            throw Error("Cannot set property of non-existent meta '" + field + "'");
+        }
+        this._meta[field].setProperty(meta, property);
+    },
+    
+    getMeta: function(field, property) {
+        if (!field) return Amm.override({}, this._meta);
+        if (!(field in this._meta)) return undefined;
+        if (!property) return this._meta[field];
+        return this._meta[field][property];
+        
+    },
+    
+    notifyMetaChange: function(meta, field, property, value, oldValue) {
+        if (!field || property === 'required' || property === 'validators') {
+            this._allFieldValidators = null;
+        }
+        this.outMetaChange(meta, null, field, property, value, oldValue);
+    },
+    
+    /**
+     * oldMeta argument is for compatibility purposes; 
+     * always ignored and set to null in every call.
+     */
+    outMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
+        if (this._metaUpdating) {
+            this._metaChanged = true;
+            return;
+        }
+        return this._out('metaChange', this._meta, null, field, property, value, oldValue);
+    },
+    
+    getRequiredValidator: function() {
+        if (this._requiredValidator) return this._requiredValidator;
+        var proto = this.requiredValidatorPrototype || Amm.Data.Mapper.requiredValidatorPrototype;
+        this._requiredValidator = Amm.constructInstance(Amm.override({}, proto), 'Amm.Validator');
+        return this._requiredValidator;
+    }
+    
+};
+
+Amm.Data.Mapper.checkValidatorsHash = function(validators, name) {
+    if (!validators) return {};
+    var res = {}, validatorsArray;
+    for (var i in validators) if (validators.hasOwnProperty(i)) {
+        validatorsArray = validators[i];
+        if (!validatorsArray) continue;
+        if (!(validatorsArray instanceof Array)) validatorsArray = [validatorsArray];
+        if (!validatorsArray.length) continue;
+        res[i] = Amm.Data.Mapper.checkValidatorsArray(validatorsArray, name + "['" + i + "']");
+    }
+    return res;
+};
+    
+Amm.Data.Mapper.checkValidatorsArray = function(validators, name) {
+    var res = [], i, l = validators.length;
+    for (i = 0; i < l; i++) {
+        var v = validators[i];
+        if (typeof v === 'function') {
+        } else if (typeof v === 'string') {
+            if (Amm.getFunction(v, true)) v = Amm.constructInstance(v, 'Amm.Validator');
+            else v = new Amm.Expression(v);
+        } else if (v && (typeof v === 'object')) {
+            if (v.class) v = Amm.constructInstance(v);
+            Amm.meetsRequirements(v, ['Amm.Expression', 'Amm.Validator'], name + '[' + i + ']');
+        } else {
+            throw new Error("name[" + i + "] must be a function, a string or a non-null object");
+        }
+        res.push(v);
+    }
+    return res;
+};
+
+
+Amm.Data.Mapper.requiredValidatorPrototype = {
+    'class': 'Amm.Validator.Required'
 };
 
 Amm.extend(Amm.Data.Mapper, Amm.WithEvents);
