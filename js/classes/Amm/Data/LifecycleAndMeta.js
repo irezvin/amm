@@ -1,11 +1,11 @@
 /* global Amm */
 
-Amm.Data.LifecycleAndMeta = function(object) {
+Amm.Data.LifecycleAndMeta = function(object, options) {
     this._o = object;
     this._mapper = object._mapper;
     this._mapper.subscribe('metaChange', this._handleMapperMetaChange, this);
     Object.defineProperty(this, 'o', {value: object, writable: false});
-    Amm.WithEvents.call(this);
+    Amm.WithEvents.call(this, options);
 };
 
 Amm.Data.LifecycleAndMeta.prototype = {

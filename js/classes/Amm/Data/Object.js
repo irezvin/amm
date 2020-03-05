@@ -22,7 +22,8 @@ Amm.Data.Object = function(options) {
     options = Amm.override(this._mapper.getObjectPrototype(), options);
     delete options.__mapper;
     if (options.lm && typeof options.lm === 'object') {
-        Amm.init(this.lm, options.lm);
+        this._lm = new Amm.Data.LifecycleAndMeta(this, options.lm);
+        delete options.lm;
     }
     // all options except "on__" and functions are considered properties
     Amm.WithEvents.call(this, options, true);

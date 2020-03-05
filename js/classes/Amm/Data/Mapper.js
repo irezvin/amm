@@ -182,7 +182,7 @@ Amm.Data.Mapper.prototype = {
         if (typeof commonValidators !== 'object') {
             throw Error("commonValidators must be an object or null");
         }
-        this._commonValidators = this._checkValidatorsHash(commonValidators, 'commonValidators');
+        this._commonValidators = Amm.Data.Mapper.checkValidatorsHash(commonValidators, 'commonValidators');
         return true;
     },
 
