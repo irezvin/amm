@@ -64,6 +64,10 @@ Amm.Trait.Field.prototype = {
 
     _validateMode: Amm.Trait.Field.VALIDATE_CHANGE | Amm.Trait.Field.VALIDATE_EXPRESSIONS,
 
+    _fieldLocalErrors: undefined,
+    
+    _fieldRemoteErrors: undefined,
+    
     _fieldErrors: undefined,
     
     _needValidate: false,
@@ -87,13 +91,13 @@ Amm.Trait.Field.prototype = {
     _lockAnnotationSync: 0,
     
     _fieldTranslator: null,
-    
+        
     _translationErrorState: null,
     
     _fieldSyncWithAnnotations: true,
     
     _fieldInSyncWithAnnotations: false,
-    
+        
     _initValidationExpressions: null,
     
     _validationExpressions: null,
@@ -142,7 +146,7 @@ Amm.Trait.Field.prototype = {
         else if (this._label !== undefined) this.setFieldLabel(this._label);
 
         if (this._fieldErrors !== undefined) this.setError(this._fieldErrors);
-        else if (this._error !== undefined) this.setFieldErrors(this._error);
+        else if (this._error !== undefined) this.setFieldRemoteErrors(this._error);
     },
     
     getFieldSyncsValue: function() {
@@ -164,8 +168,8 @@ Amm.Trait.Field.prototype = {
     
     _handleSelfAnnotationErrorChange: function(error, oldError) {
         if (this._lockAnnotationSync) return;
-        if (this._fieldInSyncWithAnnotations && this._fieldErrors === undefined) {
-            this.setFieldErrors(error);
+        if (this._fieldInSyncWithAnnotations && this._fieldLocalErrors === undefined) {
+            this.setFieldLocalErrors(error);
         }
     },
     
@@ -239,7 +243,7 @@ Amm.Trait.Field.prototype = {
             this._fieldTranslator.field = fieldLabel;
         }
         // re-validate since our error messages will change
-        if (this._fieldErrors) this._revalidate();
+        if (this._fieldLocalErrors) this._revalidate();
         if (this._fieldInSyncWithAnnotations && !this._lockAnnotationSync && this.hasAnnotation('label')) {
             this._lockAnnotationSync++;
             this.setLabel(this._fieldLabel);
@@ -275,11 +279,11 @@ Amm.Trait.Field.prototype = {
     },
     
     /**
-     * Generally, returns boolean (true if valid); sets fieldErrors field
+     * Generally, returns boolean (true if valid); sets fieldLocalErrors field
      * Doesn't call validators or trigger onValidate event if field value is empty.
      * Fields with !getFieldApplied() are always valid
      * 
-     * @param {onlyReturnErrors} boolean Return Array with errors; don't set this.fieldErrors
+     * @param {onlyReturnErrors} boolean Return Array with errors; don't set this.fieldLocalErrors
      * @returns Array|boolean
      */
     validate: function(onlyReturnErrors) {
@@ -288,7 +292,7 @@ Amm.Trait.Field.prototype = {
             return true;
         }
         if (this._translationErrorState) {
-            if (onlyReturnErrors) return this._fieldErrors? [].concat(this._fieldErrors) : [];
+            if (onlyReturnErrors) return this._fieldLocalErrors? [].concat(this._fieldLocalErrors) : [];
             return false;
         }
         var errors = [];
@@ -299,7 +303,7 @@ Amm.Trait.Field.prototype = {
         if (onlyReturnErrors) {
             return errors;
         }
-        this.setFieldErrors(errors);
+        this.setFieldLocalErrors(errors);
         this.setNeedValidate(false);
         return !errors.length;
     },
@@ -366,49 +370,114 @@ Amm.Trait.Field.prototype = {
 
     getValidateMode: function() { return this._validateMode; },
 
-    setFieldErrors: function(fieldErrors, add) {
-        var oldFieldErrors = this._fieldErrors;
+    _setFieldErrorsArray: function(targetProperty, errors, add) {
+        var oldValue = this[targetProperty];
         var sameArrays = false;
-        if (fieldErrors) {
-            if (!(fieldErrors instanceof Array))
-                fieldErrors = [fieldErrors];
-            else if (!fieldErrors.length) fieldErrors = null;
+        if (errors) {
+            if (!(errors instanceof Array))
+                errors = [errors];
+            else if (!errors.length) errors = null;
         } else {
-            if (fieldErrors !== undefined) fieldErrors = null;
+            if (errors !== undefined) errors = null;
         }
-        if (add && this._fieldErrors) {
-            if (!fieldErrors) return; // nothing to add
-            var extra = Amm.Array.diff(fieldErrors, this._fieldErrors);
-            if (!extra.length) return; // nothing to add
-            fieldErrors = [].concat(this._fieldErrors, extra);
+        if (add && this[targetProperty]) {
+            if (!errors) return false; // nothing to add
+            var extra = Amm.Array.diff(errors, this[targetProperty]);
+            if (!extra.length) return false; // nothing to add
+            errors = [].concat(this[targetProperty], extra);
         } else {
-            if (oldFieldErrors instanceof Array && fieldErrors instanceof Array) {
-                if (oldFieldErrors.length === fieldErrors.length 
-                    && !Amm.Array.symmetricDiff(oldFieldErrors, fieldErrors).length
+            if (oldValue instanceof Array && errors instanceof Array) {
+                if (oldValue.length === errors.length 
+                    && !Amm.Array.symmetricDiff(oldValue, errors).length
                 ) sameArrays = true;
             }
         }
-        if (oldFieldErrors === fieldErrors || sameArrays) return;
-        this._fieldErrors = fieldErrors;
-        
-        if (this._fieldInSyncWithAnnotations && !this._lockAnnotationSync && this.hasAnnotation('error')) {
-            this._lockAnnotationSync++;
-            this.setError(fieldErrors);
-            this._lockAnnotationSync--;
-        }
-        
-        this.outFieldErrorsChange(fieldErrors, oldFieldErrors);
-        return true;
+        if (oldValue === errors || sameArrays) return false;
+        this[targetProperty] = errors;
+        return oldValue;
     },
 
+    _updateFieldErrors: function() {
+        var old = this._fieldErrors;
+        this._fieldErrors = [].concat(this.getFieldLocalErrors() || [], this._fieldRemoteErrors || []);
+        this._fieldErrors = Amm.Array.unique(this._fieldErrors);
+        if (!this._fieldErrors.length) this._fieldErrors = null;
+        if (old === this._fieldErrors || (old && this._fieldErrors && Amm.Array.equal(this._fieldErrors, old))) {
+            this._fieldErrors = old;
+            return;
+        }
+        this.outFieldErrorsChange(this._fieldErrors, old);
+        if (!this._fieldInSyncWithAnnotations || this._lockAnnotationSync || !this.hasAnnotation('error')) {
+            return;
+        }
+        this._lockAnnotationSync++;
+        this.setError(this._fieldErrors && this._fieldErrors.length? [].concat(this._fieldErrors) : null);
+        this._lockAnnotationSync--;
+    },
+    
     getFieldErrors: function() {
         if (!this._fieldApplied) return [];
-        if (this._fieldErrors === undefined) this.validate(); 
-        return this._fieldErrors? [].concat(this._fieldErrors) : null;
+        if (!this._fieldErrors) {
+            this._fieldErrors = [].concat(this.getFieldLocalErrors() || [], this._fieldRemoteErrors || []);
+            this._fieldErrors = Amm.Array.unique(this._fieldErrors);
+        }
+        return this._fieldErrors && this._fieldErrors.length? 
+            [].concat(this._fieldErrors) : null;
+    },
+    
+    setFieldErrors: function(fieldErrors, add) {
+        if (!add) this.setFieldRemoteErrors(null);
+        this.setFieldLocalErrors(fieldErrors, add);
+    },
+    
+    outFieldErrorsChange: function(errors, oldErrors) {
+        return this._out('fieldErrorsChange', errors, oldErrors);
+    },
+    
+    setFieldLocalErrors: function(fieldLocalErrors, add) {
+        
+        var oldValue = this._setFieldErrorsArray('_fieldLocalErrors', fieldLocalErrors, add);
+        
+        if (oldValue === false) return;
+      
+        this._updateFieldErrors();
+        
+        this.outFieldLocalErrorsChange(fieldLocalErrors, oldValue);
+        
+        return true;
+    },
+    
+    getFieldLocalErrors: function() {
+        if (!this._fieldApplied) return [];
+        if (this._fieldLocalErrors === undefined) this.validate(); 
+        return this._fieldLocalErrors? [].concat(this._fieldLocalErrors) : null;
     },
 
-    outFieldErrorsChange: function(fieldErrors, oldFieldErrors) {
-        this._out('fieldErrorsChange', fieldErrors, oldFieldErrors);
+    outFieldLocalErrorsChange: function(fieldLocalErrors, oldFieldLocalErrors) {
+        this._out('fieldLocalErrorsChange', fieldLocalErrors, oldFieldLocalErrors);
+    },
+
+    
+    setFieldRemoteErrors: function(fieldRemoteErrors, add) {
+        var oldValue = this._setFieldErrorsArray('_fieldRemoteErrors', fieldRemoteErrors, add);
+        
+        if (oldValue === false) return;
+      
+        this._updateFieldErrors();
+        
+        this.outFieldRemoteErrorsChange(fieldRemoteErrors, oldValue);
+        
+        return true;
+    },
+    
+    getFieldRemoteErrors: function() {
+        if (!this._fieldApplied) return [];
+        if (this._fieldRemoteErrors === undefined) this.validate(); 
+        return this._fieldRemoteErrors? [].concat(this._fieldRemoteErrors) : null;
+    },
+
+    outFieldRemoteErrorsChange: function(fieldRemoteErrors, oldFieldRemoteErrors) {
+        this._out('fieldRemoteErrorsChange', fieldRemoteErrors, oldFieldRemoteErrors);
     },
 
     setFieldApplied: function(fieldApplied) {
@@ -544,13 +613,13 @@ Amm.Trait.Field.prototype = {
     _setInTranslationErrorState: function(fieldValue, error) {
         this._translationErrorState = Amm.Trait.Field.TRANSLATION_ERROR_IN;
         this.setFieldValue(fieldValue);
-        this.setFieldErrors(error, false);
+        this.setFieldLocalErrors(error, false);
     },
     
     _setOutTranslationErrorState: function(value, error) {
         this._translationErrorState = Amm.Trait.Field.TRANSLATION_ERROR_OUT;
         this.setValue(value);
-        this.setFieldErrors(error, false);
+        this.setFieldLocalErrors(error, false);
     },
 
     getFieldValue: function() { return this._fieldValue; },
@@ -560,8 +629,10 @@ Amm.Trait.Field.prototype = {
     },
 
     _handleFieldFocusedChange: function(focused, oldFocused) {
-        if (oldFocused && !focused && this._validateMode & Amm.Trait.Field.VALIDATE_BLUR & this._needValidate)
+        if (oldFocused && this._needValidate && !focused && 
+            this._validateMode & Amm.Trait.Field.VALIDATE_BLUR) {
             this.validate();
+        }
     },
 
     _isFieldEmpty: function(v) {

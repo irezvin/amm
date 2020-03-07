@@ -53,7 +53,7 @@
             assert.equal(e.getFieldEmpty(), true, 'ModelField.fieldRequired w/o value => !!getFieldEmpty()');
 
             assert.deepEqual(e.getFieldErrors(), ['RQ'], 'Required field w/o value => error');
-
+            
             assert.equal(e.getNeedValidate(), false, 'ModelField.getFieldErrors() => !needValidate()');
             
         e.setFieldValue(10);
@@ -212,7 +212,12 @@
             assert.equal(e.getFieldInSyncWithAnnotations(), true, '!!getFieldInSyncWithAnnotations()');
             assert.equal(e.getFieldLabel(), 'TheLabel', 'Initial sync: label');
             assert.equal(e.getFieldRequired(), true, 'Initial sync: required');
-            assert.deepEqual(e.getFieldErrors(), ['XX', 'YY'], 'Initial sync: errors');
+            assert.deepEqual(e.getFieldLocalErrors(), ['TheLabel is required'], 
+                'Initial sync: local errors have validation result');
+            assert.deepEqual(e.getFieldErrors(), ['TheLabel is required', 'XX', 'YY'], 
+                'Initial sync: errors have both local and remote error data');
+            assert.deepEqual(e.getFieldRemoteErrors(), ['XX', 'YY'], 
+                'Initial sync: annotation errors are put to remote errors');
         
         e.setFieldErrors(null);
         e.setFieldRequired(false);
