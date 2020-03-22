@@ -312,6 +312,10 @@
             job: null,
             employeed: false,
             
+            lm: {
+                autoCheck: Amm.Data.AUTO_CHECK_NEVER
+            },
+            
             _checkField: function(field, value) {
                 if (field === 'id' && value == 13) return 'id must not be 13';
             },
@@ -929,8 +933,6 @@
             var aa = args? Array.prototype.slice.apply(args) : [];
             var l = [methodName].concat(aa);
             log.push(l);
-            //console.log.apply(console, l);
-            //console.trace();
             if (ret !== undefined) {
                 var tmp = ret;
                 if (typeof tmp === 'function') return tmp.apply(this, aa);
@@ -1075,7 +1077,6 @@
                     }
                 }
                 mLog.push(args);
-                //console.log.apply(console, args);
             }
         });
         
@@ -1201,6 +1202,239 @@
         assert.deepEqual(o.lm.getErrors('age'), ['The Age must not be less than 0'],
             'Label changed -> object re-validated and error message updated');
         
+    });
+    
+    QUnit.test("Trait.Data", function(assert) {
+        
+        var personMapper = new Amm.Data.Mapper({
+            meta: {
+                name: {
+                    label: 'Name'
+                },
+                email: {
+                    label: 'E-mail',
+                    required: true,
+                    validators: [
+                        function(v) {
+                            if (v && !(v.match(/^[^@]+@.+\.[^\.]+/)))
+                                return "Please enter valid e-mail";
+                        }
+                    ]
+                }
+            }
+        });
+        
+        var productMapper = new Amm.Data.Mapper({
+            meta: {
+                sku: {
+                    label: 'SKU',
+                    required: true
+                },
+                name: {
+                    label: 'Name of Product',
+                    required: true
+                },
+                price: {
+                    label: 'Price',
+                    required: true,
+                    validators: [
+                        new Amm.Validator.Number({
+                            ge: 0,
+                            msgMustBeGe: "There cannot be negative price"
+                        })
+                    ]
+                }
+            }
+        });
+        
+        var person = new Amm.Data.Object({
+            __mapper: personMapper,
+            lm: {
+                autoCheck: Amm.Data.AUTO_CHECK_SMART
+            },
+            name: 'John',
+            email: 'johndoe@example.com'
+        });
+        
+        var product = new Amm.Data.Object({
+            __mapper: productMapper,
+            sku: '010201',
+            name: 'PureGeek Compact 13" Laptop',
+            price: 1099.95,
+        });
+        
+        var cmpModified, nameModified, emailModified, priceModified;
+        
+        var cmp = new Amm.Element({
+            traits: [Amm.Trait.Component, Amm.Trait.Data],
+            dataObject: person, 
+            on__dataModifiedChange: function(m) { cmpModified = m; }
+        });
+        
+        var simpleInputValue, annotatedInputValue, fieldInputValue;
+        
+        var simpleInput = new Amm.Element({
+            id: 'name',
+            traits: [Amm.Trait.Input, Amm.Trait.Data],
+            component: cmp,
+            on__valueChange: function(v) { simpleInputValue = v; },
+            on__dataModifiedChange: function(m) { nameModified = m; }
+        });
+        
+        var annotatedInput = new Amm.Element({
+            id: 'email',
+            traits: [Amm.Trait.Input, Amm.Trait.Annotated, Amm.Trait.Data],
+            component: cmp,
+            on__valueChange: function(v) { annotatedInputValue = v; },
+            on__dataModifiedChange: function(m) { emailModified = m; }
+        });
+        
+        var fieldInput = new Amm.Element({
+            id: 'price',
+            traits: [Amm.Trait.Input, Amm.Trait.Field, Amm.Trait.Annotated, Amm.Trait.Data],
+            component: cmp,
+            validators: [
+                {
+                    'class': Amm.Validator.Number,
+                    msgMustBeLe: "We only sell products below 1M",
+                    le: 1000*1000
+                }
+            ],
+            on__dataValueChange: function(v) { fieldInputValue = v; },
+            on__dataModifiedChange: function(m) { priceModified = m; }
+        });
+        
+            assert.ok(simpleInput.getDataObject() === person,
+                'dataObject was propagated from the component');
+
+            assert.equal(simpleInput.getDataProperty(), 'name',
+                'dataProperty equals to element id');
+
+            assert.ok(simpleInput.getDataHasProperty(),
+                'dataHasProperty (1)');
+
+            assert.ok(annotatedInput.getDataObject() === person,
+                'dataObject was propagated from the component (2)');
+
+            assert.ok(annotatedInput.getDataHasProperty(),
+                'dataHasProperty (2)');
+
+            assert.ok(fieldInput.getDataObject() === person,
+                'dataObject was propagated from the component (3)');
+
+            assert.notOk(fieldInput.getDataHasProperty(),
+                '!dataHasProperty (3)');
+
+            assert.ok(fieldInput.getLocked(),
+                '!dataHasProperty => locked');
+
+            assert.equal(simpleInput.getValue(), 'John',
+                'input field has model value');
+
+            assert.equal(annotatedInput.getValue(), 'johndoe@example.com',
+                'input field has model value');
+
+            assert.equal(annotatedInput.getRequired(), true, 
+                'Required annotation was filled-in from meta');
+
+            assert.equal(annotatedInput.getLabel(), 'E-mail',
+                'Label annotation was filled-in from meta');
+
+            assert.equal(cmp.getDataModified(), false,
+                'Component bound to data object: dataModified is FALSE');
+                
+            assert.equal(simpleInput.getDataModified(), false,
+                'First control: dataModified is FALSE');
+                
+            assert.equal(annotatedInput.getDataModified(), false,
+                'Second control: dataModified is FALSE');
+                
+
+        person.name = 'Ivan';
+        
+            assert.equal(simpleInputValue, 'Ivan',
+                'Object property change => input value was updated');
+                
+            simpleInput.setValue('Lizzy');
+        
+            assert.equal(person.name, 'Lizzy',
+                'Input value change => object property was updated');
+
+            assert.equal(cmpModified, true,
+                'Property change: component bound to data object: dataModified is TRUE');
+
+            assert.equal(nameModified, true,
+                'Property change: First control: dataModified is TRUE');
+                
+            assert.equal(annotatedInput.getDataModified(), false,
+                'Property change: Second control: dataModified is FALSE');
+                
+        annotatedInput.setValue('Qwerty');
+        
+            assert.deepEqual(person.email, 'Qwerty', 
+                'Value from input got to the data property');
+            
+            assert.deepEqual(annotatedInput.getError(), ["Please enter valid e-mail"],
+                'Errors in sync');
+            
+        person.email = 'xx@yy.com';
+        
+            assert.deepEqual(annotatedInput.getError(), null,
+                'Errors in sync (2)');
+            
+        // check what happens when we switch to different object with different metadata
+        
+        cmp.setDataObject(product);
+        
+            assert.ok(simpleInput.getDataObject() === product,
+                'dataObject was propagated from the component');
+
+            assert.ok(simpleInput.getDataHasProperty(),
+                'dataHasProperty (1)');
+                
+            assert.deepEqual(simpleInput.getValue(), product.name,
+                'control value updated after object change');
+
+            assert.ok(annotatedInput.getDataObject() === product,
+                'dataObject was propagated from the component (2)');
+
+            assert.notOk(annotatedInput.getDataHasProperty(),
+                '!dataHasProperty (2)');
+                
+            assert.ok(fieldInput.getDataObject() === product,
+                'dataObject was propagated from the component (3)');
+
+            assert.ok(fieldInput.getDataHasProperty(),
+                'dataHasProperty (3)');
+                
+            assert.notOk(fieldInput.getLocked(),
+                'dataHasProperty => !locked');
+                
+            assert.deepEqual(fieldInput.getFieldValue(), product.price,
+                'control value updated after object change (form)');
+            
+            assert.deepEqual(fieldInput.getDataUpdateMode(), Amm.Trait.Data.UPDATE_VALIDATE,
+                'by default data field is updated on validate');
+                
+            fieldInput.setValue(1000*1000 + 1);
+            
+            assert.deepEqual(product.price, 1099.95,
+                "Value didnt change because form field is invalid");
+                
+            assert.deepEqual(fieldInput.getFieldLocalErrors(), ["We only sell products below 1M"],
+                "Field input error is local");
+            
+            fieldInput.setValue(-1);
+            
+            assert.deepEqual(fieldInput.getFieldLocalErrors(), null,
+                "Field input error is valid");
+                
+            assert.deepEqual(product.price, -1,
+                "Since field has no local errors, object property was updated");
+                
+            assert.deepEqual(fieldInput.getFieldRemoteErrors(), ["There cannot be negative price"],
+                "Field got remote error from the object");
+            
     });
     
     

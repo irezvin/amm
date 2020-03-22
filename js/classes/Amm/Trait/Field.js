@@ -107,9 +107,6 @@ Amm.Trait.Field.prototype = {
     __augment: function(traitInstance, options) {
         
         Amm.Element.regInit(this, '99.Amm.Trait.Field', function() {
-            if (this._fieldName === undefined) {
-                this.subscribe('idChange', this._handleFormElementIdChange, this);
-            }
             this._fieldSyncsValue = !!Amm.detectProperty(this, 'value');
             if (this._fieldSyncsValue) this.subscribe('valueChange', this._handleFormExtValueChange, this);
             if (Amm.detectProperty(this, 'focused')) {
@@ -187,6 +184,7 @@ Amm.Trait.Field.prototype = {
             if (idxNew < 0) form.fields.accept(this);
         }
         this._form = form;
+        this._callOwnMethods('_setForm_', this._form, oldForm);
         this.outFormChange(form, oldForm);
         return true;
     },
@@ -200,8 +198,6 @@ Amm.Trait.Field.prototype = {
     setFieldName: function(fieldName) {
         var oldFieldName = this._fieldName;
         if (oldFieldName === fieldName) return;
-        if (fieldName === undefined) this.subscribe('idChange', this._handleFormElementIdChange, this);
-        else if (this._fieldName === undefined) this.unsubscribe('idChange', this._handleFormElementIdChange, this);
         this._fieldName = fieldName;
         this.outFieldNameChange(fieldName, oldFieldName);
         return true;
@@ -212,11 +208,12 @@ Amm.Trait.Field.prototype = {
         return this._fieldName; 
     },
     
-    _handleElementIdChange: function(id, oldId) {
+    _setId_Field: function(id, oldId) {
         if (this._fieldName === undefined) this.outFieldNameChange(id, oldId);
     },
     
     outFieldNameChange: function(name, oldName) {
+        this._callOwnMethods('_fieldNameChange_', name, oldName);
         this._out('fieldNameChange', name, oldName);
     },
 
@@ -305,7 +302,12 @@ Amm.Trait.Field.prototype = {
         }
         this.setFieldLocalErrors(errors);
         this.setNeedValidate(false);
+        this.outAfterFieldValidate(!errors.length, errors);
         return !errors.length;
+    },
+    
+    outAfterFieldValidate(isValid, errors) {
+        return this._out('afterFieldValidate', isValid, errors);
     },
     
     _doValidate: function(errors, value, empty, label) {

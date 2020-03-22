@@ -36,6 +36,8 @@ Amm.Data.LifecycleAndMeta.prototype = {
     
     _cu: false,
     
+    _propertiesChanged: false,
+    
     /**
      * Means doOnCheck will occur every time when get*Errors() or, when anything is subscribed
      * to localErrorsChange / errorsChange events, instantly after every change (with respect
@@ -43,7 +45,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
      * 
      * Should be one of Amm.Data.AUTO_CHECK_ constants
      */
-    _autoCheck: Amm.Data.AUTO_CHECK_NEVER,
+    _autoCheck: Amm.Data.AUTO_CHECK_SMART,
     
     /**
      * Means all local errors are reset when object is hydrated w/ STATE_EXISTS
@@ -64,9 +66,9 @@ Amm.Data.LifecycleAndMeta.prototype = {
             this.o._data = {};
         }
         for (var i in data) if (data.hasOwnProperty(i)) {
-            if (!this.o._propNames[i]) this._createProperty(i);
             this.o._old[i] = data[i];
             this.o._data[i] = data[i];
+            if (!this.o._propNames[i]) this._createProperty(i);
         }
         if (this.getKey()) {
             this.setState(Amm.Data.STATE_EXISTS);
@@ -118,6 +120,10 @@ Amm.Data.LifecycleAndMeta.prototype = {
             }
         }
         this._checkModified();
+        if (this._propertiesChanged) {
+            this._propertiesChanged = false;
+            this.outPropertiesChanged();
+        }
         if (this._o._oldErrors !== null) {
             this._endUpdateErrors();
         }
@@ -170,7 +176,16 @@ Amm.Data.LifecycleAndMeta.prototype = {
         return true;
     },
 
-    getModified: function() { return this._modified; },
+    getModified: function(field) { 
+        if (field) {
+            return this._o._old[field] !== this._o._data[field];
+        }
+        return this._modified;
+    },
+    
+    getOldValue: function(field) {
+        return this._o._old[field];
+    },
 
     outModifiedChange: function(modified, oldModified) {
         this._out('modifiedChange', modified, oldModified);
@@ -241,7 +256,15 @@ Amm.Data.LifecycleAndMeta.prototype = {
         if (!(field in this._o._preUpdateValues)) {
             this._o._preUpdateValues[field] = undefined;
         }
+        
+        if (!this._updateLevel) this.outPropertiesChanged();
+        else this._propertiesChanged = true;
+        
         return propName;
+    },
+    
+    outPropertiesChanged: function() {
+        return this._out('propertiesChanged');
     },
     
     getState: function() {
@@ -454,7 +477,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
     },
 
     _beginUpdateErrors: function() {
-        if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.allErrorsChange) {
+        if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.errorsChange) {
             this._o._oldErrors = false; // special value means we defer JSON calculation
         }
         if (!this._o._errors) this._o._errors = {local: {}, remote: {}};
@@ -474,7 +497,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
         return this._subscribeFirst_localErrorsChange();
     },
     
-    _subscribeFirst_allErrorsChange: function() {
+    _subscribeFirst_errorsChange: function() {
         return this._subscribeFirst_localErrorsChange();
     },
     
@@ -489,7 +512,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
         }
         var oldErrors = this._o._oldErrors;
         this._o._oldErrors = null;
-        if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.allErrorsChange) {
+        if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.errorsChange) {
             return;
         }
         var localChanged = oldErrors.local !== JSON.stringify(this._o._errors.local);
@@ -844,6 +867,18 @@ Amm.Data.LifecycleAndMeta.prototype = {
         if (this._mapper) this._mapper.unsubscribe(undefined, undefined, this);
         this._o.cleanup();
         Amm.WithEvents.prototype.cleanup.call(this);
+    },
+    
+    getMapper: function() {
+        return this._mapper;
+    },
+    
+    setMapper: function() {
+        // dummy
+    },
+    
+    outMapperChange: function() {
+        // dummy
     }
     
     

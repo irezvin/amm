@@ -219,9 +219,10 @@ Amm.Element.prototype = {
     
     setId: function(id) {
         if (this._id === id) return;
-        var o = this._id;
+        var old = this._id;
         this._id = id;
-        this.outIdChange(id, o);
+        this._callOwnMethods('_setId_', id, old);
+        this.outIdChange(id, old);
         return true;
     },
     

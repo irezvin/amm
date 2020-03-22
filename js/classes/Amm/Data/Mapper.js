@@ -157,7 +157,7 @@ Amm.Data.Mapper.prototype = {
         var i, val;
         for (i in this._fieldValidators) if (this._fieldValidators.hasOwnProperty(i)) {
             val = [].concat(this._fieldValidators[i]);
-            if (i in this._meta) {
+            if (this._meta && i in this._meta) {
                 // when field is marked as required,
                 // required validator is added before other validators 
                 if (this._meta[i].required) val.unshift(this.getRequiredValidator());
@@ -165,7 +165,7 @@ Amm.Data.Mapper.prototype = {
             }
             this._allFieldValidators[i] = val;
         }
-        for (i in this._meta) if (this._meta.hasOwnProperty(i) && !(i in this._fieldValidators)) {
+        for (i in this._meta) if (this._meta.hasOwnProperty(i) && !(this._fieldValidators && i in this._fieldValidators)) {
             val = this._meta[i].getValidators();
             if (this._meta[i].required) val.unshift(this.getRequiredValidator());
             if (val.length) this._allFieldValidators[i] = val;
