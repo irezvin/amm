@@ -4,7 +4,7 @@
         <title>1. Collection Views and Display Parents &mdash; A.M.M. Examples</title>
         <meta charset='utf-8'>
         <link rel="stylesheet" type="text/css" href="example.css" />
-        <script src="../js/vendor/jquery-3.1.1.js"></script>
+        <script src="../js/vendor/jquery.js"></script>
 <?php 
         require_once(__DIR__.'/../build/list.php');
         foreach (listAmmFiles() as $f) { 

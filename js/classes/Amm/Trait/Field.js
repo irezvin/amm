@@ -306,7 +306,7 @@ Amm.Trait.Field.prototype = {
         return !errors.length;
     },
     
-    outAfterFieldValidate(isValid, errors) {
+    outAfterFieldValidate: function(isValid, errors) {
         return this._out('afterFieldValidate', isValid, errors);
     },
     

@@ -445,7 +445,7 @@ Amm.Data.LifecycleAndMeta.prototype = {
 
     getValidWhenHydrated: function() { return this._validWhenHydrated; },
     
-    _checkHydratedAndValid(resetErrors) {
+    _checkHydratedAndValid: function(resetErrors) {
         if (!this._validWhenHydrated) return;
         if (this._modified || this.getState() !== Amm.Data.STATE_EXISTS) return;
         if (resetErrors) this.setLocalErrors({});

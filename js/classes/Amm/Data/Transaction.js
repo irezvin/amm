@@ -35,11 +35,19 @@ Amm.Data.Transaction.STATE_CANCELLED = 'cancelled';
  */
 
 Amm.Data.Transaction.DEFAULT_REQUIREMENTS = {
-    [Amm.Data.Transaction.TYPE_CREATE]: { key: false, data: true },
-    [Amm.Data.Transaction.TYPE_LOAD]: { key: true, data: false },
-    [Amm.Data.Transaction.TYPE_UPDATE]: { key: true, data: true },
-    [Amm.Data.Transaction.TYPE_DELETE]: { key: true, data: false }    
 };
+
+Amm.Data.Transaction.DEFAULT_REQUIREMENTS
+    [Amm.Data.Transaction.TYPE_CREATE] = { key: false, data: true };
+
+Amm.Data.Transaction.DEFAULT_REQUIREMENTS
+    [Amm.Data.Transaction.TYPE_LOAD] = { key: true, data: false };
+
+Amm.Data.Transaction.DEFAULT_REQUIREMENTS
+    [Amm.Data.Transaction.TYPE_UPDATE] = { key: true, data: true };
+
+Amm.Data.Transaction.DEFAULT_REQUIREMENTS
+    [Amm.Data.Transaction.TYPE_DELETE] = { key: true, data: false };
 
 Amm.Data.Transaction.prototype = {
     

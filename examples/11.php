@@ -3,7 +3,7 @@
     <head>
         <title>11. TODO with fetcher-based saving &mdash; A.M.M. Example</title>
         <meta charset='utf-8'>
-        <script src="../js/vendor/jquery-3.1.1.js"></script>
+        <script src="../js/vendor/jquery.js"></script>
         <script src="../js/vendor/relaxed-json.js"></script>
         <link rel="stylesheet" type="text/css" href="example.css" />
         <link rel="stylesheet" type="text/css" href="todo.css" />
