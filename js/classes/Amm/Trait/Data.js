@@ -163,26 +163,26 @@ Amm.Trait.Data.prototype = {
     },
 
     setDataObject: function(dataObject, isSync) {
-        if (dataObject) Amm.is(dataObject, 'Amm.Data.Object', dataObject);
+        if (dataObject) Amm.is(dataObject, 'Amm.Data.Record', dataObject);
         else if (dataObject !== undefined) dataObject = null;
         
         var oldDataObject = this._dataObject;
         if (oldDataObject === dataObject) return;
         this._dataObject = dataObject;
         if (oldDataObject) {
-            oldDataObject.lm.unsubscribe('propertiesChanged', this._dataCheckProperty, this);
-            oldDataObject.lm.unsubscribe('errorsChange', this._handleDataErrorsChange, this);
-            oldDataObject.lm.unsubscribe('transactionChange', this._handleDataTransactionChange, this);
-            oldDataObject.lm.unsubscribe('modifiedChange', this._dataUpdateModified, this);
-            oldDataObject.lm.getMapper().unsubscribe('metaChange', this._handleDataMetaChange, this);
+            oldDataObject.mm.unsubscribe('propertiesChanged', this._dataCheckProperty, this);
+            oldDataObject.mm.unsubscribe('errorsChange', this._handleDataErrorsChange, this);
+            oldDataObject.mm.unsubscribe('transactionChange', this._handleDataTransactionChange, this);
+            oldDataObject.mm.unsubscribe('modifiedChange', this._dataUpdateModified, this);
+            oldDataObject.mm.getMapper().unsubscribe('metaChange', this._handleDataMetaChange, this);
         }
         if (!isSync) this._dataSyncProperties.dataObject = (dataObject === undefined);
         if (dataObject) {
-            dataObject.lm.subscribe('propertiesChanged', this._dataCheckProperty, this);
-            dataObject.lm.subscribe('errorsChange', this._handleDataErrorsChange, this);
-            dataObject.lm.subscribe('transactionChange', this._handleDataTransactionChange, this);
-            dataObject.lm.subscribe('modifiedChange', this._dataUpdateModified, this);
-            dataObject.lm.getMapper().subscribe('metaChange', this._handleDataMetaChange, this);
+            dataObject.mm.subscribe('propertiesChanged', this._dataCheckProperty, this);
+            dataObject.mm.subscribe('errorsChange', this._handleDataErrorsChange, this);
+            dataObject.mm.subscribe('transactionChange', this._handleDataTransactionChange, this);
+            dataObject.mm.subscribe('modifiedChange', this._dataUpdateModified, this);
+            dataObject.mm.getMapper().subscribe('metaChange', this._handleDataMetaChange, this);
         }
         this.outDataObjectChange(dataObject, oldDataObject);
         this._dataUpdateModified();
@@ -211,7 +211,7 @@ Amm.Trait.Data.prototype = {
         var error = null;
         var sync = this._dataSyncWithField || this['Annotated'] === '__INTERFACE__';
         if (!sync) return;
-        if (this._dataHasProperty) error = this._dataObject.lm.getErrors(this._dataProperty);
+        if (this._dataHasProperty) error = this._dataObject.mm.getErrors(this._dataProperty);
         if (this._dataSyncWithField) {
             this.setFieldRemoteErrors(error);
         } else {
@@ -228,7 +228,7 @@ Amm.Trait.Data.prototype = {
     
     _dataSyncMeta: function(meta) {
         if (!this._dataHasProperty || !this._dataSyncAnnotations) return;
-        if (!meta) meta = this._dataObject.lm.getMapper().getMeta(this._dataProperty);
+        if (!meta) meta = this._dataObject.mm.getMapper().getMeta(this._dataProperty);
         var _syncField = this._dataSyncWithField;
         if (_syncField) {
             this.setFieldLabel(meta.label);
@@ -301,7 +301,7 @@ Amm.Trait.Data.prototype = {
         this.outDataHasPropertyChange(dataHasProperty, oldDataHasProperty);
         if (dataHasProperty) {
             this._dataUpdateValueSync();
-            this._dataSyncMeta(this._dataObject.lm.getMapper().getMeta(this._dataProperty));
+            this._dataSyncMeta(this._dataObject.mm.getMapper().getMeta(this._dataProperty));
         }
         return true;
     },
@@ -341,7 +341,7 @@ Amm.Trait.Data.prototype = {
         if (oldDataSyncAnnotations === dataSyncAnnotations) return;
         this._dataSyncAnnotations = dataSyncAnnotations;
         if (dataSyncAnnotations && this._dataHasProperty) {
-            this._dataSyncMeta(this._dataObject.lm.getMapper().getMeta(this._dataProperty));
+            this._dataSyncMeta(this._dataObject.mm.getMapper().getMeta(this._dataProperty));
         }
         return true;
     },
@@ -448,7 +448,7 @@ Amm.Trait.Data.prototype = {
             if (!this._dataHasProperty) locked = true;
         }
         if (this._dataLockMode & Amm.Trait.Data.LOCK_DURING_TRANSACTION) {
-            if (this._dataObject && this._dataObject.lm.getTransaction()) {
+            if (this._dataObject && this._dataObject.mm.getTransaction()) {
                 locked = true;
             }
         }
@@ -462,7 +462,7 @@ Amm.Trait.Data.prototype = {
         if (oldDataModified === dataModified) return;
         if (!isSync && dataModified) return; // no effect
         if (!isSync && !dataModified && this._dataHasProperty) {
-            this.setDataValue(this._dataObject.lm.getOldValue(this._dataProperty));
+            this.setDataValue(this._dataObject.mm.getOldValue(this._dataProperty));
             return;
         }
         this._dataModified = dataModified;
@@ -479,9 +479,9 @@ Amm.Trait.Data.prototype = {
     _dataUpdateModified: function() {
         var modified = false;
         if (this._dataHasProperty) {
-            modified = this._dataObject.lm.getModified(this._dataProperty);
+            modified = this._dataObject.mm.getModified(this._dataProperty);
         } else if (this._dataObject && !this._dataProperty) {
-            modified = this._dataObject.lm.getModified();
+            modified = this._dataObject.mm.getModified();
         }
         this.setDataModified(modified, true);
     }

@@ -333,7 +333,11 @@ Amm = {
             if (!tmpClassName) return false;
             className = tmpClassName;
         }
-        var res = item && (item[className] === '__CLASS__' || item[className] === '__PARENT__' || item[className] === '__INTERFACE__');
+        var res = item && (
+                item[className] === '__CLASS__' 
+            ||  item[className] === '__PARENT__' 
+            ||  item[className] === '__INTERFACE__'
+        );
         if (!res && throwIfNot) {
             var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
             throw Error(argname + " must be an instance of " + className + "; given: " + Amm.describeType(item));
@@ -346,7 +350,7 @@ Amm = {
      * Found properties will be deleted from options array.
      * That allows us to prioritize properties using several init() calls
      */
-    init: function(object, options, propList) {
+    init: function(object, options, propList, noSuchPropertyCallback) {
         if (!options) return;
         var optToSet = null;
         if (propList instanceof Array) {
@@ -372,7 +376,13 @@ Amm = {
             else if (i in object) object[i] = v;
             else if (typeof v === 'function') object[i] = v;
             else {
-                throw Error("No such property: '" + i + "' in " + (this.getClass(object) || '`object`'));
+                var shouldThrow = true;
+                if (typeof noSuchPropertyCallback === 'function') {
+                    shouldThrow = !noSuchPropertyCallback.call(object, i, v);
+                }
+                if (shouldThrow) {
+                    throw Error("No such property: '" + i + "' in " + (this.getClass(object) || '`object`'));
+                }
             }
         }
     },
@@ -10684,7 +10694,7 @@ Amm.Sorter.prototype = {
                 return a.getIndex() - b.getIndex();
             });
 
-            for (var i = 0, l = newCriteria.length; i < l; i++) {
+            for (i = 0, l = newCriteria.length; i < l; i++) {
                 newCriteria[i].setIndex(i);
             }
 
@@ -10873,7 +10883,7 @@ Amm.Sorter.prototype = {
     _getDirections: function() {
         if (this._directions) return this._directions;
         var res = [];
-        for (i = 0, l = this._observers.length; i < l; i++) res.push(this._observers[i].getAscending());
+        for (var i = 0, l = this._observers.length; i < l; i++) res.push(this._observers[i].getAscending());
         return res;
     },
     
@@ -13862,7 +13872,7 @@ Amm.Remote.Transport.Debug.prototype = {
     
     outRequest: function(runningRequest, success, failure) {
         this._request = runningRequest;
-        res = this._out('request', runningRequest, success, failure);
+        var res = this._out('request', runningRequest, success, failure);
         if (this._pendingSuccess) {
             this.success.apply(this, this._pendingSuccess);
         } else if (this._pendingFailure) {
@@ -15309,7 +15319,7 @@ Amm.Operator.Property.prototype = {
         if (this._isCall && !this._isNew) {
             
             if (typeof object[property] !== 'function') throw Error("cannot call a non-function property");
-            args = this._getOperandValue('arguments', again);
+            var args = this._getOperandValue('arguments', again);
             if (args === null || args === undefined) return object[property]();
             else if (args instanceof Array) return object[property].apply(object, args);
             else return object[property](args);
@@ -23555,26 +23565,26 @@ Amm.Trait.Data.prototype = {
     },
 
     setDataObject: function(dataObject, isSync) {
-        if (dataObject) Amm.is(dataObject, 'Amm.Data.Object', dataObject);
+        if (dataObject) Amm.is(dataObject, 'Amm.Data.Record', dataObject);
         else if (dataObject !== undefined) dataObject = null;
         
         var oldDataObject = this._dataObject;
         if (oldDataObject === dataObject) return;
         this._dataObject = dataObject;
         if (oldDataObject) {
-            oldDataObject.lm.unsubscribe('propertiesChanged', this._dataCheckProperty, this);
-            oldDataObject.lm.unsubscribe('errorsChange', this._handleDataErrorsChange, this);
-            oldDataObject.lm.unsubscribe('transactionChange', this._handleDataTransactionChange, this);
-            oldDataObject.lm.unsubscribe('modifiedChange', this._dataUpdateModified, this);
-            oldDataObject.lm.getMapper().unsubscribe('metaChange', this._handleDataMetaChange, this);
+            oldDataObject.mm.unsubscribe('propertiesChanged', this._dataCheckProperty, this);
+            oldDataObject.mm.unsubscribe('errorsChange', this._handleDataErrorsChange, this);
+            oldDataObject.mm.unsubscribe('transactionChange', this._handleDataTransactionChange, this);
+            oldDataObject.mm.unsubscribe('modifiedChange', this._dataUpdateModified, this);
+            oldDataObject.mm.getMapper().unsubscribe('metaChange', this._handleDataMetaChange, this);
         }
         if (!isSync) this._dataSyncProperties.dataObject = (dataObject === undefined);
         if (dataObject) {
-            dataObject.lm.subscribe('propertiesChanged', this._dataCheckProperty, this);
-            dataObject.lm.subscribe('errorsChange', this._handleDataErrorsChange, this);
-            dataObject.lm.subscribe('transactionChange', this._handleDataTransactionChange, this);
-            dataObject.lm.subscribe('modifiedChange', this._dataUpdateModified, this);
-            dataObject.lm.getMapper().subscribe('metaChange', this._handleDataMetaChange, this);
+            dataObject.mm.subscribe('propertiesChanged', this._dataCheckProperty, this);
+            dataObject.mm.subscribe('errorsChange', this._handleDataErrorsChange, this);
+            dataObject.mm.subscribe('transactionChange', this._handleDataTransactionChange, this);
+            dataObject.mm.subscribe('modifiedChange', this._dataUpdateModified, this);
+            dataObject.mm.getMapper().subscribe('metaChange', this._handleDataMetaChange, this);
         }
         this.outDataObjectChange(dataObject, oldDataObject);
         this._dataUpdateModified();
@@ -23603,7 +23613,7 @@ Amm.Trait.Data.prototype = {
         var error = null;
         var sync = this._dataSyncWithField || this['Annotated'] === '__INTERFACE__';
         if (!sync) return;
-        if (this._dataHasProperty) error = this._dataObject.lm.getErrors(this._dataProperty);
+        if (this._dataHasProperty) error = this._dataObject.mm.getErrors(this._dataProperty);
         if (this._dataSyncWithField) {
             this.setFieldRemoteErrors(error);
         } else {
@@ -23620,7 +23630,7 @@ Amm.Trait.Data.prototype = {
     
     _dataSyncMeta: function(meta) {
         if (!this._dataHasProperty || !this._dataSyncAnnotations) return;
-        if (!meta) meta = this._dataObject.lm.getMapper().getMeta(this._dataProperty);
+        if (!meta) meta = this._dataObject.mm.getMapper().getMeta(this._dataProperty);
         var _syncField = this._dataSyncWithField;
         if (_syncField) {
             this.setFieldLabel(meta.label);
@@ -23693,7 +23703,7 @@ Amm.Trait.Data.prototype = {
         this.outDataHasPropertyChange(dataHasProperty, oldDataHasProperty);
         if (dataHasProperty) {
             this._dataUpdateValueSync();
-            this._dataSyncMeta(this._dataObject.lm.getMapper().getMeta(this._dataProperty));
+            this._dataSyncMeta(this._dataObject.mm.getMapper().getMeta(this._dataProperty));
         }
         return true;
     },
@@ -23733,7 +23743,7 @@ Amm.Trait.Data.prototype = {
         if (oldDataSyncAnnotations === dataSyncAnnotations) return;
         this._dataSyncAnnotations = dataSyncAnnotations;
         if (dataSyncAnnotations && this._dataHasProperty) {
-            this._dataSyncMeta(this._dataObject.lm.getMapper().getMeta(this._dataProperty));
+            this._dataSyncMeta(this._dataObject.mm.getMapper().getMeta(this._dataProperty));
         }
         return true;
     },
@@ -23840,7 +23850,7 @@ Amm.Trait.Data.prototype = {
             if (!this._dataHasProperty) locked = true;
         }
         if (this._dataLockMode & Amm.Trait.Data.LOCK_DURING_TRANSACTION) {
-            if (this._dataObject && this._dataObject.lm.getTransaction()) {
+            if (this._dataObject && this._dataObject.mm.getTransaction()) {
                 locked = true;
             }
         }
@@ -23854,7 +23864,7 @@ Amm.Trait.Data.prototype = {
         if (oldDataModified === dataModified) return;
         if (!isSync && dataModified) return; // no effect
         if (!isSync && !dataModified && this._dataHasProperty) {
-            this.setDataValue(this._dataObject.lm.getOldValue(this._dataProperty));
+            this.setDataValue(this._dataObject.mm.getOldValue(this._dataProperty));
             return;
         }
         this._dataModified = dataModified;
@@ -23871,9 +23881,9 @@ Amm.Trait.Data.prototype = {
     _dataUpdateModified: function() {
         var modified = false;
         if (this._dataHasProperty) {
-            modified = this._dataObject.lm.getModified(this._dataProperty);
+            modified = this._dataObject.mm.getModified(this._dataProperty);
         } else if (this._dataObject && !this._dataProperty) {
-            modified = this._dataObject.lm.getModified();
+            modified = this._dataObject.mm.getModified();
         }
         this.setDataModified(modified, true);
     }
@@ -24763,7 +24773,7 @@ Amm.Data = {
     flattenErrors: function(hash, target) {
         if (!hash) return [];
         if (typeof hash !== 'object') return [hash];
-        var i;
+        var i, l;
         var res = target || [], target = target || res;
         if (hash instanceof Array) {
             for (i = 0, l = hash.length; i < l; i++) {
@@ -24826,10 +24836,259 @@ Amm.Data.AUTO_CHECK_SMART = 1;
 Amm.Data.AUTO_CHECK_ALWAYS = 2;
 /* global Amm */
 
-Amm.Data.Mapper = function(options) {
-    this._meta = {};
+Amm.Data.MetaProvider = function(options) {
     // set it first so setMeta() will instantiate objects with proper classes
-    if (options && 'metaClass' in options) this.metaClass = options.metaClass; 
+    this._meta = {};
+    if (options && 'metaClass' in options) {
+        this.metaClass = options.metaClass;
+    }
+};
+
+Amm.Data.MetaProvider.prototype = {
+    
+    'MetaProvider': '__INTERFACE__',
+    
+    metaClass: 'Amm.Data.FieldMeta',
+    
+    requiredValidatorPrototype: null,
+    
+    _meta: null,
+    
+    _combinedMeta: null,
+    
+    _metaProvider: null,
+    
+    _requiredValidator: null,
+    
+    _modelValidators: null,
+    
+    _metaUpdating: 0,
+    
+    _metaChanged: false,
+    
+    setModelValidators: function(modelValidators) {
+        if (typeof modelValidators !== 'object') {
+            throw Error("modelValidators must be an object or null");
+        }
+        this._modelValidators = Amm.Data.MetaProvider.checkValidatorsHash(modelValidators, 'modelValidators');
+        return true;
+    },
+
+    getModelValidators: function() {
+        return this._modelValidators; 
+    },
+
+    setMetaProvider: function(metaProvider) {
+        if (!metaProvider) metaProvider = null;
+        var oldMetaProvider = this._metaProvider;
+        if (oldMetaProvider === metaProvider) return;
+        if (oldMetaProvider) {
+            oldMetaProvider.unsubscribe('metaChange', this._handleProviderMetaChange, this);
+        }
+        this._metaProvider = metaProvider;
+        this._combinedMeta = null;
+        if (this._metaProvider) {
+            this._metaProvider.subscribe('metaChange', this._handleProviderMetaChange, this);
+        }
+        this.notifyMetaChange(this.getMeta());
+        return true;
+    },
+
+    getMetaProvider: function() { return this._metaProvider; },
+    
+    _combineMeta: function() {
+        if (this._combinedMeta) return this._combinedMeta;
+        if (!this._metaProvider) {
+            this._combinedMeta = this._meta;
+            return this._meta;
+        }
+        this._combinedMeta = {};
+        Amm.override(this._combinedMeta, this._metaProvider.getMeta(), this._meta);
+        return this._combinedMeta;
+    },
+    
+    beginUpdateMeta: function() {
+        this._metaUpdating++;
+    },
+    
+    endUpdateMeta: function() {
+        if (!this._metaUpdating) throw Error("Cannot call endUpdateMeta() without prior call to beginUpdateMeta()");
+        this._metaUpdating--;
+        if (!this._metaUpdating && this._metaChanged) {
+            this._metaChanged = false;
+            this.outMetaChange(this._combineMeta);
+        }
+    },
+    
+    
+    _createMetas: function(defs, noAssign) {
+        var res = {}, i;
+        for (i in defs) if (defs.hasOwnProperty(i)) {
+            res[i] = this._createMeta(defs[i], i, true);
+        }
+        if (noAssign) return res;
+        this.beginUpdateMeta();
+        this._meta = {};
+        for (i in res) if (res.hasOwnProperty(i)) {
+            this._assignMeta(res[i], i);
+        }
+        this.endUpdateMeta();
+        return res;
+    },
+    
+    _createMeta: function(definition, name, noAssign) {
+        var def = {};
+        if (name !== undefined) def.name = name;
+        def.metaProvider = this;
+        var res = Amm.constructInstance(definition, this.metaClass, def, true);
+        name = res.getName();
+        if (!noAssign && name) this._assignMeta(res, name);
+        return res;
+    },
+    
+    _assignMeta: function(meta, field) {
+        var old = this._meta[field];
+        if (old === meta) return;
+        delete this._meta[field];
+        if (old) old.setMetaProvider(null); 
+        this._meta[field] = meta;
+        this.outMetaChange(this._meta, {}, field, undefined, meta, old);
+    },
+    
+    setMeta: function(meta, field, property) {
+        // form1: setMeta(meta) -- replace everything
+        if (!field) {
+            this._createMetas(meta);
+            return true;
+        }
+        if (!property) {
+            if (meta) {
+                this._createMeta(meta, field);
+            } else if (this._meta[field]) { 
+                // meta is false -> delete exisiting meta-property
+                this._meta[field].setMetaProvider(null);
+                delete this._meta[field];
+                this.outMetaChange();
+            }
+            return true;
+        }
+        var myMeta, providerMeta;
+        var myMeta = this._meta[field];
+        if (!myMeta && (providerMeta = this._metaProvider.getMeta(field))) {
+            // override provider' meta
+            this.beginUpdateMeta();
+            myMeta = providerMeta.clone(this);
+            this._assignMeta(myMeta, field);
+            myMeta.setProperty(meta, property);
+            this.endUpdateMeta();
+            return;
+        }
+        if (!myMeta) {
+            throw Error("Cannot set property of non-existent meta '" + field + "'");
+        }
+        myMeta.setProperty(meta, property);
+    },
+    
+    getMeta: function(field, property) {
+        if (!this._combinedMeta) this._combineMeta();
+        if (!field) return Amm.override({}, this._combinedMeta);
+        if (!(field in this._combinedMeta)) return undefined;
+        if (!property) return this._combinedMeta[field];
+        return this._combinedMeta[field][property];
+    },
+    
+    notifyMetaChange: function(meta, field, property, value, oldValue) {
+        if (!property) this._combinedMeta = null;
+        this.outMetaChange(meta, null, field, property, value, oldValue);
+    },
+    
+    /**
+     * oldMeta argument is for compatibility purposes; 
+     * always ignored and set to null in every call.
+     */
+    outMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
+        if (!field) { 
+            this._combinedMeta = null;
+        }
+        if (this._metaUpdating) {
+            this._metaChanged = true;
+            return;
+        }
+        this._onMetaChange(field, property, value, oldValue);
+        return this._out('metaChange', this._combineMeta(), null, field, property, value, oldValue);
+    },
+    
+    _onMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
+    },
+    
+    getRequiredValidator: function() {
+        if (this._requiredValidator) return this._requiredValidator;
+        var proto = this.requiredValidatorPrototype || Amm.Data.MetaProvider.requiredValidatorPrototype;
+        this._requiredValidator = Amm.constructInstance(Amm.override({}, proto), 'Amm.Validator');
+        return this._requiredValidator;
+    },
+    
+    getFieldValidators: function(field) {
+        var m = this.getMeta(field);
+        if (!m) return null;
+        var res = [];
+        if (m.required) {
+            res.push(this.getRequiredValidator());
+        }
+        var v = m.validators;
+        if (v && v.length) res = res.concat(v);
+        if (!res.length) return null;
+        return res;
+    },
+    
+    _handleProviderMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
+        if (!field || !this._meta || !this._meta[field]) {
+            this.notifyMetaChange(meta, field, property, value, oldValue);
+        }
+    }
+    
+};
+
+Amm.Data.MetaProvider.checkValidatorsHash = function(validators, name) {
+    if (!validators) return {};
+    var res = {}, validatorsArray;
+    for (var i in validators) if (validators.hasOwnProperty(i)) {
+        validatorsArray = validators[i];
+        if (!validatorsArray) continue;
+        if (!(validatorsArray instanceof Array)) validatorsArray = [validatorsArray];
+        if (!validatorsArray.length) continue;
+        res[i] = Amm.Data.MetaProvider.checkValidatorsArray(validatorsArray, name + "['" + i + "']");
+    }
+    return res;
+};
+    
+Amm.Data.MetaProvider.checkValidatorsArray = function(validators, name) {
+    var res = [], i, l = validators.length;
+    for (i = 0; i < l; i++) {
+        var v = validators[i];
+        if (typeof v === 'function') {
+        } else if (typeof v === 'string') {
+            if (Amm.getFunction(v, true)) v = Amm.constructInstance(v, 'Amm.Validator');
+            else v = new Amm.Expression(v);
+        } else if (v && (typeof v === 'object')) {
+            if (v.class) v = Amm.constructInstance(v);
+            Amm.meetsRequirements(v, ['Amm.Expression', 'Amm.Validator'], name + '[' + i + ']');
+        } else {
+            throw new Error("name[" + i + "] must be a function, a string or a non-null object");
+        }
+        res.push(v);
+    }
+    return res;
+};
+
+
+Amm.Data.MetaProvider.requiredValidatorPrototype = {
+    'class': 'Amm.Validator.Required'
+};
+/* global Amm */
+
+Amm.Data.Mapper = function(options) {
+    Amm.Data.MetaProvider.call(this, options);
     Amm.WithEvents.call(this, options);
 };
 
@@ -24854,15 +25113,15 @@ Amm.Data.Mapper.prototype = {
      */
     _key: 'id',
     
-    _objectPrototype: null,
+    _recordPrototype: null,
     
     /**
      * Name or constructor of objects that are created by this mapper or associated with it.
-     * Is used by Amm.Data.Mapper::construct(), also checked when Amm.Data.Object accepts __mapper.
+     * Is used by Amm.Data.Mapper::construct(), also checked when Amm.Data.Record accepts __mapper.
      * 
      * @type string|function
      */
-    _objectClass: null,
+    _recordClass: null,
     
     /**
      * @type {Amm.Data.Interface}
@@ -24871,18 +25130,7 @@ Amm.Data.Mapper.prototype = {
     
     _transactionPrototypes: null,
     
-    /**
-     * includes field validators gathered from the metadata
-     */
-    _allFieldValidators: null,
-    
-    _fieldValidators: null,
-    
-    _commonValidators: null,
-    
     _uri: null,
-    
-    _meta: null,
     
     requireLoadDataNotEmpty: true,
     
@@ -24893,12 +25141,6 @@ Amm.Data.Mapper.prototype = {
     partialHydrateOnCreate: true,
     
     partialHydrateOnUpdate: true,
-    
-    metaClass: 'Amm.Data.Meta',
-    
-    requiredValidatorPrototype: null,
-    
-    _requiredValidator: null,
     
     setId: function(id) {
         if (typeof id !== 'string' || !id) throw Error("`id` must be a non-empty string");
@@ -24912,16 +25154,16 @@ Amm.Data.Mapper.prototype = {
 
     getId: function() { return this._id; },
 
-    setObjectPrototype: function(objectPrototype) {
-        if (!objectPrototype) objectPrototype = {};
-        var oldObjectPrototype = this._objectPrototype;
-        if (oldObjectPrototype === objectPrototype) return;
-        if (oldObjectPrototype !== null) throw Error("can setObjectPrototype() only once");
-        this._objectPrototype = objectPrototype;
+    setRecordPrototype: function(recordPrototype) {
+        if (!recordPrototype) recordPrototype = {};
+        var oldRecordPrototype = this._recordPrototype;
+        if (oldRecordPrototype === recordPrototype) return;
+        if (oldRecordPrototype !== null) throw Error("can setRecordPrototype() only once");
+        this._recordPrototype = recordPrototype;
         return true;
     },
 
-    getObjectPrototype: function() { return this._objectPrototype? Amm.override({}, this._objectPrototype) : {}; },
+    getRecordPrototype: function() { return this._recordPrototype? Amm.override({}, this._recordPrototype) : {}; },
     
     setKey: function(key) {
         var oldKey = this._key;
@@ -24932,15 +25174,15 @@ Amm.Data.Mapper.prototype = {
 
     getKey: function() { return this._key; },
     
-    setObjectClass: function(objectClass) {
-        var oldObjectClass = this._objectClass;
-        if (oldObjectClass === objectClass) return;
-        if (oldObjectClass !== objectClass) throw Error("can setObjectClass() only once");
-        this._objectClass = objectClass;
+    setRecordClass: function(recordClass) {
+        var oldRecordClass = this._recordClass;
+        if (oldRecordClass === recordClass) return;
+        if (oldRecordClass !== recordClass) throw Error("can setRecordClass() only once");
+        this._recordClass = recordClass;
         return true;
     },
 
-    getObjectClass: function() { return this._objectClass; },
+    getRecordClass: function() { return this._recordClass; },
     
     construct: function(objectOrArray) {
         if (!objectOrArray || typeof objectOrArray !== 'object')
@@ -24954,66 +25196,10 @@ Amm.Data.Mapper.prototype = {
             return res;
         }
         if (Amm.getClass(objectOrArray)) throw Error("`objectOrArray` must have no class");
-        var cl = this.getObjectClass() || Amm.Data.Object, constructor = Amm.getFunction(cl);
+        var cl = this.getRecordClass() || Amm.Data.Record, constructor = Amm.getFunction(cl);
         var proto = Amm.override({}, objectOrArray);
         proto._mapper = this;
         return new constructor (proto);
-    },
-
-    setInterface: function(interface) {
-        var oldInterface = this._interface;
-        if (oldInterface === interface) return;
-        this._interface = interface;
-        return true;
-    },
-
-    getInterface: function() { return this._interface; },
-    
-    setFieldValidators: function(fieldValidators) {
-        if (typeof fieldValidators !== 'object') {
-            throw Error("fieldValidators must be an object or null");
-        }
-        this._allFieldValidators = null;
-        this._fieldValidators = Amm.Data.Mapper.checkValidatorsHash(fieldValidators, 'fieldValidators');
-        return true;
-    },
-    
-    _combineFieldValidators: function() {
-        this._allFieldValidators = {};
-        var i, val;
-        for (i in this._fieldValidators) if (this._fieldValidators.hasOwnProperty(i)) {
-            val = [].concat(this._fieldValidators[i]);
-            if (this._meta && i in this._meta) {
-                // when field is marked as required,
-                // required validator is added before other validators 
-                if (this._meta[i].required) val.unshift(this.getRequiredValidator());
-                val = val.concat(this._meta[i].getValidators());
-            }
-            this._allFieldValidators[i] = val;
-        }
-        for (i in this._meta) if (this._meta.hasOwnProperty(i) && !(this._fieldValidators && i in this._fieldValidators)) {
-            val = this._meta[i].getValidators();
-            if (this._meta[i].required) val.unshift(this.getRequiredValidator());
-            if (val.length) this._allFieldValidators[i] = val;
-        }
-    },
-
-    getFieldValidators: function(includeMeta) { 
-        if (!includeMeta) return this._fieldValidators || {};
-        if (!this._allFieldValidators) this._combineFieldValidators();
-        return this._allFieldValidators;
-    },
-    
-    setCommonValidators: function(commonValidators) {
-        if (typeof commonValidators !== 'object') {
-            throw Error("commonValidators must be an object or null");
-        }
-        this._commonValidators = Amm.Data.Mapper.checkValidatorsHash(commonValidators, 'commonValidators');
-        return true;
-    },
-
-    getCommonValidators: function() {
-        return this._commonValidators; 
     },
 
     setUri: function(uri) {
@@ -25093,148 +25279,154 @@ Amm.Data.Mapper.prototype = {
         transaction.unsubscribe('validateResult', this._validateTransactionResult, this);
     },
     
-    _metaUpdating: 0,
-    _metaChanged: false,
-    
-    beginUpdateMeta: function() {
-        this._metaUpdating++;
-    },
-    
-    endUpdateMeta: function() {
-        if (!this._metaUpdating) throw Error("Cannot call endUpdateMeta() without prior call to beginUpdateMeta()");
-        this._metaUpdating--;
-        if (!this._metaUpdating && this._metaChanged) {
-            this._metaChanged = false;
-            this.outMetaChange(this._meta);
-        }
-    },
-    
-    _createMetas: function(defs, noAssign) {
-        var res = {}, i;
-        for (i in defs) if (defs.hasOwnProperty(i)) {
-            res[i] = this._createMeta(defs[i], i, true);
-        }
-        if (noAssign) return res;
-        this.beginUpdateMeta();
-        this._meta = {};
-        for (i in res) if (res.hasOwnProperty(i)) {
-            this._assignMeta(res[i], i);
-        }
-        this.endUpdateMeta();
-        return res;
-    },
-    
-    _createMeta: function(definition, name, noAssign) {
-        var def = {};
-        if (name !== undefined) def.name = name;
-        def.mapper = this;
-        var res = Amm.constructInstance(definition, this.metaClass, def, true);
-        name = res.getName();
-        if (!noAssign && name) this._assignMeta(res, name);
-        return res;
-    },
-    
-    _assignMeta: function(meta, field) {
-        var old = this._meta[field];
-        if (old === meta) return;
-        delete this._meta[field];
-        if (old) old.setMapper(null); 
-        this._meta[field] = meta;
-        this.outMetaChange(this._meta, {}, field, undefined, meta, old);
-    },
-    
-    setMeta: function(meta, field, property) {
-        // form1: setMeta(meta) -- replace everything
-        if (!field) {
-            this._createMetas(meta);
-            return true;
-        }
-        if (!property) {
-            this._createMeta(meta, field);
-            return true;
-        }
-        if (!(field in this._meta)) {
-            throw Error("Cannot set property of non-existent meta '" + field + "'");
-        }
-        this._meta[field].setProperty(meta, property);
-    },
-    
-    getMeta: function(field, property) {
-        if (!field) return Amm.override({}, this._meta);
-        if (!(field in this._meta)) return undefined;
-        if (!property) return this._meta[field];
-        return this._meta[field][property];
-        
-    },
-    
-    notifyMetaChange: function(meta, field, property, value, oldValue) {
-        if (!field || property === 'required' || property === 'validators') {
-            this._allFieldValidators = null;
-        }
-        this.outMetaChange(meta, null, field, property, value, oldValue);
-    },
-    
-    /**
-     * oldMeta argument is for compatibility purposes; 
-     * always ignored and set to null in every call.
-     */
-    outMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
-        if (this._metaUpdating) {
-            this._metaChanged = true;
-            return;
-        }
-        return this._out('metaChange', this._meta, null, field, property, value, oldValue);
-    },
-    
-    getRequiredValidator: function() {
-        if (this._requiredValidator) return this._requiredValidator;
-        var proto = this.requiredValidatorPrototype || Amm.Data.Mapper.requiredValidatorPrototype;
-        this._requiredValidator = Amm.constructInstance(Amm.override({}, proto), 'Amm.Validator');
-        return this._requiredValidator;
-    }
-    
-};
-
-Amm.Data.Mapper.checkValidatorsHash = function(validators, name) {
-    if (!validators) return {};
-    var res = {}, validatorsArray;
-    for (var i in validators) if (validators.hasOwnProperty(i)) {
-        validatorsArray = validators[i];
-        if (!validatorsArray) continue;
-        if (!(validatorsArray instanceof Array)) validatorsArray = [validatorsArray];
-        if (!validatorsArray.length) continue;
-        res[i] = Amm.Data.Mapper.checkValidatorsArray(validatorsArray, name + "['" + i + "']");
-    }
-    return res;
-};
-    
-Amm.Data.Mapper.checkValidatorsArray = function(validators, name) {
-    var res = [], i, l = validators.length;
-    for (i = 0; i < l; i++) {
-        var v = validators[i];
-        if (typeof v === 'function') {
-        } else if (typeof v === 'string') {
-            if (Amm.getFunction(v, true)) v = Amm.constructInstance(v, 'Amm.Validator');
-            else v = new Amm.Expression(v);
-        } else if (v && (typeof v === 'object')) {
-            if (v.class) v = Amm.constructInstance(v);
-            Amm.meetsRequirements(v, ['Amm.Expression', 'Amm.Validator'], name + '[' + i + ']');
-        } else {
-            throw new Error("name[" + i + "] must be a function, a string or a non-null object");
-        }
-        res.push(v);
-    }
-    return res;
-};
-
-
-Amm.Data.Mapper.requiredValidatorPrototype = {
-    'class': 'Amm.Validator.Required'
 };
 
 Amm.extend(Amm.Data.Mapper, Amm.WithEvents);
+Amm.extend(Amm.Data.Mapper, Amm.Data.MetaProvider);
 
 /* global Amm */
+
+Amm.Data.Model = function(options) {
+
+    if (!options) options = {};
+    else options = Amm.override({}, options);
+
+    this._old = {};
+    this._data = {};
+    this._propNames = {};
+    
+    var i;
+
+    Object.defineProperty(this, 'mm', {
+        get: function() { return this.getMm(); },
+        set: function() {}
+    });
+    
+    var newOptions = this._preInitOptions(options);
+    if (newOptions !== undefined) options = newOptions;
+
+    var mmOptions = null;
+    if (options.mm && typeof options.mm === 'object') mmOptions = options.mm;
+    this._mm = new (Amm.getFunction(this._metaClass)) (this, options.mm || {});
+    delete options.mm;
+    
+    // all options except "on__" and functions are considered properties
+    Amm.WithEvents.call(this, options, true);
+    for (i in options) if (options.hasOwnProperty(i)) {
+        if (typeof options[i] === 'function') {
+            this[i] = options[i];
+            delete options[i];
+        }
+    }
+    var hasOtherProps = false;
+    for (i in options) if (options.hasOwnProperty(i)) {
+        hasOtherProps = true;
+        break;
+    }
+    if (hasOtherProps) this._initData(options);
+    
+};
+
+Amm.Data.Model.prototype = {
+    
+    _metaClass: 'Amm.Data.ModelMeta',
+    
+    /**
+     * { field: value } hash of current values
+     * 
+     * @type object
+     */
+    _data: null,
+    
+    /**
+     * { field: value } hash of original (source-provided) values.
+     * Also contains current key that will be used when we need to modify the key during the saving.
+     * Updated when object is loaded/saved.
+     * 
+     * @type object 
+     */
+    _old: null,
+
+    /**
+     * ModelMeta instance that is responsible for working with current object.
+     * @type Amm.Data.ModelMeta
+     */
+    _mm: null,
+    
+    /**
+     * Whether cleanup in progress
+     * @type bool
+     */
+    _cu: false,
+    
+    _state: Amm.Data.STATE_NEW,
+    
+    _propNames: null,
+    
+    _preUpdateValues: null,
+    
+    /**
+     * Contains three hashes: local, remote, all
+     */
+    _errors: null,
+    
+    /**
+     * Contains three hashes: local, remote, all
+     */
+    _oldErrors: null,
+    
+    _preInitOptions: function(options) {
+    },
+    
+    _initData: function(options) {
+        this.mm.hydrate(options);
+    },
+    
+    /**
+     * @returns {Amm.Data.ModelMeta}
+     */
+    getMm: function() {
+        return this._mm;
+    },
+    
+    // mm is read-only; does nothing
+    setMm: function() {
+    },
+    
+    // added for compatibility with observers; never fires
+    outMmChange: function() {
+    },
+    
+    _doOnActual: function(forSave) {
+    },
+    
+    _doOnCheck: function() {
+    },
+    
+    _checkField: function(field, value) {
+    },
+    
+    _handleMissingEvent: function(eventName, handler, scope, extra) {
+        
+        // we alllow to subscribe to change events of arbitrary properties 
+        // because there are times when properties are created 
+        // AFTER the event handlers are attached
+        
+        if (eventName.match(/Change$/)) return true;
+    },
+    
+    cleanup: function() {
+        if (this._cu) return;
+        this._cu = true;
+        this.mm.cleanup();
+        this._data = {};
+        this._old = {};
+        Amm.WithEvents.prototype.cleanup.call(this);
+    }
+    
+};
+
+Amm.extend(Amm.Data.Model, Amm.WithEvents);/* global Amm */
 
 Amm.Data.HttpResponse = function(options) {
     
@@ -25263,114 +25455,41 @@ Amm.Data.HttpResponse.prototype = {
     
 };/* global Amm */
 
-Amm.Data.Object = function(options) {
-    if (!options) options = {};
-    this._old = {};
-    this._data = {};
-    this._propNames = {};
-    var mapper, i;
-    if (!options.__mapper) throw Error("__mapper is required");
-    if (options.__mapper['Amm.Data.Mapper']) mapper = options.__mapper;
-    else mapper = Amm.Data.Mapper.get(options.__mapperId);
-    this._mapper = mapper;
-    
-    var requiredClass = this._mapper.getObjectClass();
-    if (requiredClass && !Amm.is(this, requiredClass)) {
-        throw Error(
-            "Cannot use instance of " + Amm.getClass(this)
-            + " with mapper " + mapper.getId()
-            + "; required class is " + requiredClass
-        );
-    }
-    options = Amm.override(this._mapper.getObjectPrototype(), options);
-    delete options.__mapper;
-    if (options.lm && typeof options.lm === 'object') {
-        this._lm = new Amm.Data.LifecycleAndMeta(this, options.lm);
-        delete options.lm;
-    }
-    // all options except "on__" and functions are considered properties
-    Amm.WithEvents.call(this, options, true);
-    for (i in options) if (options.hasOwnProperty(i)) {
-        if (typeof options[i] === 'function') {
-            this[i] = options[i];
-            delete options[i];
-        }
-    }
-    var hasOtherProps = false;
-    for (i in options) if (options.hasOwnProperty(i)) {
-        hasOtherProps = true;
-        break;
-    }
-    if (hasOtherProps) this.lm.hydrate(options);
+Amm.Data.Record = function(options) {
+    Amm.Data.Model.call(this, options);
 };
 
-Amm.Data.Object.prototype = {
+Amm.Data.Record.prototype = {
 
-    'Amm.Data.Object': '__CLASS__',
+    'Amm.Data.Record': '__CLASS__',
+    
+    _metaClass: 'Amm.Data.RecordMeta',
     
     /**
      * @type {Amm.Data.Mapper}
      */
     _mapper: null,
     
-    /**
-     * { field: value } hash of current values
-     * 
-     * @type object
-     */
-    _data: null,
+    _preInitOptions: function(options) {
     
-    /**
-     * { field: value } hash of original (source-provided) values.
-     * Also contains current key that will be used when we need to modify the key during the saving.
-     * Updated when object is loaded/saved.
-     * 
-     * @type object 
-     */
-    _old: null,
+        var mapper;
+        if (!options.__mapper) throw Error("__mapper is required");
+        if (options.__mapper['Amm.Data.Mapper']) mapper = options.__mapper;
+        else mapper = Amm.Data.Mapper.get(options.__mapperId);
+        this._mapper = mapper;
 
-    /**
-     * LifecycleAndMeta instance that is responsible for working with current object.
-     * @type Amm.Data.LifecycleAndMeta
-     */
-    _lm: null,
-    
-    /**
-     * Whether cleanup in progress
-     * @type bool
-     */
-    _cu: false,
-    
-    _state: Amm.Data.STATE_NEW,
-    
-    _propNames: null,
-    
-    _preUpdateValues: null,
-    
-    /**
-     * Contains three hashes: local, remote, all
-     */
-    _errors: null,
-    
-    /**
-     * Contains three hashes: local, remote, all
-     */
-    _oldErrors: null,
-    
-    /**
-     * @returns {Amm.Data.LifecycleAndMeta}
-     */
-    getLm: function() {
-        if (!this._lm) this._lm = new Amm.Data.LifecycleAndMeta(this);
-        return this._lm;
-    },
-    
-    // lm is read-only; does nothing
-    setLm: function() {
-    },
-    
-    // added for compatibility with observers; never fires
-    outLmChange: function() {
+        var requiredClass = this._mapper.getRecordClass();
+        if (requiredClass && !Amm.is(this, requiredClass)) {
+            throw Error(
+                "Cannot use instance of " + Amm.getClass(this)
+                + " with mapper " + mapper.getId()
+                + "; required class is " + requiredClass
+            );
+        }
+        options = Amm.override(this._mapper.getRecordPrototype(), options);
+        delete options.__mapper;
+        return options;
+        
     },
     
     _doOnActual: function(forSave) {
@@ -25387,12 +25506,6 @@ Amm.Data.Object.prototype = {
     _doAfterLoad: function() {
     },
     
-    _doOnCheck: function() {
-    },
-    
-    _checkField: function(field, value) {
-    },
-    
     _doBeforeDelete: function() {
     },
     
@@ -25405,32 +25518,9 @@ Amm.Data.Object.prototype = {
     _doAfterSave: function() {
     },
     
-    _handleMissingEvent: function(eventName, handler, scope, extra) {
-        
-        // we alllow to subscribe to change events of arbitrary properties 
-        // because there are times when properties are created 
-        // AFTER the event handlers are attached
-        
-        if (eventName.match(/Change$/)) return true;
-    },
-    
-    cleanup: function() {
-        if (this._cu) return;
-        this._cu = true;
-        this.lm.cleanup();
-        this._data = {};
-        this._old = {};
-        Amm.WithEvents.prototype.cleanup.call(this);
-    }
-    
 };
 
-Object.defineProperty(Amm.Data.Object.prototype, 'lm', {
-    get: function() { return this.getLm(); }
-});
-
-//Amm.extend(Amm.Data.Object, Amm.Data);
-Amm.extend(Amm.Data.Object, Amm.WithEvents);
+Amm.extend(Amm.Data.Record, Amm.Data.Model);
 /* global Amm */
 
 Amm.Data.Transaction = function(options) {
@@ -25923,6 +26013,1174 @@ Amm.Data.Interface.prototype = {
 // Amm.extend(Amm.Data.Interface, Amm.Data)
 /* global Amm */
 
+Amm.Data.ModelMeta = function(model, options) {
+    this._m = model;
+    Object.defineProperty(this, 'm', {value: model, writable: false});
+    Amm.WithEvents.call(this, options);
+};
+
+Amm.Data.ModelMeta.prototype = {
+
+    'Amm.Data.ModelMeta': '__CLASS__', 
+    
+    /**
+     * @type {Amm.Data.Record}
+     */
+    _m: null,
+    
+    /**
+     * @type {Amm.Data.Mapper}
+     */
+    _mapper: null,
+    
+    _updateLevel: 0,
+    
+    _modified: null,
+    
+    _transaction: null,
+
+    _lastTransaction: null,
+    
+    _oldState: null,
+    
+    _checked: false,
+    
+    _cu: false,
+    
+    _propertiesChanged: false,
+    
+    _fieldMeta: null,
+    
+    _validators: null,
+    
+    /**
+     * Means doOnCheck will occur every time when get*Errors() or, when anything is subscribed
+     * to localErrorsChange / errorsChange events, instantly after every change (with respect
+     * to updateLevel).
+     * 
+     * Should be one of Amm.Data.AUTO_CHECK_ constants
+     */
+    _autoCheck: Amm.Data.AUTO_CHECK_SMART,
+    
+    /**
+     * Means all local errors are reset when object is hydrated w/ STATE_EXISTS
+     * and not modified; onCheck() will skip _doOnCheck() in this case too.
+     * 
+     * @type Boolean
+     */ 
+    _validWhenHydrated: true,
+
+    getObject: function() { return this._m; },
+    
+    getO: function() { return this._m; },
+    
+    hydrate: function(data, partial, noTrigger) {
+        this.beginUpdate();
+        if (!partial) {
+            this._m._old = {};
+            this._m._data = {};
+        }
+        for (var i in data) if (data.hasOwnProperty(i)) {
+            this._m._old[i] = data[i];
+            this._m._data[i] = data[i];
+            if (!this._m._propNames[i]) this._createProperty(i);
+        }
+        if (this.getKey()) {
+            this.setState(Amm.Data.STATE_EXISTS);
+            if (!noTrigger) this._m._doOnActual(false);
+        } else {
+            this.setState(Amm.Data.STATE_NEW);
+        }
+        this.outHydrate();
+        this.endUpdate();
+    },
+    
+    outHydrate: function() {
+        return this._out('hydrate');
+    },
+    
+    listDataFields: function() {
+        return Amm.keys(this._m._data);
+    },
+    
+    getData: function() {
+        return Amm.override({}, this._m._data);
+    },
+    
+    beginUpdate: function() {
+        this._updateLevel++;
+        if (this._updateLevel > 1) return;
+        this._m._preUpdateValues = this.getData();
+    },
+    
+    endUpdate: function() {
+        if (!this._updateLevel) 
+            throw Error ("Call to endUpdate() without corresponding beginUpdate(); check with getUpdateLevel() first");
+        this._updateLevel--;
+        if (this._updateLevel) return;
+        var pv = this._m._preUpdateValues;
+        var v = this._m._data, oldVal, newVal;
+        for (var i in pv) if (pv.hasOwnProperty(i)) {
+            oldVal = pv[i];
+            newVal = v[i];
+            delete pv[i];
+            if (newVal !== oldVal) this._reportFieldChange(i, newVal, oldVal, true);
+            if (this._m._updateLevel) break; // in case event handler done beginUpdate()
+        }
+        if (this._oldState !== null) {
+            if (this._oldState !== this._m.state) {
+                var oldState = this._oldState;
+                this._oldState = null;
+                this.outStateChange(this._m._state, this._oldState);
+            }
+        }
+        this._checkModified();
+        if (this._propertiesChanged) {
+            this._propertiesChanged = false;
+            this.outPropertiesChanged();
+        }
+        if (this._m._oldErrors !== null) {
+            this._endUpdateErrors();
+        }
+    },
+    
+    getUpdateLevel: function() {
+        return this._updateLevel;
+    },
+    
+    _checkFieldModified: function(field) {
+        var modified = false;
+        if (field in this._m._data) {
+            if (!(field in this._m._old) || this._m._old[field] !== this._m._data[field])
+            modified = true;
+        }
+        if (modified !== this._modified) this._checkModified();
+    },
+    
+    _checkModified: function() {
+        var modified = false;
+        for (var i in this._m._data) if (this._m._data.hasOwnProperty(i)) {
+            if (!(i in this._m._old) || this._m._old[i] !== this._m._data[i]) {
+                modified = true;
+                break;
+            }
+        }
+        this.setModified(modified);
+    },
+    
+    _reportFieldChange: function(field, val, oldVal, dontReportModified) {
+        if (this._updateLevel) return;
+        
+        var propName = this._m._propNames[field];
+        var outName = 'out' + propName.charAt(0).toUpperCase() + propName.slice(1) + 'Change';
+        
+        this._correctCheckStatus(field, val || oldVal);
+        
+        this._m[outName](val, oldVal);
+        if (!dontReportModified) {
+            this._checkFieldModified(field);
+        }
+    },
+
+    setModified: function(modified) {
+        var oldModified = this._modified;
+        if (oldModified === modified) return;
+        this._modified = modified;
+        this.outModifiedChange(modified, oldModified);
+        if (!this._modified) this._checkHydratedAndValid(true);
+        return true;
+    },
+
+    getModified: function(field) { 
+        if (field) {
+            return this._m._old[field] !== this._m._data[field];
+        }
+        return this._modified;
+    },
+    
+    getOldValue: function(field) {
+        return this._m._old[field];
+    },
+
+    outModifiedChange: function(modified, oldModified) {
+        this._out('modifiedChange', modified, oldModified);
+    },
+    
+    revert: function() {
+        this.beginUpdate();
+        this._m._data = Amm.override({}, this._m._old);
+        this.endUpdate();
+    },
+    
+    isSpecial: function(field) {
+        return field in this.constructor.prototype;
+    },
+    
+    getFieldValue: function(field) {
+        return this._m._data[field];
+    },
+    
+    setFieldValue: function(field, value) {
+        var old = this._m._data[field];
+        if (old === value) return;
+        this._m._data[field] = value;
+        if (this._updateLevel) return;
+        this._reportFieldChange(field, value, old);
+    },
+    
+    _createProperty: function(field) {
+        if (field in this._m._propNames) throw Error("Amm.Data.Record already has property for field '" + field + "'");
+        var propName = field, suff = '';
+        while (this.isSpecial(propName)) {
+            propName = field + 'Field' + suff;
+            suff = (suff || 1) + 1;
+        }
+        this._m._propNames[field] = propName;
+        var sfx = propName.slice(1);
+        var u = propName.charAt(0).toUpperCase() + sfx;
+        var l = propName.charAt(0).toLowerCase() + sfx;
+        var eventName = l + 'Change';
+        var outName = 'out' + u + 'Change';
+        var setterName = 'set' + u;
+        var getterName = 'get' + u;
+        
+        if (!(getterName in this._m)) {
+            this._m[getterName] = function() {
+                return this._data[field];
+            };
+        }
+        if (!(setterName in this._m)) {
+            this._m[setterName] = function(value) {
+                return this.mm.setFieldValue(field, value);
+            };
+        }
+        if (!(outName in this._m)) {
+            this._m[outName] = function(value, oldValue) {
+                if (this._updateLevel) return;
+                return this._out(eventName, value, oldValue);
+            };
+        }
+        Object.defineProperty(this._m, propName, {
+            enumerable: true,
+            get: this._m[getterName],
+            set: this._m[setterName]
+        });
+        
+        // we need to create pre-update values' key so change event will be triggered
+        // during endUpdate()
+        if (!(field in this._m._preUpdateValues)) {
+            this._m._preUpdateValues[field] = undefined;
+        }
+        
+        if (!this._updateLevel) this.outPropertiesChanged();
+        else this._propertiesChanged = true;
+        
+        return propName;
+    },
+    
+    outPropertiesChanged: function() {
+        return this._out('propertiesChanged');
+    },
+    
+    getState: function() {
+        return this._m._state;
+    },
+    
+    setState: function(state) {
+        var oldState = this._m._state;
+        if (oldState === state) return;
+        if (!Amm.Data.StateEnum[state]) 
+            throw Error("`state` must be one of Amm.Data.STATE_ values; given: '" + state + "'");
+        this._m._state = state;
+        if (!this._updateLevel) {
+            this.outStateChange(state, oldState);
+            return;
+        }
+        if (this._oldState === null) {
+            this._oldState = oldState;
+        }
+    },
+    
+    outStateChange: function(state, oldState) {
+        return this._out('stateChange', state, oldState);
+    },
+    
+    _hasLocalErrors: function() {
+        if (this._m._errors.local) {
+            // fail if we have any local errors
+            for (var i in this._m._errors.local) {
+                if (this._m._errors.local.hasOwnProperty(i)) return true;
+            }
+        }
+        return false;
+    },
+    
+    check: function(again) {
+        if (this._checked && !again) return !this._hasLocalErrors();
+        if (this._checkHydratedAndValid(true)) return true;
+        this._beginUpdateErrors();
+        this._m._errors.local = {};
+        this._coreCheckFields();
+        this._coreCheckWhole();
+        this._m._doOnCheck();
+        this._checked = true;
+        this._endUpdateErrors();
+        return !this._hasLocalErrors();
+    },
+    
+    _coreCheckFields: function(field) {
+        // check individual fields first
+        var hasFieldCheckFn = this._m._checkField !== Amm.Data.Record.prototype._checkField;
+        // everything a-ok
+        var fieldsSrc;
+        if (field) {
+            if (!this._m._propNames[field]) return;
+            fieldsSrc = {};
+            fieldsSrc[field] = this._m._propNames[field];
+        } else {
+            fieldsSrc = this._m._propNames;
+        }
+        var err, i, j, l, v, validators;
+        for (i in fieldsSrc) if (fieldsSrc.hasOwnProperty(i)) {
+            v = this._m._data[i];
+            if (hasFieldCheckFn) {
+                err = this._m._checkField(i, v);
+                if (err === false) err = Amm.translate("lang.Amm.ModelMeta.invalidFieldValue");
+                if (err) {
+                    this.addError(err, i);
+                }
+            }
+            
+            validators = this.getFieldValidators(i);
+            if (!validators) continue;
+            if (!(validators instanceof Array)) validators = [validators];
+            var label = this.getMeta(i, 'label') || i;
+            for (var j = 0, l = validators.length; j < l; j++) {
+                if (typeof validators[j] === 'function') {
+                    err = validators[j](v, label);
+                }
+                else if (typeof validators[j].getError === 'function') {
+                    err = validators[j].getError(v, label);
+                }
+                if (err) {
+                    err = err.replace(/%field/g, label);
+                    // we stop on first error
+                    this.addError(err, i);
+                    break;
+                }
+            }
+            if (!err) delete this._m._errors.local[i];
+        }
+    },
+    
+    _coreCheckWhole: function() {
+        var modelValidators = this._mapper.getModelValidators();
+        if (!modelValidators) return;
+        for (var key in modelValidators) if (modelValidators.hasOwnProperty(key)) {
+            var vals = modelValidators[key];
+            var error;
+            for (var j = 0, l = vals.length; j < l; j++) {
+                var val = vals[j];
+                if (val['Amm.Expression']) { // check for cached function
+                    if (!val.__func) val.__func = val.toFunction();
+                    val.__func.env.expressionThis = this._m;
+                    error = val.__func();
+                }
+                else if (val['Amm.Validator']) {
+                    error = val.getError(this);
+                }
+                else if (typeof val === 'function') { // check it is an expression
+                    error = val.call(this._m);
+                } else {
+                    throw Error("modelValidators['" + key + "'] must be either a function, an Amm.Expression or an Amm.Validator; provided: " 
+                        + Amm.describeType(modelValidators[key]));
+                }
+                if (error === false) error = Amm.translate(key);
+                if (error) {
+                    this.addError(error, key);
+                    continue;
+                }
+            }
+        }
+    },
+    
+    setChecked: function(checked) {
+        var oldChecked = this._checked;
+        if (oldChecked === checked) return;
+        this._checked = checked;
+        this.outCheckedChange(checked, oldChecked);
+        return true;
+    },
+
+    getChecked: function() { return this._checked; },
+
+    outCheckedChange: function(checked, oldChecked) {
+        this._out('checkedChange', checked, oldChecked);
+    },
+    
+    setAutoCheck: function(autoCheck) {
+        if (typeof autoCheck === 'boolean') autoCheck = autoCheck + 0;
+        else if (typeof autoCheck === 'string') autoCheck = parseInt(autoCheck);
+        if (autoCheck !== Amm.Data.AUTO_CHECK_NEVER && autoCheck !== Amm.Data.AUTO_CHECK_ALWAYS && autoCheck !== Amm.Data.AUTO_CHECK_SMART) {
+            throw Error("Invalid autoCheck value; must be one of Amm.Data.AUTO_CHECK_ constants");
+        }
+        var oldAutoCheck = this._autoCheck;
+        if (oldAutoCheck === autoCheck) return;
+        this._autoCheck = autoCheck;
+        if (autoCheck) this._instaCheck();
+        return true;
+    },
+
+    getAutoCheck: function() { return this._autoCheck; },
+
+    setValidWhenHydrated: function(validWhenHydrated) {
+        var oldValidWhenHydrated = this._validWhenHydrated;
+        if (oldValidWhenHydrated === validWhenHydrated) return;
+        this._validWhenHydrated = validWhenHydrated;
+        if (validWhenHydrated) this._checkHydratedAndValid(true);
+        else if (this.getState() === Amm.Data.STATE_EXISTS && !this._modifierd) {
+            if (this._autoCheck === Amm.Data.AUTO_CHECK_ALWAYS) {
+                this._instaCheck(true);
+            } else {
+                this.setChecked(false);
+            }
+        }
+        return true;
+    },
+
+    getValidWhenHydrated: function() { return this._validWhenHydrated; },
+    
+    _checkHydratedAndValid: function(resetErrors) {
+        if (!this._validWhenHydrated) return;
+        if (this._modified || this.getState() !== Amm.Data.STATE_EXISTS) return;
+        if (resetErrors) this.setLocalErrors({});
+        return true;
+    },
+    
+    _correctCheckStatus: function(field, hasValue) {
+        if (this._autoCheck === Amm.Data.AUTO_CHECK_SMART && hasValue) {
+            this._beginUpdateErrors();
+            this.setChecked(false);
+            this._coreCheckFields(field);
+            this._endUpdateErrors();
+        } else if (this._autoCheck === Amm.Data.AUTO_CHECK_ALWAYS) {
+            this._instaCheck(true);
+        } else {
+            this.setChecked(false);
+        }
+    },
+    
+    _instaCheck: function(recheck) {
+        if (this._checked && !recheck) return;
+        if (!this._autoCheck) return;
+        if (recheck) this._checked = false;
+        if (!this._subscribers.localErrorsChange && !this._subscribers.errorsChange) return;
+        if (this._autoCheck === Amm.Data.AUTO_CHECK_ALWAYS) {
+            this.check();
+            return;
+        }
+    },
+
+    _beginUpdateErrors: function() {
+        if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.errorsChange) {
+            this._m._oldErrors = false; // special value means we defer JSON calculation
+        }
+        if (!this._m._errors) this._m._errors = {local: {}, remote: {}};
+        this._combineErrors();
+        if (!this._m._oldErrors) this._m._oldErrors = {
+            local: JSON.stringify(this._m._errors.local),
+            remote: JSON.stringify(this._m._errors.remote),
+            all: JSON.stringify(this._m._errors.all)
+        }; 
+    },
+    
+    _subscribeFirst_localErrorsChange: function() {
+        if (this._m._oldErrors === false) this._beginUpdateErrors();
+    },
+    
+    _subscribeFirst_remoteErrorsChange: function() {
+        return this._subscribeFirst_localErrorsChange();
+    },
+    
+    _subscribeFirst_errorsChange: function() {
+        return this._subscribeFirst_localErrorsChange();
+    },
+    
+    _endUpdateErrors: function() {
+        this._m._errors.all = null; // to be calculated
+        if (this._updateLevel) return; // nothing to do yet
+        if (!this._m._oldErrors) return; // nothing to do at all
+        if (!this._m._errors) if (!this._m._errors) this._m._errors = {local: {}, remote: {}};
+        else {
+            if (!this._m._errors.local) this._m._errors.local = {};
+            if (!this._m._errors.remote) this._m._errors.remote = {};
+        }
+        var oldErrors = this._m._oldErrors;
+        this._m._oldErrors = null;
+        if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.errorsChange) {
+            return;
+        }
+        var localChanged = oldErrors.local !== JSON.stringify(this._m._errors.local);
+        var remoteChanged = oldErrors.remote !== JSON.stringify(this._m._errors.remote);
+        if (!localChanged && !remoteChanged) {
+            return;
+        }
+        var triggerLocal = localChanged && this._subscribers.localErrorsChange;
+        var triggerRemote = remoteChanged && this._subscribers.remoteErrorsChange;
+        var triggerAll = this._subscribers.errorsChange;
+        if (triggerLocal) this.outLocalErrorsChange(this._m._errors.local, JSON.parse(oldErrors.local));
+        if (triggerRemote) this.outRemoteErrorsChange(this._m._errors.remote, JSON.parse(oldErrors.remote));
+        if (triggerAll) this.outErrorsChange(this.getErrors(), JSON.parse(oldErrors.all));
+    },
+    
+    getLocalErrors: function(field) {
+        if (this._autoCheck && this._modified && !this._checked) this.check();
+        return this._getErrors('local', field);
+    },
+    
+    _getErrors: function(type, field) {
+        if (!this._m._errors[type] || field && (field !== Amm.Data.ERROR_OTHER) && !(this._m._errors[type][field])) return null;
+        if (!field) return this._m._errors[type];
+        if (field === Amm.Data.ERROR_OTHER) return this._getOtherErrors(this._m._errors[type]);
+        return this._m._errors[type][field];
+    },
+    
+    _setErrors: function(type, errors, field) {
+        this._beginUpdateErrors();
+        if (field) {
+            this._m._errors[type][field] = this._flattenErrors(errors);
+            if (!this._m._errors[type][field].length) delete this._m._errors[type][field];
+            this._endUpdateErrors();
+            return;
+        } 
+        if (!errors) errors = {};
+        else if (typeof errors !== 'object' || (errors instanceof Array)) {
+            errors[Amm.Data.ERROR_GENERIC] = this._flattenErrors(errors);
+            if (!errors[Amm.Data.ERROR_GENERIC] || !errors[Amm.Data.ERROR_GENERIC].length) {
+                delete errors[Amm.Data.ERROR_GENERIC];
+            }
+        }
+        var i, v, e = {};
+        for (var i in errors) if (errors.hasOwnProperty(i)) {
+            v = this._flattenErrors(errors[i]);
+            if (!v.length) continue;
+            e[i] = v;
+        }
+        this._m._errors[type] = e;
+        this._endUpdateErrors();
+    },
+    
+    setLocalErrors: function(errors, field) {
+        this._setErrors('local', errors, field);
+    },
+    
+    addError: function(error, field) {
+        if (!error || (error instanceof Array && !error.length)) return;
+        this._beginUpdateErrors();
+        if (!field || field === Amm.Data.ERROR_OTHER) field = Amm.Data.ERROR_GENERIC;
+        var e = {};
+        e[field] = this._flattenErrors(error);
+        Amm.override(this._m._errors.local, e, false, true);
+        this._endUpdateErrors();
+    },
+    
+    outLocalErrorsChange: function(errors, oldErrors) {
+        return this._out('localErrorsChange', errors, oldErrors);
+    },
+    
+    getRemoteErrors: function(field) {
+        return this._getErrors('remote', field);
+    },
+    
+    setRemoteErrors: function(errors, field) {
+        this._setErrors('remote', errors, field);
+    },
+    
+    outRemoteErrorsChange: function(errors, oldErrors) {
+        return this._out('remoteErrorsChange', errors, oldErrors);
+    },
+    
+    _flattenErrors: function(hash) {
+        return Amm.Data.flattenErrors(hash);
+    },
+    
+    _getOtherErrors: function(src) {
+        var r, res;
+        for (var i in src) if (src.hasOwnProperty(i) && !(i in this._m._propNames)) {
+            r[i] = src[i];
+        }
+        return this._flattenErrors(r);
+    },
+    
+    _combineErrors: function() {
+        this._m._errors.all = {};
+        if (this._m._errors.local) Amm.overrideRecursive(this._m._errors.all, this._m._errors.local);
+        if (this._m._errors.remote) Amm.overrideRecursive(this._m._errors.all, this._m._errors.remote, false, true);
+    },
+    
+    getErrors: function(field) {
+        if (this._autoCheck && this._modified && !this._checked) this.check();
+        if (!this._m._errors) return null;
+        if (!this._m._errors.all) {
+            this._combineErrors();
+        }
+        return this._getErrors('all', field);
+    },
+    
+    outErrorsChange: function(errors, oldErrors) {
+        return this._out('errorsChange', errors, oldErrors);
+    },
+    
+    setErrors: function() {
+        console.warn("setErrors has no effect; use either setLocalErrors() or setRemoteErrors()");
+    },
+
+    _setTransaction: function(transaction) {
+        if (transaction) Amm.is(transaction, 'Amm.Data.Transaction');
+        else transaction = null;
+        
+        var oldTransaction = this._transaction;
+        if (oldTransaction === transaction) return;
+        
+        if (oldTransaction) oldTransaction.unsubscribe(undefined, undefined, this);
+        if (transaction) transaction.subscribe('stateChange', this._notifyTransactionStateChange, this);
+        
+        this._transaction = transaction;
+
+        this.outTransactionChange(transaction, oldTransaction);
+        if (oldTransaction) this._setLastTransaction(oldTransaction);
+        
+        return true;
+    },
+
+    getTransaction: function() { return this._transaction; },
+
+    outTransactionChange: function(transaction, oldTransaction) {
+        this._out('transactionChange', transaction, oldTransaction);
+    },
+    
+    _notifyTransactionStateChange: function(state, oldState) {
+        // ignore if we don't track this transaction anymore
+        if (!this._transaction || Amm.event.origin !== this._transaction) return;
+        if (state === Amm.Data.Transaction.STATE_RUNNING) {
+            // don't handle transaction start event
+            return;
+        }
+        if (state === Amm.Data.Transaction.STATE_CANCELLED) { // business as usual
+            this._setTransaction(null);
+            return;
+        }
+        
+        if (this._handleTransactionFinished(state)) {
+            this._setTransaction(null);
+        }
+    },
+    
+    _handleTransactionFinished: function(state) {
+        
+        if (state === Amm.Data.Transaction.STATE_CANCELLED) return true;
+        
+        var failure = (state === Amm.Data.Transaction.STATE_FAILURE);
+        
+        if (failure) {
+            this._handleGenericTransactionFailure();
+            return true;
+        }
+        
+        var success = (state === Amm.Data.Transaction.STATE_SUCCESS);
+        
+        if (!success) return;
+        
+        var type = this._transaction.getType() + '';
+        
+        var method = '_handle' + type[0].toUpperCase() + type.slice(1) + 'Success';
+        
+        if (typeof this[method] === 'function' ) {
+            this[method]();
+        }
+        
+        return true;
+        
+    },
+    
+    _hydrateFromTransactionDataAndTrigger: function(forSave, newState, partial) {
+        var result = this._transaction.getResult();
+        var wasCreated = (this._m._state === Amm.Data.STATE_NEW);
+        this.beginUpdate();
+        this.setRemoteErrors({});
+        var data = result.getData();
+        if (data) this.hydrate(data, partial, true);
+        if (newState) this.setState(newState);
+        if (forSave) {
+            this._m._doAfterSave(wasCreated);
+        } else {
+            this._m._doAfterLoad();
+        }
+        this._m._doOnActual(forSave);
+        this.endUpdate();
+    },
+    
+    _handleGenericTransactionFailure: function() {
+        var result = this._transaction.getResult();
+        var remoteErrors = result.getErrorData(), tmp, 
+                error = result.getError(), exception = result.getException();
+        if (!remoteErrors) remoteErrors = {};
+        else if (typeof remoteErrors !== 'object') {
+            tmp = {};
+            tmp[Amm.Data.ERROR_GENERIC] = [remoteErrors];
+            remoteErrors = tmp;
+        }
+        
+        var f;
+        if (error) {
+            if (remoteErrors[Amm.Data.ERROR_GENERIC]) {
+                remoteErrors[Amm.Data.ERROR_GENERIC].push(error);
+                /*remoteErrors[Amm.Data.ERROR_GENERIC] = Amm.Data.flattenErrors(remoteErrors[Amm.Data.ERROR_GENERIC]);
+                if (!remoteErrors[Amm.Data.ERROR_GENERIC] || !remoteErrors[Amm.Data.ERROR_GENERIC].length) {
+                    delete remoteErrors[Amm.Data.ERROR_GENERIC];
+                }*/
+            } else {
+                remoteErrors[Amm.Data.ERROR_GENERIC] = [error];
+            }
+        }
+        if (exception) {
+            remoteErrors[Amm.Data.ERROR_EXCEPTION] = '' + exception;
+        }
+        
+        this.setRemoteErrors(remoteErrors);
+        
+        this.outTransactionFailure (this._transaction);
+    },
+    
+    outTransactionFailure: function(transaction) {
+        return this._out('transactionFailure', transaction);
+    },
+    
+    _handleCreateSuccess: function() {
+        this._hydrateFromTransactionDataAndTrigger(true, Amm.Data.STATE_EXISTS, this._mapper.partialHydrateOnCreate);
+    },
+    
+    _handleDeleteSuccess: function() {
+        this.setState(Amm.Data.STATE_DELETED);
+        this.setRemoteErrors({});
+        this._m._doAfterDelete();
+    },
+    
+    _handleUpdateSuccess: function() {
+        this._hydrateFromTransactionDataAndTrigger(true, undefined, this._mapper.partialHydrateOnUpdate);
+    },
+    
+    _handleLoadSuccess: function() {
+        this.beginUpdate();
+        this._hydrateFromTransactionDataAndTrigger(false, Amm.Data.STATE_EXISTS);
+        this.endUpdate();
+    },
+
+    _setLastTransaction: function(lastTransaction) {
+        if (lastTransaction) Amm.is(lastTransaction, 'Amm.Data.Transaction');
+        else lastTransaction = null;
+        
+        var oldLastTransaction = this._lastTransaction;
+        if (oldLastTransaction === lastTransaction) return;
+        this._lastTransaction = lastTransaction;
+        this.outLastTransactionChange(lastTransaction, oldLastTransaction);
+        return true;
+    },
+
+    getLastTransaction: function() { return this._lastTransaction; },
+
+    outLastTransactionChange: function(lastTransaction, oldLastTransaction) {
+        this._out('lastTransactionChange', lastTransaction, oldLastTransaction);
+    },
+    
+    _getTransactionData: function() {
+        return Amm.override({}, this._m._data);
+    },
+    
+    _runTransaction: function(transaction) {
+        this._setTransaction(transaction);
+        transaction.run();
+        if (transaction.getState() === Amm.Data.Transaction.STATE_FAILURE) {
+            var x = transaction.getResult().getException();
+            if (x) throw x;
+        }
+    },
+    
+    save: function(noCheck) {
+        if (!noCheck && !this.check()) return;
+        if (this._m._doBeforeSave() === false) return;
+        var data = this._getTransactionData(), tr, state = this.getState();
+        if (state === Amm.Data.STATE_NEW) {
+            tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_CREATE, null, data);
+        } else if (state === Amm.Data.STATE_EXISTS) {
+            tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_UPDATE, this.getKey(), data);
+        } else {
+            throw Error("Cannot save an object with state '" + state + "'");
+        }
+        this._runTransaction(tr);
+        return true;
+    },
+    
+    delete: function() {
+        var tr, state = this.getState(), key;
+        if (state !== Amm.Data.STATE_EXISTS) {
+            this.setState(Amm.Data.STATE_DELETED);
+            return true;
+        }
+        if (this._m._doBeforeDelete() === false) return false;
+        key = this.getKey();
+        tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_DELETE, this.getKey());
+        this._runTransaction(tr);
+        return true;
+    },
+    
+    load: function(key) {
+        var newKey = this._m._doBeforeLoad(key);
+        if (newKey === false) return false;
+        if (newKey !== undefined) key = newKey;
+        if (key === undefined) key = this.getKey();
+        if (!key) throw new Error ("Cannot load(): key not provided");
+        var tr;
+        tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_LOAD, key);
+        this._runTransaction(tr);
+        return true;
+    },
+    
+    cleanup: function() {
+        if (this._cu) return;
+        this._cu = true;
+        if (this._transaction) {
+            this._transaction.cleanup();
+            this._transaction = null;
+        }
+        if (this._lastTransaction) {
+            this._lastTransaction.cleanup();
+            this._lastTransaction = null;
+        }
+        if (this._mapper) this._mapper.unsubscribe(undefined, undefined, this);
+        this._m.cleanup();
+        Amm.WithEvents.prototype.cleanup.call(this);
+    },
+    
+    getMapper: function() {
+        return this._mapper;
+    },
+    
+    setMapper: function() {
+        // dummy
+    },
+    
+    outMapperChange: function() {
+        // dummy
+    },
+    
+    _onMetaChange: function(field, property, value, oldValue) {
+        Amm.Data.MetaProvider.prototype._onMetaChange.call(
+            this, field, property, value, oldValue
+        );
+        // we know _that_ meta-property isn't validation-related
+        if (property 
+            && property !== 'required'      // requiredness affects validation
+            && property !== 'label'         // label may affect error messages
+            && property !== 'validators'    // validators affect validation
+        ) return;
+        var hasValue = field && this._m._data[field] || this._m._old[field];
+        var shouldCheck = hasValue || property === 'required' && !value;
+        this._correctCheckStatus(field, shouldCheck);
+    }
+    
+};
+
+Amm.extend(Amm.Data.ModelMeta, Amm.WithEvents);
+Amm.extend(Amm.Data.ModelMeta, Amm.Data.MetaProvider);
+
+Amm.defineLangStrings({
+    'lang.Amm.ModelMeta.invalidFieldValue': "The field contains invalid value"
+});
+/* global Amm */
+
+Amm.Data.RecordMeta = function(record, options) {
+    Amm.Data.ModelMeta.call(this, record, options);
+    this._mapper = record._mapper;
+    this.setMetaProvider(this._mapper);
+};
+
+Amm.Data.RecordMeta.prototype = {
+
+    'Amm.Data.RecordMeta': '__CLASS__', 
+    
+    /**
+     * @type {Amm.Data.Mapper}
+     */
+    _mapper: null,
+    
+    _updateLevel: 0,
+    
+    _modified: null,
+    
+    getKey: function() {
+        var res = this._mapper.extractKey(this._m._old);
+        if (res === undefined) res = this._mapper.extractKey(this._m._data);
+        return res;
+    },
+    
+    _setTransaction: function(transaction) {
+        if (transaction) Amm.is(transaction, 'Amm.Data.Transaction');
+        else transaction = null;
+        
+        var oldTransaction = this._transaction;
+        if (oldTransaction === transaction) return;
+        
+        if (oldTransaction) oldTransaction.unsubscribe(undefined, undefined, this);
+        if (transaction) transaction.subscribe('stateChange', this._notifyTransactionStateChange, this);
+        
+        this._transaction = transaction;
+
+        this.outTransactionChange(transaction, oldTransaction);
+        if (oldTransaction) this._setLastTransaction(oldTransaction);
+        
+        return true;
+    },
+
+    getTransaction: function() { return this._transaction; },
+
+    outTransactionChange: function(transaction, oldTransaction) {
+        this._out('transactionChange', transaction, oldTransaction);
+    },
+    
+    _notifyTransactionStateChange: function(state, oldState) {
+        // ignore if we don't track this transaction anymore
+        if (!this._transaction || Amm.event.origin !== this._transaction) return;
+        if (state === Amm.Data.Transaction.STATE_RUNNING) {
+            // don't handle transaction start event
+            return;
+        }
+        if (state === Amm.Data.Transaction.STATE_CANCELLED) { // business as usual
+            this._setTransaction(null);
+            return;
+        }
+        
+        if (this._handleTransactionFinished(state)) {
+            this._setTransaction(null);
+        }
+    },
+    
+    _handleTransactionFinished: function(state) {
+        
+        if (state === Amm.Data.Transaction.STATE_CANCELLED) return true;
+        
+        var failure = (state === Amm.Data.Transaction.STATE_FAILURE);
+        
+        if (failure) {
+            this._handleGenericTransactionFailure();
+            return true;
+        }
+        
+        var success = (state === Amm.Data.Transaction.STATE_SUCCESS);
+        
+        if (!success) return;
+        
+        var type = this._transaction.getType() + '';
+        
+        var method = '_handle' + type[0].toUpperCase() + type.slice(1) + 'Success';
+        
+        if (typeof this[method] === 'function' ) {
+            this[method]();
+        }
+        
+        return true;
+        
+    },
+    
+    _hydrateFromTransactionDataAndTrigger: function(forSave, newState, partial) {
+        var result = this._transaction.getResult();
+        var wasCreated = (this._m._state === Amm.Data.STATE_NEW);
+        this.beginUpdate();
+        this.setRemoteErrors({});
+        var data = result.getData();
+        if (data) this.hydrate(data, partial, true);
+        if (newState) this.setState(newState);
+        if (forSave) {
+            this._m._doAfterSave(wasCreated);
+        } else {
+            this._m._doAfterLoad();
+        }
+        this._m._doOnActual(forSave);
+        this.endUpdate();
+    },
+    
+    _handleGenericTransactionFailure: function() {
+        var result = this._transaction.getResult();
+        var remoteErrors = result.getErrorData(), tmp, 
+                error = result.getError(), exception = result.getException();
+        if (!remoteErrors) remoteErrors = {};
+        else if (typeof remoteErrors !== 'object') {
+            tmp = {};
+            tmp[Amm.Data.ERROR_GENERIC] = [remoteErrors];
+            remoteErrors = tmp;
+        }
+        
+        var f;
+        if (error) {
+            if (remoteErrors[Amm.Data.ERROR_GENERIC]) {
+                remoteErrors[Amm.Data.ERROR_GENERIC].push(error);
+                /*remoteErrors[Amm.Data.ERROR_GENERIC] = Amm.Data.flattenErrors(remoteErrors[Amm.Data.ERROR_GENERIC]);
+                if (!remoteErrors[Amm.Data.ERROR_GENERIC] || !remoteErrors[Amm.Data.ERROR_GENERIC].length) {
+                    delete remoteErrors[Amm.Data.ERROR_GENERIC];
+                }*/
+            } else {
+                remoteErrors[Amm.Data.ERROR_GENERIC] = [error];
+            }
+        }
+        if (exception) {
+            remoteErrors[Amm.Data.ERROR_EXCEPTION] = '' + exception;
+        }
+        
+        this.setRemoteErrors(remoteErrors);
+        
+        this.outTransactionFailure (this._transaction);
+    },
+    
+    outTransactionFailure: function(transaction) {
+        return this._out('transactionFailure', transaction);
+    },
+    
+    _handleCreateSuccess: function() {
+        this._hydrateFromTransactionDataAndTrigger(true, Amm.Data.STATE_EXISTS, this._mapper.partialHydrateOnCreate);
+    },
+    
+    _handleDeleteSuccess: function() {
+        this.setState(Amm.Data.STATE_DELETED);
+        this.setRemoteErrors({});
+        this._m._doAfterDelete();
+    },
+    
+    _handleUpdateSuccess: function() {
+        this._hydrateFromTransactionDataAndTrigger(true, undefined, this._mapper.partialHydrateOnUpdate);
+    },
+    
+    _handleLoadSuccess: function() {
+        this.beginUpdate();
+        this._hydrateFromTransactionDataAndTrigger(false, Amm.Data.STATE_EXISTS);
+        this.endUpdate();
+    },
+
+    _setLastTransaction: function(lastTransaction) {
+        if (lastTransaction) Amm.is(lastTransaction, 'Amm.Data.Transaction');
+        else lastTransaction = null;
+        
+        var oldLastTransaction = this._lastTransaction;
+        if (oldLastTransaction === lastTransaction) return;
+        this._lastTransaction = lastTransaction;
+        this.outLastTransactionChange(lastTransaction, oldLastTransaction);
+        return true;
+    },
+
+    getLastTransaction: function() { return this._lastTransaction; },
+
+    outLastTransactionChange: function(lastTransaction, oldLastTransaction) {
+        this._out('lastTransactionChange', lastTransaction, oldLastTransaction);
+    },
+    
+    _getTransactionData: function() {
+        return Amm.override({}, this._m._data);
+    },
+    
+    _runTransaction: function(transaction) {
+        this._setTransaction(transaction);
+        transaction.run();
+        if (transaction.getState() === Amm.Data.Transaction.STATE_FAILURE) {
+            var x = transaction.getResult().getException();
+            if (x) throw x;
+        }
+    },
+    
+    save: function(noCheck) {
+        if (!noCheck && !this.check()) return;
+        if (this._m._doBeforeSave() === false) return;
+        var data = this._getTransactionData(), tr, state = this.getState();
+        if (state === Amm.Data.STATE_NEW) {
+            tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_CREATE, null, data);
+        } else if (state === Amm.Data.STATE_EXISTS) {
+            tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_UPDATE, this.getKey(), data);
+        } else {
+            throw Error("Cannot save an object with state '" + state + "'");
+        }
+        this._runTransaction(tr);
+        return true;
+    },
+    
+    delete: function() {
+        var tr, state = this.getState(), key;
+        if (state !== Amm.Data.STATE_EXISTS) {
+            this.setState(Amm.Data.STATE_DELETED);
+            return true;
+        }
+        if (this._m._doBeforeDelete() === false) return false;
+        key = this.getKey();
+        tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_DELETE, this.getKey());
+        this._runTransaction(tr);
+        return true;
+    },
+    
+    load: function(key) {
+        var newKey = this._m._doBeforeLoad(key);
+        if (newKey === false) return false;
+        if (newKey !== undefined) key = newKey;
+        if (key === undefined) key = this.getKey();
+        if (!key) throw new Error ("Cannot load(): key not provided");
+        var tr;
+        tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_LOAD, key);
+        this._runTransaction(tr);
+        return true;
+    },
+    
+    _handleMapperMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
+        // we know _that_ meta-property isn't validation-related
+        if (property 
+            && property !== 'required'      // requiredness affects validation
+            && property !== 'label'         // label may affect error messages
+            && property !== 'validators'    // validators affect validation
+        ) return;
+        var hasValue = field && this._m._data[field] || this._m._old[field];
+        var shouldCheck = hasValue || property === 'required' && !value;
+        this._correctCheckStatus(field, shouldCheck);
+    },
+    
+    cleanup: function() {
+        if (this._cu) return;
+        this._cu = true;
+        if (this._transaction) {
+            this._transaction.cleanup();
+            this._transaction = null;
+        }
+        if (this._lastTransaction) {
+            this._lastTransaction.cleanup();
+            this._lastTransaction = null;
+        }
+        if (this._mapper) this._mapper.unsubscribe(undefined, undefined, this);
+        this._m.cleanup();
+        Amm.WithEvents.prototype.cleanup.call(this);
+    },
+    
+    getMapper: function() {
+        return this._mapper;
+    },
+    
+    setMapper: function() {
+        // dummy
+    },
+    
+    outMapperChange: function() {
+        // dummy
+    }
+    
+    
+};
+
+Amm.extend(Amm.Data.RecordMeta, Amm.Data.ModelMeta);
+/* global Amm */
+
 /**
  * 
  * HttpTransaction is configure-than-shoot object.
@@ -26315,937 +27573,72 @@ Amm.extend(Amm.Data.HttpTransaction, Amm.Data.Transaction);
 
 /* global Amm */
 
-Amm.Data.LifecycleAndMeta = function(object, options) {
-    this._o = object;
-    this._mapper = object._mapper;
-    this._mapper.subscribe('metaChange', this._handleMapperMetaChange, this);
-    Object.defineProperty(this, 'o', {value: object, writable: false});
-    Amm.WithEvents.call(this, options);
-};
-
-Amm.Data.LifecycleAndMeta.prototype = {
-
-    'Amm.Data.LifecycleAndMeta': '__CLASS__', 
-    
-    /**
-     * @type {Amm.Data.Object}
-     */
-    _o: null,
-    
-    /**
-     * @type {Amm.Data.Mapper}
-     */
-    _mapper: null,
-    
-    _updateLevel: 0,
-    
-    _modified: null,
-    
-    _transaction: null,
-
-    _lastTransaction: null,
-    
-    _oldState: null,
-    
-    _checked: false,
-    
-    _cu: false,
-    
-    _propertiesChanged: false,
-    
-    /**
-     * Means doOnCheck will occur every time when get*Errors() or, when anything is subscribed
-     * to localErrorsChange / errorsChange events, instantly after every change (with respect
-     * to updateLevel).
-     * 
-     * Should be one of Amm.Data.AUTO_CHECK_ constants
-     */
-    _autoCheck: Amm.Data.AUTO_CHECK_SMART,
-    
-    /**
-     * Means all local errors are reset when object is hydrated w/ STATE_EXISTS
-     * and not modified; onCheck() will skip _doOnCheck() in this case too.
-     * 
-     * @type Boolean
-     */ 
-    _validWhenHydrated: true,
-    
-    getObject: function() { return this._o; },
-    
-    getO: function() { return this._o; },
-    
-    hydrate: function(data, partial, noTrigger) {
-        this.beginUpdate();
-        if (!partial) {
-            this.o._old = {};
-            this.o._data = {};
-        }
-        for (var i in data) if (data.hasOwnProperty(i)) {
-            this.o._old[i] = data[i];
-            this.o._data[i] = data[i];
-            if (!this.o._propNames[i]) this._createProperty(i);
-        }
-        if (this.getKey()) {
-            this.setState(Amm.Data.STATE_EXISTS);
-            if (!noTrigger) this.o._doOnActual(false);
-        } else {
-            this.setState(Amm.Data.STATE_NEW);
-        }
-        this.outHydrate();
-        this.endUpdate();
-    },
-    
-    outHydrate: function() {
-        return this._out('hydrate');
-    },
-    
-    listDataFields: function() {
-        return Amm.keys(this.o._data);
-    },
-    
-    getData: function() {
-        return Amm.override({}, this.o._data);
-    },
-    
-    beginUpdate: function() {
-        this._updateLevel++;
-        if (this._updateLevel > 1) return;
-        this.o._preUpdateValues = this.getData();
-    },
-    
-    endUpdate: function() {
-        if (!this._updateLevel) 
-            throw Error ("Call to endUpdate() without corresponding beginUpdate(); check with getUpdateLevel() first");
-        this._updateLevel--;
-        if (this._updateLevel) return;
-        var pv = this.o._preUpdateValues;
-        var v = this.o._data, oldVal, newVal;
-        for (var i in pv) if (pv.hasOwnProperty(i)) {
-            oldVal = pv[i];
-            newVal = v[i];
-            delete pv[i];
-            if (newVal !== oldVal) this._reportFieldChange(i, newVal, oldVal, true);
-            if (this.o._updateLevel) break; // in case event handler done beginUpdate()
-        }
-        if (this._oldState !== null) {
-            if (this._oldState !== this._o.state) {
-                var oldState = this._oldState;
-                this._oldState = null;
-                this.outStateChange(this._o._state, this._oldState);
-            }
-        }
-        this._checkModified();
-        if (this._propertiesChanged) {
-            this._propertiesChanged = false;
-            this.outPropertiesChanged();
-        }
-        if (this._o._oldErrors !== null) {
-            this._endUpdateErrors();
-        }
-    },
-    
-    getUpdateLevel: function() {
-        return this._updateLevel;
-    },
-    
-    _checkFieldModified: function(field) {
-        var modified = false;
-        if (field in this.o._data) {
-            if (!(field in this.o._old) || this.o._old[field] !== this.o._data[field])
-            modified = true;
-        }
-        if (modified !== this._modified) this._checkModified();
-    },
-    
-    _checkModified: function() {
-        var modified = false;
-        for (var i in this.o._data) if (this.o._data.hasOwnProperty(i)) {
-            if (!(i in this.o._old) || this.o._old[i] !== this.o._data[i]) {
-                modified = true;
-                break;
-            }
-        }
-        this.setModified(modified);
-    },
-    
-    _reportFieldChange: function(field, val, oldVal, dontReportModified) {
-        if (this._updateLevel) return;
-        
-        var propName = this.o._propNames[field];
-        var outName = 'out' + propName.charAt(0).toUpperCase() + propName.slice(1) + 'Change';
-        
-        this._correctCheckStatus(field, val || oldVal);
-        
-        this.o[outName](val, oldVal);
-        if (!dontReportModified) {
-            this._checkFieldModified(field);
-        }
-    },
-
-    setModified: function(modified) {
-        var oldModified = this._modified;
-        if (oldModified === modified) return;
-        this._modified = modified;
-        this.outModifiedChange(modified, oldModified);
-        if (!this._modified) this._checkHydratedAndValid(true);
-        return true;
-    },
-
-    getModified: function(field) { 
-        if (field) {
-            return this._o._old[field] !== this._o._data[field];
-        }
-        return this._modified;
-    },
-    
-    getOldValue: function(field) {
-        return this._o._old[field];
-    },
-
-    outModifiedChange: function(modified, oldModified) {
-        this._out('modifiedChange', modified, oldModified);
-    },
-    
-    revert: function() {
-        this.beginUpdate();
-        this._o._data = Amm.override({}, this._o._old);
-        this.endUpdate();
-    },
-    
-    isSpecial: function(field) {
-        return field in this.constructor.prototype;
-    },
-    
-    getFieldValue: function(field) {
-        return this.o._data[field];
-    },
-    
-    setFieldValue: function(field, value) {
-        var old = this.o._data[field];
-        if (old === value) return;
-        this.o._data[field] = value;
-        if (this._updateLevel) return;
-        this._reportFieldChange(field, value, old);
-    },
-    
-    _createProperty: function(field) {
-        if (field in this.o._propNames) throw Error("Amm.Data.Object already has property for field '" + field + "'");
-        var propName = field, suff = '';
-        while (this.isSpecial(propName)) {
-            propName = field + 'Field' + suff;
-            suff = (suff || 1) + 1;
-        }
-        this.o._propNames[field] = propName;
-        var sfx = propName.slice(1);
-        var u = propName.charAt(0).toUpperCase() + sfx;
-        var l = propName.charAt(0).toLowerCase() + sfx;
-        var eventName = l + 'Change';
-        var outName = 'out' + u + 'Change';
-        var setterName = 'set' + u;
-        var getterName = 'get' + u;
-        
-        if (!(getterName in this.o)) {
-            this.o[getterName] = function() {
-                return this._data[field];
-            };
-        }
-        if (!(setterName in this.o)) {
-            this.o[setterName] = function(value) {
-                return this.lm.setFieldValue(field, value);
-            };
-        }
-        if (!(outName in this.o)) {
-            this.o[outName] = function(value, oldValue) {
-                if (this._updateLevel) return;
-                return this._out(eventName, value, oldValue);
-            };
-        }
-        Object.defineProperty(this.o, propName, {
-            enumerable: true,
-            get: this.o[getterName],
-            set: this.o[setterName]
-        });
-        
-        // we need to create pre-update values' key so change event will be triggered
-        // during endUpdate()
-        if (!(field in this._o._preUpdateValues)) {
-            this._o._preUpdateValues[field] = undefined;
-        }
-        
-        if (!this._updateLevel) this.outPropertiesChanged();
-        else this._propertiesChanged = true;
-        
-        return propName;
-    },
-    
-    outPropertiesChanged: function() {
-        return this._out('propertiesChanged');
-    },
-    
-    getState: function() {
-        return this.o._state;
-    },
-    
-    setState: function(state) {
-        var oldState = this._o._state;
-        if (oldState === state) return;
-        if (!Amm.Data.StateEnum[state]) 
-            throw Error("`state` must be one of Amm.Data.STATE_ values; given: '" + state + "'");
-        this._o._state = state;
-        if (!this._updateLevel) {
-            this.outStateChange(state, oldState);
-            return;
-        }
-        if (this._oldState === null) {
-            this._oldState = oldState;
-        }
-    },
-    
-    outStateChange: function(state, oldState) {
-        return this._out('stateChange', state, oldState);
-    },
-    
-    /**
-     * Prefers to return _old_ key, since it will be used to save object
-     */
-    getKey: function() {
-        var res = this._mapper.extractKey(this.o._old);
-        if (res === undefined) res = this._mapper.extractKey(this.o._data);
-        return res;
-    },
-    
-    _hasLocalErrors: function() {
-        if (this._o._errors.local) {
-            // fail if we have any local errors
-            for (var i in this._o._errors.local) {
-                if (this._o._errors.local.hasOwnProperty(i)) return true;
-            }
-        }
-        return false;
-    },
-    
-    check: function(again) {
-        if (this._checked && !again) return !this._hasLocalErrors();
-        if (this._checkHydratedAndValid(true)) return true;
-        this._beginUpdateErrors();
-        this._o._errors.local = {};
-        this._coreCheckFields();
-        this._coreCheckWhole();
-        this._o._doOnCheck();
-        this._checked = true;
-        this._endUpdateErrors();
-        return !this._hasLocalErrors();
-    },
-    
-    _coreCheckFields: function(field) {
-        // check individual fields first
-        var fieldValidators = this._mapper.getFieldValidators(true);
-        var hasFieldCheckFn = this._o._checkField !== Amm.Data.Object.prototype._checkField;
-        // everything a-ok
-        if (!hasFieldCheckFn && !(fieldValidators && (!field || fieldValidators[field]))) return; 
-        var fieldsSrc;
-        if (field) {
-            if (!this._o._propNames[field]) throw Error("No such field: '" + field + "'");
-            fieldsSrc = {};
-            fieldsSrc[field] = this._o._propNames[field];
-        } else {
-            fieldsSrc = this._o._propNames;
-        }
-        var err, i, j, l, v, validators;
-        for (i in fieldsSrc) if (fieldsSrc.hasOwnProperty(i)) {
-            v = this._o._data[i];
-            if (hasFieldCheckFn) {
-                err = this._o._checkField(i, v);
-                if (err === false) err = Amm.translate("lang.Amm.LifecycleAndMeta.invalidFieldValue");
-                if (err) {
-                    this.addError(err, i);
-                }
-            }
-            if (!fieldValidators || !(i in fieldValidators)) continue;
-            validators = fieldValidators[i];
-            if (!(validators instanceof Array)) validators = [validators];
-            var label = this._mapper.getMeta(i, 'label') || i;
-            for (var j = 0, l = validators.length; j < l; j++) {
-                if (typeof validators[j] === 'function') {
-                    err = validators[j](v, label);
-                }
-                else if (typeof validators[j].getError === 'function') {
-                    err = validators[j].getError(v, label);
-                }
-                if (err) {
-                    err = err.replace(/%field/g, label);
-                    // we stop on first error
-                    this.addError(err, i);
-                    break;
-                }
-            }
-            if (!err) delete this._o._errors.local[i];
-        }
-    },
-    
-    _coreCheckWhole: function() {
-        var commonValidators = this._mapper.getCommonValidators();
-        if (!commonValidators) return;
-        for (var key in commonValidators) if (commonValidators.hasOwnProperty(key)) {
-            var vals = commonValidators[key];
-            var error;
-            for (var j = 0, l = vals.length; j < l; j++) {
-                var val = vals[j];
-                if (val['Amm.Expression']) { // check for cached function
-                    if (!val.__func) val.__func = val.toFunction();
-                    val.__func.env.expressionThis = this._o;
-                    error = val.__func();
-                }
-                else if (val['Amm.Validator']) {
-                    error = val.getError(this);
-                }
-                else if (typeof val === 'function') { // check it is an expression
-                    error = val.call(this._o);
-                } else {
-                    throw Error("commonValidators['" + key + "'] must be either a function, an Amm.Expression or an Amm.Validator; provided: " 
-                        + Amm.describeType(commonValidators[key]));
-                }
-                if (error === false) error = Amm.translate(key);
-                if (error) {
-                    this.addError(error, key);
-                    continue;
-                }
-            }
-        }
-    },
-    
-    setChecked: function(checked) {
-        var oldChecked = this._checked;
-        if (oldChecked === checked) return;
-        this._checked = checked;
-        this.outCheckedChange(checked, oldChecked);
-        return true;
-    },
-
-    getChecked: function() { return this._checked; },
-
-    outCheckedChange: function(checked, oldChecked) {
-        this._out('checkedChange', checked, oldChecked);
-    },
-    
-    setAutoCheck: function(autoCheck) {
-        if (typeof autoCheck === 'boolean') autoCheck = autoCheck + 0;
-        else if (typeof autoCheck === 'string') autoCheck = parseInt(autoCheck);
-        if (autoCheck !== Amm.Data.AUTO_CHECK_NEVER && autoCheck !== Amm.Data.AUTO_CHECK_ALWAYS && autoCheck !== Amm.Data.AUTO_CHECK_SMART) {
-            throw Error("Invalid autoCheck value; must be one of Amm.Data.AUTO_CHECK_ constants");
-        }
-        var oldAutoCheck = this._autoCheck;
-        if (oldAutoCheck === autoCheck) return;
-        this._autoCheck = autoCheck;
-        if (autoCheck) this._instaCheck();
-        return true;
-    },
-
-    getAutoCheck: function() { return this._autoCheck; },
-
-    setValidWhenHydrated: function(validWhenHydrated) {
-        var oldValidWhenHydrated = this._validWhenHydrated;
-        if (oldValidWhenHydrated === validWhenHydrated) return;
-        this._validWhenHydrated = validWhenHydrated;
-        if (validWhenHydrated) this._checkHydratedAndValid(true);
-        else if (this.getState() === Amm.Data.STATE_EXISTS && !this._modifierd) {
-            if (this._autoCheck === Amm.Data.AUTO_CHECK_ALWAYS) {
-                this._instaCheck(true);
-            } else {
-                this.setChecked(false);
-            }
-        }
-        return true;
-    },
-
-    getValidWhenHydrated: function() { return this._validWhenHydrated; },
-    
-    _checkHydratedAndValid: function(resetErrors) {
-        if (!this._validWhenHydrated) return;
-        if (this._modified || this.getState() !== Amm.Data.STATE_EXISTS) return;
-        if (resetErrors) this.setLocalErrors({});
-        return true;
-    },
-    
-    _correctCheckStatus: function(field, hasValue) {
-        if (this._autoCheck === Amm.Data.AUTO_CHECK_SMART && hasValue) {
-            this._beginUpdateErrors();
-            this.setChecked(false);
-            this._coreCheckFields(field);
-            this._endUpdateErrors();
-        } else if (this._autoCheck === Amm.Data.AUTO_CHECK_ALWAYS) {
-            this._instaCheck(true);
-        } else {
-            this.setChecked(false);
-        }
-    },
-    
-    _instaCheck: function(recheck) {
-        if (this._checked && !recheck) return;
-        if (!this._autoCheck) return;
-        if (recheck) this._checked = false;
-        if (!this._subscribers.localErrorsChange && !this._subscribers.errorsChange) return;
-        if (this._autoCheck === Amm.Data.AUTO_CHECK_ALWAYS) {
-            this.check();
-            return;
-        }
-    },
-
-    _beginUpdateErrors: function() {
-        if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.errorsChange) {
-            this._o._oldErrors = false; // special value means we defer JSON calculation
-        }
-        if (!this._o._errors) this._o._errors = {local: {}, remote: {}};
-        this._combineErrors();
-        if (!this._o._oldErrors) this._o._oldErrors = {
-            local: JSON.stringify(this._o._errors.local),
-            remote: JSON.stringify(this._o._errors.remote),
-            all: JSON.stringify(this._o._errors.all)
-        }; 
-    },
-    
-    _subscribeFirst_localErrorsChange: function() {
-        if (this._o._oldErrors === false) this._beginUpdateErrors();
-    },
-    
-    _subscribeFirst_remoteErrorsChange: function() {
-        return this._subscribeFirst_localErrorsChange();
-    },
-    
-    _subscribeFirst_errorsChange: function() {
-        return this._subscribeFirst_localErrorsChange();
-    },
-    
-    _endUpdateErrors: function() {
-        this._o._errors.all = null; // to be calculated
-        if (this._updateLevel) return; // nothing to do yet
-        if (!this._o._oldErrors) return; // nothing to do at all
-        if (!this._o._errors) if (!this._o._errors) this._o._errors = {local: {}, remote: {}};
-        else {
-            if (!this._o._errors.local) this._o._errors.local = {};
-            if (!this._o._errors.remote) this._o._errors.remote = {};
-        }
-        var oldErrors = this._o._oldErrors;
-        this._o._oldErrors = null;
-        if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.errorsChange) {
-            return;
-        }
-        var localChanged = oldErrors.local !== JSON.stringify(this._o._errors.local);
-        var remoteChanged = oldErrors.remote !== JSON.stringify(this._o._errors.remote);
-        if (!localChanged && !remoteChanged) {
-            return;
-        }
-        var triggerLocal = localChanged && this._subscribers.localErrorsChange;
-        var triggerRemote = remoteChanged && this._subscribers.remoteErrorsChange;
-        var triggerAll = this._subscribers.errorsChange;
-        if (triggerLocal) this.outLocalErrorsChange(this._o._errors.local, JSON.parse(oldErrors.local));
-        if (triggerRemote) this.outRemoteErrorsChange(this._o._errors.remote, JSON.parse(oldErrors.remote));
-        if (triggerAll) this.outErrorsChange(this.getErrors(), JSON.parse(oldErrors.all));
-    },
-    
-    getLocalErrors: function(field) {
-        if (this._autoCheck && this._modified && !this._checked) this.check();
-        return this._getErrors('local', field);
-    },
-    
-    _getErrors: function(type, field) {
-        if (!this._o._errors[type] || field && (field !== Amm.Data.ERROR_OTHER) && !(this._o._errors[type][field])) return null;
-        if (!field) return this._o._errors[type];
-        if (field === Amm.Data.ERROR_OTHER) return this._getOtherErrors(this._o._errors[type]);
-        return this._o._errors[type][field];
-    },
-    
-    _setErrors: function(type, errors, field) {
-        this._beginUpdateErrors();
-        if (field) {
-            this._o._errors[type][field] = this._flattenErrors(errors);
-            if (!this._o._errors[type][field].length) delete this._o._errors[type][field];
-            this._endUpdateErrors();
-            return;
-        } 
-        if (!errors) errors = {};
-        else if (typeof errors !== 'object' || (errors instanceof Array)) {
-            errors[Amm.Data.ERROR_GENERIC] = this._flattenErrors(errors);
-            if (!errors[Amm.Data.ERROR_GENERIC] || !errors[Amm.Data.ERROR_GENERIC].length) {
-                delete errors[Amm.Data.ERROR_GENERIC];
-            }
-        }
-        var i, v, e = {};
-        for (var i in errors) if (errors.hasOwnProperty(i)) {
-            v = this._flattenErrors(errors[i]);
-            if (!v.length) continue;
-            e[i] = v;
-        }
-        this._o._errors[type] = e;
-        this._endUpdateErrors();
-    },
-    
-    setLocalErrors: function(errors, field) {
-        this._setErrors('local', errors, field);
-    },
-    
-    addError: function(error, field) {
-        if (!error || (error instanceof Array && !error.length)) return;
-        this._beginUpdateErrors();
-        if (!field || field === Amm.Data.ERROR_OTHER) field = Amm.Data.ERROR_GENERIC;
-        var e = {};
-        e[field] = this._flattenErrors(error);
-        Amm.override(this._o._errors.local, e, false, true);
-        this._endUpdateErrors();
-    },
-    
-    outLocalErrorsChange: function(errors, oldErrors) {
-        return this._out('localErrorsChange', errors, oldErrors);
-    },
-    
-    getRemoteErrors: function(field) {
-        return this._getErrors('remote', field);
-    },
-    
-    setRemoteErrors: function(errors, field) {
-        this._setErrors('remote', errors, field);
-    },
-    
-    outRemoteErrorsChange: function(errors, oldErrors) {
-        return this._out('remoteErrorsChange', errors, oldErrors);
-    },
-    
-    _flattenErrors: function(hash) {
-        return Amm.Data.flattenErrors(hash);
-    },
-    
-    _getOtherErrors: function(src) {
-        var r, res;
-        for (var i in src) if (src.hasOwnProperty(i) && !(i in this._o._propNames)) {
-            r[i] = src[i];
-        }
-        return this._flattenErrors(r);
-    },
-    
-    _combineErrors: function() {
-        this._o._errors.all = {};
-        if (this._o._errors.local) Amm.overrideRecursive(this._o._errors.all, this._o._errors.local);
-        if (this._o._errors.remote) Amm.overrideRecursive(this._o._errors.all, this._o._errors.remote, false, true);
-    },
-    
-    getErrors: function(field) {
-        if (this._autoCheck && this._modified && !this._checked) this.check();
-        if (!this._o._errors) return null;
-        if (!this._o._errors.all) {
-            this._combineErrors();
-        }
-        return this._getErrors('all', field);
-    },
-    
-    outErrorsChange: function(errors, oldErrors) {
-        return this._out('errorsChange', errors, oldErrors);
-    },
-    
-    setErrors: function() {
-        console.warn("setErrors has no effect; use either setLocalErrors() or setRemoteErrors()");
-    },
-
-    _setTransaction: function(transaction) {
-        if (transaction) Amm.is(transaction, 'Amm.Data.Transaction');
-        else transaction = null;
-        
-        var oldTransaction = this._transaction;
-        if (oldTransaction === transaction) return;
-        
-        if (oldTransaction) oldTransaction.unsubscribe(undefined, undefined, this);
-        if (transaction) transaction.subscribe('stateChange', this._notifyTransactionStateChange, this);
-        
-        this._transaction = transaction;
-
-        this.outTransactionChange(transaction, oldTransaction);
-        if (oldTransaction) this._setLastTransaction(oldTransaction);
-        
-        return true;
-    },
-
-    getTransaction: function() { return this._transaction; },
-
-    outTransactionChange: function(transaction, oldTransaction) {
-        this._out('transactionChange', transaction, oldTransaction);
-    },
-    
-    _notifyTransactionStateChange: function(state, oldState) {
-        // ignore if we don't track this transaction anymore
-        if (!this._transaction || Amm.event.origin !== this._transaction) return;
-        if (state === Amm.Data.Transaction.STATE_RUNNING) {
-            // don't handle transaction start event
-            return;
-        }
-        if (state === Amm.Data.Transaction.STATE_CANCELLED) { // business as usual
-            this._setTransaction(null);
-            return;
-        }
-        
-        if (this._handleTransactionFinished(state)) {
-            this._setTransaction(null);
-        }
-    },
-    
-    _handleTransactionFinished: function(state) {
-        
-        if (state === Amm.Data.Transaction.STATE_CANCELLED) return true;
-        
-        var failure = (state === Amm.Data.Transaction.STATE_FAILURE);
-        
-        if (failure) {
-            this._handleGenericTransactionFailure();
-            return true;
-        }
-        
-        var success = (state === Amm.Data.Transaction.STATE_SUCCESS);
-        
-        if (!success) return;
-        
-        var type = this._transaction.getType() + '';
-        
-        var method = '_handle' + type[0].toUpperCase() + type.slice(1) + 'Success';
-        
-        if (typeof this[method] === 'function' ) {
-            this[method]();
-        }
-        
-        return true;
-        
-    },
-    
-    _hydrateFromTransactionDataAndTrigger: function(forSave, newState, partial) {
-        var result = this._transaction.getResult();
-        var wasCreated = (this.o._state === Amm.Data.STATE_NEW);
-        this.beginUpdate();
-        this.setRemoteErrors({});
-        var data = result.getData();
-        if (data) this.hydrate(data, partial, true);
-        if (newState) this.setState(newState);
-        if (forSave) {
-            this._o._doAfterSave(wasCreated);
-        } else {
-            this._o._doAfterLoad();
-        }
-        this._o._doOnActual(forSave);
-        this.endUpdate();
-    },
-    
-    _handleGenericTransactionFailure: function() {
-        var result = this._transaction.getResult();
-        var remoteErrors = result.getErrorData(), tmp, 
-                error = result.getError(), exception = result.getException();
-        if (!remoteErrors) remoteErrors = {};
-        else if (typeof remoteErrors !== 'object') {
-            tmp = {};
-            tmp[Amm.Data.ERROR_GENERIC] = [remoteErrors];
-            remoteErrors = tmp;
-        }
-        
-        var f;
-        if (error) {
-            if (remoteErrors[Amm.Data.ERROR_GENERIC]) {
-                remoteErrors[Amm.Data.ERROR_GENERIC].push(error);
-                /*remoteErrors[Amm.Data.ERROR_GENERIC] = Amm.Data.flattenErrors(remoteErrors[Amm.Data.ERROR_GENERIC]);
-                if (!remoteErrors[Amm.Data.ERROR_GENERIC] || !remoteErrors[Amm.Data.ERROR_GENERIC].length) {
-                    delete remoteErrors[Amm.Data.ERROR_GENERIC];
-                }*/
-            } else {
-                remoteErrors[Amm.Data.ERROR_GENERIC] = [error];
-            }
-        }
-        if (exception) {
-            remoteErrors[Amm.Data.ERROR_EXCEPTION] = '' + exception;
-        }
-        
-        this.setRemoteErrors(remoteErrors);
-        
-        this.outTransactionFailure (this._transaction);
-    },
-    
-    outTransactionFailure: function(transaction) {
-        return this._out('transactionFailure', transaction);
-    },
-    
-    _handleCreateSuccess: function() {
-        this._hydrateFromTransactionDataAndTrigger(true, Amm.Data.STATE_EXISTS, this._mapper.partialHydrateOnCreate);
-    },
-    
-    _handleDeleteSuccess: function() {
-        this.setState(Amm.Data.STATE_DELETED);
-        this.setRemoteErrors({});
-        this._o._doAfterDelete();
-    },
-    
-    _handleUpdateSuccess: function() {
-        this._hydrateFromTransactionDataAndTrigger(true, undefined, this._mapper.partialHydrateOnUpdate);
-    },
-    
-    _handleLoadSuccess: function() {
-        this.beginUpdate();
-        this._hydrateFromTransactionDataAndTrigger(false, Amm.Data.STATE_EXISTS);
-        this.endUpdate();
-    },
-
-    _setLastTransaction: function(lastTransaction) {
-        if (lastTransaction) Amm.is(lastTransaction, 'Amm.Data.Transaction');
-        else lastTransaction = null;
-        
-        var oldLastTransaction = this._lastTransaction;
-        if (oldLastTransaction === lastTransaction) return;
-        this._lastTransaction = lastTransaction;
-        this.outLastTransactionChange(lastTransaction, oldLastTransaction);
-        return true;
-    },
-
-    getLastTransaction: function() { return this._lastTransaction; },
-
-    outLastTransactionChange: function(lastTransaction, oldLastTransaction) {
-        this._out('lastTransactionChange', lastTransaction, oldLastTransaction);
-    },
-    
-    _getTransactionData: function() {
-        return Amm.override({}, this._o._data);
-    },
-    
-    _runTransaction: function(transaction) {
-        this._setTransaction(transaction);
-        transaction.run();
-        if (transaction.getState() === Amm.Data.Transaction.STATE_FAILURE) {
-            var x = transaction.getResult().getException();
-            if (x) throw x;
-        }
-    },
-    
-    save: function(noCheck) {
-        if (!noCheck && !this.check()) return;
-        if (this._o._doBeforeSave() === false) return;
-        var data = this._getTransactionData(), tr, state = this.getState();
-        if (state === Amm.Data.STATE_NEW) {
-            tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_CREATE, null, data);
-        } else if (state === Amm.Data.STATE_EXISTS) {
-            tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_UPDATE, this.getKey(), data);
-        } else {
-            throw Error("Cannot save an object with state '" + state + "'");
-        }
-        this._runTransaction(tr);
-        return true;
-    },
-    
-    delete: function() {
-        var tr, state = this.getState(), key;
-        if (state !== Amm.Data.STATE_EXISTS) {
-            this.setState(Amm.Data.STATE_DELETED);
-            return true;
-        }
-        if (this._o._doBeforeDelete() === false) return false;
-        key = this.getKey();
-        tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_DELETE, this.getKey());
-        this._runTransaction(tr);
-        return true;
-    },
-    
-    load: function(key) {
-        var newKey = this._o._doBeforeLoad(key);
-        if (newKey === false) return false;
-        if (newKey !== undefined) key = newKey;
-        if (key === undefined) key = this.getKey();
-        if (!key) throw new Error ("Cannot load(): key not provided");
-        var tr;
-        tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_LOAD, key);
-        this._runTransaction(tr);
-        return true;
-    },
-    
-    _handleMapperMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
-        // we know _that_ meta-property isn't validation-related
-        if (property 
-            && property !== 'required'      // requiredness affects validation
-            && property !== 'label'         // label may affect error messages
-            && property !== 'validators'    // validators affect validation
-        ) return;
-        var hasValue = field && this._o._data[field] || this._o._old[field];
-        var shouldCheck = hasValue || property === 'required' && !value;
-        this._correctCheckStatus(field, shouldCheck);
-    },
-    
-    cleanup: function() {
-        if (this._cu) return;
-        this._cu = true;
-        if (this._transaction) {
-            this._transaction.cleanup();
-            this._transaction = null;
-        }
-        if (this._lastTransaction) {
-            this._lastTransaction.cleanup();
-            this._lastTransaction = null;
-        }
-        if (this._mapper) this._mapper.unsubscribe(undefined, undefined, this);
-        this._o.cleanup();
-        Amm.WithEvents.prototype.cleanup.call(this);
-    },
-    
-    getMapper: function() {
-        return this._mapper;
-    },
-    
-    setMapper: function() {
-        // dummy
-    },
-    
-    outMapperChange: function() {
-        // dummy
-    }
-    
-    
-};
-
-Amm.extend(Amm.Data.LifecycleAndMeta, Amm.WithEvents);
-
-Amm.defineLangStrings({
-    'lang.Amm.LifecycleAndMeta.invalidFieldValue': "The field contains invalid value"
-});
-/* global Amm */
-
-Amm.Data.Meta = function(options) {
+Amm.Data.FieldMeta = function(options) {
     this._validators = [];
     var o = Amm.override(options || {});
-    if ('mapper' in o) {
-        this.setMapper(o.mapper);
-        delete o.mapper;
+    if ('metaProvider' in o) {
+        this.setMetaProvider(o.metaProvider);
+        delete o.metaProvider;
     }
     this._i = true;
-    Amm.init(this, o);
+    Amm.init(this, o, null, function(prop, val) {
+        this.setProperty(val, prop);
+        return true;
+    });
     this._i = false;
     this._notify();
 };
 
-Amm.Data.Meta._afterPropChange = function(value, oldValue, propName) {
+Amm.Data.FieldMeta._afterPropChange = function(value, oldValue, propName) {
     this._notify(value, oldValue, propName);
 };
 
-Amm.Data.Meta.prototype = {
+Amm.Data.FieldMeta.prototype = {
     
-    'Amm.Data.Meta': '__CLASS__',
+    'Amm.Data.FieldMeta': '__CLASS__',
     
     _i: null,
     
-    _mapper: null,
+    _metaProvider: null,
     
-    _required: null,
-
     _validators: null,
     
     _requiredValidator: null,
 
-    _label: null,
-
-    _description: null,
-    
     _name: null,
     
+    _properties: null,
+    
+    clone: function(metaProvider, name) {
+        var res = new Amm.Data.FieldMeta;
+        for (var i in this) {
+            var hp = this.hasOwnProperty(i);
+            if (hp || Amm.Data.FieldMeta.prototype.hasOwnProperty(i)) {
+                if (this[i] instanceof Array) res[i] = [].concat(this[i]);
+                res[i] = this[i];
+            }
+            // clone properties that were created with 'defineProperty'
+            if (hp && typeof this[i] === 'function' && i.slice(0, 3) === 'set') {
+                var gtr, pn;
+                if (typeof this[gtr = 'get' + (pn = i.slice(3))] === 'function') {
+                    pn[0] = pn[0].toLowerCase();
+                    Object.defineProperty(res, pn, {
+                        enumerable: true,
+                        set: this[i],
+                        get: this[gtr]
+                    });
+                }
+            }
+        }
+        res._metaProvider = null;
+        if (name) res._name = name;
+        if (metaProvider) res.setMetaProvider(metaProvider);
+        return res;
+    },
+    
     _notify: function(value, oldValue, prop) {
-        if (this._mapper && this._name) {
-            this._mapper.notifyMetaChange(this, this._name, prop, value, oldValue);
+        if (this._metaProvider && this._name) {
+            this._metaProvider.notifyMetaChange(this, this._name, prop, value, oldValue);
         }
     },
 
@@ -27260,26 +27653,26 @@ Amm.Data.Meta.prototype = {
 
     getName: function() { return this._name; },
 
-    setMapper: function (mapper) {
-        if (mapper === this._mapper) return;
-        if (mapper) {
-            if (this._mapper) throw Error("Can setMapper() only once");
-            Amm.is(mapper, Amm.Data.Mapper, 'mapper');
+    setMetaProvider: function (metaProvider) {
+        if (metaProvider === this._metaProvider) return;
+        if (metaProvider) {
+            if (this._metaProvider) throw Error("Can setMetaProvider() only once");
+            Amm.is(metaProvider, 'MetaProvider', 'metaProvider');
         } else {
-            mapper = null;
+            metaProvider = null;
         }
-        this._mapper = mapper;
+        this._metaProvider = metaProvider;
     },
     
-    getMapper: function() {
-        return this.mapper;
+    getMetaProvider: function() {
+        return this.metaProvider;
     },
     
     setValidators: function(validators) {
         if (this._validators === validators) return;
         var oldValidators = this._validators;
         if (!(validators instanceof Array)) validators = validators? [validators]: [];
-        var newValidators = Amm.Data.Mapper.checkValidatorsArray(validators, 'validators');
+        var newValidators = Amm.Data.MetaProvider.checkValidatorsArray(validators, 'validators');
         this._validators = newValidators;
         this._notify(this._validators, oldValidators, 'validators');
     },
@@ -27308,34 +27701,42 @@ Amm.Data.Meta.prototype = {
     defineProperty: function(property, defaultValue, beforeChange) {
         Amm.createProperty(this, property, defaultValue, {
             before: beforeChange, 
-            after: Amm.Data.Meta._afterPropChange
+            after: Amm.Data.FieldMeta._afterPropChange
         }, true);
     }
     
 };
     
-Amm.createProperty(Amm.Data.Meta.prototype, 'name', null, {
+Amm.createProperty(Amm.Data.FieldMeta.prototype, 'name', null, {
     before: function(name, oldName) {
         if (oldName !== null) {
             throw Error("Can setName() only once");
         }
     },
-    after: Amm.Data.Meta._afterPropChange
+    after: Amm.Data.FieldMeta._afterPropChange
 }, true);
 
-Amm.createProperty(Amm.Data.Meta.prototype, 'required', null, {
+Amm.createProperty(Amm.Data.FieldMeta.prototype, 'required', null, {
     before: function(required) {
         return !!required;
     },
     after: function(value, oldValue, propName) {
-        Amm.Data.Meta._afterPropChange.call(this, value, oldValue, propName);
+        Amm.Data.FieldMeta._afterPropChange.call(this, value, oldValue, propName);
     }
 }, true);
 
 Amm.createProperty(
-    Amm.Data.Meta.prototype, 'label', null, Amm.Data.Meta._afterPropChange, true
+    Amm.Data.FieldMeta.prototype, 'default', null, Amm.Data.FieldMeta._afterPropChange, true
 );
 
 Amm.createProperty(
-    Amm.Data.Meta.prototype, 'description', null, Amm.Data.Meta._afterPropChange, true
+    Amm.Data.FieldMeta.prototype, 'label', null, Amm.Data.FieldMeta._afterPropChange, true
+);
+
+Amm.createProperty(
+    Amm.Data.FieldMeta.prototype, 'validators', null, null, true
+);
+
+Amm.createProperty(
+    Amm.Data.FieldMeta.prototype, 'description', null, Amm.Data.FieldMeta._afterPropChange, true
 );

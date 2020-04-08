@@ -333,7 +333,11 @@ Amm = {
             if (!tmpClassName) return false;
             className = tmpClassName;
         }
-        var res = item && (item[className] === '__CLASS__' || item[className] === '__PARENT__' || item[className] === '__INTERFACE__');
+        var res = item && (
+                item[className] === '__CLASS__' 
+            ||  item[className] === '__PARENT__' 
+            ||  item[className] === '__INTERFACE__'
+        );
         if (!res && throwIfNot) {
             var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
             throw Error(argname + " must be an instance of " + className + "; given: " + Amm.describeType(item));
@@ -346,7 +350,7 @@ Amm = {
      * Found properties will be deleted from options array.
      * That allows us to prioritize properties using several init() calls
      */
-    init: function(object, options, propList) {
+    init: function(object, options, propList, noSuchPropertyCallback) {
         if (!options) return;
         var optToSet = null;
         if (propList instanceof Array) {
@@ -372,7 +376,13 @@ Amm = {
             else if (i in object) object[i] = v;
             else if (typeof v === 'function') object[i] = v;
             else {
-                throw Error("No such property: '" + i + "' in " + (this.getClass(object) || '`object`'));
+                var shouldThrow = true;
+                if (typeof noSuchPropertyCallback === 'function') {
+                    shouldThrow = !noSuchPropertyCallback.call(object, i, v);
+                }
+                if (shouldThrow) {
+                    throw Error("No such property: '" + i + "' in " + (this.getClass(object) || '`object`'));
+                }
             }
         }
     },

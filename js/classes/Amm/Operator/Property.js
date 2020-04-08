@@ -187,7 +187,7 @@ Amm.Operator.Property.prototype = {
         if (this._isCall && !this._isNew) {
             
             if (typeof object[property] !== 'function') throw Error("cannot call a non-function property");
-            args = this._getOperandValue('arguments', again);
+            var args = this._getOperandValue('arguments', again);
             if (args === null || args === undefined) return object[property]();
             else if (args instanceof Array) return object[property].apply(object, args);
             else return object[property](args);

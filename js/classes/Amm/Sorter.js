@@ -112,7 +112,7 @@ Amm.Sorter.prototype = {
                 return a.getIndex() - b.getIndex();
             });
 
-            for (var i = 0, l = newCriteria.length; i < l; i++) {
+            for (i = 0, l = newCriteria.length; i < l; i++) {
                 newCriteria[i].setIndex(i);
             }
 
@@ -301,7 +301,7 @@ Amm.Sorter.prototype = {
     _getDirections: function() {
         if (this._directions) return this._directions;
         var res = [];
-        for (i = 0, l = this._observers.length; i < l; i++) res.push(this._observers[i].getAscending());
+        for (var i = 0, l = this._observers.length; i < l; i++) res.push(this._observers[i].getAscending());
         return res;
     },
     

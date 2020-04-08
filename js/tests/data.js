@@ -31,13 +31,13 @@
         
     };
 
-    QUnit.test("Data.Object", function(assert) {
+    QUnit.test("Data.Record", function(assert) {
         
         var m = new Amm.Data.Mapper(), modified = null;
         
         var name, surname, age;
         
-        var d = new Amm.Data.Object({
+        var r = new Amm.Data.Record({
             __mapper: m,
             id: 10,
             name: 'John',
@@ -46,71 +46,71 @@
             on__nameChange: function(v) { name = v; },
             on__surnameChange: function(v) { surname = v; },
             on__ageChange: function(v) { age = v; },
-            lm: {
+            mm: {
                 on__modifiedChange: function(m) { modified = m; },
             }
         });
         
-        assert.deepEqual(d.lm.getKey(), 10, 'getKey() works');
-        assert.deepEqual(d.lm.getState(), Amm.Data.STATE_EXISTS,
+        assert.deepEqual(r.mm.getKey(), 10, 'getKey() works');
+        assert.deepEqual(r.mm.getState(), Amm.Data.STATE_EXISTS,
             'since key was provided on hydration, state is STATE_EXISTS');
         
-        assert.deepEqual(d.getAge(), 37, 'Basic check: property has pre-set value');
-        assert.deepEqual(d.getName(), 'John', 'Basic check: property has pre-set value');
-        assert.deepEqual(d.surname, 'Doe', 'Property access works');
-        //assert.deepEqual(d.lm.getState(), Amm.Data.STATE_NEW, 'Intiial state is STATE_NEW');
+        assert.deepEqual(r.getAge(), 37, 'Basic check: property has pre-set value');
+        assert.deepEqual(r.getName(), 'John', 'Basic check: property has pre-set value');
+        assert.deepEqual(r.surname, 'Doe', 'Property access works');
+        //assert.deepEqual(r.mm.getState(), Amm.Data.STATE_NEW, 'Intiial state is STATE_NEW');
         
-        assert.deepEqual(d.lm.getModified(), false, 'Created object is not modified yet');
-        d.name = 'Jane';
+        assert.deepEqual(r.mm.getModified(), false, 'Created object is not modified yet');
+        r.name = 'Jane';
         assert.deepEqual(modified, true, 'Object becomes modified');
         assert.deepEqual(name, 'Jane', 'Field change event triggered');
-        d.name = 'John';
+        r.name = 'John';
         assert.deepEqual(modified, false, 'Object no more modified');
         
         name = null;
         surname = null;
         age = null;
         
-        d.lm.beginUpdate();
-        d.name = 'Masha';
-        d.surname = 'Medvedeva';
-        d.age = 25;
+        r.mm.beginUpdate();
+        r.name = 'Masha';
+        r.surname = 'Medvedeva';
+        r.age = 25;
         
             assert.deepEqual([name, surname, age], [null, null, null], 'beginUpdate: property change events aren\'t triggered');
-            assert.equal(d.lm.getModified(), false, 'beginUpdate: modified status doesn\'t change');
+            assert.equal(r.mm.getModified(), false, 'beginUpdate: modified status doesn\'t change');
             
-        d.lm.endUpdate();
+        r.mm.endUpdate();
             
             assert.deepEqual([name, surname, age], ['Masha', 'Medvedeva', 25], 'endUpdate: all property change events triggered');
-            assert.equal(d.lm.getModified(), true, 'endUpdate: modified status changed');
+            assert.equal(r.mm.getModified(), true, 'endUpdate: modified status changed');
         
         
-        d.id = 11;
-            assert.deepEqual(d.lm.getKey(), 10, 'getKey() returns "old" value of key (set during hydration)');
+        r.id = 11;
+            assert.deepEqual(r.mm.getKey(), 10, 'getKey() returns "old" value of key (set during hydration)');
             
-            assert.ok(d.lm.getModified(), 'Object is modified...');
+            assert.ok(r.mm.getModified(), 'Object is modified...');
         
-        d.lm.revert();
-            assert.notOk(d.lm.getModified(), '...revert() makes it not modifierd');
+        r.mm.revert();
+            assert.notOk(r.mm.getModified(), '...revert() makes it not modifierd');
             
         // Patial hydration
-        assert.deepEqual(d.lm.getData(), {
+        assert.deepEqual(r.mm.getData(), {
             id: 10,
             name: 'John',
             surname: 'Doe',
             age: 37,
         }, 'Initial data is set');
         
-        d.lm.hydrate({id: 20, name: 'Xxx'}, true);
+        r.mm.hydrate({id: 20, name: 'Xxx'}, true);
         
-        assert.deepEqual(d.lm.getData(), {
+        assert.deepEqual(r.mm.getData(), {
             id: 20,
             name: 'Xxx',
             surname: 'Doe',
             age: 37,
         }, 'Partially-hydated: some fields are preserved');
         
-        assert.notOk(d.lm.getModified(), 'Partially-hydated: object is not modified');
+        assert.notOk(r.mm.getModified(), 'Partially-hydated: object is not modified');
         
     });
     
@@ -187,10 +187,10 @@
         
     });
     
-    QUnit.test("Data.LifecycleAndMeta localErrors/remoteErrors/errors", function(assert) {
+    QUnit.test("Data.ModelMeta localErrors/remoteErrors/errors", function(assert) {
         
         var m = new Amm.Data.Mapper();
-        var d = new Amm.Data.Object({
+        var o = new Amm.Data.Record({
             __mapper: m,
 
             name: 'John',
@@ -201,18 +201,18 @@
 
         });
 
-        d.lm.setRemoteErrors({
+        o.mm.setRemoteErrors({
             msg: 'Invalid data', 
             salary: 'Salary must not be negative number', 
             email: 'Email is too short', 
             surname: 'Surname is required'
         });
-        d.lm.setLocalErrors({
+        o.mm.setLocalErrors({
             email: 'Email is invalid',
             surname: 'Surname is required', 
         });
 
-            assert.deepEqual(d.lm.getErrors(), {
+            assert.deepEqual(o.mm.getErrors(), {
                 msg: ['Invalid data'],
                 salary: ['Salary must not be negative number'], 
                 email: [
@@ -224,47 +224,47 @@
                 ]
             }, 'local and remote errors are properly combined');
 
-            assert.equal(d.lm.getErrors('x'), null, 'retrieving errors with non-existing key returns null');
+            assert.equal(o.mm.getErrors('x'), null, 'retrieving errors with non-existing key returns null');
 
-            assert.deepEqual(d.lm.getErrors('email'), ['Email is invalid', 'Email is too short'], 'retrieving individual errors');
+            assert.deepEqual(o.mm.getErrors('email'), ['Email is invalid', 'Email is too short'], 'retrieving individual errors');
 
-        d.lm.setLocalErrors('something wrong', 'theProblem');
+        o.mm.setLocalErrors('something wrong', 'theProblem');
         
-            assert.deepEqual(d.lm.getLocalErrors('theProblem'), ['something wrong'], 'newly-set local error is returned');
-            assert.deepEqual(d.lm.getErrors('theProblem'), ['something wrong'], 'newly-set local error is added to combined errors');
+            assert.deepEqual(o.mm.getLocalErrors('theProblem'), ['something wrong'], 'newly-set local error is returned');
+            assert.deepEqual(o.mm.getErrors('theProblem'), ['something wrong'], 'newly-set local error is added to combined errors');
 
-        d.lm.setLocalErrors(null, 'email');
+        o.mm.setLocalErrors(null, 'email');
         
-            assert.deepEqual(d.lm.getLocalErrors('email'), null, 'setting local error key to null clears is');
-            assert.deepEqual(d.lm.getRemoteErrors('email'), ['Email is too short'], '..remote error still remains');
-            assert.deepEqual(d.lm.getErrors('email'), ['Email is too short'], '...and local key removed from combined errors');
+            assert.deepEqual(o.mm.getLocalErrors('email'), null, 'setting local error key to null clears is');
+            assert.deepEqual(o.mm.getRemoteErrors('email'), ['Email is too short'], '..remote error still remains');
+            assert.deepEqual(o.mm.getErrors('email'), ['Email is too short'], '...and local key removed from combined errors');
             
-        d.lm.addError('must include upper-case letter', 'email');
-            assert.deepEqual(d.lm.getLocalErrors('email'), ['must include upper-case letter'], 'added local error');
+        o.mm.addError('must include upper-case letter', 'email');
+            assert.deepEqual(o.mm.getLocalErrors('email'), ['must include upper-case letter'], 'added local error');
         
-        d.lm.addError('must include upper-case letter', 'email');
-            assert.deepEqual(d.lm.getLocalErrors('email'), ['must include upper-case letter'], 'duplicate didn\'t count');
+        o.mm.addError('must include upper-case letter', 'email');
+            assert.deepEqual(o.mm.getLocalErrors('email'), ['must include upper-case letter'], 'duplicate didn\'t count');
             
             
         var e_log = [];
         var l_log = [];
         var r_log = [];
         
-        d.lm.subscribe('errorsChange', function(e, o) {
-            e_log.push([e, o]);
+        o.mm.subscribe('errorsChange', function(e, r) {
+            e_log.push([e, r]);
         });
-        d.lm.subscribe('remoteErrorsChange', function(e, o) {
-            r_log.push([e, o]);
+        o.mm.subscribe('remoteErrorsChange', function(e, r) {
+            r_log.push([e, r]);
         });
-        d.lm.subscribe('localErrorsChange', function(e, o) {
-            l_log.push([e, o]);
+        o.mm.subscribe('localErrorsChange', function(e, r) {
+            l_log.push([e, r]);
         });
         
-        var oldErrors = Amm.override({}, d.lm.getErrors());
-        var oldLocalErrors = Amm.override({}, d.lm.getLocalErrors());
-        var oldRemoteErrors = Amm.override({}, d.lm.getRemoteErrors());
+        var oldErrors = Amm.override({}, o.mm.getErrors());
+        var oldLocalErrors = Amm.override({}, o.mm.getLocalErrors());
+        var oldRemoteErrors = Amm.override({}, o.mm.getRemoteErrors());
         
-        d.lm.addError('problem description', 'anotherProblem');
+        o.mm.addError('problem description', 'anotherProblem');
         
             assert.deepEqual(e_log.length, 1, 'addError: errorsChange event triggered');
             assert.deepEqual(l_log.length, 1, 'addError: localErrorsChange event triggered');
@@ -274,21 +274,21 @@
         l_log = [];
         r_log = [];
         
-        d.lm.beginUpdate();
+        o.mm.beginUpdate();
         
-            d.lm.setLocalErrors(null, 'anotherProblem');
+            o.mm.setLocalErrors(null, 'anotherProblem');
             
             assert.deepEqual(e_log.length, 0, 'beginUpdate: no errorsChange events triggered');
             assert.deepEqual(l_log.length, 0, 'beginUpdate: no localErrorsChange events triggered');
             assert.deepEqual(r_log.length, 0, 'beginUpdate: no remoteErrorsChange events triggered');
             
-            d.lm.setRemoteErrors('---xxx---', 'oneMoreRemoteProblem');
+            o.mm.setRemoteErrors('---xxx---', 'oneMoreRemoteProblem');
             
             assert.deepEqual(e_log.length, 0, 'beginUpdate: no errorsChange events triggered');
             assert.deepEqual(l_log.length, 0, 'beginUpdate: no localErrorsChange events triggered');
             assert.deepEqual(r_log.length, 0, 'beginUpdate: no remoteErrorsChange events triggered');
             
-        d.lm.endUpdate();
+        o.mm.endUpdate();
             
             assert.deepEqual(e_log.length, 1, 'endUpdate: errorsChange event triggered');
             assert.deepEqual(l_log.length, 1, 'endUpdate: localErrorsChange event triggered');
@@ -302,7 +302,7 @@
             key: 'id',
         });
         
-        var d = new Amm.Data.Object({
+        var r = new Amm.Data.Record({
             __mapper: m,
             id: 10,
             name: 'John',
@@ -312,7 +312,7 @@
             job: null,
             employeed: false,
             
-            lm: {
+            mm: {
                 autoCheck: Amm.Data.AUTO_CHECK_NEVER
             },
             
@@ -322,23 +322,24 @@
             
             _doOnCheck: function() {
                 if (/^\d+$/.exec(this.surname)) {
-                    this.lm.addError("surname must not be a number", "surname");
+                    this.mm.addError("surname must not be a number", "surname");
                 }
             }
         });
         
-        m.setFieldValidators({
-            name: 'Amm.Validator.Required',
-            surname: 'Amm.Validator.Required',
-            age: {class: 'Amm.Validator.Number', ge: 0, lt: 130},
-            email: [
+        m.setMeta({
+            name: { validators: 'Amm.Validator.Required' },
+            surname: { validators: 'Amm.Validator.Required' },
+            age: { validators: {class: 'Amm.Validator.Number', ge: 0, lt: 130} },
+            email: { validators: [
                 'Amm.Validator.Required',
                 function(v) {
                     if (!v.match(/^.+@.+\.[^\.]+$/)) return "Please enter valid email";
                 }
-            ],
+            ] },
         });
-        m.setCommonValidators({
+        
+        m.setModelValidators({
             ifEmployeedMustHaveJob: function() {
                 if (this.employeed && !this.job) return "'job' field must be filled-in for employeed persons";
                 if (!this.employeed && this.job) return "'job' field must be empty for unemployeed persons";
@@ -346,28 +347,28 @@
             noEmploymentUnder18: 'this.employeed && this.age < 18? "age must be above 18 if person is employeed" : ""'
         });
         
-        return d;
+        return r;
         
     };
     
-    QUnit.test("Data.LifecycleAndMeta.check() - AUTO_CHECK_NEVER", function(assert) {
+    QUnit.test("Data.ModelMeta.check() - AUTO_CHECK_NEVER", function(assert) {
         
-        var d = createObjectForChecks();
+        var r = createObjectForChecks();
         
-        window.d.d = d;
+        window.d.r = r;
         
-            assert.ok(d.lm.getValidWhenHydrated(), 'when getValidWhenHydrated()...');
-            assert.ok(d.lm.check(), 'check(): object is valid when hydrated');
+            assert.ok(r.mm.getValidWhenHydrated(), 'when getValidWhenHydrated()...');
+            assert.ok(r.mm.check(), 'check(): object is valid when hydrated');
         
-        d.name = '';
-        d.id = 13;
-        d.age = -50;
-        d.surname = '1234';
-        d.email = 'xxx';
-        d.employeed = true;
+        r.name = '';
+        r.id = 13;
+        r.age = -50;
+        r.surname = '1234';
+        r.email = 'xxx';
+        r.employeed = true;
         
-            assert.notOk(d.lm.check(), 'check(): object isn\'t valid');
-            assert.deepEqual(d.lm.getLocalErrors(), {
+            assert.notOk(r.mm.check(), 'check(): object isn\'t valid');
+            assert.deepEqual(r.mm.getLocalErrors(), {
                 'id': [
                     'id must not be 13'
                 ],
@@ -391,47 +392,47 @@
                 ],
             }, "Proper errors are returned");
             
-            assert.ok(d.lm.getChecked(), 'check(): object.getChecked() === true');
+            assert.ok(r.mm.getChecked(), 'check(): object.getChecked() === true');
             
-        d.email = 'xx1';
+        r.email = 'xx1';
             
-            assert.notOk(d.lm.getChecked(), 'any field change: object.getChecked() ==> false');
+            assert.notOk(r.mm.getChecked(), 'any field change: object.getChecked() ==> false');
         
-        d.name = 'Foo';
-        d.surname = 'Bar';
-        d.id = 14;
-        d.age = 26;
-        d.email = 'ivan@protonmail.com';
-        d.employeed = true;
-        d.job = 'Senior Record Tester';
+        r.name = 'Foo';
+        r.surname = 'Bar';
+        r.id = 14;
+        r.age = 26;
+        r.email = 'ivan@protonmail.com';
+        r.employeed = true;
+        r.job = 'Senior Record Tester';
         
-            assert.ok(d.lm.check(), 'check(): object is valid');
-            assert.deepEqual(d.lm.getLocalErrors(), {}, 'object has no local errors if it is valid');
+            assert.ok(r.mm.check(), 'check(): object is valid');
+            assert.deepEqual(r.mm.getLocalErrors(), {}, 'object has no local errors if it is valid');
             
-        var data = d.lm.getData();
+        var data = r.mm.getData();
         data.name = '';
         
-        d.lm.hydrate(data);
-            assert.ok(d.lm.check(), 'object is valid because hydrted...');
+        r.mm.hydrate(data);
+            assert.ok(r.mm.check(), 'object is valid because hydrted...');
         
-        d.lm.setValidWhenHydrated(false);
-            assert.notOk(d.lm.getChecked(), 'checked status got reset after setValidWhenHydrated(false)');
-            assert.notOk(d.lm.check(), 'object not valid anymore (hydrated with botched data');
+        r.mm.setValidWhenHydrated(false);
+            assert.notOk(r.mm.getChecked(), 'checked status got reset after setValidWhenHydrated(false)');
+            assert.notOk(r.mm.check(), 'object not valid anymore (hydrated with botched data');
         
-        d.lm.setValidWhenHydrated(true);
-            assert.ok(d.lm.getChecked(), 'checked status became true after setValidWhenHydrated(true)');
-            assert.ok(d.lm.check(), 'object valid again');
+        r.mm.setValidWhenHydrated(true);
+            assert.ok(r.mm.getChecked(), 'checked status became true after setValidWhenHydrated(true)');
+            assert.ok(r.mm.check(), 'object valid again');
             
             
     });
     
-    QUnit.test("Data.LifecycleAndMeta.check() - AUTO_CHECK_SMART", function(assert) {
+    QUnit.test("Data.ModelMeta.check() - AUTO_CHECK_SMART", function(assert) {
         
-        var d = createObjectForChecks();
+        var r = createObjectForChecks();
         
-        window.d.d = d;
+        window.d.r = r;
         
-        d.lm.hydrate({
+        r.mm.hydrate({
             name: null,
             surname: null,
             id: null,
@@ -440,82 +441,82 @@
             employeed: false
         });
         
-        assert.deepEqual(d.lm.getState(), Amm.Data.STATE_NEW);
+        assert.deepEqual(r.mm.getState(), Amm.Data.STATE_NEW);
         
-        d.lm.setAutoCheck(Amm.Data.AUTO_CHECK_SMART);
+        r.mm.setAutoCheck(Amm.Data.AUTO_CHECK_SMART);
         
         var errors = null;
         
-        d.lm.subscribe('localErrorsChange', function(e) { errors = e; });
+        r.mm.subscribe('localErrorsChange', function(e) { errors = e; });
         
-        d.email = 'aaa';
+        r.email = 'aaa';
         
             assert.deepEqual(errors, {email: ['Please enter valid email']}, 'Field was checked upon change');
         
-        d.email = '';
+        r.email = '';
         
             assert.deepEqual(errors, {email: ['email is required']}, 'Required field cleared -> error');
             
-        d.email = 'aaa@example.com';
+        r.email = 'aaa@example.com';
         
             assert.deepEqual(errors, {}, 'Field value changed to valid -> error disappeared');
             
             
-        d.id = 13;
+        r.id = 13;
             
             assert.deepEqual(errors, {id: ['id must not be 13']}, 'internal check worked');
         
     });
     
     
-    QUnit.test("Data.LifecycleAndMeta.check() - AUTO_CHECK_ALWAYS", function(assert) {
+    QUnit.test("Data.ModelMeta.check() - AUTO_CHECK_ALWAYS", function(assert) {
         
-        var d = createObjectForChecks();
+        var r = createObjectForChecks();
         
-        window.d.d = d;
+        window.d.r = r;
         
         var err;
         
-        d.lm.subscribe('localErrorsChange', function(e) { err = e; });
+        r.mm.subscribe('localErrorsChange', function(e) { err = e; });
         
-        d.name = '';
+        r.name = '';
         
-            assert.notOk(d.lm.getChecked(), 'initially object is checked (validWhenHydrated)');
+            assert.notOk(r.mm.getChecked(), 'initially object is checked (validWhenHydrated)');
         
-        d.lm.setAutoCheck(Amm.Data.AUTO_CHECK_ALWAYS);
+        r.mm.setAutoCheck(Amm.Data.AUTO_CHECK_ALWAYS);
         
-            assert.ok(d.lm.getChecked(), 'change: object still checked...');
+            assert.ok(r.mm.getChecked(), 'change: object still checked...');
             assert.deepEqual(err, {name: ['name is required']}, '...and has errors');
             
-        d.name = 'aaa';
+        r.name = 'aaa';
         
-            assert.ok(d.lm.getChecked(), 'change: still checked...');
+            assert.ok(r.mm.getChecked(), 'change: still checked...');
             assert.deepEqual(err, {}, '...errors disappeared');
             
-        d.surname = 51;
+        r.surname = 51;
         
-            assert.ok(d.lm.getChecked(), 'change: checked...');
+            assert.ok(r.mm.getChecked(), 'change: checked...');
             assert.deepEqual(err, {surname: ['surname must not be a number']}, '_doOnCheck() works too');
             
-        d.surname = 'woo';
+        r.surname = 'woo';
             
-            assert.ok(d.lm.getChecked(), 'change: checked');
+            assert.ok(r.mm.getChecked(), 'change: checked');
             assert.deepEqual(err, {}, 'no errors');
             
     });
     
-    QUnit.test("Data.Object: change fields on hydrate", function(assert) {
+    QUnit.test("Data.Record: change fields on hydrate", function(assert) {
         
         var m = new Amm.Data.Mapper();
         var l = [];
-        var o = new Amm.Data.Object({
+        var r = new Amm.Data.Record({
             __mapper: m,
-            on__idChange: function(v, o) { l.push(['id', v, o]); },
-            on__nameChange: function(v, o) { l.push(['name', v, o]); },
-            on__surnameChange: function(v, o) { l.push(['surname', v, o]); },
+            on__idChange: function(v, r) { l.push(['id', v, r]); },
+            on__nameChange: function(v, r) { l.push(['name', v, r]); },
+            on__surnameChange: function(v, r) { l.push(['surname', v, r]); },
         });
 
-        o.lm.hydrate({
+        r.mm.hydrate({
             id: 5,
             name: 'Aa',
             surname: 'Bb'
@@ -529,7 +530,7 @@
         
         l = [];
         
-        o.lm.hydrate({
+        r.mm.hydrate({
             id: 10,
             name: 'John',
             surname: 'Doe'
@@ -543,21 +544,21 @@
         
         l = [];
         
-        o.lm.beginUpdate();
+        r.mm.beginUpdate();
         
-        o.lm.hydrate({
+        r.mm.hydrate({
             id: 20,
             name: 'Foo',
             surname: 'Bar'
         });
         
-        o.lm.hydrate({
+        r.mm.hydrate({
             id: 30,
             name: 'Nice',
             surname: 'Guy'
         });
         
-        o.lm.endUpdate();
+        r.mm.endUpdate();
         
             assert.deepEqual(l, [
                 ['id', 30, 10],
@@ -569,7 +570,7 @@
                 
     });
         
-    QUnit.test("Data.LifecycleAndMeta.load()", function(assert) {
+    QUnit.test("Data.ModelMeta.load()", function(assert) {
         
         var t = new Amm.Remote.Transport.Debug({replyTime: 10});
        
@@ -581,7 +582,7 @@
                 }
             }
         });
-        var o = new Amm.Data.Object({__mapper: m});
+        var r = new Amm.Data.Record({__mapper: m});
         var data = {
             id: 10,
             name: 'John',
@@ -591,24 +592,24 @@
             data: data
         });
         var tfLog = [];
-        o.lm.subscribe('transactionFailure', function(transaction) {
+        r.mm.subscribe('transactionFailure', function(transaction) {
             tfLog.push([transaction.getResult().getError(), '' + transaction.getResult().getException()]);
         });
-        window.d.o = o;
+        window.d.r = r;
         TestUtils.runStory(assert, [
             {
                 time: 0, 
                 fn: function() {        
-                    o.lm.load(10);
-                    assert.ok(!!o.lm.getTransaction(), 'Transaction is running');
+                    r.mm.load(10);
+                    assert.ok(!!r.mm.getTransaction(), 'Transaction is running');
                 }
             },
             {
                 time: 11, 
                 fn: function() {
-                    assert.notOk(!!o.lm.getTransaction(), 'Transaction is not running');
-                    assert.deepEqual(o.lm.getState(), Amm.Data.STATE_EXISTS, 'After load, state is STATE_EXISTS');
-                    assert.deepEqual(o.lm.getData(), data, 'Data is same as returned');
+                    assert.notOk(!!r.mm.getTransaction(), 'Transaction is not running');
+                    assert.deepEqual(r.mm.getState(), Amm.Data.STATE_EXISTS, 'After load, state is STATE_EXISTS');
+                    assert.deepEqual(r.mm.getData(), data, 'Data is same as returned');
                 }
             },
             {
@@ -619,16 +620,16 @@
                     
                     // test loading w/ error
                     t.failure('404', 'Page not found');
-                    o.lm.load(11);
+                    r.mm.load(11);
                 },
             },
             {
                 time: 11, 
                 fn: function() {
-                    assert.ok(Amm.Data.flattenErrors(o.lm.getRemoteErrors()).length,
+                    assert.ok(Amm.Data.flattenErrors(r.mm.getRemoteErrors()).length,
                         'remote error was registered');
                     assert.equal(tfLog.length, 1, 'outTransactionFailure() triggered');
-                    assert.deepEqual(o.lm.getRemoteErrors(), {
+                    assert.deepEqual(r.mm.getRemoteErrors(), {
                         ERROR_GENERIC: ["Page not found"]
                     });
                 },
@@ -637,18 +638,18 @@
                 time: 1,
                 fn: function() {
                     tfLog = [];
-                    // test loading w/o data
+                    // test loading w/r data
                     t.success({data: {}});
-                    o.lm.load(12);
+                    r.mm.load(12);
                 }
             },
             {
                 time: 11,
                 fn: function() {
-                    assert.ok(Amm.Data.flattenErrors(o.lm.getRemoteErrors()).length,
+                    assert.ok(Amm.Data.flattenErrors(r.mm.getRemoteErrors()).length,
                         'remote error was registered');
                     assert.equal(tfLog.length, 1, 'outTransactionFailure() triggered');
-                    assert.deepEqual(o.lm.getRemoteErrors(), {
+                    assert.deepEqual(r.mm.getRemoteErrors(), {
                         ERROR_EXCEPTION: ["Error: TYPE_LOAD transaction result contains no data"]
                     });
                 }
@@ -657,18 +658,18 @@
                 time: 1,
                 fn: function() {
                     tfLog = [];
-                    // test loading w/o key
+                    // test loading w/r key
                     t.success({data: {name: 'Foo', surname: 'Bar'}});
-                    o.lm.load(12);
+                    r.mm.load(12);
                 }
             },
             {
                 time: 11,
                 fn: function() {
-                    assert.ok(Amm.Data.flattenErrors(o.lm.getRemoteErrors()).length,
+                    assert.ok(Amm.Data.flattenErrors(r.mm.getRemoteErrors()).length,
                         'remote error was registered');
                     assert.equal(tfLog.length, 1, 'outTransactionFailure() triggered');
-                    assert.deepEqual(o.lm.getRemoteErrors(), {
+                    assert.deepEqual(r.mm.getRemoteErrors(), {
                         ERROR_EXCEPTION: ["Error: Data of TYPE_LOAD transaction result contains no key"]
                     });
                 }
@@ -676,7 +677,7 @@
         ]);
     });
     
-    QUnit.test("Data.LifecycleAndMeta.save()", function(assert) {
+    QUnit.test("Data.ModelMeta.save()", function(assert) {
 
         var currentRequest = null;
         
@@ -699,11 +700,11 @@
             }
         });
         
-        var d = new Amm.Data.Object({
+        var r = new Amm.Data.Record({
             __mapper: m,
             name: 'John',
             surname: 'Doe',
-            lm: {
+            mm: {
                 on__transactionFailure: function(transaction) {
                     tfLog.push([transaction.getResult().getError(), '' + transaction.getResult().getException()]);
                 }
@@ -717,8 +718,8 @@
                 time: 0, 
                 fn: function() {        
                     
-                        assert.ok(d.lm.getState() === Amm.Data.STATE_NEW, 'Initial state is new');
-                        assert.notOk(d.lm.getChecked(), 'Object wasn\'t initially checked');
+                        assert.ok(r.mm.getState() === Amm.Data.STATE_NEW, 'Initial state is new');
+                        assert.notOk(r.mm.getChecked(), 'Object wasn\'t initially checked');
                         
                     // TODO: think if hydration after save must be full or partial;
                     // currently we need to return full object
@@ -730,11 +731,11 @@
                     });
                     
                     
-                    opRes = d.lm.save();
+                    opRes = r.mm.save();
                     
                         assert.ok(opRes, 'save() returned true');
-                        assert.ok(d.lm.getChecked(), 'object became checked on save');
-                        assert.ok(!!d.lm.getTransaction(), 'Transaction is running');
+                        assert.ok(r.mm.getChecked(), 'object became checked on save');
+                        assert.ok(!!r.mm.getTransaction(), 'Transaction is running');
                         assert.ok(currentRequest, 'request was issued');
                         assert.ok(currentRequest.getConstRequest().getMethod(), 'POST', 'method is post');
                         assert.deepEqual(currentRequest.getConstRequest().getUri(), 'dummy.php?action=create' ,
@@ -748,10 +749,10 @@
             {
                 time: 11, 
                 fn: function() {
-                        assert.notOk(!!d.lm.getTransaction(), 'Transaction is not running');
-                        assert.deepEqual(d.lm.getState(), Amm.Data.STATE_EXISTS, 'After save, state is STATE_EXISTS');
-                        assert.deepEqual(d.id, 10, 'After save, key field was set');
-                        assert.deepEqual(d.lm.getData(), {
+                        assert.notOk(!!r.mm.getTransaction(), 'Transaction is not running');
+                        assert.deepEqual(r.mm.getState(), Amm.Data.STATE_EXISTS, 'After save, state is STATE_EXISTS');
+                        assert.deepEqual(r.id, 10, 'After save, key field was set');
+                        assert.deepEqual(r.mm.getData(), {
                             id: 10,
                             name: 'John',
                             surname: 'Doe'
@@ -761,7 +762,7 @@
             {
                 time: 1, 
                 fn: function() {        
-                    d.surname = '';
+                    r.surname = '';
                     
                     t.success({
                         errorData: {
@@ -769,7 +770,7 @@
                         }
                     });
                     
-                    d.lm.save();
+                    r.mm.save();
                     
                         assert.ok(currentRequest, 'request was issued');
                         
@@ -788,13 +789,13 @@
                 time: 11,
                 fn: function() {
                     
-                        assert.notOk(!!d.lm.getTransaction(), 'transaction is finished');
+                        assert.notOk(!!r.mm.getTransaction(), 'transaction is finished');
                         assert.deepEqual(tfLog.length, 1, 'Transaction was failed');
-                        assert.deepEqual(d.lm.getRemoteErrors(), {
+                        assert.deepEqual(r.mm.getRemoteErrors(), {
                             'surname': ['surname is required']
                         }, 'returned error data was passed to remoteErrors');
                     
-                    d.surname = 'something';
+                    r.surname = 'something';
                     
                     t.success({
                         data: {
@@ -804,9 +805,9 @@
                     tfLog = [];
                     
                     
-                    d.lm.save();
+                    r.mm.save();
                     
-                        assert.ok(!!d.lm.getTransaction(), 'Transaction is running again');
+                        assert.ok(!!r.mm.getTransaction(), 'Transaction is running again');
                     
                 },
             },
@@ -814,10 +815,10 @@
                 time: 11,
                 fn: function() {
 
-                        assert.notOk(!!d.lm.getTransaction(), 'transaction is finished');
+                        assert.notOk(!!r.mm.getTransaction(), 'transaction is finished');
                         assert.deepEqual(tfLog.length, 0, 'Transaction was not failed');
-                        assert.deepEqual(d.lm.getRemoteErrors(), {}, 'no remote errors');
-                        assert.deepEqual(d.lm.getData(), {
+                        assert.deepEqual(r.mm.getRemoteErrors(), {}, 'no remote errors');
+                        assert.deepEqual(r.mm.getData(), {
                             id: 10,
                             name: 'John',
                             surname: 'Something'
@@ -831,7 +832,7 @@
     });
         
     
-    QUnit.test("Data.LifecycleAndMeta.delete()", function(assert) {
+    QUnit.test("Data.ModelMeta.delete()", function(assert) {
 
         var currentRequest = null;
         
@@ -854,12 +855,12 @@
             }
         });
         
-        var d = new Amm.Data.Object({
+        var r = new Amm.Data.Record({
             __mapper: m,
             id: 10,
             name: 'John',
             surname: 'Doe',
-            lm: {
+            mm: {
                 on__transactionFailure: function(transaction) {
                     tfLog.push([transaction.getResult().getError(), '' + transaction.getResult().getException()]);
                 }
@@ -873,17 +874,17 @@
                 time: 0, 
                 fn: function() {
                     
-                        assert.ok(d.lm.getState() === Amm.Data.STATE_EXISTS, 'Initial state is exsts');
+                        assert.ok(r.mm.getState() === Amm.Data.STATE_EXISTS, 'Initial state is exsts');
                         
                     t.success({
                         error: 'Cannot delete object'
                     });
                     
                     
-                    opRes = d.lm.delete();
+                    opRes = r.mm.delete();
                     
                         assert.ok(opRes, 'delete() returned true');
-                        assert.ok(!!d.lm.getTransaction(), 'Transaction is running');
+                        assert.ok(!!r.mm.getTransaction(), 'Transaction is running');
                         assert.ok(currentRequest, 'request was issued');
                         assert.ok(currentRequest.getConstRequest().getMethod(), 'POST', 'method is post');
                         assert.deepEqual(currentRequest.getConstRequest().getUri(), 'dummy.php?action=delete&id=10' ,
@@ -893,9 +894,9 @@
             {
                 time: 11, 
                 fn: function() {
-                        assert.notOk(!!d.lm.getTransaction(), 'Transaction is not running');
-                        assert.deepEqual(d.lm.getState(), Amm.Data.STATE_EXISTS, 'State is still STATE_EXISTS');
-                        assert.deepEqual(d.lm.getRemoteErrors(), {
+                        assert.notOk(!!r.mm.getTransaction(), 'Transaction is not running');
+                        assert.deepEqual(r.mm.getState(), Amm.Data.STATE_EXISTS, 'State is still STATE_EXISTS');
+                        assert.deepEqual(r.mm.getRemoteErrors(), {
                             'ERROR_GENERIC': ['Cannot delete object']
                         }, 'returned error data was passed to remoteErrors');
                     
@@ -904,9 +905,9 @@
                     t.success({
                     });
                     
-                    d.lm.delete();
+                    r.mm.delete();
                     
-                    assert.ok(!!d.lm.getTransaction(), 'Transaction is running again');
+                    assert.ok(!!r.mm.getTransaction(), 'Transaction is running again');
                     
                 },
             },
@@ -914,10 +915,10 @@
                 time: 11,
                 fn: function() {
 
-                        assert.notOk(!!d.lm.getTransaction(), 'transaction is finished');
+                        assert.notOk(!!r.mm.getTransaction(), 'transaction is finished');
                         assert.deepEqual(tfLog.length, 0, 'Transaction was not failed');
-                        assert.deepEqual(d.lm.getRemoteErrors(), {}, 'no remote errors');
-                        assert.deepEqual(d.lm.getState(), Amm.Data.STATE_DELETED, 'State is now STATE_DELETED');
+                        assert.deepEqual(r.mm.getRemoteErrors(), {}, 'no remote errors');
+                        assert.deepEqual(r.mm.getState(), Amm.Data.STATE_DELETED, 'State is now STATE_DELETED');
                 }
 
             }
@@ -925,10 +926,11 @@
         
     });
     
-    QUnit.test("Data.Object: lifecycle template methods", function(assert) {
+    QUnit.test("Data.Record: lifecycle template methods", function(assert) {
         
         var log = [];
         var ret = undefined, res;
+        var currentRequest;
         var tpl = function(methodName, args) {
             var aa = args? Array.prototype.slice.apply(args) : [];
             var l = [methodName].concat(aa);
@@ -949,7 +951,7 @@
         };
         
         var ovr = {};
-        for (var i in Amm.Data.Object.prototype) if (Amm.Data.Object.prototype.hasOwnProperty(i)) {
+        for (var i in Amm.Data.Record.prototype) if (Amm.Data.Record.prototype.hasOwnProperty(i)) {
             if (i.slice(0, 3) !== '_do') continue;
             ovr[i] = mkTpl(i);
         }
@@ -962,7 +964,7 @@
         });
        
         var m = new Amm.Data.Mapper({
-            objectPrototype: ovr,
+            recordPrototype: ovr,
             uri: 'dummy.php',
             transactionPrototypes: {
                 'default': {
@@ -971,38 +973,38 @@
                 }
             }
         });
-        var d = new Amm.Data.Object({
+        var r = new Amm.Data.Record({
             __mapper: m,
         });
         
         
         
-        d.lm.hydrate({id: 10, name: 'john'});
+        r.mm.hydrate({id: 10, name: 'john'});
         
             assert.deepEqual(log, [['_doOnActual', false]], '_doOnActual(false) called on hydrate');
             
         log = [];
         
-        d.name = 'j2';
-        d.lm.check();
+        r.name = 'j2';
+        r.mm.check();
         
             assert.deepEqual(log, [['_doOnCheck']], '_doOnCheck called on check()');
             
         log = [];
         ret = false;
-        res = d.lm.save();
+        var res = r.mm.save();
         
             assert.deepEqual(log, [['_doBeforeSave']], '_doBeforeSave called on save()');
             assert.notOk(res, 'save() returned false because _doBeforeSave() returned false');
-            assert.notOk(!!d.lm.getTransaction(), 'Transaction is not running');
+            assert.notOk(!!r.mm.getTransaction(), 'Transaction is not running');
 
         log = [];
         ret = undefined;
-        d.lm.save();
+        r.mm.save();
         
             assert.deepEqual(log, [['_doBeforeSave']], '_doBeforeSave called on save()');
             assert.notOk(res, 'save() returned true because _doBeforeSave() didn\'t return false');
-            assert.ok(!!d.lm.getTransaction(), 'transaction is running');
+            assert.ok(!!r.mm.getTransaction(), 'transaction is running');
             
         log = [];
             
@@ -1013,16 +1015,16 @@
         log = [];
         ret = false;
 
-        res = d.lm.load('someKey');
+        res = r.mm.load('someKey');
         
             assert.deepEqual(log, [['_doBeforeLoad', 'someKey']], '_doBeforeLoad called on load');
             assert.deepEqual(res, false, 'load() returned false because _doBeforeLoad() returned false');
-            assert.notOk(!!d.lm.getTransaction(), 'Request isn\'t running');
+            assert.notOk(!!r.mm.getTransaction(), 'Request isn\'t running');
         
         log = [];
         ret = 23;
         
-        d.lm.load('someKey');
+        r.mm.load('someKey');
             
             assert.deepEqual(log, [['_doBeforeLoad', 'someKey']], '_doBeforeLoad called on load');
             assert.deepEqual(t.getRequest().getConstRequest().getUri(), 'dummy.php?action=load&id=23',
@@ -1038,17 +1040,17 @@
         log = [];
         ret = false;
 
-        res = d.lm.delete();
+        res = r.mm.delete();
         
             assert.deepEqual(log, [['_doBeforeDelete']], '_doBeforeDelete called on delete()');
             assert.deepEqual(res, false, 'delete() returned false because _doBeforeDelete() returned false');
-            assert.notOk(!!d.lm.getTransaction(), 'Request isn\'t running');
+            assert.notOk(!!r.mm.getTransaction(), 'Request isn\'t running');
         
         log = [];
-        d.lm.delete();
+        r.mm.delete();
             
             assert.deepEqual(log, [['_doBeforeDelete']], '_doBeforeDelete called on delete()');
-            assert.ok(!!d.lm.getTransaction(),
+            assert.ok(!!r.mm.getTransaction(),
                 'Delete transaction is running');
 
         log = [];
@@ -1058,7 +1060,7 @@
                 '_doAfterDelete called after successful delete');
     });
     
-    QUnit.test("Data.Meta", function(assert) {
+    QUnit.test("Data.FieldMeta", function(assert) {
         
         var log = [];
         var mLog = [];
@@ -1080,11 +1082,11 @@
             }
         });
         
-        var meta = new Amm.Data.Meta();
+        var meta = new Amm.Data.FieldMeta();
         
         meta._notify = function(value, oldValue, name) {
             log.push([name, value, oldValue]);
-            Amm.Data.Meta.prototype._notify.apply(this, Array.prototype.slice.apply(arguments));
+            Amm.Data.FieldMeta.prototype._notify.apply(this, Array.prototype.slice.apply(arguments));
         };
         
         mapper.setMeta(meta, 'theProp');
@@ -1140,12 +1142,6 @@
             assert.deepEqual(mapper.getMeta('<no such prop>'), undefined,
                 'mapper.getMeta returns undefined for non-existent meta-field');
                 
-        mapper.setFieldValidators({
-            email: function(v) { 
-                if (v && !v.match(/@/)) return "%field must be a valid e-mail"; 
-            }
-        });
-                
         mapper.setMeta({
             name: {
                 label: 'Name',
@@ -1164,18 +1160,21 @@
             email: {
                 label: 'E-mail',
                 required: true,
+                validators: function(v) { 
+                    if (v && !v.match(/@/)) return "%field must be a valid e-mail"; 
+                }
             }
         });
         
-        var o = new Amm.Data.Object({
+        var r = new Amm.Data.Record({
             __mapper: mapper, name: '', age: '', email: '',
-            lm: { autoCheck: Amm.Data.AUTO_CHECK_SMART }
+            mm: { autoCheck: Amm.Data.AUTO_CHECK_SMART }
         });
         
-        d.m = mapper;
-        d.o = o;
-        o.lm.check();
-        assert.deepEqual(o.lm.getErrors(), {
+        r.m = mapper;
+        r.r = r;
+        r.mm.check();
+        assert.deepEqual(r.mm.getErrors(), {
             name: ['Name is required'],
             age: ['Age is required'],
             email: ['E-mail is required']
@@ -1183,23 +1182,23 @@
         
         mapper.setMeta(false, 'email', 'required');
         
-        assert.deepEqual(o.lm.getErrors(), {
+        assert.deepEqual(r.mm.getErrors(), {
             name: ['Name is required'],
             age: ['Age is required'],
         }, 'Field required meta-property set to false => error disappeared');
         
-        o.age = -1;
-        o.email = 'zz';
-        o.name = 'Foo';
+        r.age = -1;
+        r.email = 'zz';
+        r.name = 'Foo';
         
-        assert.deepEqual(o.lm.getErrors(), {
+        assert.deepEqual(r.mm.getErrors(), {
             age: ['Age must not be less than 0'],
             email: ['E-mail must be a valid e-mail']
         }, 'Validation works');
         
         mapper.setMeta('The Age', 'age', 'label');
         
-        assert.deepEqual(o.lm.getErrors('age'), ['The Age must not be less than 0'],
+        assert.deepEqual(r.mm.getErrors('age'), ['The Age must not be less than 0'],
             'Label changed -> object re-validated and error message updated');
         
     });
@@ -1247,16 +1246,16 @@
             }
         });
         
-        var person = new Amm.Data.Object({
+        var person = new Amm.Data.Record({
             __mapper: personMapper,
-            lm: {
+            mm: {
                 autoCheck: Amm.Data.AUTO_CHECK_SMART
             },
             name: 'John',
             email: 'johndoe@example.com'
         });
         
-        var product = new Amm.Data.Object({
+        var product = new Amm.Data.Record({
             __mapper: productMapper,
             sku: '010201',
             name: 'PureGeek Compact 13" Laptop',
@@ -1436,6 +1435,115 @@
                 "Field got remote error from the object");
             
     });
+    
+    QUnit.test("Data.FieldMeta.clone", function(assert) {
+        
+        var f = new Amm.Data.FieldMeta({
+            name: 'Foo',
+            'default': 0,
+            validators: [
+                new Amm.Validator.Number({lt: 1000})
+            ],
+            label: 'The Foo',
+            someProp: 'Some Val'
+        });
+        
+        var b = f.clone(null, 'Bar');
+        
+        assert.deepEqual(b.name, 'Bar');
+        assert.deepEqual(b.default, 0);
+        assert.ok(b.validators[0] === f.validators[0]);
+        assert.ok(b.label, 'The Foo');
+        assert.deepEqual(b.someProp, 'Some Val');
+        
+        b.label = 'Zzz';
+        assert.deepEqual(f.label, 'The Foo');
+        assert.deepEqual(b.label, 'Zzz');
+        
+    });
+    
+    QUnit.test("Data.ModelMeta: meta overrides", function(assert) {
+        
+        var 
+        
+            mcLog = [],
+
+            master = new Amm.Data.Model({
+                mm: {
+                    meta: {
+                        name: {
+                            label: 'Master Name',
+                            required: true,
+                        },
+                        surname: {
+                            label: 'Master Surname',
+                            required: true,
+                        },
+                        email: {
+                            label: 'Master Email',
+                            description: 'The Email Address Description',
+                        }
+                    }
+                }
+            }),
+
+            slave = new Amm.Data.Model({
+                mm: {
+                    metaProvider: master.mm,
+                    meta: {
+                        surname: {
+                            label: 'Slave Surname'
+                        },
+                        extra: {
+                            label: 'Slave Extra'
+                        }
+                    },
+                    on__metaChange: function(meta, old, prop, value, oldValue) {
+                        mcLog.push([prop, value, oldValue]);
+                    },
+                }
+
+            });
+        
+            assert.deepEqual(slave.mm.getMeta('name', 'label'), 'Master Name', 
+                'Slave meta-provider got metadata from master');
+            
+            assert.deepEqual(slave.mm.getMeta('surname', 'label'), 'Slave Surname',
+                'Slave overrides are in place');
+        
+            assert.deepEqual(slave.mm.getMeta('extra', 'label'), 'Slave Extra',
+                'Slave original meta is in place');
+
+        mcLog = [];
+        master.mm.setMeta('Master alt surname', 'surname', 'label');
+        
+            assert.deepEqual(mcLog.length, 0, 'When slave override is in place, ' 
+            + 'change in master meta doesn\'t trigger event');
+    
+        mcLog = [];
+        slave.mm.setMeta('Slave Email', 'email', 'label');
+
+        assert.deepEqual(mcLog, [[undefined, undefined, undefined]],
+            'Creating override meta triggers global meta-change event');
+            
+        assert.deepEqual(slave.mm.getMeta('email', 'label'), 'Slave Email',
+            'Newly-set override meta-property in place');
+            
+        assert.deepEqual(slave.mm.getMeta('email', 'description'), 'The Email Address Description',
+            'Other meta-property of master meta provider in place');
+    
+        mcLog = [];
+        slave.mm.setMeta(null, 'email');
+        
+        assert.deepEqual(mcLog, [[undefined, undefined, undefined]],
+            'Deleting override meta triggers global meta-change event');
+            
+        assert.deepEqual(slave.mm.getMeta('email', 'label'), 'Master Email',
+            'Deleting override meta: master override meta-property back in place');
+        
+        
+    });
+    
     
     
 }) ();

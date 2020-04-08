@@ -86,7 +86,6 @@ function getDeps($file, $allFiles, $stack = array(), $prefix = 'Amm') {
         }
         $deps = array_unique($deps);
         if ($d = array_diff($deps, array_keys($allFiles))) {
-            var_dump(array_keys($allFiles), $deps);
             throw new Exception("Unknown class(es): ".implode(", ", $d)." in ".$file);
         }
         $cache[$file] = $deps;

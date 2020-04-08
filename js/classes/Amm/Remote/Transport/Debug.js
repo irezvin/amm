@@ -71,7 +71,7 @@ Amm.Remote.Transport.Debug.prototype = {
     
     outRequest: function(runningRequest, success, failure) {
         this._request = runningRequest;
-        res = this._out('request', runningRequest, success, failure);
+        var res = this._out('request', runningRequest, success, failure);
         if (this._pendingSuccess) {
             this.success.apply(this, this._pendingSuccess);
         } else if (this._pendingFailure) {

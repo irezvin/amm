@@ -15,7 +15,7 @@ Amm.Data = {
     flattenErrors: function(hash, target) {
         if (!hash) return [];
         if (typeof hash !== 'object') return [hash];
-        var i;
+        var i, l;
         var res = target || [], target = target || res;
         if (hash instanceof Array) {
             for (i = 0, l = hash.length; i < l; i++) {
