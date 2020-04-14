@@ -15,11 +15,6 @@ Amm.Data.ModelMeta.prototype = {
      */
     _m: null,
     
-    /**
-     * @type {Amm.Data.Mapper}
-     */
-    _mapper: null,
-    
     _updateLevel: 0,
     
     _modified: null,
@@ -208,7 +203,19 @@ Amm.Data.ModelMeta.prototype = {
     },
     
     setFieldValue: function(field, value) {
-        var old = this._m._data[field];
+        var old = this._m._data[field], ret;
+        var setterName = '_set_' + field;
+        if (this[setterName] && typeof this[setterName] === 'function') {
+            delete this[setterName].error;
+            ret = { 'value': value, 'old': old, 'error': null };
+            var res = this[setterName].call(this._m, ret, field);
+            if (res === false) return;
+            value = ret.value;
+            old = ret.old;
+            if (ret.error) {
+                this[setterName].error = ret.error;
+            }
+        }
         if (old === value) return;
         this._m._data[field] = value;
         if (this._updateLevel) return;
@@ -230,7 +237,16 @@ Amm.Data.ModelMeta.prototype = {
         var outName = 'out' + u + 'Change';
         var setterName = 'set' + u;
         var getterName = 'get' + u;
-        
+        var meta = this.getMeta(field);
+        var def = undefined;
+        if (meta) {
+            def = meta.def;
+            if (def !== undefined) {
+                if (!(field in this._m._old)) this._m._old[field] = def;
+                if (!(field in this._m._data)) this._m._data[field] = def;
+            }
+            // todo: extract getter, setter, calculate
+        }
         if (!(getterName in this._m)) {
             this._m[getterName] = function() {
                 return this._data[field];
@@ -255,8 +271,8 @@ Amm.Data.ModelMeta.prototype = {
         
         // we need to create pre-update values' key so change event will be triggered
         // during endUpdate()
-        if (!(field in this._m._preUpdateValues)) {
-            this._m._preUpdateValues[field] = undefined;
+        if (this._m._preUpdateValues && !(field in this._m._preUpdateValues)) {
+            this._m._preUpdateValues[field] = def;
         }
         
         if (!this._updateLevel) this.outPropertiesChanged();
@@ -327,41 +343,44 @@ Amm.Data.ModelMeta.prototype = {
         } else {
             fieldsSrc = this._m._propNames;
         }
-        var err, i, j, l, v, validators;
+        var err, i, j, l, v, label, validators, setterName;
         for (i in fieldsSrc) if (fieldsSrc.hasOwnProperty(i)) {
+            err = null;
+            setterName = '_set_' + i;
+            if (typeof this[setterName] === 'function' && this[setterName].error) {
+                err = this[setterName].error;
+            }
             v = this._m._data[i];
-            if (hasFieldCheckFn) {
+            if (!err && hasFieldCheckFn) {
                 err = this._m._checkField(i, v);
                 if (err === false) err = Amm.translate("lang.Amm.ModelMeta.invalidFieldValue");
-                if (err) {
-                    this.addError(err, i);
+            }
+            label = this.getMeta(i, 'label') || i;
+            if (!err) {
+                validators = this.getFieldValidators(i);
+                if (!validators) validators = [];
+                else if (!(validators instanceof Array)) validators = [validators];
+                for (var j = 0, l = validators.length; j < l; j++) {
+                    if (typeof validators[j] === 'function') {
+                        err = validators[j](v, label);
+                    }
+                    else if (typeof validators[j].getError === 'function') {
+                        err = validators[j].getError(v, label);
+                    }
+                    if (err) break;
                 }
             }
-            
-            validators = this.getFieldValidators(i);
-            if (!validators) continue;
-            if (!(validators instanceof Array)) validators = [validators];
-            var label = this.getMeta(i, 'label') || i;
-            for (var j = 0, l = validators.length; j < l; j++) {
-                if (typeof validators[j] === 'function') {
-                    err = validators[j](v, label);
-                }
-                else if (typeof validators[j].getError === 'function') {
-                    err = validators[j].getError(v, label);
-                }
-                if (err) {
-                    err = err.replace(/%field/g, label);
-                    // we stop on first error
-                    this.addError(err, i);
-                    break;
-                }
+            if (err) {
+                err = err.replace(/%field/g, label);
+                this.addError(err, i);
+            } else {
+                delete this._m._errors.local[i];
             }
-            if (!err) delete this._m._errors.local[i];
         }
     },
     
     _coreCheckWhole: function() {
-        var modelValidators = this._mapper.getModelValidators();
+        var modelValidators = this.getModelValidators(true);
         if (!modelValidators) return;
         for (var key in modelValidators) if (modelValidators.hasOwnProperty(key)) {
             var vals = modelValidators[key];
@@ -621,250 +640,35 @@ Amm.Data.ModelMeta.prototype = {
     setErrors: function() {
         console.warn("setErrors has no effect; use either setLocalErrors() or setRemoteErrors()");
     },
-
-    _setTransaction: function(transaction) {
-        if (transaction) Amm.is(transaction, 'Amm.Data.Transaction');
-        else transaction = null;
-        
-        var oldTransaction = this._transaction;
-        if (oldTransaction === transaction) return;
-        
-        if (oldTransaction) oldTransaction.unsubscribe(undefined, undefined, this);
-        if (transaction) transaction.subscribe('stateChange', this._notifyTransactionStateChange, this);
-        
-        this._transaction = transaction;
-
-        this.outTransactionChange(transaction, oldTransaction);
-        if (oldTransaction) this._setLastTransaction(oldTransaction);
-        
-        return true;
-    },
-
-    getTransaction: function() { return this._transaction; },
-
-    outTransactionChange: function(transaction, oldTransaction) {
-        this._out('transactionChange', transaction, oldTransaction);
-    },
     
-    _notifyTransactionStateChange: function(state, oldState) {
-        // ignore if we don't track this transaction anymore
-        if (!this._transaction || Amm.event.origin !== this._transaction) return;
-        if (state === Amm.Data.Transaction.STATE_RUNNING) {
-            // don't handle transaction start event
-            return;
-        }
-        if (state === Amm.Data.Transaction.STATE_CANCELLED) { // business as usual
-            this._setTransaction(null);
-            return;
-        }
-        
-        if (this._handleTransactionFinished(state)) {
-            this._setTransaction(null);
-        }
-    },
-    
-    _handleTransactionFinished: function(state) {
-        
-        if (state === Amm.Data.Transaction.STATE_CANCELLED) return true;
-        
-        var failure = (state === Amm.Data.Transaction.STATE_FAILURE);
-        
-        if (failure) {
-            this._handleGenericTransactionFailure();
-            return true;
-        }
-        
-        var success = (state === Amm.Data.Transaction.STATE_SUCCESS);
-        
-        if (!success) return;
-        
-        var type = this._transaction.getType() + '';
-        
-        var method = '_handle' + type[0].toUpperCase() + type.slice(1) + 'Success';
-        
-        if (typeof this[method] === 'function' ) {
-            this[method]();
-        }
-        
-        return true;
-        
-    },
-    
-    _hydrateFromTransactionDataAndTrigger: function(forSave, newState, partial) {
-        var result = this._transaction.getResult();
-        var wasCreated = (this._m._state === Amm.Data.STATE_NEW);
-        this.beginUpdate();
-        this.setRemoteErrors({});
-        var data = result.getData();
-        if (data) this.hydrate(data, partial, true);
-        if (newState) this.setState(newState);
-        if (forSave) {
-            this._m._doAfterSave(wasCreated);
-        } else {
-            this._m._doAfterLoad();
-        }
-        this._m._doOnActual(forSave);
-        this.endUpdate();
-    },
-    
-    _handleGenericTransactionFailure: function() {
-        var result = this._transaction.getResult();
-        var remoteErrors = result.getErrorData(), tmp, 
-                error = result.getError(), exception = result.getException();
-        if (!remoteErrors) remoteErrors = {};
-        else if (typeof remoteErrors !== 'object') {
-            tmp = {};
-            tmp[Amm.Data.ERROR_GENERIC] = [remoteErrors];
-            remoteErrors = tmp;
-        }
-        
-        var f;
-        if (error) {
-            if (remoteErrors[Amm.Data.ERROR_GENERIC]) {
-                remoteErrors[Amm.Data.ERROR_GENERIC].push(error);
-                /*remoteErrors[Amm.Data.ERROR_GENERIC] = Amm.Data.flattenErrors(remoteErrors[Amm.Data.ERROR_GENERIC]);
-                if (!remoteErrors[Amm.Data.ERROR_GENERIC] || !remoteErrors[Amm.Data.ERROR_GENERIC].length) {
-                    delete remoteErrors[Amm.Data.ERROR_GENERIC];
-                }*/
-            } else {
-                remoteErrors[Amm.Data.ERROR_GENERIC] = [error];
+    _syncProperties: function() {
+        var meta = this.getMeta();
+        for (var field in meta) if (meta.hasOwnProperty(field)) {
+            var m = meta[field];
+            if (!(field in this._m._propNames)) {
+                this._createProperty(field);
             }
+            if (m.set !== undefined) this['_set_' + field] = m.set;
         }
-        if (exception) {
-            remoteErrors[Amm.Data.ERROR_EXCEPTION] = '' + exception;
-        }
-        
-        this.setRemoteErrors(remoteErrors);
-        
-        this.outTransactionFailure (this._transaction);
-    },
-    
-    outTransactionFailure: function(transaction) {
-        return this._out('transactionFailure', transaction);
-    },
-    
-    _handleCreateSuccess: function() {
-        this._hydrateFromTransactionDataAndTrigger(true, Amm.Data.STATE_EXISTS, this._mapper.partialHydrateOnCreate);
-    },
-    
-    _handleDeleteSuccess: function() {
-        this.setState(Amm.Data.STATE_DELETED);
-        this.setRemoteErrors({});
-        this._m._doAfterDelete();
-    },
-    
-    _handleUpdateSuccess: function() {
-        this._hydrateFromTransactionDataAndTrigger(true, undefined, this._mapper.partialHydrateOnUpdate);
-    },
-    
-    _handleLoadSuccess: function() {
-        this.beginUpdate();
-        this._hydrateFromTransactionDataAndTrigger(false, Amm.Data.STATE_EXISTS);
-        this.endUpdate();
-    },
-
-    _setLastTransaction: function(lastTransaction) {
-        if (lastTransaction) Amm.is(lastTransaction, 'Amm.Data.Transaction');
-        else lastTransaction = null;
-        
-        var oldLastTransaction = this._lastTransaction;
-        if (oldLastTransaction === lastTransaction) return;
-        this._lastTransaction = lastTransaction;
-        this.outLastTransactionChange(lastTransaction, oldLastTransaction);
-        return true;
-    },
-
-    getLastTransaction: function() { return this._lastTransaction; },
-
-    outLastTransactionChange: function(lastTransaction, oldLastTransaction) {
-        this._out('lastTransactionChange', lastTransaction, oldLastTransaction);
-    },
-    
-    _getTransactionData: function() {
-        return Amm.override({}, this._m._data);
-    },
-    
-    _runTransaction: function(transaction) {
-        this._setTransaction(transaction);
-        transaction.run();
-        if (transaction.getState() === Amm.Data.Transaction.STATE_FAILURE) {
-            var x = transaction.getResult().getException();
-            if (x) throw x;
-        }
-    },
-    
-    save: function(noCheck) {
-        if (!noCheck && !this.check()) return;
-        if (this._m._doBeforeSave() === false) return;
-        var data = this._getTransactionData(), tr, state = this.getState();
-        if (state === Amm.Data.STATE_NEW) {
-            tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_CREATE, null, data);
-        } else if (state === Amm.Data.STATE_EXISTS) {
-            tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_UPDATE, this.getKey(), data);
-        } else {
-            throw Error("Cannot save an object with state '" + state + "'");
-        }
-        this._runTransaction(tr);
-        return true;
-    },
-    
-    delete: function() {
-        var tr, state = this.getState(), key;
-        if (state !== Amm.Data.STATE_EXISTS) {
-            this.setState(Amm.Data.STATE_DELETED);
-            return true;
-        }
-        if (this._m._doBeforeDelete() === false) return false;
-        key = this.getKey();
-        tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_DELETE, this.getKey());
-        this._runTransaction(tr);
-        return true;
-    },
-    
-    load: function(key) {
-        var newKey = this._m._doBeforeLoad(key);
-        if (newKey === false) return false;
-        if (newKey !== undefined) key = newKey;
-        if (key === undefined) key = this.getKey();
-        if (!key) throw new Error ("Cannot load(): key not provided");
-        var tr;
-        tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_LOAD, key);
-        this._runTransaction(tr);
-        return true;
-    },
-    
-    cleanup: function() {
-        if (this._cu) return;
-        this._cu = true;
-        if (this._transaction) {
-            this._transaction.cleanup();
-            this._transaction = null;
-        }
-        if (this._lastTransaction) {
-            this._lastTransaction.cleanup();
-            this._lastTransaction = null;
-        }
-        if (this._mapper) this._mapper.unsubscribe(undefined, undefined, this);
-        this._m.cleanup();
-        Amm.WithEvents.prototype.cleanup.call(this);
-    },
-    
-    getMapper: function() {
-        return this._mapper;
-    },
-    
-    setMapper: function() {
-        // dummy
-    },
-    
-    outMapperChange: function() {
-        // dummy
     },
     
     _onMetaChange: function(field, property, value, oldValue) {
+        
         Amm.Data.MetaProvider.prototype._onMetaChange.call(
             this, field, property, value, oldValue
         );
+
+        if (!field) this._syncProperties();
+        else {
+            if (!(field in this._m._propNames)) this._createProperty(field);
+            if (!property || property === 'set') {
+                var meta = this.getMeta(field);
+                if (meta && meta.set !== undefined) {
+                    this['_set_' + field] = meta.set;
+                }
+            }
+        }
+
         // we know _that_ meta-property isn't validation-related
         if (property 
             && property !== 'required'      // requiredness affects validation
@@ -874,6 +678,7 @@ Amm.Data.ModelMeta.prototype = {
         var hasValue = field && this._m._data[field] || this._m._old[field];
         var shouldCheck = hasValue || property === 'required' && !value;
         this._correctCheckStatus(field, shouldCheck);
+        
     }
     
 };

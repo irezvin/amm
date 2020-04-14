@@ -38,8 +38,12 @@ Amm.Data.MetaProvider.prototype = {
         return true;
     },
 
-    getModelValidators: function() {
-        return this._modelValidators; 
+    getModelValidators: function(all) {
+        if (!all || !this._metaProvider) return this._modelValidators; 
+        var res = {};
+        if (this._modelValidators) Amm.override(res, this._modelValidators);
+        if (this._metaProvider) Amm.override(res, this._metaProvider.getModelValidators(true));
+        return res;
     },
 
     setMetaProvider: function(metaProvider) {
@@ -54,7 +58,7 @@ Amm.Data.MetaProvider.prototype = {
         if (this._metaProvider) {
             this._metaProvider.subscribe('metaChange', this._handleProviderMetaChange, this);
         }
-        this.notifyMetaChange(this.getMeta());
+        this.outMetaChange();
         return true;
     },
 
@@ -80,7 +84,7 @@ Amm.Data.MetaProvider.prototype = {
         this._metaUpdating--;
         if (!this._metaUpdating && this._metaChanged) {
             this._metaChanged = false;
-            this.outMetaChange(this._combineMeta);
+            this.outMetaChange();
         }
     },
     
@@ -162,7 +166,7 @@ Amm.Data.MetaProvider.prototype = {
     },
     
     notifyMetaChange: function(meta, field, property, value, oldValue) {
-        if (!property) this._combinedMeta = null;
+        if (!this._meta || this._meta[field] !== meta) return;
         this.outMetaChange(meta, null, field, property, value, oldValue);
     },
     
@@ -207,7 +211,7 @@ Amm.Data.MetaProvider.prototype = {
     
     _handleProviderMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
         if (!field || !this._meta || !this._meta[field]) {
-            this.notifyMetaChange(meta, field, property, value, oldValue);
+            this.outMetaChange(meta, oldMeta, field, property, value, oldValue);
         }
     }
     

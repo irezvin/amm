@@ -1541,8 +1541,64 @@
         assert.deepEqual(slave.mm.getMeta('email', 'label'), 'Master Email',
             'Deleting override meta: master override meta-property back in place');
         
+    });
+    
+    
+    QUnit.test("Data.ModelMeta: create properties; 'set' meta-property", function(assert) {
+       
+        var m = new Amm.Data.Model({
+            mm: {
+                meta: {
+                    name: { 
+                        def: 'Unnamed',
+                        set: function(ret) {
+                            if (typeof ret.value !== 'string') {
+                                ret.error = "%field must be a string";
+                                return;
+                            }
+                            if (typeof ret.value === 'string') {
+                                ret.value = ret.value.replace(/^\s+|\s+$/g, '');
+                            }
+                        }
+                    },
+                    surname: { def: 'Empty' },
+                    email: { def: 'noname@example.com' }
+                }
+            }
+        });
+        
+            assert.deepEqual(m.name, 'Unnamed', 
+                'Meta default -> field created (1)');
+            
+            assert.deepEqual(m.surname, 'Empty', 
+                'Meta default -> field created (2)');
+            
+            assert.deepEqual(m.email, 'noname@example.com', 
+                'Meta default -> field created (3)');
+        
+        m.mm.setMeta({ def: 'No comments' }, 'comment');
+        
+            assert.deepEqual(m.comment, 'No comments',
+                'Meta default -> field created (4)');
+                
+        m.name = null;
+            assert.deepEqual(m.name, null, "'set': invalid value was set");
+            assert.deepEqual(m.mm.getErrors('name'), ["name must be a string"],
+                "'set': when ret.error is set, error returned with model errors");
+                
+        m.mm.check(true);
+            assert.deepEqual(m.mm.getErrors('name'), ["name must be a string"],
+                "'set'-provided error isn't cleared after another check()");
+            
+                
+        m.name = ' John ';
+            assert.deepEqual(m.name, 'John', 
+                "'set': ret.value changed");
+            assert.deepEqual(m.mm.getErrors('name'), null, 
+                "Errors cleared after successful 'set'");
         
     });
+    
     
     
     

@@ -236,18 +236,6 @@ Amm.Data.RecordMeta.prototype = {
         return true;
     },
     
-    _handleMapperMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
-        // we know _that_ meta-property isn't validation-related
-        if (property 
-            && property !== 'required'      // requiredness affects validation
-            && property !== 'label'         // label may affect error messages
-            && property !== 'validators'    // validators affect validation
-        ) return;
-        var hasValue = field && this._m._data[field] || this._m._old[field];
-        var shouldCheck = hasValue || property === 'required' && !value;
-        this._correctCheckStatus(field, shouldCheck);
-    },
-    
     cleanup: function() {
         if (this._cu) return;
         this._cu = true;
