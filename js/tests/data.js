@@ -1599,7 +1599,48 @@
         
     });
     
-    
-    
+    QUnit.test("Data: computed fields", function(assert) {
+        
+        var c, d, dt = new Amm.Data.Model({
+            mm: {
+                meta: {
+                    a: {
+                        def: 10,
+                    },
+                    b: {
+                        def: 20,
+                    },
+                    c: {
+                        compute: function() {
+                            return this.a + this.b;
+                        }
+                    },
+                    d: {
+                        compute: function() {
+                            return '{{' + this.c + '}}';
+                        }
+                    }
+                }
+            },
+            on__cChange: function(v) { c = v; },
+            on__dChange: function(v) { d = v; }
+        });
+            
+            assert.deepEqual(dt.c, 30, 'Initial value of computed field');
+            assert.deepEqual(dt.d, '{{30}}', 'Initial value of dependent computed field');
+            
+        dt.a = 5;
+        
+            assert.deepEqual(dt.c, 25, 'Altered value of computed field');
+            assert.deepEqual(dt.d, '{{25}}', 'Altered value of dependent computed field');
+            assert.deepEqual(c, 25, 'Altered value: change triggered');
+            assert.deepEqual(d, '{{25}}', 'Dependent computed field: change triggered');
+            
+        c = undefined;
+        dt.c = 135;
+        
+            assert.deepEqual(dt.c, 25, 'Setter doesn\'t change computed value');
+            assert.deepEqual(c, undefined, 'Setter doesn\'t trigger change of computed value');
+    });
     
 }) ();

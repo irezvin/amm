@@ -1,6 +1,7 @@
 /* global Amm */
 
 Amm.Data.ModelMeta = function(model, options) {
+    this._computed = [];
     this._m = model;
     Object.defineProperty(this, 'm', {value: model, writable: false});
     Amm.WithEvents.call(this, options);
@@ -34,6 +35,14 @@ Amm.Data.ModelMeta.prototype = {
     _fieldMeta: null,
     
     _validators: null,
+    
+    _lockCompute: 0,
+    
+    /**
+     * List of computed fields (that should be recalc'd after each fields' update)
+     * @type Array
+     */
+    _computed: null,
     
     /**
      * Means doOnCheck will occur every time when get*Errors() or, when anything is subscribed
@@ -100,8 +109,10 @@ Amm.Data.ModelMeta.prototype = {
             throw Error ("Call to endUpdate() without corresponding beginUpdate(); check with getUpdateLevel() first");
         this._updateLevel--;
         if (this._updateLevel) return;
+        if (!this._lockCompute) this._compute();
         var pv = this._m._preUpdateValues;
         var v = this._m._data, oldVal, newVal;
+        this._lockCompute++;
         for (var i in pv) if (pv.hasOwnProperty(i)) {
             oldVal = pv[i];
             newVal = v[i];
@@ -109,6 +120,7 @@ Amm.Data.ModelMeta.prototype = {
             if (newVal !== oldVal) this._reportFieldChange(i, newVal, oldVal, true);
             if (this._m._updateLevel) break; // in case event handler done beginUpdate()
         }
+        this._lockCompute--;
         if (this._oldState !== null) {
             if (this._oldState !== this._m.state) {
                 var oldState = this._oldState;
@@ -159,6 +171,7 @@ Amm.Data.ModelMeta.prototype = {
         this._correctCheckStatus(field, val || oldVal);
         
         this._m[outName](val, oldVal);
+        if (!this._lockCompute && !(this['_compute_' + field])) this._compute();
         if (!dontReportModified) {
             this._checkFieldModified(field);
         }
@@ -199,11 +212,18 @@ Amm.Data.ModelMeta.prototype = {
     },
     
     getFieldValue: function(field) {
+        if (!(field in this._m._data) && this['_compute_' + field]) {
+            this._m._data[field] = this['_compute_' + field].call(this._m, field);
+        }
         return this._m._data[field];
     },
     
     setFieldValue: function(field, value) {
         var old = this._m._data[field], ret;
+        
+        // cannot set computed field
+        if (this._computed.length && this['_compute_' + field]) return;
+        
         var setterName = '_set_' + field;
         if (this[setterName] && typeof this[setterName] === 'function') {
             delete this[setterName].error;
@@ -643,12 +663,23 @@ Amm.Data.ModelMeta.prototype = {
     
     _syncProperties: function() {
         var meta = this.getMeta();
+        var computed = [];
         for (var field in meta) if (meta.hasOwnProperty(field)) {
             var m = meta[field];
             if (!(field in this._m._propNames)) {
                 this._createProperty(field);
             }
+            if (m.compute && typeof m.compute === 'function') {
+                computed.push(field);
+                this['_compute_' + field] = m.compute;
+            } else {
+                delete this['_compute_' + field];
+            }
             if (m.set !== undefined) this['_set_' + field] = m.set;
+        }
+        if (!Amm.Array.equal(computed, this._computed)) {
+            this._computed = computed;
+            this._computedListUpdated();
         }
     },
     
@@ -661,11 +692,29 @@ Amm.Data.ModelMeta.prototype = {
         if (!field) this._syncProperties();
         else {
             if (!(field in this._m._propNames)) this._createProperty(field);
+            var meta = this.getMeta(field);
             if (!property || property === 'set') {
-                var meta = this.getMeta(field);
                 if (meta && meta.set !== undefined) {
                     this['_set_' + field] = meta.set;
                 }
+            }
+            if (!property || property === 'compute') {
+                var cmpChanged = false;
+                var cmpIdx = Amm.Array.indexOf(field, this._computed);
+                if (typeof meta.compute === 'function') {
+                    if (cmpIdx < 0) { 
+                        cmpChanged = true;
+                        this._computed.push(field);
+                        this['_compute_' + field] = meta.compute;
+                    }
+                } else {
+                    if (cmpIdx >= 0) { 
+                        cmpChanged = true;
+                        this._computed.splice(cmpIdx, 1);
+                        delete this['_compute_' + field];
+                    }
+                }
+                if (cmpChanged) this._computedListUpdated();
             }
         }
 
@@ -679,6 +728,31 @@ Amm.Data.ModelMeta.prototype = {
         var shouldCheck = hasValue || property === 'required' && !value;
         this._correctCheckStatus(field, shouldCheck);
         
+    },
+    
+    _computedListUpdated: function() {
+        this._compute();
+    },
+    
+    _compute: function() {
+        if (!this._computed.length) return;
+        if (this._updateLevel) return;
+        
+        this.beginUpdate();
+        var i, l, f;
+        for (i = 0, l = this._computed.length; i < l; i++) {
+            f = this._computed[i];
+            delete this._m._data[f];
+        }
+        for (i = 0, l = this._computed.length; i < l; i++) {
+            f = this._computed[i];
+            if (!(f in this._m._data)) {
+                this.getFieldValue(f);
+            }
+        }
+        this._lockCompute++;
+        this.endUpdate();
+        this._lockCompute--;
     }
     
 };

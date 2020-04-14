@@ -162,6 +162,16 @@ Amm.createProperty(Amm.Data.FieldMeta.prototype, 'set', null, {
     }
 }, true);
 
+Amm.createProperty(Amm.Data.FieldMeta.prototype, 'compute', null, {
+    before: function(value) {
+        if (!value) value = null;
+        else if (typeof value !== 'function') {
+            throw Error("'compute' meta-property value must be a function or null");
+        }
+        return value;
+    }
+}, true);
+
 Amm.createProperty(
     Amm.Data.FieldMeta.prototype, 'def', null, Amm.Data.FieldMeta._afterPropChange, true
 );
