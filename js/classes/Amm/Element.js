@@ -391,8 +391,7 @@ Amm.Element.prototype = {
         if (typeof definition === 'function') {
             fn = definition;
         } else if (typeof definition === 'string' && definition.slice(0, 11) === 'javascript:') {
-            var body = this._prepareFunctionHandlerBody(definition.slice(11));
-            fn = Function('g', 's', body);
+            fn = definition.slice(11);
         } else if (typeof definition === 'string') {
             proto = {
                 src: definition
@@ -460,35 +459,6 @@ Amm.Element.prototype = {
         };
         expression.subscribe('valueChange', this[out], this);
         this[priv] = expression;
-    },
-    
-    /** 
-     * replaces structures like 
-     *      "(2 + {: a['xx'] :}) / 3" 
-     * with 
-     *      "(2 + this.g(' a[\'xx\'] ')) / 3"
-     */
-    _prepareFunctionHandlerBody: function(template) {
-        var inside = false, buf = '';
-        var rep = function(match) {
-            if (match === '{:') {
-                if (inside) throw Error("Cannot nest {: in function template");
-                inside = true;
-                return '';
-            } else if (match === ':}') {
-                if (!inside) throw Error(":} without opening {: in function template");
-                inside = false;
-                var res = "g('" + buf.replace(/(['"\\])/g, '\\$1') + "')";
-                buf = '';
-                return res;
-            } else if (inside) {
-                buf += match;
-                return '';
-            }
-            return match;
-        };
-        var res = template.replace(/([{]:|:[}]|:|[{}]|[^:{}]+)/g, rep);
-        return res;
     },
     
     outViewAdded: function(view) {

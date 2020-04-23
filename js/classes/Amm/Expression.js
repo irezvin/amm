@@ -64,6 +64,8 @@ Amm.Expression.prototype = {
     
     'Amm.Expression': '__CLASS__',
     
+    cleanupWithThis: true,
+    
     _expressionThis: null,
     
     _writeProperty: null,
@@ -146,11 +148,11 @@ Amm.Expression.prototype = {
         var oldExpressionThis = this._expressionThis;
         if (oldExpressionThis === expressionThis) return;
         if (oldExpressionThis && oldExpressionThis['Amm.WithEvents'] && oldExpressionThis.hasEvent('cleanup')) {
-            this._unsub(oldExpressionThis, 'cleanup', this._deleteCurrentContext);
+            this._unsub(oldExpressionThis, 'cleanup', this._handleExpressionThisCleanup);
         }
         this._expressionThis = expressionThis;
         if (expressionThis && expressionThis['Amm.WithEvents'] && expressionThis.hasEvent('cleanup')) {
-            this._sub(expressionThis, 'cleanup', this._deleteCurrentContext, undefined, true);
+            this._sub(expressionThis, 'cleanup', this._handleExpressionThisCleanup, undefined, true);
         }
         this._propagateExpressionThis();
         this.outExpressionThisChange(expressionThis, oldExpressionThis);
@@ -191,7 +193,7 @@ Amm.Expression.prototype = {
         this._writeProperty = writeProperty;
         this._writeObject = writeObject;
         if (writeObject && writeObject['Amm.WithEvents'] && writeObject.hasEvent('cleanup')) {
-            this._sub(writeObject, 'cleanup', this._deleteCurrentContext, undefined, true);
+            this._sub(writeObject, 'cleanup', this._handleExpressionThisCleanup, undefined, true);
         }
         this._writeArgs = writeArgs;
         this._propagateExpressionThis();
@@ -321,8 +323,9 @@ Amm.Expression.prototype = {
         if (!this._numCtx) this.cleanup();
     },
     
-    _deleteCurrentContext: function() {
-        this.deleteContext();
+    _handleExpressionThisCleanup: function() {
+        if (this.cleanupWithThis) this.deleteContext(); 
+        else this.setExpressionThis(null);
     },
     
     cleanup: function() {

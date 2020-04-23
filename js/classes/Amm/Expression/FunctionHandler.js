@@ -2,8 +2,8 @@
 
 // Variant A: 
 // new Amm.Expression.FunctionHandler(options); 
-// Variant B: new Amm.Expression.FunctionHandler(function, thisObject, options)
-// Variant C: new Amm.Expression.FunctionHandler(function, thisObject, writeProperty, writeObject, writeArgs, options)
+// Variant B: new Amm.Expression.FunctionHandler(function, expressionThis, options)
+// Variant C: new Amm.Expression.FunctionHandler(function, expressionThis, writeProperty, writeObject, writeArgs, options)
 Amm.Expression.FunctionHandler = function(options) {
     Amm.WithEvents.call(this, options, true);
     this._expressions = {};
@@ -16,7 +16,9 @@ Amm.Expression.FunctionHandler = function(options) {
     this._getter = function(expression, again) { return t.get(expression, again); };
     this._setter = function(expression, value) { return t.set(expression, value); };
     
-    
+    if (typeof options === 'string') {
+        options = Amm.Expression.FunctionHandler.prepareFunctionHandlerBody(options);
+    }
     if (typeof options === 'function') {
         // case C?
         if (arguments.length >= 2 || 
@@ -24,13 +26,13 @@ Amm.Expression.FunctionHandler = function(options) {
         ) {
             opt = arguments[6] || {};
             opt.fn = arguments[0];
-            opt.thisObject = arguments[1];
+            opt.expressionThis = arguments[1];
             wp = true;
         } else {
             // case B
             opt = arguments[2] || {};
             opt.fn = arguments[0];
-            opt.thisObject = arguments[1];
+            opt.expressionThis = arguments[1];
         }
     } else opt = options;
     Amm.init(this, opt);
@@ -38,10 +40,12 @@ Amm.Expression.FunctionHandler = function(options) {
 };
 
 Amm.Expression.FunctionHandler.prototype = {
-
+    
+    cleanupWithThis: true,
+    
     _fn: null,
 
-    _thisObject: null,
+    _expressionThis: null,
     
     _isRun: 0,
     
@@ -62,7 +66,7 @@ Amm.Expression.FunctionHandler.prototype = {
     _value: null,
     
     _gotValue: false,
-
+    
     setFn: function(fn) {
         var oldFn = this._fn;
         if (oldFn === fn) return;
@@ -74,19 +78,33 @@ Amm.Expression.FunctionHandler.prototype = {
 
     getFn: function() { return this._fn; },
 
-    setThisObject: function(thisObject) {
-        var oldThisObject = this._thisObject;
-        if (oldThisObject === thisObject) return;
-        if (typeof thisObject !== 'object' || !thisObject)
-            throw Error("thisObject must be a non-null object");
-        this._thisObject = thisObject;
-        if (thisObject['Amm.WithEvents'] && thisObject.hasEvent('cleanup')) {
-            thisObject.subscribe('cleanup', this.cleanup, this);
+    setExpressionThis: function(expressionThis) {
+        var oldExpressionThis = this._expressionThis;
+        if (oldExpressionThis === expressionThis) return;
+        if (oldExpressionThis && oldExpressionThis['Amm.WithEvents'] 
+            && oldExpressionThis.hasEvent('cleanup')) {
+            expressionThis.unsubscribe('cleanup', this._handleExpressionThisCleanup, this);
         }
+        if (typeof expressionThis !== 'object' || !expressionThis)
+            throw Error("expressionThis must be a non-null object");
+        this._expressionThis = expressionThis;
+        
+        this._lockWrite++;
+        for (var i in this._expressions) {
+            if (this._expressions.hasOwnProperty(i)) {
+                this._expressions[i].setExpressionThis(null);
+            }
+        }
+        if (expressionThis['Amm.WithEvents'] && expressionThis.hasEvent('cleanup')) {
+            expressionThis.subscribe('cleanup', this._handleExpressionThisCleanup, this);
+        }
+        this._lockWrite--;
+        if (!this._lockWrite) this._run();
+            
         return true;
     },
 
-    getThisObject: function() { return this._thisObject; },
+    getExpressionThis: function() { return this._expressionThis; },
 
     _setValue: function(value) {
         var oldValue = this._value;
@@ -139,8 +157,8 @@ Amm.Expression.FunctionHandler.prototype = {
         } else if (!(writeArgs instanceof Array)) {
             writeArgs = [writeArgs];
         }
-        if (!writeObject && !this._thisObject) {
-            Error("setThisObject() or provide writeObject when setting writeProperty");
+        if (!writeObject && !this._expressionThis) {
+            Error("setExpressionThis() or provide writeObject when setting writeProperty");
         }
         this._writeProperty = writeProperty;
         this._writeObject = writeObject;
@@ -154,7 +172,7 @@ Amm.Expression.FunctionHandler.prototype = {
     _write: function() {
         if (this._lockWrite || !this._writeProperty) return;
         this._lockWrite++;
-        var wo = this._writeObject || this._thisObject;
+        var wo = this._writeObject || this._expressionThis;
         Amm.setProperty(wo, this._writeProperty, this.getValue(), false, this._writeArgs);
         this._lockWrite--;
     },
@@ -186,8 +204,9 @@ Amm.Expression.FunctionHandler.prototype = {
         if (!this._expressions[expression]) {
             this._expressions[expression] = new Amm.Expression(
                 expression, 
-                this._thisObject
+                this._expressionThis
             );
+            this._expressions[expression].cleanupWithThis = false;
             if (set) {
                 this._expressions[expression].subscribe('writeDestinationChanged', 
                     this._handleExpressionDestinationChange, this);
@@ -206,6 +225,11 @@ Amm.Expression.FunctionHandler.prototype = {
     
     set: function(expression, value) {
         return this._access(expression, true).setValue(value);
+    },
+    
+    _handleExpressionThisCleanup: function() {
+        if (this.cleanupWithThis) this.cleanup();
+        else this.setExpressionThis(null);
     },
     
     _cleanExpressions: function(all) {
@@ -234,3 +258,33 @@ Amm.Expression.FunctionHandler.prototype = {
 };
 
 Amm.extend(Amm.Expression.FunctionHandler, Amm.WithEvents);
+
+/** 
+ * replaces structures like 
+ *      "(2 + {: a['xx'] :}) / 3" 
+ * with 
+ *      "(2 + this.g(' a[\'xx\'] ')) / 3"
+ */
+Amm.Expression.FunctionHandler.prepareFunctionHandlerBody = function(template) {
+    var inside = false, buf = '';
+    var rep = function(match) {
+        if (match === '{:') {
+            if (inside) throw Error("Cannot nest {: in function template");
+            inside = true;
+            return '';
+        } else if (match === ':}') {
+            if (!inside) throw Error(":} without opening {: in function template");
+            inside = false;
+            var res = "g('" + buf.replace(/(['"\\])/g, '\\$1') + "')";
+            buf = '';
+            return res;
+        } else if (inside) {
+            buf += match;
+            return '';
+        }
+        return match;
+    };
+    var body = template.replace(/([{]:|:[}]|:|[{}]|[^:{}]+)/g, rep);
+    var res = Function('g', 's', body);
+    return res;
+};

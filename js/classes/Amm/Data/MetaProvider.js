@@ -115,6 +115,7 @@ Amm.Data.MetaProvider.prototype = {
     },
     
     _assignMeta: function(meta, field) {
+        if (!this._meta) this._meta = {};
         var old = this._meta[field];
         if (old === meta) return;
         delete this._meta[field];

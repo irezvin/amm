@@ -21,7 +21,19 @@ Amm.Data.Model = function(options) {
 
     var mmOptions = null;
     if (options.mm && typeof options.mm === 'object') mmOptions = options.mm;
-    this._mm = new (Amm.getFunction(this._metaClass)) (this, options.mm || {});
+    var mmp = this._getMmOptions();
+    if (mmp) {
+        if (mmOptions) {
+            if (!Amm.getClass(mmOptions)) {
+                mmp = Amm.overrideRecursive({}, mmp);
+                Amm.overrideRecursive(mmp, mmOptions);
+            }
+            else mmp = mmOptions;
+        }
+    } else {
+        mmp = mmOptions;
+    }
+    this._mm = new (Amm.getFunction(this._metaClass)) (this, mmp || {});
     delete options.mm;
     
     // all options except "on__" and functions are considered properties
@@ -44,6 +56,8 @@ Amm.Data.Model = function(options) {
 Amm.Data.Model.prototype = {
     
     _metaClass: 'Amm.Data.ModelMeta',
+    
+    'Amm.Data.Model': '__CLASS__',
     
     /**
      * { field: value } hash of current values
@@ -94,6 +108,9 @@ Amm.Data.Model.prototype = {
     
     _initData: function(options) {
         this.mm.hydrate(options);
+    },
+    
+    _getMmOptions: function() {
     },
     
     /**

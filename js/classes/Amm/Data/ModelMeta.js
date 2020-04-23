@@ -3,6 +3,7 @@
 Amm.Data.ModelMeta = function(model, options) {
     this._computed = [];
     this._m = model;
+    model._mm = this;
     Object.defineProperty(this, 'm', {value: model, writable: false});
     Amm.WithEvents.call(this, options);
 };
@@ -508,6 +509,8 @@ Amm.Data.ModelMeta.prototype = {
     },
 
     _beginUpdateErrors: function() {
+        this._errUpdateLevel++;
+        if (this._errUpdateLevel > 1) return;
         if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.errorsChange) {
             this._m._oldErrors = false; // special value means we defer JSON calculation
         }
@@ -532,9 +535,12 @@ Amm.Data.ModelMeta.prototype = {
         return this._subscribeFirst_localErrorsChange();
     },
     
+    _errUpdateLevel: 0,
+    
     _endUpdateErrors: function() {
+        if (this._errUpdateLevel > 0) this._errUpdateLevel--;
+        if (this._errUpdateLevel || this._updateLevel) return;
         this._m._errors.all = null; // to be calculated
-        if (this._updateLevel) return; // nothing to do yet
         if (!this._m._oldErrors) return; // nothing to do at all
         if (!this._m._errors) if (!this._m._errors) this._m._errors = {local: {}, remote: {}};
         else {
@@ -543,7 +549,11 @@ Amm.Data.ModelMeta.prototype = {
         }
         var oldErrors = this._m._oldErrors;
         this._m._oldErrors = null;
-        if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.errorsChange) {
+        if (!this._subscribers.localErrorsChange
+            && !this._subscribers.remoteErrorsChange 
+            && !this._subscribers.errorsChange
+            && !this._computed.length
+        ) {
             return;
         }
         var localChanged = oldErrors.local !== JSON.stringify(this._m._errors.local);
@@ -551,6 +561,7 @@ Amm.Data.ModelMeta.prototype = {
         if (!localChanged && !remoteChanged) {
             return;
         }
+        this._compute();
         var triggerLocal = localChanged && this._subscribers.localErrorsChange;
         var triggerRemote = remoteChanged && this._subscribers.remoteErrorsChange;
         var triggerAll = this._subscribers.errorsChange;
@@ -566,7 +577,15 @@ Amm.Data.ModelMeta.prototype = {
     
     _getErrors: function(type, field) {
         if (!this._m._errors[type] || field && (field !== Amm.Data.ERROR_OTHER) && !(this._m._errors[type][field])) return null;
-        if (!field) return this._m._errors[type];
+        if (!field) {
+            if (this._m._errors[type]) {
+                for (var i in this._m._errors[type]) if (this._m._errors[type].hasOwnProperty(i)) {
+                    return this._m._errors[type];
+                }
+                return null;
+            }
+            return this._m._errors[type];
+        }
         if (field === Amm.Data.ERROR_OTHER) return this._getOtherErrors(this._m._errors[type]);
         return this._m._errors[type][field];
     },

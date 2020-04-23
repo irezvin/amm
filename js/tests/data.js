@@ -189,6 +189,12 @@
     
     QUnit.test("Data.ModelMeta localErrors/remoteErrors/errors", function(assert) {
         
+        var simp = new Amm.Data.Model();
+        var simpCheck = simp.mm.check();
+        assert.ok(simpCheck, 'Data.Model without properties: check() returns true');
+        assert.deepEqual(simp.mm.getErrors(), null,
+            'Data.Model after successful check(): getErrors() is NULL');
+        
         var m = new Amm.Data.Mapper();
         var o = new Amm.Data.Record({
             __mapper: m,
@@ -407,7 +413,7 @@
         r.job = 'Senior Record Tester';
         
             assert.ok(r.mm.check(), 'check(): object is valid');
-            assert.deepEqual(r.mm.getLocalErrors(), {}, 'object has no local errors if it is valid');
+            assert.deepEqual(r.mm.getLocalErrors(), null, 'object has no local errors if it is valid');
             
         var data = r.mm.getData();
         data.name = '';
@@ -817,7 +823,7 @@
 
                         assert.notOk(!!r.mm.getTransaction(), 'transaction is finished');
                         assert.deepEqual(tfLog.length, 0, 'Transaction was not failed');
-                        assert.deepEqual(r.mm.getRemoteErrors(), {}, 'no remote errors');
+                        assert.deepEqual(r.mm.getRemoteErrors(), null, 'no remote errors');
                         assert.deepEqual(r.mm.getData(), {
                             id: 10,
                             name: 'John',
@@ -917,7 +923,7 @@
 
                         assert.notOk(!!r.mm.getTransaction(), 'transaction is finished');
                         assert.deepEqual(tfLog.length, 0, 'Transaction was not failed');
-                        assert.deepEqual(r.mm.getRemoteErrors(), {}, 'no remote errors');
+                        assert.deepEqual(r.mm.getRemoteErrors(), null, 'no remote errors');
                         assert.deepEqual(r.mm.getState(), Amm.Data.STATE_DELETED, 'State is now STATE_DELETED');
                 }
 
@@ -1601,11 +1607,14 @@
     
     QUnit.test("Data: computed fields", function(assert) {
         
-        var c, d, dt = new Amm.Data.Model({
+        var c, d, e, dt = new Amm.Data.Model({
             mm: {
                 meta: {
                     a: {
                         def: 10,
+                        validators: function(v) { 
+                            if (v < 7) return 'Value must be > 7';
+                        }
                     },
                     b: {
                         def: 20,
@@ -1619,15 +1628,22 @@
                         compute: function() {
                             return '{{' + this.c + '}}';
                         }
+                    },
+                    e: {
+                        compute: function() {
+                            return !this._mm.getErrors('a');
+                        }
                     }
                 }
             },
             on__cChange: function(v) { c = v; },
-            on__dChange: function(v) { d = v; }
+            on__dChange: function(v) { d = v; },
+            on__eChange: function(v) { e = v; }
         });
             
             assert.deepEqual(dt.c, 30, 'Initial value of computed field');
             assert.deepEqual(dt.d, '{{30}}', 'Initial value of dependent computed field');
+            assert.deepEqual(dt.e, true, 'Initial value of dependent computed field');
             
         dt.a = 5;
         
@@ -1635,6 +1651,7 @@
             assert.deepEqual(dt.d, '{{25}}', 'Altered value of dependent computed field');
             assert.deepEqual(c, 25, 'Altered value: change triggered');
             assert.deepEqual(d, '{{25}}', 'Dependent computed field: change triggered');
+            assert.deepEqual(e, false, 'Changed value of dependent computed field');
             
         c = undefined;
         dt.c = 135;

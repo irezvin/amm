@@ -353,6 +353,109 @@
             
         Amm.cleanup(e, v, iv);
         
-    });    
+    });
+    
+    /*
+     * This test is the same as previous one, except element views' have two sibling HTML Nodes
+     */
+    QUnit.test("Amm.View.Html.Expressions", function(assert) {
+
+        var fx = jQuery('#qunit-fixture');        
+        var div = jQuery('<div></div>');
+        fx.append(div);
+        
+        var elem = new Amm.Element({
+            properties: {
+                name: 'John',
+                surname: 'Doe',
+                age: 17,
+                gender: 'male',
+                married: false,
+                employeed: true
+            }
+        });
+        
+        var elem1 = new Amm.Element({
+            properties: {
+                name: 'Karen',
+                surname: 'Dobbs',
+                age: 23,
+                gender: 'female',
+                married: true,
+                employeed: true
+            }
+        });
+        
+        var v = new Amm.View.Html.Expressions({
+            map: {
+                'data-name': 'name',
+                'data-surname': 'surname',
+                'data-fullname': "this.name + ' ' + this.surname",
+                'class__married': 'married',
+                'class__employeed': 'employeed',
+                'class__underage': 'this.age < 21',
+                'style__background-color': "this.gender === 'male'? 'blue' : 'pink'",
+                '_html': "'<h1>' + this.name + ' ' + this.surname + '</h1><p>Age: <strong>' + this.age + '</strong>, ' + this.gender + '</p>'"
+            }
+        });
+        
+        v.setElement(elem);
+        v.setHtmlElement(div);
+        d.v = v;
+        
+            assert.deepEqual(div.html(), "<h1>John Doe</h1><p>Age: <strong>17</strong>, male</p>",
+                "setting _html works");
+            assert.deepEqual(div.attr('data-name'), elem.getName(),
+                "setting attribute works (1)");
+            assert.deepEqual(div.attr('data-surname'), elem.getSurname(),
+                "setting attribute works (2)");
+            assert.deepEqual(div.attr('data-fullname'), 'John Doe',
+                "setting attribute works (3)");
+            assert.ok(div.hasClass('underage'), 'setting class works (1)');
+            assert.ok(div.hasClass('employeed'), 'setting class works (2)');
+            assert.notOk(div.hasClass('married'), 'setting class works (3)');
+            assert.equal(div.css('background-color'), 'rgb(0, 0, 255)', 'setting style works');
+        
+        elem.setAge(22);
+        elem.setEmployeed(false);
+        elem.setMarried(true);
+        
+            assert.deepEqual(div.html(), "<h1>John Doe</h1><p>Age: <strong>22</strong>, male</p>",
+                "props changed: setting _html works");
+            assert.notOk(div.hasClass('underage'),
+                "props changed: toggling class works (1)");
+            assert.notOk(div.hasClass('employeed'),
+                "props changed: toggling class works (2)");
+            assert.ok(div.hasClass('married'),
+                "props changed: toggling class works (3)");
+        
+        v.setElement(elem1);
+        
+            assert.deepEqual(div.html(), "<h1>Karen Dobbs</h1><p>Age: <strong>23</strong>, female</p>",
+                "new element observed: setting _html works");
+            assert.deepEqual(div.attr('data-name'), elem1.getName(),
+                "new element observed: setting attribute works (1)");
+            assert.deepEqual(div.attr('data-surname'), elem1.getSurname(),
+                "new element observed: setting attribute works (2)");
+            assert.deepEqual(div.attr('data-fullname'), 'Karen Dobbs',
+                "new element observed: setting attribute works (3)");
+            assert.notOk(div.hasClass('underage'),
+                'new element observed: setting class works (1)');
+            assert.ok(div.hasClass('employeed'),
+                'new element observed: setting class works (1)');
+            assert.ok(div.hasClass('married'),
+                'new element observed: setting class works (1)');
+            assert.equal(div.css('background-color'), 'rgb(255, 192, 203)',
+                'new element observed: setting style works');
+        
+        
+        
+        
+        
+        //Amm.cleanup(elem, elem1);
+        
+    });
+    
+    
     
 }) ();
