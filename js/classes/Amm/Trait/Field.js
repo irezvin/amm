@@ -391,6 +391,7 @@ Amm.Trait.Field.prototype = {
             if (oldValue instanceof Array && errors instanceof Array) {
                 if (oldValue.length === errors.length 
                     && !Amm.Array.symmetricDiff(oldValue, errors).length
+                    && !Amm.Array.symmetricDiff(errors, oldValue).length
                 ) sameArrays = true;
             }
         }
@@ -440,8 +441,6 @@ Amm.Trait.Field.prototype = {
         
         var oldValue = this._setFieldErrorsArray('_fieldLocalErrors', fieldLocalErrors, add);
         
-        if (oldValue === false) return;
-      
         this._updateFieldErrors();
         
         this.outFieldLocalErrorsChange(fieldLocalErrors, oldValue);
@@ -660,12 +659,13 @@ Amm.Trait.Field.prototype = {
         var oldNeedValidate = this._needValidate;
         this._needValidate = needValidate;
         this._out('needValidateChange', needValidate, oldNeedValidate);
-        if (needValidate && (this._validateMode & Amm.Trait.Field.VALIDATE_INSTANT)) {
+        if (needValidate && (this._validateMode & Amm.Trait.Field.VALIDATE_INSTANT)
+            || (this._fieldLocalErrors && this._validateMode)) {
             this.validate();
         }
         return true;
-    },
-    
+    }, 
+   
     outNeedValidateChange: function(needValidate, oldNeedValidate) {
         this._out('needValidateChange', needValidate, oldNeedValidate);
     },

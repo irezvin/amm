@@ -568,7 +568,7 @@ Amm.Collection.prototype = {
             var idx = sorted? 
                 this._locateItemIndexInSortedArray(item) : index;
             if (idx === undefined || idx <= 0) idx = 0;
-            res = pa[0][0];
+            item = res = pa[0][0];
             if (idx < this.length) {
                 this._rotate(idx, 1);
                 this[idx] = item;

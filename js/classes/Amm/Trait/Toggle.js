@@ -114,6 +114,12 @@
     setChecked: function(checked) {
         if (checked !== undefined) checked = !!checked;
         var oldChecked = this._checked;
+        if (checked) {
+            // this allows to fix issue when several radios have initial checked := true
+            if (this._uncheckOtherRadios()) {
+                this._reportChange();
+            }
+        }
         if (oldChecked === checked) return;
         this._checked = checked;
         this._uncheckOtherRadios();

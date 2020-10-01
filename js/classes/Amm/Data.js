@@ -6,7 +6,7 @@ Amm.Data = {
         if (!v) return true;
         if (v instanceof Array) return !v.length;
         if (typeof v === 'object') {
-            for (var i in v) if (v.hashOwnProperty(i)) return !isEmpty(v[i]);
+            for (var i in v) if (v.hasOwnProperty(i)) return !this.isEmpty(v[i]);
             return true;
         }
         return false;
@@ -76,3 +76,18 @@ Amm.Data.AUTO_CHECK_SMART = 1;
  * Note: if there are no subscribers to allErrors/localErrors, none auto-check will occur.
  */
 Amm.Data.AUTO_CHECK_ALWAYS = 2;
+
+/**
+ * getLocalErrors() will check whole object if auto-check enabled
+ */
+Amm.Data.LOCAL_ERRORS_CHECK = 0;
+
+/**
+ * getLocalErrors() will check only specified field(s); whole object won't be checked
+ */
+Amm.Data.LOCAL_ERRORS_CHECK_FIELDS_ONLY = 1;
+
+/**
+ * getLocalErrors() will never check object
+ */
+Amm.Data.LOCAL_ERRORS_AS_IS = 2;

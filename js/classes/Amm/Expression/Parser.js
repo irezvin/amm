@@ -375,8 +375,11 @@ Amm.Expression.Parser.prototype = {
     
     parseItem: function() {
         var value = this.parsePart(true, 'Value');
-        var op = this.parsePart(true, 'AccessOperator', value);
-        if (op) return op;
+        var op;
+        if (value) {
+            op = this.parsePart(true, 'AccessOperator', value);
+            if (op) return op;
+        }
         return value;
     },
     
@@ -441,7 +444,9 @@ Amm.Expression.Parser.prototype = {
     parseCacheabilityModifier: function() {
          var token = this.fetch();
          if (!token) return;
-         if (token.isSymbol('!!', '??')) return this.genOp('CacheabilityModifier', token.string);
+         if (token.isSymbol('!!', '??')) {
+             return this.genOp('CacheabilityModifier', token.string);
+         }
          this.unfetch();
     },
     
@@ -467,7 +472,7 @@ Amm.Expression.Parser.prototype = {
             return;
         }
         var isList = false;
-        var args = [], arg;
+        var args = [], arg, lastToken;
         do {
             token = this.fetch();
             if (!token) break;
@@ -479,7 +484,12 @@ Amm.Expression.Parser.prototype = {
                 isList = true;
                 break;
             } else if (token.isSymbol('::')) {
-                arg = this.genOp('Constant', undefined); // skipped item - undefined
+                if (lastToken && lastToken.isSymbol('::')) { // we encountered more than one "::"
+                    arg = this.genOp('Constant', undefined); // skipped item - undefined
+                } else {
+                    lastToken = token;
+                    continue;
+                }
             } else if (token.isIdentifier()) {
                 arg = this.genOp('Constant', token.string); // use identifier as constant getter arg
             } else if (token.isConstant()) {
@@ -488,6 +498,7 @@ Amm.Expression.Parser.prototype = {
                 this.unfetch();
                 break;
             }
+            lastToken = token;
             args.push(arg);
         } while(true);
         if (!isList && !args.length) args = [undefined];
@@ -602,6 +613,7 @@ Amm.Expression.Parser.prototype = {
                         rangeType = 'Slice';
                         arg2 = this.parsePart('Expression');
                     } else { // {expression} is Index
+                        if (!arg1) throw Error("Cannot parse range expression");
                         this.unfetch();
                         rangeType = 'Index';
                     }
@@ -703,6 +715,7 @@ Amm.Expression.Parser.prototype = {
         this._oldPos = 0;
         this.begin(string);
         res = this.parsePart('Expression');
+        if (!res) throw Error("Expected: expression");
         var token = this.fetch();
         if (token) Error("Expected: eof");
         return res;

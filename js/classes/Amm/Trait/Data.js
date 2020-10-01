@@ -415,7 +415,7 @@ Amm.Trait.Data.prototype = {
         }
     },
     
-    _handleSelfControlValueChange: function(value) {
+    _handleSelfControlValueChange: function(value, oldValue) {
         if (this._dataObjectUpdating) return;
         if (this._dataUpdateMode === Amm.Trait.Data.UPDATE_CHANGE) {
             this._updateDataValueFromControl(value);

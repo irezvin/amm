@@ -638,6 +638,10 @@ Amm.Array.prototype = {
         return this.length;
     },
     
+    setLength: function(value) {
+        console.warn('Array.setLength() has no effect');
+    },
+    
     outLengthChange: function(newLength, oldLength) {
         return this._out('lengthChange', newLength, oldLength);
     },

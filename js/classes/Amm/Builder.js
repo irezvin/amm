@@ -186,7 +186,9 @@ Amm.Builder.prototype = {
     _replaceRefsAndInstaniateObjects: function(json, htmlElement) {
         if (!json || typeof json !== 'object') return json;
         var i, l;
-        if ('$ref' in json) return new Amm.Builder.Ref(json, htmlElement);
+        if ('$ref' in json) {
+            return new Amm.Builder.Ref(json, htmlElement);
+        }
         if ('$ext' in json) {
             var data = this.getExtData(window, json.$ext);
             if (data === Amm.Builder._EXT_NOT_FOUND) throw Error("Cannot resolve '$ext' " + json.$ext);

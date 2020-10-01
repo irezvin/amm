@@ -2,7 +2,7 @@
 /* global HTMLElement */
 
 Amm.Builder.Ref = function(options, node) {
-    
+
     if (options && '$ref' in options) {
         if (options['$ref'] && !('find' in options))
             options['find'] = options['$ref'];
@@ -30,6 +30,15 @@ Amm.Builder.Ref.prototype = {
     _index: 0,
 
     _global: false,
+    
+    toJSON: function() {
+        var res = { $ref: this._find };
+        if (this._closest !== null) res.closest = this._closest;
+        if (this._index !== 0) res.index = this._index;
+        if (this._global) res.global = this._global;
+        if (this._parent) res.parent = this._parent;
+        return res;
+    },
 
     setNode: function(node) {
         if (!node) node = null;

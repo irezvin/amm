@@ -23,6 +23,8 @@ Amm.Instantiator.Proto.prototype = {
     
     proto: null,
     
+    overrideProto: false,
+    
     isElement: false,
     
     assocProperty: null,
@@ -33,8 +35,12 @@ Amm.Instantiator.Proto.prototype = {
         if (!this.proto) throw Error("`proto` must be set");
         var proto = this.proto;
         var res;
+        if (this.overrideProto && object && typeof object === 'object' && !Amm.getClass(object)) {
+            proto = Amm.override({}, proto);
+            Amm.override(proto, object);
+        }
         if (this.isElement) res = new Amm.Element(proto);
-            else res = Amm.constructInstance(proto, null);
+            else res = Amm.constructInstance(proto, null); 
         if (this.assocProperty) Amm.setProperty(res, this.assocProperty, object);
         if (this.revAssocProperty) Amm.setProperty(object, this.revAssocProperty, res);
         return res;

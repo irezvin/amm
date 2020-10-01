@@ -227,6 +227,7 @@ Amm.Trait.Select.prototype = {
         if (this._selectionCollection && this._selectionCollection.getUpdateLevel()) {
             return;
         }
+        if (this._dummyLabel !== null && this._dummyValue === null) return;
         var options = this.getOptionsCollection();
         for (var i = 0, l = options.length; i < l; i++) {
             var op = options[i];

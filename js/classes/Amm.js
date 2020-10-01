@@ -126,12 +126,17 @@ Amm = {
             skip = parentClass.beforeExtend(subClass, parentClass, dontIndicateParent);
         }
     	if (!skip) {
-            for (var i in parentClass.prototype) {
-                if (!(i in subClass.prototype))
+            for (var i in parentClass.prototype) 
+                if (!(i in subClass.prototype) && parentClass.prototype.hasOwnProperty(i)) {
+                    var propertyDescriptor = Object.getOwnPropertyDescriptor(parentClass.prototype, i);
+                    if (propertyDescriptor.get || propertyDescriptor.set || !propertyDescriptor.writable) {
+                        Object.defineProperty(subClass.prototype, i, propertyDescriptor);
+                        continue;
+                    }
                     subClass.prototype[i] = parentClass.prototype[i];
                     if (!dontIndicateParent && subClass.prototype[i] === '__CLASS__')
                         subClass.prototype[i] = '__PARENT__';
-            }
+                }
         }
         if (typeof parentClass.afterExtend === 'function') {
             parentClass.afterExtend(subClass, parentClass, dontIndicateParent);
@@ -178,6 +183,29 @@ Amm = {
             }
         }
         return object;
+    },
+    
+    copy: function(hash) {
+        if (!hash || (typeof hash !== 'object')) return hash;
+        var res, i, l;
+        if (hash instanceof Array) {
+            res = [];
+            for (i = 0; i < hash.length; i++) {
+                if (typeof hash[i] !== 'object' || !hash[i]) res.push(hash[i]);
+                else res.push(Amm.copy(hash[i]));
+            }
+            return res;
+        }
+        if (Object.getPrototypeOf(hash) !== Object.prototype) {
+            // not instance of Array or Object
+            return hash;
+        }
+        res = {};
+        for (i in hash) if (hash.hasOwnProperty(i)) {
+            if (typeof hash[i] !== 'object' || !hash[i]) res[i] = hash[i];
+            else res[i] = Amm.copy(hash[i]);
+        }
+        return res;
     },
     
     overrideRecursive: function(modifiedObject, overrider, noOverwrite, deduplicate) {
@@ -595,8 +623,13 @@ Amm = {
         if (defineProperty) {
             Object.defineProperty(target, l, {
                 enumerable: true,
-                get: target[getterName], 
-                set: target[setterName]
+                configurable: true,
+                get: function() { 
+                    return this[getterName](); 
+                }, 
+                set: function(value) {
+                    return this[setterName](value); 
+                },
             });
         }
     },

@@ -81,8 +81,12 @@ Amm.View.Html.Input.prototype = {
         disabled = !enabled || locked;
         var q = jQuery(this._htmlElement), disabled = !enabled || locked;
         if (q[0]) {
-            if (disabled && !q[0].hasAttribute('disabled')) q[0].setAttribute('disabled', 'disabled');
-            else if (!disabled && q[0].hasAttribute('disabled')) q[0].removeAttribute('disabled');
+            if (disabled && !q[0].hasAttribute('disabled')) {
+                q[0].setAttribute('disabled', 'disabled');
+            }
+            else if (!disabled && q[0].hasAttribute('disabled')) {
+                q[0].removeAttribute('disabled');
+            }
         }
     },
     

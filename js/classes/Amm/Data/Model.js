@@ -34,10 +34,12 @@ Amm.Data.Model = function(options) {
         mmp = mmOptions;
     }
     this._mm = new (Amm.getFunction(this._metaClass)) (this, mmp || {});
+    this._mm._lockAnyChange++;
     delete options.mm;
     
     // all options except "on__" and functions are considered properties
-    Amm.WithEvents.call(this, options, true);
+    Amm.WithEvents.call(this, null, true);
+    var onHandlers = this._extractOnHandlers(options);
     for (i in options) if (options.hasOwnProperty(i)) {
         if (typeof options[i] === 'function') {
             this[i] = options[i];
@@ -50,6 +52,9 @@ Amm.Data.Model = function(options) {
         break;
     }
     if (hasOtherProps) this._initData(options);
+    if (onHandlers) this._initOnHandlers(onHandlers);
+    this._mm._lockAnyChange--;
+    
     
 };
 
@@ -98,6 +103,17 @@ Amm.Data.Model.prototype = {
      */
     _errors: null,
     
+    _init: 0,
+    
+    _beginInit: function() {
+        this._init++;
+    },
+    
+    _endInit: function() {
+        this._init--;
+        if (!this._init) this._mm.compute();
+    },
+    
     /**
      * Contains three hashes: local, remote, all
      */
@@ -134,6 +150,9 @@ Amm.Data.Model.prototype = {
     _doOnCheck: function() {
     },
     
+    _doOnCompute: function() {
+    },
+    
     _checkField: function(field, value) {
     },
     
@@ -144,6 +163,12 @@ Amm.Data.Model.prototype = {
         // AFTER the event handlers are attached
         
         if (eventName.match(/Change$/)) return true;
+    },
+    
+    // we suppress any events until the model finished initializing
+    _out: function() {
+        if (this._init) return;
+        Amm.WithEvents.prototype._out.apply(this, Array.prototype.slice.call(arguments));
     },
     
     cleanup: function() {

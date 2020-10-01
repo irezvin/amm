@@ -1,6 +1,10 @@
 /* global Amm */
 
 Amm.Data.ModelMeta = function(model, options) {
+    
+    if (!options) options = {};
+    else options = Amm.override({}, options);
+    
     this._computed = [];
     this._m = model;
     model._mm = this;
@@ -8,16 +12,16 @@ Amm.Data.ModelMeta = function(model, options) {
     Amm.WithEvents.call(this, options);
 };
 
+//Amm.Data.ModelMeta.debugAnyChangeStack = 1;
+
 Amm.Data.ModelMeta.prototype = {
 
     'Amm.Data.ModelMeta': '__CLASS__', 
     
     /**
-     * @type {Amm.Data.Record}
+     * @type {Amm.Data.Model}
      */
     _m: null,
-    
-    _updateLevel: 0,
     
     _modified: null,
     
@@ -37,7 +41,19 @@ Amm.Data.ModelMeta.prototype = {
     
     _validators: null,
     
+    _initLevel: 0,
+    
+    _updateLevel: 0,
+    
+    _errUpdateLevel: 0,
+    
     _lockCompute: 0,
+    
+    _lockAnyChange: 0,
+    
+    _lacs: null,
+    
+    _anyChange: false,
     
     /**
      * List of computed fields (that should be recalc'd after each fields' update)
@@ -61,7 +77,7 @@ Amm.Data.ModelMeta.prototype = {
      * @type Boolean
      */ 
     _validWhenHydrated: true,
-
+    
     getObject: function() { return this._m; },
     
     getO: function() { return this._m; },
@@ -84,11 +100,28 @@ Amm.Data.ModelMeta.prototype = {
             this.setState(Amm.Data.STATE_NEW);
         }
         this.outHydrate();
+        this.outOldValueChanged();
         this.endUpdate();
+    },
+    
+    update: function(data) {
+        this.beginUpdate();
+        for (var i in data) if (data.hasOwnProperty(i) && (i in this._m._data || i in this._m._old)) {
+            this._m[i] = data[i];
+        }
+        this.endUpdate();
+    },
+    
+    getKey: function() {
+        return null;
     },
     
     outHydrate: function() {
         return this._out('hydrate');
+    },
+    
+    outOldValueChanged: function() {
+        return this._out('oldValueChanged');
     },
     
     listDataFields: function() {
@@ -103,22 +136,31 @@ Amm.Data.ModelMeta.prototype = {
         this._updateLevel++;
         if (this._updateLevel > 1) return;
         this._m._preUpdateValues = this.getData();
+        this._beginAnyChange('update');
     },
     
     endUpdate: function() {
         if (!this._updateLevel) 
             throw Error ("Call to endUpdate() without corresponding beginUpdate(); check with getUpdateLevel() first");
+        
+        if (this._updateLevel > 1) {
+            this._updateLevel--;
+            return;
+        }
+        if (!this._lockCompute) this._compute(true);
         this._updateLevel--;
-        if (this._updateLevel) return;
-        if (!this._lockCompute) this._compute();
         var pv = this._m._preUpdateValues;
         var v = this._m._data, oldVal, newVal;
         this._lockCompute++;
-        for (var i in pv) if (pv.hasOwnProperty(i)) {
+        var dataChanged = false;
+        for (var i in v) if (v.hasOwnProperty(i)) {
             oldVal = pv[i];
             newVal = v[i];
             delete pv[i];
-            if (newVal !== oldVal) this._reportFieldChange(i, newVal, oldVal, true);
+            if (newVal !== oldVal) {
+                dataChanged = true;
+                this._reportFieldChange(i, newVal, oldVal, true);
+            }
             if (this._m._updateLevel) break; // in case event handler done beginUpdate()
         }
         this._lockCompute--;
@@ -126,9 +168,10 @@ Amm.Data.ModelMeta.prototype = {
             if (this._oldState !== this._m.state) {
                 var oldState = this._oldState;
                 this._oldState = null;
-                this.outStateChange(this._m._state, this._oldState);
+                this.outStateChange(this._m._state, oldState);
             }
         }
+        if (dataChanged) this._reportDataChanged();
         this._checkModified();
         if (this._propertiesChanged) {
             this._propertiesChanged = false;
@@ -137,6 +180,18 @@ Amm.Data.ModelMeta.prototype = {
         if (this._m._oldErrors !== null) {
             this._endUpdateErrors();
         }
+        this._endAnyChange('update');
+    },
+    
+    _reportDataChanged: function() {
+        this.outDataChanged();
+    },
+    
+    /**
+     * This event is triggered when any field is changed (and once if endUpdate occurs)
+     */
+    outDataChanged: function() {
+        return this._out('dataChanged');
     },
     
     getUpdateLevel: function() {
@@ -163,19 +218,38 @@ Amm.Data.ModelMeta.prototype = {
         this.setModified(modified);
     },
     
-    _reportFieldChange: function(field, val, oldVal, dontReportModified) {
+    _reportFieldChange: function(field, val, oldVal, isEndUpdate) {
         if (this._updateLevel) return;
-        
-        var propName = this._m._propNames[field];
-        var outName = 'out' + propName.charAt(0).toUpperCase() + propName.slice(1) + 'Change';
-        
-        this._correctCheckStatus(field, val || oldVal);
-        
-        this._m[outName](val, oldVal);
-        if (!this._lockCompute && !(this['_compute_' + field])) this._compute();
-        if (!dontReportModified) {
-            this._checkFieldModified(field);
+        var ex;
+        try {
+            this._beginAnyChange('reportFieldChange ' + field);
+
+            var propName = this._m._propNames[field];
+            var outName = 'out' + propName.charAt(0).toUpperCase() + propName.slice(1) + 'Change';
+
+            this._correctCheckStatus(field, val || oldVal);
+
+            this._m[outName](val, oldVal);
+            this.outAnyChange('fieldChange');
+            if (this['_change_' + field]) this['_change_' + field](val, oldVal, field);
+            if (!this._lockCompute && !(this['_compute_' + field])) this._compute();
+            if (!isEndUpdate) {
+                this._reportDataChanged();
+                this._checkFieldModified(field);
+            }
+        } catch (e) {
+            ex = e;
         }
+        this._endAnyChange('reportFieldChange ' + field);
+        if (ex) throw ex;
+    },
+    
+    _handleSubmodelAnyChange: function(reason) {
+        var fieldName = arguments[arguments.length - 1];
+        this._beginAnyChange('_handleSubmodelAnyChange');
+        this._compute();
+        this.outAnyChange('submodel');
+        this._endAnyChange('_handleSubmodelAnyChange');
     },
 
     setModified: function(modified) {
@@ -200,6 +274,7 @@ Amm.Data.ModelMeta.prototype = {
 
     outModifiedChange: function(modified, oldModified) {
         this._out('modifiedChange', modified, oldModified);
+        this.outAnyChange('modifiedChange');
     },
     
     revert: function() {
@@ -217,6 +292,30 @@ Amm.Data.ModelMeta.prototype = {
             this._m._data[field] = this['_compute_' + field].call(this._m, field);
         }
         return this._m._data[field];
+    },
+    
+    _subFieldValue: function(value, field) {
+        if (!value) return;
+        if (value['Amm.Data.Model']) {
+            value.mm.subscribe('anyChange', this._handleSubmodelAnyChange, this, field);
+            return;
+        }
+        if (value['Amm.Data.Collection']) {
+            value.subscribe('anyChange', this._handleSubmodelAnyChange, this, field);
+            return;
+        }
+    },
+    
+    _unsubFieldValue: function(value, field) {
+        if (!value) return;
+        if (value['Amm.Data.Model']) {
+            value.mm.unsubscribe('anyChange', this._handleSubmodelAnyChange, this, field);
+            return;
+        }
+        if (value['Amm.Data.Collection']) {
+            value.unsubscribe('anyChange', this._handleSubmodelAnyChange, this, field);
+            return;
+        }
     },
     
     setFieldValue: function(field, value) {
@@ -238,6 +337,8 @@ Amm.Data.ModelMeta.prototype = {
             }
         }
         if (old === value) return;
+        if (value) this._subFieldValue(value, field);
+        if (old) this._unsubFieldValue(old, field);
         this._m._data[field] = value;
         if (this._updateLevel) return;
         this._reportFieldChange(field, value, old);
@@ -262,11 +363,12 @@ Amm.Data.ModelMeta.prototype = {
         var def = undefined;
         if (meta) {
             def = meta.def;
+            if (typeof def === 'function') def = def.call(this._m, field);
             if (def !== undefined) {
                 if (!(field in this._m._old)) this._m._old[field] = def;
                 if (!(field in this._m._data)) this._m._data[field] = def;
+                if (def) this._subFieldValue(def, field);
             }
-            // todo: extract getter, setter, calculate
         }
         if (!(getterName in this._m)) {
             this._m[getterName] = function() {
@@ -286,8 +388,9 @@ Amm.Data.ModelMeta.prototype = {
         }
         Object.defineProperty(this._m, propName, {
             enumerable: true,
-            get: this._m[getterName],
-            set: this._m[setterName]
+            configurable: true,            
+            get: function() { return this[getterName](); },
+            set: function(value) { return this[setterName](value); }
         });
         
         // we need to create pre-update values' key so change event will be triggered
@@ -303,7 +406,8 @@ Amm.Data.ModelMeta.prototype = {
     },
     
     outPropertiesChanged: function() {
-        return this._out('propertiesChanged');
+        this._out('propertiesChanged');
+        this.outAnyChange('propertiesChanged');
     },
     
     getState: function() {
@@ -326,7 +430,8 @@ Amm.Data.ModelMeta.prototype = {
     },
     
     outStateChange: function(state, oldState) {
-        return this._out('stateChange', state, oldState);
+        this._out('stateChange', state, oldState);
+        this.outAnyChange('stateChange');
     },
     
     _hasLocalErrors: function() {
@@ -347,25 +452,40 @@ Amm.Data.ModelMeta.prototype = {
         this._coreCheckFields();
         this._coreCheckWhole();
         this._m._doOnCheck();
-        this._checked = true;
         this._endUpdateErrors();
+        this.setChecked(true);
         return !this._hasLocalErrors();
     },
     
+    checkFields: function(fields) {
+        var res;
+        this._beginUpdateErrors();
+        res = this._coreCheckFields(fields);
+        this._endUpdateErrors();
+        return res;
+    },
+    
     _coreCheckFields: function(field) {
-        // check individual fields first
+        var err, i, j, l, v, label, validators, setterName, hasErrors = false;
         var hasFieldCheckFn = this._m._checkField !== Amm.Data.Record.prototype._checkField;
         // everything a-ok
-        var fieldsSrc;
-        if (field) {
+        var fieldsSrc = {}, hasFields;
+        if (field instanceof Array) {
+            for (i = 0; i < field.length; i++) {
+                if (this._m._propNames[field[i]]) {
+                    fieldsSrc[field[i]] = this._m._propNames[field[i]];
+                    hasFields = true;
+                }
+                if (!hasFields) return;
+            }
+        } else if (field) {
             if (!this._m._propNames[field]) return;
-            fieldsSrc = {};
             fieldsSrc[field] = this._m._propNames[field];
         } else {
             fieldsSrc = this._m._propNames;
         }
-        var err, i, j, l, v, label, validators, setterName;
         for (i in fieldsSrc) if (fieldsSrc.hasOwnProperty(i)) {
+            delete this._m._errors.local[i];            
             err = null;
             setterName = '_set_' + i;
             if (typeof this[setterName] === 'function' && this[setterName].error) {
@@ -383,10 +503,10 @@ Amm.Data.ModelMeta.prototype = {
                 else if (!(validators instanceof Array)) validators = [validators];
                 for (var j = 0, l = validators.length; j < l; j++) {
                     if (typeof validators[j] === 'function') {
-                        err = validators[j](v, label);
+                        err = validators[j](v, label, this._m);
                     }
                     else if (typeof validators[j].getError === 'function') {
-                        err = validators[j].getError(v, label);
+                        err = validators[j].getError(v, label, this._m);
                     }
                     if (err) break;
                 }
@@ -394,10 +514,10 @@ Amm.Data.ModelMeta.prototype = {
             if (err) {
                 err = err.replace(/%field/g, label);
                 this.addError(err, i);
-            } else {
-                delete this._m._errors.local[i];
+                hasErrors = true;
             }
         }
+        return !hasErrors;
     },
     
     _coreCheckWhole: function() {
@@ -443,6 +563,7 @@ Amm.Data.ModelMeta.prototype = {
 
     outCheckedChange: function(checked, oldChecked) {
         this._out('checkedChange', checked, oldChecked);
+        this.outAnyChange('stateChange');
     },
     
     setAutoCheck: function(autoCheck) {
@@ -509,6 +630,7 @@ Amm.Data.ModelMeta.prototype = {
     },
 
     _beginUpdateErrors: function() {
+        if (!this._errUpdateLevel) this._beginAnyChange('updateErrors');
         this._errUpdateLevel++;
         if (this._errUpdateLevel > 1) return;
         if (!this._subscribers.localErrorsChange && !this._subscribers.remoteErrorsChange && !this._subscribers.errorsChange) {
@@ -520,7 +642,7 @@ Amm.Data.ModelMeta.prototype = {
             local: JSON.stringify(this._m._errors.local),
             remote: JSON.stringify(this._m._errors.remote),
             all: JSON.stringify(this._m._errors.all)
-        }; 
+        };
     },
     
     _subscribeFirst_localErrorsChange: function() {
@@ -535,13 +657,21 @@ Amm.Data.ModelMeta.prototype = {
         return this._subscribeFirst_localErrorsChange();
     },
     
-    _errUpdateLevel: 0,
-    
     _endUpdateErrors: function() {
-        if (this._errUpdateLevel > 0) this._errUpdateLevel--;
-        if (this._errUpdateLevel || this._updateLevel) return;
+        var dec = false;
+        if (this._errUpdateLevel > 0) {
+            this._errUpdateLevel--;
+            dec = true;
+        }
+        if (this._errUpdateLevel || this._updateLevel) {
+            if (!this._errUpdateLevel && dec) this._endAnyChange('updateErrors');
+            return;
+        }
         this._m._errors.all = null; // to be calculated
-        if (!this._m._oldErrors) return; // nothing to do at all
+        if (!this._m._oldErrors) {
+            if (dec) this._endAnyChange('updateErrors');
+            return; // nothing to do at all
+        }
         if (!this._m._errors) if (!this._m._errors) this._m._errors = {local: {}, remote: {}};
         else {
             if (!this._m._errors.local) this._m._errors.local = {};
@@ -553,12 +683,15 @@ Amm.Data.ModelMeta.prototype = {
             && !this._subscribers.remoteErrorsChange 
             && !this._subscribers.errorsChange
             && !this._computed.length
+            && !this._subscribers.anyChange
         ) {
+            if (dec) this._endAnyChange('updateErrors');
             return;
         }
         var localChanged = oldErrors.local !== JSON.stringify(this._m._errors.local);
         var remoteChanged = oldErrors.remote !== JSON.stringify(this._m._errors.remote);
         if (!localChanged && !remoteChanged) {
+            if (dec) this._endAnyChange('updateErrors');
             return;
         }
         this._compute();
@@ -568,10 +701,19 @@ Amm.Data.ModelMeta.prototype = {
         if (triggerLocal) this.outLocalErrorsChange(this._m._errors.local, JSON.parse(oldErrors.local));
         if (triggerRemote) this.outRemoteErrorsChange(this._m._errors.remote, JSON.parse(oldErrors.remote));
         if (triggerAll) this.outErrorsChange(this.getErrors(), JSON.parse(oldErrors.all));
+       if (dec) this._endAnyChange('updateErrors');
     },
-    
-    getLocalErrors: function(field) {
-        if (this._autoCheck && this._modified && !this._checked) this.check();
+
+    /**
+     * @param {null|string|array} field Field to check
+     * @param {int} mode One of Amm.Data.LOCAL_ERRORS_ constatnts;
+     * @returns {array|null} Null is returned when no errors are present
+     */
+    getLocalErrors: function(field, mode) {
+        if (!mode && this._autoCheck && this._modified && !this._checked) this.check();
+        if (mode === Amm.Data.LOCAL_ERRORS_CHECK_FIELDS_ONLY) {
+            this.checkFields(field);
+        }
         return this._getErrors('local', field);
     },
     
@@ -591,13 +733,14 @@ Amm.Data.ModelMeta.prototype = {
     },
     
     _setErrors: function(type, errors, field) {
-        this._beginUpdateErrors();
         if (field) {
+            this._beginUpdateErrors();
             this._m._errors[type][field] = this._flattenErrors(errors);
             if (!this._m._errors[type][field].length) delete this._m._errors[type][field];
             this._endUpdateErrors();
             return;
         } 
+        this._beginUpdateErrors();
         if (!errors) errors = {};
         else if (typeof errors !== 'object' || (errors instanceof Array)) {
             errors[Amm.Data.ERROR_GENERIC] = this._flattenErrors(errors);
@@ -625,12 +768,13 @@ Amm.Data.ModelMeta.prototype = {
         if (!field || field === Amm.Data.ERROR_OTHER) field = Amm.Data.ERROR_GENERIC;
         var e = {};
         e[field] = this._flattenErrors(error);
-        Amm.override(this._m._errors.local, e, false, true);
+        Amm.overrideRecursive(this._m._errors.local, e, false, true);
         this._endUpdateErrors();
     },
     
     outLocalErrorsChange: function(errors, oldErrors) {
-        return this._out('localErrorsChange', errors, oldErrors);
+        this._out('localErrorsChange', errors, oldErrors);
+        this.outAnyChange('localErrorsChange');
     },
     
     getRemoteErrors: function(field) {
@@ -642,7 +786,8 @@ Amm.Data.ModelMeta.prototype = {
     },
     
     outRemoteErrorsChange: function(errors, oldErrors) {
-        return this._out('remoteErrorsChange', errors, oldErrors);
+        this._out('remoteErrorsChange', errors, oldErrors);
+        this.outAnyChange('remoteErrorsChange');
     },
     
     _flattenErrors: function(hash) {
@@ -659,12 +804,14 @@ Amm.Data.ModelMeta.prototype = {
     
     _combineErrors: function() {
         this._m._errors.all = {};
-        if (this._m._errors.local) Amm.overrideRecursive(this._m._errors.all, this._m._errors.local);
+        if (this._m._errors.local) this._m._errors.all = Amm.copy(this._m._errors.local);
         if (this._m._errors.remote) Amm.overrideRecursive(this._m._errors.all, this._m._errors.remote, false, true);
     },
     
-    getErrors: function(field) {
-        if (this._autoCheck && this._modified && !this._checked) this.check();
+    getErrors: function(field, dontCheck) {
+        if (!dontCheck && this._autoCheck === Amm.Data.AUTO_CHECK_ALWAYS && this._modified && !this._checked) {
+            this.check();
+        }
         if (!this._m._errors) return null;
         if (!this._m._errors.all) {
             this._combineErrors();
@@ -673,7 +820,8 @@ Amm.Data.ModelMeta.prototype = {
     },
     
     outErrorsChange: function(errors, oldErrors) {
-        return this._out('errorsChange', errors, oldErrors);
+        this._out('errorsChange', errors, oldErrors);
+        this.outAnyChange('errorsChange');
     },
     
     setErrors: function() {
@@ -688,6 +836,7 @@ Amm.Data.ModelMeta.prototype = {
             if (!(field in this._m._propNames)) {
                 this._createProperty(field);
             }
+            this['_change_' + field] = m.change;
             if (m.compute && typeof m.compute === 'function') {
                 computed.push(field);
                 this['_compute_' + field] = m.compute;
@@ -717,6 +866,9 @@ Amm.Data.ModelMeta.prototype = {
                     this['_set_' + field] = meta.set;
                 }
             }
+            if (!property || property === 'change') {
+                this['_change_' + field] = meta.change;
+            }
             if (!property || property === 'compute') {
                 var cmpChanged = false;
                 var cmpIdx = Amm.Array.indexOf(field, this._computed);
@@ -743,8 +895,10 @@ Amm.Data.ModelMeta.prototype = {
             && property !== 'label'         // label may affect error messages
             && property !== 'validators'    // validators affect validation
         ) return;
+
         var hasValue = field && this._m._data[field] || this._m._old[field];
         var shouldCheck = hasValue || property === 'required' && !value;
+
         this._correctCheckStatus(field, shouldCheck);
         
     },
@@ -753,11 +907,26 @@ Amm.Data.ModelMeta.prototype = {
         this._compute();
     },
     
-    _compute: function() {
-        if (!this._computed.length) return;
-        if (this._updateLevel) return;
+    compute: function() {
+        this._compute();
+    },
+    
+    outCompute: function() {
+        return this._out('compute');
+    },
+    
+    _compute: function(duringEndUpdate) {
+        if (
+            !this._computed.length 
+            && this._m._doOnCompute === Amm.Data.Model.prototype._doOnCompute
+            && !this._subscribers.compute
+        ) {
+            // nothing to do
+            return;
+        }
+        if (this._updateLevel && !duringEndUpdate) return;
         
-        this.beginUpdate();
+        if (!duringEndUpdate) this.beginUpdate();
         var i, l, f;
         for (i = 0, l = this._computed.length; i < l; i++) {
             f = this._computed[i];
@@ -770,9 +939,64 @@ Amm.Data.ModelMeta.prototype = {
             }
         }
         this._lockCompute++;
-        this.endUpdate();
+        this._m._doOnCompute();
+        this.outCompute();
+        if (!duringEndUpdate) this.endUpdate();
         this._lockCompute--;
-    }
+    },
+    
+    _beginAnyChange: function(r) {
+        this._lockAnyChange++;
+        if (Amm.Data.ModelMeta.debugAnyChangeStack) {
+            if (!this._lacs) this._lacs = [];
+            console.log("beginAnyChange", this._lockAnyChange, [].concat(this._lacs), "<", r);
+            this._lacs.push(r);
+        }
+    },
+    
+    _endAnyChange: function(r) {
+        if (!this._lockAnyChange) {
+            throw new Error("Assertion: _endAnyChange() without _beginAnyChange()");
+        }
+        this._lockAnyChange--;
+        if (Amm.Data.ModelMeta.debugAnyChangeStack) {
+            var r1 = this._lacs.pop();
+            if (r1 !== r) {
+                console.warn("_endAnyChange('" + r + "'): lacs entry not matching, stack contained '" + r1 + "'");
+                console.trace ();
+            }
+            console.log("endAnyChange", this._lockAnyChange, [].concat(this._lacs), ">", r);
+        }
+        if (this._lockAnyChange || !this._anyChange) return;
+        var reason = this._anyChange;
+        this._anyChange = false;
+        this.outAnyChange(reason);
+    },
+    
+    outAnyChange: function(reason) {
+        if (!this._lockAnyChange) {
+            this._anyChange = false;
+            this._out('anyChange', reason);
+            return;
+        }
+        if (this._anyChange && this._anyChange !== reason) {
+            this._anyChange = 'cumulative';
+        } else {
+            this._anyChange = reason;
+        }
+    },
+
+    // we suppress any events until model finished initializing
+    _out: function() {
+        if (this._m._init) return;
+        Amm.WithEvents.prototype._out.apply(this, Array.prototype.slice.call(arguments));
+    },
+    
+//    outMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
+//        Amm.Data.MetaProvider.prototype.outMetaChange.apply(this, Array.prototype.slice.apply(arguments));
+//        this.outAnyChange('metaChange');
+//    }
+    
     
 };
 

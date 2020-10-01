@@ -14,9 +14,6 @@ Amm.Element = function(options) {
         this._endInit();
         return;
     }
-    var expressions;
-    var traits = this._getDefaultTraits(), hasTraits = options.traits;
-    var views = [];
 
     options = Amm.Element._checkAndApplyOptionsBuilderSource(options);
     
@@ -24,6 +21,10 @@ Amm.Element = function(options) {
     if (options && typeof options === 'object') {
         options = Amm.override({}, options);
     }
+    
+    var expressions;
+    var traits = this._getDefaultTraits(options), hasTraits = options.traits;
+    var views = [];
 
     if ('expressions' in options) { // we should init expressions last
         expressions = options.expressions;
@@ -51,7 +52,7 @@ Amm.Element = function(options) {
             Amm.augment(this, trait, options);
         }
     }
-    var inProps = [], extraProps;
+    var inProps = [], extraProps, extraPropsVals, extraPropName;
     // create function handlers and expressions
     for (var i in options) if (options.hasOwnProperty(i)) { 
         if (i[0] === 'i' && i[2] === '_' && i.slice(0, 4) === 'in__') {
@@ -65,7 +66,13 @@ Amm.Element = function(options) {
             delete options[i];
         } else if (i[0] === 'p' && i[4] === '_' && i.slice(0, 6) === 'prop__') {
             extraProps = extraProps || {};
-            extraProps[i.slice(6)] = options[i];
+            extraPropName = i.slice(6);
+            extraProps[extraPropName] = options[i];
+            if (extraPropName in options) {
+                extraPropsVals = extraPropsVals || {};
+                extraPropsVals[extraPropName] = options[extraPropName];
+                delete options[extraPropName];
+            }
             delete options[i];
         }
     }
@@ -74,9 +81,12 @@ Amm.Element = function(options) {
     Amm.init(this, options, ['id', 'properties']);
     Amm.init(this, options);
     if (extraProps) this.setProperties(extraProps);
+    if (extraPropsVals) {
+        Amm.init(this, extraPropsVals);
+    }
     if (inProps.length) this._initInProperties(inProps);
-    if (onHandlers) this._initOnHandlers(onHandlers);
     if (expressions) this.setExpressions(expressions);
+    if (onHandlers) this._initOnHandlers(onHandlers);
     this._endInit();
     if (views.length) {
         for (var i = 0, l = views.length; i < l; i++) {
@@ -357,7 +367,7 @@ Amm.Element.prototype = {
                 onChange = value.onChange;
                 value = value.defaultValue;
             }
-            Amm.createProperty(this, i, value, onChange);
+            Amm.createProperty(this, i, value, onChange, true);
         }
         if (hh.length) this._initInProperties(hh);
     },

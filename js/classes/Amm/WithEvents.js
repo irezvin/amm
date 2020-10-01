@@ -2,13 +2,12 @@
 
 Amm.WithEvents = function(options, initOnHandlersOnly) {
     this._subscribers = {};
-    if (options) {
-        var onHandlers = this._extractOnHandlers(options);
-        if (onHandlers) this._initOnHandlers(onHandlers);
-        if (!initOnHandlersOnly) {
-            Amm.init(this, options);
-        }
+    if (!options) return;
+    var onHandlers = this._extractOnHandlers(options);
+    if (!initOnHandlersOnly) {
+        Amm.init(this, options);
     }
+    if (onHandlers) this._initOnHandlers(onHandlers);
 };
 
 /* 
