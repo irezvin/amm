@@ -86,7 +86,7 @@
         t.a.setValueIsStandalone(false);
         assert.deepEqual(val.a, ['a', 'c'], 'back to non-standalone value');
         
-        Amm.cleanup(Object.values(t));
+        Amm.cleanup(Amm.values(t));
         
     });
     

@@ -2,6 +2,7 @@
 /* global QUnit */
 
 QUnit.module("Amm Global Object");
+
 QUnit.test("Amm get/set/destroy Item", function(assert) {
    
     var a = window.Amm;
@@ -518,19 +519,77 @@ QUnit.test("Amm.html", function(assert) {
         <textarea>some pretty text here</textarea>\n\
     </div>\n\
 </div>");
+      
+});
     
-    QUnit.test("Amm.misc", function(assert) {
-       
-        var obj = {
-            prop1: 'val1',
-            prop2: 'val2'
-        };
-        
-        assert.deepEqual(Amm.keys(obj), ['prop1', 'prop2'], 'Amm.keys() returns hash names');
-        assert.deepEqual(Amm.values(obj), ['val1', 'val2'], 'Amm.values() returns hash values');
-        
-    });
-   
     
+QUnit.test("Amm.misc", function(assert) {
+    
+    var obj = {
+        prop1: 'val1',
+        prop2: 'val2'
+    };
+    
+    assert.deepEqual(Amm.keys(obj), ['prop1', 'prop2'], 'Amm.keys() returns hash names');
+    assert.deepEqual(Amm.values(obj), ['val1', 'val2'], 'Amm.values() returns hash values');
     
 });
+
+QUnit.test("Amm.defineProperty: inheritance", function(assert) {
+
+    var ClassWithNumber = function(options) {
+        Amm.WithEvents.call(this, options);
+    }
+    ClassWithNumber.prototype = {	
+        'ClassWithNumber': '__CLASS__',
+    }
+    Amm.createProperty(ClassWithNumber.prototype, 'number', 0, {
+        before: function(number, old) {
+            if (typeof number === 'number') return;
+            var newValue = parseFloat(number);
+            if (isNaN(newValue)) {
+                throw Error("Please specify proper number; given: '" + number + "'");
+            }
+            return newValue;
+        },
+    }, true);	
+        
+    Amm.extend(ClassWithNumber, Amm.WithEvents);
+
+    var ClassWithInt = function(options) { return ClassWithNumber.call(this, options); };
+
+    ClassWithInt.prototype = {
+        'ClassWithInt': '__CLASS__',
+        _number: 0,
+        setNumber: function(value) {
+            var newValue = value;
+            if (typeof newValue !== 'number') newValue = parseFloat(value);
+            if (typeof newValue === 'number' && !isNaN(newValue)) value = Math.round(newValue);
+            return ClassWithNumber.prototype.setNumber.call(this, value);
+        }
+    };
+
+    Amm.extend(ClassWithInt, ClassWithNumber);
+
+    var sample = new ClassWithNumber;
+    var sample2 = new ClassWithInt();
+    
+    sample.number = 10.1;
+    assert.equal(sample.number, 10.1, "property was set (parent class)");
+    assert.equal(sample._number, 10.1, "internal member was changed by setter (parent class)");
+    assert.throws(function() {
+        sample.number = 'aaa';
+    }, /proper number/, "Exception expected (thrown in onChange.before)");
+    sample2.number = 10.1;
+    assert.equal(sample2.number, 10, "property was set using child setter (child class)");
+    assert.equal(sample2._number, 10, "internal member was changed by property setter (child class)");
+    sample2.number = '13.5';
+    assert.equal(sample2.number, 14, "property was set using child setter (child class)");
+    assert.throws(function() {
+        sample2.number = 'bbb';
+    }, /proper number/, "Exception expected (thrown in onChange.before by parent's setter)");
+    
+
+});
+   
+    

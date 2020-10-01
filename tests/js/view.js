@@ -401,7 +401,6 @@
         
         v.setElement(elem);
         v.setHtmlElement(div);
-        d.v = v;
         
             assert.deepEqual(div.html(), "<h1>John Doe</h1><p>Age: <strong>17</strong>, male</p>",
                 "setting _html works");
@@ -448,11 +447,7 @@
             assert.equal(div.css('background-color'), 'rgb(255, 192, 203)',
                 'new element observed: setting style works');
         
-        
-        
-        
-        
-        //Amm.cleanup(elem, elem1);
+        Amm.cleanup(elem, elem1);
         
     });
     

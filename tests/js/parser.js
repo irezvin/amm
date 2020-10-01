@@ -30,7 +30,7 @@
             [' ', WHITESPACE, u],
             ['+', SYMBOL, u],
             [' ', WHITESPACE, u],
-            ['/ foo ( \[ [ / ] ] \] ) /g', REGEXP, / foo ( [ [ / ] ] ] ) /g],
+            ['/ foo ( \[ [ / ] ] \] ) /g', REGEXP,  / foo ( [ [ / ] ] ] ) /g], // IE 10 incorrectly serializes this (
             [' ', WHITESPACE, u],
             ['-', SYMBOL, u],
             ['  ', WHITESPACE, u],
@@ -191,6 +191,15 @@
 
             "a.b::x.c::y":
                 ["PropertyAccess",["PropertyAccess",["Identifier","a"],["Constant","b"],["PropertyArgs",[["Constant","x"]],false],false,null],["Constant","c"],["PropertyArgs",[["Constant","y"]],false],false,null],
+            
+            "a.b::arg1::arg2":
+                ["PropertyAccess",["Identifier","a"],["Constant","b"],["PropertyArgs",[["Constant","arg1"], ["Constant", "arg2"]],false],false,null],
+            
+            "a.b::arg1 :: :: arg3":
+                ["PropertyAccess",["Identifier","a"],["Constant","b"],["PropertyArgs",[["Constant","arg1"], ["Constant", undefined], ["Constant", "arg3"]],false],false,null],
+            
+            "a.b::arg1 :: :: :: arg3":
+                ["PropertyAccess",["Identifier","a"],["Constant","b"],["PropertyArgs",[["Constant","arg1"], ["Constant", undefined], ["Constant", undefined], ["Constant", "arg3"]],false],false,null],
 
             "a.b{0..3}":
                 ["Range","Slice",["PropertyAccess",["Identifier","a"],["Constant","b"],null,false,null],["Constant",0],["Constant",3]],

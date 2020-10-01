@@ -474,6 +474,14 @@
         // third element or not visible-or-enabled item
         ee.push(new Amm.Expression("this->x{$i => $v: $i == 3 || !($v.visible || $v.enabled)}", c));
         
+        assert.throws(function() {
+            new Amm.Expression('{{$foo}}');
+        }, /expected.*expression/i);
+        
+        assert.throws(function() {
+            new Amm.Expression('this{{$foo}}');
+        }, /cannot parse range expression/i);
+        
         assert.ok(true); // everything parsed without errors
         Amm.cleanup(ee);
         
@@ -516,8 +524,6 @@
         assert.deepEqual(Amm.getProperty(v3, 'name'), ['d', 'f', 'h'], 'proper element access using range w/o id > tracks changes');
         g.setV(10);
         assert.deepEqual(Amm.getProperty(v3, 'name'), ['d', 'f', 'g', 'h'], 'proper element access using range w/o id > tracks changes');
-        
-        return;
         
         Amm.cleanup(c, d, e, f, g, h, i, j, ex, ex1, ex2, ex3);
         

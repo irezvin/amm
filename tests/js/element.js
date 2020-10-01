@@ -24,24 +24,37 @@
             prop__x: 20,
             prop__in__y: 'this.x * 2'
         });
-        assert.equal(e.getA(), 10);
-        assert.equal(e.getB(), 15);
-        assert.equal(e.getC(), 30);
-        assert.equal(e.getD(), e.getA() + e.getB());
-        assert.equal(e.getE(), e.getC() * e.getA());
-        assert.equal(e.getF(), e.getC() - e.getB());
+        assert.equal(e.a, 10);
+        assert.equal(e.b, 15);
+        assert.equal(e.c, 30);
+        assert.equal(e.d, e.a + e.b);
+        assert.equal(e.e, e.c * e.a);
+        assert.equal(e.f, e.c - e.b);
         e.setA(3);
         e.setC(10);
-        assert.equal(e.getA(), 3);
-        assert.equal(e.getC(), 10);
-        assert.equal(e.getD(), e.getA() + e.getB());
-        assert.equal(e.getE(), e.getC() * e.getA());
-        assert.equal(e.getF(), e.getC() - e.getB());
-        assert.equal(e.getX(), 20);
-        assert.equal(e.getY(), e.getX() * 2);
+        assert.equal(e.a, 3);
+        assert.equal(e.c, 10);
+        assert.equal(e.d, e.a + e.b);
+        assert.equal(e.e, e.c * e.a);
+        assert.equal(e.f, e.c - e.b);
+        assert.equal(e.x, 20);
+        assert.equal(e.y, e.x * 2);
         e.setX(25);
-        assert.equal(e.getX(), 25);
-        assert.equal(e.getY(), e.getX() * 2);
+        assert.equal(e.x, 25);
+        assert.equal(e.y, e.x * 2);
+        
+        var e2 = new Amm.Element({
+            prop__extra: null,
+            properties: {
+                extra2: null,
+            },
+            extra: 50,
+            extra2: 500
+        });
+        assert.deepEqual(e2.extra, 50, 'We can define both prop__<foo> and <foo>: value in Element options');
+        assert.deepEqual(e2.extra2, 500, 'We can define both properties.<foo> and <foo>: value in Element options');
+        window.d.e2 = e2;
+        
     });
     
     QUnit.test("Element.ElementHandlers", function(assert) {

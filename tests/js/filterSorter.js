@@ -560,7 +560,7 @@
             assert.equal(expr1.getValue(), 'USA',
                 'PropsCondition.props::prop returns valid value');
         
-        var expr2 = new Amm.Expression("(this.conditions::age).props::min", f,);
+        var expr2 = new Amm.Expression("(this.conditions::age).props::min", f);
         expr2.subscribe('valueChange', function(v) { expr2value = v; });
             assert.ok(expr2.getIsCacheable(),
                 'ExpressionCondition: Expression that refers to Filter.conditions::condition.props::prop is cacheable');

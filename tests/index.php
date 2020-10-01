@@ -3,15 +3,20 @@
     <head>
         <title>A.M.M. Tests</title>
         <meta charset='utf-8'>
-        <script src="../js/vendor/jquery.js"></script>
-        <script src="../js/vendor/relaxed-json.js"></script>
+        <script src="../vendor/jquery.js"></script>
+        <script src="../vendor/relaxed-json.js"></script>
         <link rel="stylesheet" type="text/css" href="qunit/qunit-2.0.1.css" />
-<?php   require_once(__DIR__.'/list.php'); 
-        foreach (listAmmFiles(null, null, isset($_REQUEST['min']) && $_REQUEST['min']) as $f) {
-            $f = str_replace('../js/classes/../../build/', '', '../js/classes/'.$f);
-            echo "\n<script type='text/javascript' src='$f'></script>";
-        }
-?> 
+<?php   
+    
+        require_once(__DIR__.'/../build/amm-utils.php'); 
+        $builder = new \Amm\Builder;
+        $builder->distDir = __DIR__.'/../dist';
+        $loader = new \Amm\Loader($builder);
+        $loader->jsUrl = '../js/classes';
+        $loader->distUrl = '../dist';
+        $loader->showScripts();
+        
+?>
     </head>
     <body>
     
@@ -64,9 +69,9 @@
         </script>      
 <?php
         
-        foreach (listTests() as $f) {
+        foreach (glob(__DIR__.'/js/*.js') as $f) { $f = basename($f);
             echo "
-        <script src=\"../js/tests/{$f}\"></script>";
+        <script src=\"js/{$f}\"></script>";
         
         }
 ?>        

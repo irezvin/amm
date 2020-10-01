@@ -288,6 +288,15 @@
         
     });
     
+    QUnit.test("Amm.Builder: test Amm.Builder.Ref serialization", function(assert) {
+        
+        var r = new Amm.Builder.Ref({closest: 'div.something', index: 3});
+        var r1 = new Amm.Builder.Ref(JSON.parse(JSON.stringify(r)));
+        assert.deepEqual(r.toJSON(), r1.toJSON(), 
+            'Amm.Builder.Ref can be unserialized from Amm.Builder.toJSON() output');
+        
+    });
+    
     QUnit.test("Amm.Builder: return view prototypes", function(assert) {
         
         var fx = jQuery('#qunit-fixture');

@@ -248,8 +248,14 @@
         o.mm.addError('must include upper-case letter', 'email');
             assert.deepEqual(o.mm.getLocalErrors('email'), ['must include upper-case letter'], 'added local error');
         
+            o.mm._beginUpdateErrors();
+            o.mm._endUpdateErrors();
+            
+        o.mm.addError('ddd', 'email');
+            assert.deepEqual(o.mm.getLocalErrors('email'), ['must include upper-case letter', 'ddd'], 'added local error');
+        
         o.mm.addError('must include upper-case letter', 'email');
-            assert.deepEqual(o.mm.getLocalErrors('email'), ['must include upper-case letter'], 'duplicate didn\'t count');
+            assert.deepEqual(o.mm.getLocalErrors('email'), ['must include upper-case letter', 'ddd'], 'duplicate didn\'t count');
             
             
         var e_log = [];
@@ -340,7 +346,7 @@
             email: { validators: [
                 'Amm.Validator.Required',
                 function(v) {
-                    if (!v.match(/^.+@.+\.[^\.]+$/)) return "Please enter valid email";
+                    if (v && !v.match(/^.+@.+\.[^\.]+$/)) return "Please enter valid email";
                 }
             ] },
         });
@@ -460,7 +466,6 @@
             assert.deepEqual(errors, {email: ['Please enter valid email']}, 'Field was checked upon change');
         
         r.email = '';
-        
             assert.deepEqual(errors, {email: ['email is required']}, 'Required field cleared -> error');
             
         r.email = 'aaa@example.com';
@@ -486,13 +491,22 @@
         r.mm.subscribe('localErrorsChange', function(e) { err = e; });
         
         r.name = '';
+        r.age = -50;
         
             assert.notOk(r.mm.getChecked(), 'initially object is checked (validWhenHydrated)');
         
         r.mm.setAutoCheck(Amm.Data.AUTO_CHECK_ALWAYS);
         
             assert.ok(r.mm.getChecked(), 'change: object still checked...');
-            assert.deepEqual(err, {name: ['name is required']}, '...and has errors');
+            assert.deepEqual(err, {
+                age: ['age must not be less than 0'],
+                name: ['name is required']
+            }, '...and has errors');
+            
+            r.age = 50;
+            assert.deepEqual(err, {
+                name: ['name is required']
+            }, 'field changed - error disappeared');
             
         r.name = 'aaa';
         
@@ -510,6 +524,90 @@
             assert.deepEqual(err, {}, 'no errors');
             
     });
+    
+    QUnit.test("Data.ModelMeta.getLocalErrors(field, mode); checkFields()", function(assert) {
+        
+        var r = createObjectForChecks();
+        
+        window.d.r = r;
+        
+        var err, dnc = 0;
+        
+        r.mm.subscribe('localErrorsChange', function(e) { err = e; });
+        
+        r.name = '';
+        
+        r._doOnCheck = function() {
+            this.mm.addError("wtf", "name");
+            dnc++;
+        };
+        
+        r.mm.setAutoCheck(Amm.Data.AUTO_CHECK_SMART);
+        
+        assert.deepEqual(r.mm.getLocalErrors('name', Amm.Data.LOCAL_ERRORS_AS_IS), null,
+            'getLocalErrors(): No errors returned when mode is Amm.Data.LOCAL_ERRORS_AS_IS');
+        
+        assert.deepEqual(
+            r.mm.getLocalErrors('name', Amm.Data.LOCAL_ERRORS_CHECK_FIELDS_ONLY), 
+            [
+                "name is required"
+            ], 
+            'getLocalErrors(): No extra errors returned when mode is Amm.Data.LOCAL_ERRORS_CHECK_FIELDS_ONLY'
+        );
+        
+        assert.deepEqual(dnc, 0, 
+            'getLocalErrors(): _doOnCheck() not ran when mode is Amm.Data.LOCAL_ERRORS_CHECK_FIELDS_ONLY'
+        );
+        
+        assert.deepEqual(
+            r.mm.getLocalErrors('name'), 
+            [
+                "name is required",
+                "wtf"
+            ], 
+            'getLocalErrors(): Extra errors returned when mode is Amm.Data.LOCAL_ERRORS_CHECK'
+        );
+        assert.deepEqual(dnc, 1, 
+            'getLocalErrors(): _doOnCheck() ran when mode is Amm.Data.LOCAL_ERRORS_CHECK'
+        );
+
+        r.mm.setAutoCheck(Amm.Data.AUTO_CHECK_NEVER);
+        r.mm.setLocalErrors(null);
+        r.name = '';
+        r.age = -50;
+        dnc = 0;
+        
+        r.mm.checkFields('age');
+        assert.deepEqual(
+            r.mm.getLocalErrors(), 
+            {
+                age: [
+                    "age must not be less than 0",
+                ], 
+            },
+            'after checkFeilds(field) only errors related to that field are set'
+        );
+        
+        r.mm.checkFields();
+        assert.deepEqual(
+            r.mm.getLocalErrors(), 
+            {
+                age: [
+                    "age must not be less than 0",
+                ], 
+                name: [
+                    "name is required"
+                ]
+            },
+            'after checkFeilds() only errors related to fields are set'
+        );
+        assert.deepEqual(dnc, 0, 
+            '_doOnCheck() not ran on checkFields()'
+        );
+        
+
+    });
+    
     
     QUnit.test("Data.Record: change fields on hydrate", function(assert) {
         
@@ -987,14 +1085,14 @@
         
         r.mm.hydrate({id: 10, name: 'john'});
         
-            assert.deepEqual(log, [['_doOnActual', false]], '_doOnActual(false) called on hydrate');
+            assert.deepEqual(log, [['_doOnActual', false], ['_doOnCompute']], '_doOnActual(false) called on hydrate');
             
         log = [];
         
         r.name = 'j2';
         r.mm.check();
         
-            assert.deepEqual(log, [['_doOnCheck']], '_doOnCheck called on check()');
+            assert.deepEqual(log, [['_doOnCompute'], ['_doOnCheck']], '_doOnCheck called on check()');
             
         log = [];
         ret = false;
@@ -1015,7 +1113,7 @@
         log = [];
             
             t.success({data: {surname: 'Doe'}}, "ok", 0);
-            assert.deepEqual(log, [['_doAfterSave', false], ['_doOnActual', true]], 
+            assert.deepEqual(log, [['_doAfterSave', false], ['_doOnActual', true], ['_doOnCompute']], 
                 'both _doBeforeSave and _doOnActual called on save()');
                 
         log = [];
@@ -1039,7 +1137,7 @@
         log = [];
         t.success({data: {id: 23, name: 'Jane', surname: 'Doe'}}, "ok", 0);
             
-            assert.deepEqual(log, [['_doAfterLoad'], ['_doOnActual', false]],
+            assert.deepEqual(log, [['_doAfterLoad'], ['_doOnActual', false], ['_doOnCompute']],
                 '_doAfterLoad and _doOnActual called after load');
 
         
@@ -1658,6 +1756,242 @@
         
             assert.deepEqual(dt.c, 25, 'Setter doesn\'t change computed value');
             assert.deepEqual(c, undefined, 'Setter doesn\'t trigger change of computed value');
+            
+            
+        // ensures that width is always smaller dimension
+        var dnc = 0, rect1 = new Amm.Data.Model({
+            mm: {
+                meta: {
+                    width: {
+                        def: 0,
+                    },
+                    height: {
+                        def: 0,
+                    },
+                },
+            },
+            _doOnCompute: function() {
+                dnc++;
+                if (this.width && this.height && this.width > this.height) {
+                    var tmp = this.height;
+                    this.height = this.width;
+                    this.width = tmp;
+                }
+            }
+        });
+        
+        rect1.mm.update({width: 100, height: 50});
+        
+        assert.deepEqual({width: rect1.width, height: rect1.height}, {width: 50, height: 100}, 
+            'Property values were swapped by _doOnCompute method');
+            
+        assert.deepEqual(dnc, 1, 'because mm.update() method was used, _doOnCompute() was called once');
+        
+        var dnc2 = 0;
+
+        // calculates area with event handler
+        var dnc = 0, rect2 = new Amm.Data.Model({
+            mm: {
+                meta: {
+                    width: {
+                        def: 0,
+                    },
+                    height: {
+                        def: 0,
+                    },
+                    area: {
+                        def: 0
+                    }
+                },
+                on__compute: function() {
+                    dnc2++;
+                    this.m.area = this.m.width * this.m.height;
+                }
+            },
+        });
+        
+        rect2.mm.update({width: 50, height: 30});
+        assert.deepEqual(rect2.area, 1500, 'property value was calculated by mm.outCompute() event');
+        assert.deepEqual(dnc2, 1, 'because mm.update() method was used, mm.outCompute() was called once');
+        
+        Amm.cleanup(rect1, rect2);
+            
+    });
+    
+    QUnit.test("Data.FieldMeta.change()", function (assert) {
+                
+        var changeFnLog = [];
+        
+        var changeFn = function(value, oldValue, field) {
+            changeFnLog.push([value, oldValue, field]);
+        };
+        
+        var rect = new Amm.Data.Model({
+            mm: { meta: {
+                width: {
+                    def: null,
+                    change: changeFn
+                },
+                height: {
+                    def: null,
+                    change: changeFn
+                }
+            } }
+        });
+        
+        rect.width = 20;
+        
+            assert.deepEqual(changeFnLog, [[20, null, 'width']]);
+
+        changeFnLog = [];
+        rect.width = '20';
+        
+            assert.deepEqual(changeFnLog, [['20', 20, 'width']]);
+        
+        changeFnLog = [];
+        rect.mm.hydrate({width: 50, height: 30});
+        
+            assert.deepEqual(changeFnLog, [
+                [50, '20', 'width'],
+                [30, null, 'height']
+            ]);
+
+    });
+    
+    QUnit.test("Data: anyChange", function(assert) {
+        
+        var changeLog = [];
+        
+        var anyChangeHandler = function(reason) {
+            changeLog.push([reason, Amm.event.origin.m.name]);
+        };
+        
+        var groupComputeCount = 0, groupList = null;
+        
+        
+        
+        var groupModel = new Amm.Data.Model ({
+            mm: { 
+                meta: {
+                    name: {
+                        def: 'groupName',
+                        required: true,
+                    },
+                    chief: {
+                    },
+                    people: {
+                        set: function(ret) {
+                            Amm.is(ret.value, 'Amm.Data.Collection', 'people');
+                        }
+                    },
+                    theList: {
+                        compute: function() {
+                            groupComputeCount++;
+                            if (!this.people || !this.people.length) return 'No one';
+                            var list = Amm.getProperty(this.people.getItems(), 'name');
+                            list.sort();
+                            var items = [];
+                            for (var i = 0; i < list.length; i++) {
+                                items.push((i + 1) + '. ' + list[i]);                                
+                            }
+                            return items.join('\n');
+                        },
+                    }
+                },
+                on__anyChange: anyChangeHandler
+            },
+            on__theListChange: function(v) {
+                groupList = v;
+            }
+        });
+        
+        var people = new Amm.Data.Collection({
+            keyProperty: 'name',
+            instantiateOnAccept: true,
+            instantiator: new Amm.Instantiator.Proto({
+                overrideProto: true,
+                proto: {
+                    'class': 'Amm.Data.Model',
+                    mm: {
+                        meta: {
+                            name: {
+                                required: true
+                            }
+                        },
+                        on__anyChange: anyChangeHandler
+                    }
+                },
+            })
+        });
+        
+        people.push({name: 'John'});
+        people.push({name: 'Jane'});
+        people.push({name: 'Fred'});
+        
+            assert.deepEqual(changeLog, [], 'No anyChange triggered during items instantiation');
+            assert.deepEqual(groupModel.theList, 'No one', '...but computed property contains required value');
+         
+        groupModel.name = "TheGroup";
+            assert.deepEqual(changeLog, [["fieldChange", "TheGroup"]], 'anyChange/fieldChange event');
+        
+        changeLog = [];
+        groupModel.name = "The Group";
+            assert.deepEqual(changeLog, [["fieldChange", "The Group"]], 'anyChange/fieldChange event');
+        
+        changeLog = [];
+        groupModel.people = people;
+        
+            assert.deepEqual(groupList, '1. Fred\n2. Jane\n3. John',
+                'computed field changed');
+            assert.deepEqual(changeLog, [["fieldChange", "The Group"]], 
+                'anyChange/fieldChange event after computed field changed');
+            
+        changeLog = [];
+        groupModel.people.push({name: 'Guy'});
+            assert.deepEqual(changeLog, [["cumulative", "The Group"]], 
+                'anyChange/cumulative (collection + computed field)');
+            assert.deepEqual(groupList, '1. Fred\n2. Guy\n3. Jane\n4. John', 'proper computed field');
+            
+        changeLog = [];
+        groupModel.people.k.Guy.name = 'George';
+            assert.deepEqual(changeLog, [
+                ["cumulative", "George"],
+                ["cumulative", "The Group"]
+            ], 'two cumulative events: child and parent');
+            assert.deepEqual(groupList, '1. Fred\n2. George\n3. Jane\n4. John',
+                'proper computed field in parent');
+            
+        changeLog = [];
+        var reject = groupModel.people.k.George;
+        groupModel.people.reject(reject);
+            assert.deepEqual(changeLog, [
+                ["cumulative", "The Group"]
+            ], 'Item rejected from collection - cumulative change in parent (collection and computed field)');
+            assert.deepEqual(groupList, '1. Fred\n2. Jane\n3. John', 
+                'proper computed field');
+            
+        changeLog = [];
+        reject.name = 'G.';
+            assert.deepEqual(changeLog, [
+                ["fieldChange", "G."]
+            ]), 'change in rejected item doesn\'t cause cumulative change in parent';
+            
+        changeLog = [];
+        groupModel.chief = reject;
+            assert.deepEqual(changeLog, [
+                ["fieldChange", "The Group"]
+            ]), 'associated object - change in parent (field)';
+        
+        changeLog = [];
+        groupModel.chief = reject;
+        reject.name = "Mister G.";
+            assert.deepEqual(changeLog, [
+                ["fieldChange", "Mister G."],
+                ["submodel", "The Group"]
+            ]), 'change in associated object (field) + change in parent (submodel)';
+        
+        Amm.cleanup(groupModel, people.getItems(), people, reject);
+        
     });
     
 }) ();

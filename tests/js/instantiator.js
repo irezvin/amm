@@ -35,6 +35,32 @@ QUnit.test("instantiator.Proto", function(assert) {
     assert.ok(Amm.is(e, 'Amm.Element') && Amm.is(e, 'Editor'), 'Element was created with specified definition');
     Amm.cleanup(e);
     
+    var ins3 = new Amm.Instantiator.Proto({
+        proto: {
+            'class': 'Amm.Element',
+            prop__assoc: null,
+            prop__extra: null
+            
+        },
+        overrideProto: true,
+        assocProperty: 'assoc'
+    });
+    
+    var p1 = {'extraTraits': ['t.Input'], 'extra': 'zz'};
+    var e1 = ins3.construct(p1);
+    
+    assert.ok(Amm.is(e1, 'Amm.Element'), 'class as defined in proto');
+    assert.ok(Amm.is(e1, 'Editor'), 'trait as defined in override');
+    assert.ok(e1.assoc === p1, 'assoc property assigned');
+    assert.deepEqual(e1.extra, 'zz', 'extra property as in override');
+    
+    var p2 = 'xxx';
+    var e2 = ins3.construct(p2);
+    assert.ok(Amm.is(e2, 'Amm.Element'), 'class as defined in proto');
+    assert.notOk(Amm.is(e2, 'Editor'), 'no extra traits');
+    assert.equal(e2.assoc, 'xxx', 'assoc property assigned');
+    
+    
 });
 
 QUnit.test("Instantiator.Variants", function(assert) {
