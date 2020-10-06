@@ -1,26 +1,8 @@
-<!DOCTYPE HTML>
-<html data-amm-build="">
-    <head>
-        <title>11. TODO with fetcher-based saving &mdash; A.M.M. Example</title>
-        <meta charset='utf-8'>
-        <script src="../js/vendor/jquery.js"></script>
-        <script src="../js/vendor/relaxed-json.js"></script>
-        <link rel="stylesheet" type="text/css" href="example.css" />
-        <link rel="stylesheet" type="text/css" href="todo.css" />
-<?php 
-        require_once(__DIR__.'/../build/list.php');
-        foreach (listAmmFiles() as $f) { 
-            echo "
-        <script src=\"../js/classes/{$f}\"></script>";
-        }
+<?php
+    $title = "TODO with fetcher-based saving";
+    require(__DIR__.'/top.inc.php');
 ?> 
-        
-        <script type="text/javascript">
-            Amm.getRoot().subscribe('bootstrap', function() {
-                console.log("Amm bootstrapped");
-            });
-        </script>
-        
+    <link rel="stylesheet" type="text/css" href="todo.css" />
     </head>
     <body>
         

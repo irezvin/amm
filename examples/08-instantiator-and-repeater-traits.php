@@ -1,28 +1,12 @@
-<!DOCTYPE HTML>
-<html data-amm-build="">
-    <head>
-        <title>8. Instantiator and Repeater Traits &mdash; A.M.M. Example</title>
-        <meta charset='utf-8'>
-        <script src="../js/vendor/jquery.js"></script>
-        <script src="../js/vendor/relaxed-json.js"></script>
-        <link rel="stylesheet" type="text/css" href="example.css" />
-<?php 
-        require_once(__DIR__.'/../build/list.php');
-        foreach (listAmmFiles() as $f) { 
-            echo "
-        <script src=\"../js/classes/{$f}\"></script>";
-        
-        }
+<?php
+    $title = "Instantiator and Repeater Traits";
+    require(__DIR__.'/top.inc.php');
 ?> 
-        
         <script type="text/javascript">
             window.coll = new Amm.Collection({items: [
                     new Amm.Element({prop__type: 'a', prop__label: 'first', prop__value: 10}),
                     new Amm.Element({prop__type: 'b', prop__label: 'second', prop__value: 20})
             ]});
-            Amm.getRoot().subscribe('bootstrap', function() {
-                console.log("Amm bootstrapped");
-            });
         </script>
         
     </head>

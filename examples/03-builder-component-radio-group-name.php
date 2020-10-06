@@ -1,20 +1,8 @@
-<!DOCTYPE HTML>
-<html data-amm-build="">
-    <head>
-        <title>3. Builder and Component, in__property, Radio.groupName &mdash; A.M.M. Examples</title>
-        <meta charset='utf-8'>
-        <script src="../js/vendor/jquery.js"></script>
-        <script src="../js/vendor/relaxed-json.js"></script>
-        <link rel="stylesheet" type="text/css" href="example.css" />
-<?php 
-        require_once(__DIR__.'/../build/list.php');
-        foreach (listAmmFiles() as $f) { 
-            echo "
-        <script src=\"../js/classes/{$f}\"></script>";
-        
-        }        
-?> 
-    </head>
+<?php
+    $title = "Builder and Component, in__property, Radio.groupName";
+    require(__DIR__.'/top.inc.php');
+?>    
+</head>
     <body>
         <div id="cc" data-amm-e='{extraTraits: [Amm.Trait.Component]}' data-amm-v='{class: Amm.View.Html.StaticDisplayParent}'>
             <p>Want to work in our company?</p>

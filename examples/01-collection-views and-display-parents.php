@@ -1,18 +1,8 @@
-<!DOCTYPE HTML>
-<html>
-    <head>
-        <title>1. Collection Views and Display Parents &mdash; A.M.M. Examples</title>
-        <meta charset='utf-8'>
-        <link rel="stylesheet" type="text/css" href="example.css" />
-        <script src="../js/vendor/jquery.js"></script>
-<?php 
-        require_once(__DIR__.'/../build/list.php');
-        foreach (listAmmFiles() as $f) { 
-            echo "
-        <script src=\"../js/classes/{$f}\"></script>";
-        
-        }        
-?> 
+<?php
+    $title = "Collection Views and Display Parents";
+    require(__DIR__.'/top.inc.php');
+?>    
+
     </head>
     <body>
         <div class="cc cont_dp">

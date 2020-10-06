@@ -788,16 +788,16 @@ Amm = {
         return instance;
     },
     
-    constructMany: function(options, baseClass, defaults, keyToProperty, setToDefaults, requirements) {
+    constructMany: function(manyOptions, baseClass, defaults, keyToProperty, setToDefaults, requirements) {
         var keys = [];
         var items;
-        if (options instanceof Array) {
-            items = options;
-        } else if (options && typeof options === 'object') {
+        if (manyOptions instanceof Array) {
+            items = manyOptions;
+        } else if (manyOptions && typeof manyOptions === 'object') {
             items = [];
-            for (var i in options) if (options.hasOwnProperty(i)) {
+            for (var i in manyOptions) if (manyOptions.hasOwnProperty(i)) {
                 keys.push(i);
-                items.push(options[i]);
+                items.push(manyOptions[i]);
             }
         } else {
             throw Error("`options` must be either Array or a hash");

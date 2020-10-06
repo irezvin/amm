@@ -1,29 +1,12 @@
-<!DOCTYPE HTML>
-<html data-amm-build="">
-    <head>
-        <title>9. Remote.Fetcher, Select.Option.visible &mdash; A.M.M. Example</title>
-        <meta charset='utf-8'>
-        <script src="../js/vendor/jquery.js"></script>
-        <script src="../js/vendor/relaxed-json.js"></script>
-        <link rel="stylesheet" type="text/css" href="example.css" />
-<?php 
-        require_once(__DIR__.'/../build/list.php');
-        foreach (listAmmFiles() as $f) { 
-            echo "
-        <script src=\"../js/classes/{$f}\"></script>";
-        
-        }
+<?php
+    $title = "Remote.Fetcher, Select.Option.visible";
+    require(__DIR__.'/top.inc.php');
 ?> 
-        
-        <script type="text/javascript">
-            Amm.getRoot().subscribe('bootstrap', function() {
-                console.log("Amm bootstrapped");
-            });
+    <script type="text/javascript">
             window.cities = [
                 "Киев", "Харьков", "Одесса", "Днепр", "Донецк", "Запорожье", "Львов", "Кривой Рог", "Николаев", "Севастополь", "Мариуполь", "Луганск", "Винница", "Макеевка", "Симферополь", "Херсон", "Полтава", "Чернигов", "Черкассы", "Хмельницкий", "Черновцы", "Житомир", "Сумы", "Ровно", "Горловка", "Ивано-Франковск", "Каменское", "Кропивницкий", "Тернополь", "Кременчуг", "Луцк", "Белая Церковь", "Краматорск", "Мелитополь", "Керчь", "Ужгород", "Славянск", "Никополь", "Бердянск", "Алчевск", "Евпатория", "Бровары", "Павлоград", "Северодонецк", "Каменец-Подольский", "Лисичанск", "Александрия", "Красный Луч", "Енакиево", "Стаханов",  "Константиновка"
             ];
-        </script>
-        
+    </script>
     </head>
     <body>
         <div data-amm-e="{id: par, extraTraits: [t.Component]}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: false}]">

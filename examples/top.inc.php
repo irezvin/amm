@@ -1,0 +1,27 @@
+<?php
+    if (!isset($file)) {
+        $data = parse_url($_SERVER['REQUEST_URI']);
+        $file = basename($data['path']);
+    }
+    if (preg_match('/^[0-9]+/', $file, $matches)) {
+        $prefix = (int) $matches[0].'. ';
+    } else {
+        $prefix = '';
+    }
+?>
+<!DOCTYPE HTML>
+<html data-amm-build="">
+    <head>
+        <title><?php echo $prefix.$title; ?> &mdash; A.M.M. Examples</title>
+        <meta charset='utf-8'>
+        <link rel="stylesheet" type="text/css" href="example.css" />
+        <script src="../vendor/jquery.js"></script>
+        <script src="../vendor/relaxed-json.js"></script>
+<?php 
+        require_once(__DIR__.'/../build/amm-utils.php'); 
+        $builder = new \Amm\Builder;
+        $builder->distDir = __DIR__.'/../dist';
+        $loader = new \Amm\Loader($builder);
+        $loader->jsUrl = '../js/classes';
+        $loader->distUrl = '../dist';
+        $loader->showScripts();
