@@ -881,7 +881,28 @@ Amm.Collection.prototype = {
         return cut;
     },
     
-    setItems: function(items) {
+    /**
+     * @param {boolean} smartUpdate Updates matching items while leaving their instances,
+     *      removes other items
+     */
+    setItems: function(items, smartUpdate) {
+        if (smartUpdate) {
+            if (!this._updateFn) {
+                throw Error("`updateFn` must be set to use setItems() with smartUpdate argument");
+            }
+            if (!(this._keyProperty || this._comparison || this._comparisonProperties)) {
+                throw Error("One of `keyProperty`, `comparison`, or`comparisonProperties`"
+                    + " must be set to use setItems() with smartUpdate argument");
+            }
+            // with proper configuration, acceptMany updates matching items and returns them,
+            // instead of deleting old items and creating new ones. 
+            // setItems() also won't replace already existing and contained instances too,
+            // but will delete every other item
+            this.beginUpdate();
+            this.setItems(this.acceptMany(items));
+            this.endUpdate();
+            return this.length;
+        }
         var args = [0, this.length].concat(items);
         this.splice.apply(this, args);
         return this.length;
@@ -1426,7 +1447,7 @@ Amm.Collection.prototype = {
         }
         if (this._keyProperty) {
             propA = Amm.getProperty(a, this._keyProperty);
-            if (typeof propA === 'object') throw this._keyPropertyError(a, propA);
+            if (propA && typeof propA === 'object') throw this._keyPropertyError(a, propA);
             if (propA !== undefined && propA !== null) {
                 propB = Amm.getProperty(b, this._keyProperty);
                 if (propB !== undefined && propB !== null) {
@@ -2027,7 +2048,7 @@ Amm.Collection.prototype = {
     _handleKeyChange: function(value, oldValue) {
         var object = Amm.event.origin, needTrigger;
         if (this._lockKeyValueChange && this._lockKeyValueChange === object) return;
-        if (typeof value === 'object') {
+        if (value && typeof value === 'object') {
             this._revertKeyValue(object, oldValue);
             throw this._keyPropertyError(object, value);
         }

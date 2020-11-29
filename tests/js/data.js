@@ -1932,7 +1932,7 @@
             assert.deepEqual(groupModel.theList, 'No one', '...but computed property contains required value');
          
         groupModel.name = "TheGroup";
-            assert.deepEqual(changeLog, [["fieldChange", "TheGroup"]], 'anyChange/fieldChange event');
+            assert.deepEqual(changeLog, [["cumulative", "TheGroup"]], 'anyChange/cumulative event (bc modifiedChange + fieldChange)');
         
         changeLog = [];
         groupModel.name = "The Group";

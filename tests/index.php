@@ -5,7 +5,7 @@
         <meta charset='utf-8'>
         <script src="../vendor/jquery.js"></script>
         <script src="../vendor/relaxed-json.js"></script>
-        <link rel="stylesheet" type="text/css" href="qunit/qunit-2.0.1.css" />
+        <link rel="stylesheet" type="text/css" href="qunit/qunit-2.0.1-dark.css" />
 <?php   
     
         require_once(__DIR__.'/../build/amm-utils.php'); 

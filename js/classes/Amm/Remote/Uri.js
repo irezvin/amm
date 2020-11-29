@@ -100,9 +100,14 @@ Amm.Remote.Uri.prototype = {
         }
         if (Amm.Remote.Uri._const[part]) {
             this.beginUpdate();
-            if (part === 'QUERY' && typeof uri !== 'object') {
-                this._strQuery = uri || '';
-                this._query = this._parseQuery(uri);
+            if (part === 'QUERY') {
+                if (typeof uri !== 'object') {
+                    this._strQuery = uri || '';
+                    this._query = this._parseQuery(uri);
+                } else {
+                    this._strQuery = this._buildQuery(uri);
+                    this._query = uri;
+                }
             }
             else this[Amm.Remote.Uri._const[part]] = '' + uri;
             this.endUpdate();

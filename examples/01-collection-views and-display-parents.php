@@ -152,7 +152,7 @@
                 var e = new Amm.Element({traits: ['Amm.Trait.Content', 'Amm.Trait.Visual'], visible: true});
                 var v = new Amm.View.Html.Visual({element: e, htmlElement: he[0]});
                 var vc = new Amm.View.Html.Content({element: e, htmlElement: he[0]});
-                if (append) v_dp.displayChildren.push(e);
+                if (append) v_dp.getElement().displayChildren.push(e);
                 return e;
             };
         </script>

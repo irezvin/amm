@@ -135,7 +135,11 @@ Amm.Data.ModelMeta.prototype = {
     beginUpdate: function() {
         this._updateLevel++;
         if (this._updateLevel > 1) return;
-        this._m._preUpdateValues = this.getData();
+        if (!this._m._preUpdateValues) this._m._preUpdateValues = {};
+        for (var i in this._m._data) if (this._m._data.hasOwnProperty(i)) {
+            if (i in this._m._preUpdateValues) continue;
+            this._m._preUpdateValues[i] = this._m._data[i];
+        }
         this._beginAnyChange('update');
     },
     
@@ -210,6 +214,7 @@ Amm.Data.ModelMeta.prototype = {
     _checkModified: function() {
         var modified = false;
         for (var i in this._m._data) if (this._m._data.hasOwnProperty(i)) {
+            if (this['_compute_' + i]) continue;
             if (!(i in this._m._old) || this._m._old[i] !== this._m._data[i]) {
                 modified = true;
                 break;
@@ -231,7 +236,7 @@ Amm.Data.ModelMeta.prototype = {
 
             this._m[outName](val, oldVal);
             this.outAnyChange('fieldChange');
-            if (this['_change_' + field]) this['_change_' + field](val, oldVal, field);
+            if (this['_change_' + field]) this['_change_' + field].call(this._m, val, oldVal, field);
             if (!this._lockCompute && !(this['_compute_' + field])) this._compute();
             if (!isEndUpdate) {
                 this._reportDataChanged();
@@ -275,6 +280,15 @@ Amm.Data.ModelMeta.prototype = {
     outModifiedChange: function(modified, oldModified) {
         this._out('modifiedChange', modified, oldModified);
         this.outAnyChange('modifiedChange');
+    },
+    
+    listModifiedFields: function() {
+        var res = [];
+        for (var field in this._m._data) if (this._m._data.hasOwnProperty(field)) {
+            if (this['_compute_' + field]) continue;
+            if (this._m._old[field] !== this._m._data[field]) res.push(field);
+        }
+        return res;
     },
     
     revert: function() {
@@ -718,7 +732,7 @@ Amm.Data.ModelMeta.prototype = {
     },
     
     _getErrors: function(type, field) {
-        if (!this._m._errors[type] || field && (field !== Amm.Data.ERROR_OTHER) && !(this._m._errors[type][field])) return null;
+        if (!this._m._errors || !this._m._errors[type] || field && (field !== Amm.Data.ERROR_OTHER) && !(this._m._errors[type][field])) return null;
         if (!field) {
             if (this._m._errors[type]) {
                 for (var i in this._m._errors[type]) if (this._m._errors[type].hasOwnProperty(i)) {

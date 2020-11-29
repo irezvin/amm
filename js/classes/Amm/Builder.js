@@ -218,27 +218,32 @@ Amm.Builder.prototype = {
         var n = new Amm.Builder.Node(), a;
         n.htmlElement = htmlElement;
         a = htmlElement.getAttribute('data-amm-v');
-        if (a && a.length) {
-            n.v = this._replaceRefsAndInstaniateObjects(json.parse(a), n.htmlElement);
-            if (!(n.v instanceof Array)) n.v = n.v? [n.v] : [];
-            for (var i = 0, l = n.v.length; i < l; i++) {
-                if ((typeof n.v[i]) === 'string') {
-                    n.v[i] = {class: n.v[i]};
+        try {
+            if (a && a.length) {
+                n.v = this._replaceRefsAndInstaniateObjects(json.parse(a), n.htmlElement);
+                if (!(n.v instanceof Array)) n.v = n.v? [n.v] : [];
+                for (var i = 0, l = n.v.length; i < l; i++) {
+                    if ((typeof n.v[i]) === 'string') {
+                        n.v[i] = {class: n.v[i]};
+                    }
+                    n.v[i].htmlElement = htmlElement;
                 }
-                n.v[i].htmlElement = htmlElement;
             }
-        }
-        a = htmlElement.getAttribute('data-amm-e');
-        if (a && a.length) n.e = this._replaceRefsAndInstaniateObjects(json.parse(a), n.htmlElement);
-        a = htmlElement.getAttribute('data-amm-id');
-        if (a && a.length) {
-            a = a.replace(/^\s+|\s+$/g, '');
-            if (a[0] === '@' && a[1]) {
-                n.global = true;
-                a = a.slice(1);
-                if (!this._globalIds[a]) this._globalIds[a] = [n];
-                    else this._globalIds[a].push(n);
+            a = htmlElement.getAttribute('data-amm-e');
+            if (a && a.length) n.e = this._replaceRefsAndInstaniateObjects(json.parse(a), n.htmlElement);
+            a = htmlElement.getAttribute('data-amm-id');
+            if (a && a.length) {
+                a = a.replace(/^\s+|\s+$/g, '');
+                if (a[0] === '@' && a[1]) {
+                    n.global = true;
+                    a = a.slice(1);
+                    if (!this._globalIds[a]) this._globalIds[a] = [n];
+                        else this._globalIds[a].push(n);
+                }
             }
+        } catch (e) {
+            console.error("Cannot parse relaxed json in node", htmlElement);
+            throw e;
         }
         if (a && a.length) {
             n.id = a;

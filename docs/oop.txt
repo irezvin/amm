@@ -358,5 +358,48 @@ MySecondListClass = function() {
 '''
 
 
+===== Amm.createClass(name, parent, proto, constructorFn) =====
+
+Эта функция позволяет быстро генерировать классы со [[properties|свойствами]], наследованием и всеми нужными членами в прототипе.
+
+* **name**: string|null - имя нового класса в формате Namespace.SubNameSpace.ClassName. При этом все namespaces должны существовать ДО создания класса, а ClassName в самом глубоком Namespace, наоборот, не должен быть определен. Если не задано, то имя не назначается (и в прототип не добавляется '''Namespace.SubNameSpace.ClassName': __CLASS__''
+* **parent**: function|null - путь к классу-предку либо его конструктор. Можно указать null, если наследования нет.
+* **proto**: object|null - прототип нового класса. Может содержать определения свойств.
+* **proto.prop__<propName>**: определение свойства
+	* а) proto.prop__<propName>: defaultValue, где defaultValue не объект: создает свойство, getter, setter, событие и член класса с именем propName (Object.defineProperty)
+	* б) prop.prop__<propName>: object - позволяет указать отдельные параметры для Amm.createProperty. Ключи: defaultValue, onChange, defineProperty.
+* **constructorFn: function|null** - конструктор нового класса. Если не задан, то используется конструктор по умолчанию:
+	* если есть предок, конструктор по умолчанию вызывает конструктор предка с теми же параметрами;
+	* если нет предка, конструктор по умолчанию это function(options) { Amm.init(this, options); }
+
+Возвращает созданную функцию.
+
+'''
+var GuyClass = Amm.createClass('GuyClass', 'Amm.WithEvents', { 
+	prop__name: null, 
+	prop__birthDate: null
+});
+
+var guy = new GuyClass ({
+	name: 'John', 
+	birthDate: '01.01.2001',
+	on__nameChange: function(newName) { console.log("new name is", newName); }
+});
+
+guy.name = 'xx';
+// "new name is", "xx"
+
+guy.getBirthDate();
+// '01.01.2001'
+
+Amm.getClass(guy);
+// 'GuyClass'
+
+Amm.is(guy, 'Amm.WithEvents');
+// true
+'''
+
+
+
 
 

@@ -591,5 +591,71 @@ QUnit.test("Amm.defineProperty: inheritance", function(assert) {
     
 
 });
+
+QUnit.test("Amm.createClass", function(assert) { 
+    
+    var Example = {
+        Sub: {
+        }
+    };
+    
+    Amm.registerNamespace('Example', Example);
+    
+    var c1 = Amm.createClass('Example.Sub.Class1', 'Amm.WithEvents', {
+        testMethod: function() {
+        },
+        prop__foo: 'fooValue',
+        prop__bar: 'barValue',
+        prop__baz: {
+            defaultValue: 10,
+            onChange: function(value, oldValue) {
+                this._baz = '*' + value + '*';
+            },
+            defineProperty: false
+        }
+    });
+    
+        assert.ok(Example.Sub.Class1 === c1, 'class was created in specified namespace');
+
+        assert.deepEqual(typeof c1, 'function', 'Amm.createClass() returned a function');
+
+        assert.deepEqual(c1.prototype['Example.Sub.Class1'], '__CLASS__', 'created class\' proto has __CLASS__ member');
+
+        assert.deepEqual(c1.prototype['Amm.WithEvents'], '__PARENT__', 'created class\' proto has __PARENT__ member');
+        
+    
+    var log = [], addToLog = function(v, o) {log.push([Amm.event.name, v, o]);};
+    var e = new c1({foo: 'newFooValue', on__fooChange: addToLog, on__barChange: addToLog, on__bazChange: addToLog});
+    
+        assert.ok(Amm.is(e, 'Example.Sub.Class1'), 'Amm.is() works with created class');
+
+        assert.ok(Amm.is(e, 'Amm.WithEvents'), 'Amm.is() works with created class (parent)');
+
+        assert.deepEqual(e.foo, 'newFooValue', 'property value was initialized');
+
+        assert.deepEqual(e.bar, 'barValue', 'default property value');
+        
+        assert.notOk('baz' in e, 'Property was not defined when told not to');
+        assert.equal(e.getBaz(), 10, '..but getter was defined');
+        
+        assert.equal(typeof e.testMethod, 'function', 'Method was defined too');
+        
+        
+    log = [];
+    e.foo = '10foo';
+        
+        assert.deepEqual(log, [['fooChange', '10foo', 'newFooValue']], 'Change event triggered');
+        
+    log = [];
+    e.bar = '10bar';
+        
+        assert.deepEqual(log, [['barChange', '10bar', 'barValue']], 'Change event triggered');
+        
+    log = [];
+    e.setBaz('xxx');
+    
+        assert.deepEqual(log, [['bazChange', '*xxx*', 10]], 'Change event triggered; new value decorated by onChange property method');
+        
+});
    
     

@@ -14,6 +14,11 @@ Amm.View.Html.Visual.prototype = {
     delay: undefined,
     
     setVVisible: function(visible) {
+        visible = !!visible;
+        // prevent bug that forces items to have 'display: block' or 'display: inline' on initialization
+        /*if (visible === this.getVVisible()) {
+            return;
+        }*/
         var delay = this.delay;
         if (delay === undefined) delay = Amm.View.Html.Visual.defaultDelay;
         jQuery(this._htmlElement)[visible? 'show' : 'hide'](delay);
@@ -21,7 +26,8 @@ Amm.View.Html.Visual.prototype = {
 
     getVVisible: function() {
         if (!this._htmlElement) return undefined;
-        var res = this._htmlElement.style.display !== "none";
+        var res = this._htmlElement.style.display !== "none" && 
+            this._htmlElement.style.height !== "0px";
         return res;
     },
 

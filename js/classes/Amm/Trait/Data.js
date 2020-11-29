@@ -189,11 +189,14 @@ Amm.Trait.Data.prototype = {
             dataObject.mm.subscribe('metaChange', this._handleDataMetaChange, this);
         }
         this.outDataObjectChange(dataObject, oldDataObject);
+        var tmp = this._validateMode;
+        this._validateMode = 0;
         this._dataUpdateModified();
         this._dataUpdateLock();
         this._dataCheckProperty();
         this._dataSyncMeta();
         this._dataSyncErrors();
+        this._validateMode = tmp;
         return true;
     },
 
@@ -304,8 +307,11 @@ Amm.Trait.Data.prototype = {
         this._dataUpdateModified();
         this.outDataHasPropertyChange(dataHasProperty, oldDataHasProperty);
         if (dataHasProperty) {
+            var tmp = this._validateMode;
+            this._validateMode = 0;
             this._dataUpdateValueSync();
             this._dataSyncMeta(this._dataObject.mm.getMeta(this._dataProperty));
+            this._validateMode = tmp;
         }
         return true;
     },

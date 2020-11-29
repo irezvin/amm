@@ -32,6 +32,31 @@ Created понеділок 05 жовтня 2020
 * **setToDefaults**: boolean - устанавливать ли defaults экземпляру, если он был предоставлен вместо options
 * **requirements**: если задан, экземпляр будет проверен на соответствие требованиям при помощи Amm.meetsRequirements(instance, requirements)
 
+==== Пример ====
+
+Для начала создадим два класса: человек (Person) с свойствами name, birthDate и occupation, и сотрудник (Employee) - класс-наследник, у которого будут также свойства position и salary.
+
+'''
+var Sample = {};
+
+Amm.registerNamespace('Sample', Sample);
+
+Amm.createClass('Sample.Person', 'Amm.WithEvents', {
+	prop__name: null,
+	prop__birthDate: null,
+	prop__occupation: null
+});
+
+Amm.createClass('Sample.Employee', 'Sample.Person', {
+	prop__position: null,
+	prop__salary: null
+});
+'''
+
+
+
+
+
 ===== Amm.constructMany: function(manyOptions, baseClass, defaults, keyToProperty, setToDefaults, requirements) =====
 
 Создает/конфигурирует/проверяет множество экземпляров при помощи Amm.constructInstance(). Может прописывать каждому экземпляру его ключ или индекс. Всегда возвращает массив (Array).

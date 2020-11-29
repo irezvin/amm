@@ -43,3 +43,17 @@ label {
     display: inline-block;
     min-width: 8em;
 }
+
+a {
+    color: gold;
+}
+
+a:visited {
+    color: darkgoldenrod;
+}
+
+.bg {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 1em;
+    border-radius: .5em;
+}

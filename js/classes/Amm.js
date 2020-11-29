@@ -423,7 +423,7 @@ Amm = {
         if (this._functions[strName]) return this._functions[strName];
         var p = strName.split('.'), r = this._namespaces, s = [];
         while (p.length && r) {
-            var h = p.splice(0, 1)[0];
+            var h = p.shift();
             s.push (h);
             r = r[h];
         }
@@ -632,6 +632,66 @@ Amm = {
                 },
             });
         }
+    },
+    
+    
+    /**
+     * Creates new Amm-style class (complete with __CLASS__ and __PARENT__ values); 
+     * registers it in specified namespace;. allows to define properties.
+     * 
+     * @param {string|null} name Path to new class (Namespace.SubNamespace.ClassName). Parent namespaces must be defined.
+     * @param {string|function|null} parent Constructor of parent class, or path to parent class. Optional.
+     * @param {object|null} proto Prototype of new class. Use prop__propName: defaultValue, prop__propName: options
+     * @param {function|null} constructorFn Constructor method. If not provided, default constructor is created.
+     * @returns {function} constructor of new class
+     */
+    createClass: function(name, parent, proto, constructorFn) {
+        if (name && typeof name !== 'string') throw Error("`name` must be a string");
+        // locate namespace
+        var ns = this._namespaces, p = name.split('.'), seg, parentConstructor;
+        if (name) {
+            while (p.length > 1) {
+                seg = p.shift();
+                if (!(seg in ns)) {
+                    throw Error("Cannot find namespace for class `name` (segment '" + seg + "' failed)");
+                }
+                ns = ns[seg];
+            }
+            if (p[0] in ns) throw Error("class or namespace '" + name + "' is already registered");
+        }
+        if (parent) parentConstructor = Amm.getFunction(parent);
+        if (!constructorFn) {
+            if (!parentConstructor) {
+                constructorFn = function(options) { 
+                    Amm.init(this, options); 
+                };
+            } else {
+                constructorFn = function() { 
+                    parentConstructor.apply(this, Array.prototype.slice.apply(arguments));
+                };
+            }
+        } else if (typeof constructorFn !== 'function') {
+            throw Error("`constructor` must be a function");
+        }
+        if (name) ns[p[0]] = constructorFn;
+        var pr = constructorFn.prototype, i, v;
+        if (name) pr[name] = '__CLASS__';
+        if (proto) for (i in proto) if (proto.hasOwnProperty(i)) {
+            v = proto[i];
+            if (i[4] === '_' && i.slice(0, 6) === 'prop__') {
+                if (v && typeof v === 'object') {
+                    Amm.createProperty(pr, i.slice(6), v.defaultValue, v.onChange, 
+                    'defineProperty' in v? v.defineProperty : true);
+                } else {
+                    Amm.createProperty(pr, i.slice(6), v, null, true);
+                }
+                continue;
+            }
+            pr[i] = v;
+        }
+        // weird notation to be ignored by dependency detection script
+        Amm['extend'](constructorFn, parentConstructor);
+        return constructorFn;
     },
     
     decorate: function(value, decorator, context) {
