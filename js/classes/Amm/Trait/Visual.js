@@ -57,16 +57,18 @@ Amm.Trait.Visual.prototype = {
     },
 
     setDisplayOrder: function(displayOrder) {
-        if (typeof displayOrder !== 'number') {
+        if (displayOrder !== null && typeof displayOrder !== 'number') {
             displayOrder = parseInt(displayOrder);
-            if (isNaN(displayOrder)) throw Error("`displayOrder` must be a number");
+            if (isNaN(displayOrder)) throw Error("`displayOrder` must be a null or a number");
         }
         var oldDisplayOrder = this._displayOrder;
         if (oldDisplayOrder === displayOrder) return;
-        if (this._displayParent && displayOrder >= this._displayParent.displayChildren.length) {
-            displayOrder = this._displayParent.displayChildren.length - 1;
+        if (displayOrder !== null) {
+            if (this._displayParent && displayOrder >= this._displayParent.displayChildren.length) {
+                displayOrder = this._displayParent.displayChildren.length - 1;
+            }
+            if (displayOrder < 0) displayOrder = 0;
         }
-        if (displayOrder < 0) displayOrder = 0;
         this._displayOrder = displayOrder;
         this.outDisplayOrderChange(displayOrder, oldDisplayOrder);
         return true;
@@ -77,7 +79,7 @@ Amm.Trait.Visual.prototype = {
     outDisplayOrderChange: function(displayOrder, oldDisplayOrder) {
         this._out('displayOrderChange', displayOrder, oldDisplayOrder);
     },
-
+    
     /**
      * A: setClassName('foo bar')
      * B: setClassName(true, 'foo') - will add 'foo' to class name
@@ -85,23 +87,7 @@ Amm.Trait.Visual.prototype = {
      */
     setClassName: function(classNameOrToggle, part) {
         var oldClassName = this._className;
-        var className;
-        if (part) {
-            var rx = new RegExp('\\s*\\b' + Amm.Util.regexEscape(part) + '\\b\\s*', 'g');
-            if (this._className === undefined) this._className = '';
-            if (!classNameOrToggle) {
-                if (this._className === undefined) this._className = '';
-                className = this._className.replace(rx, ' ').replace(/ {2,}/g, ' ');
-                if (className[0] === ' ') className = className.slice(1);
-                if (className[className.length - 1] === ' ') className = className.slice(0, -1);
-            } else {
-                if (!rx.exec(this._className)) 
-                    className = this._className + ' ' + part;
-                else className = this._className;
-            }
-        } else {
-            className = classNameOrToggle;
-        }
+        var className = Amm.Util.alterClassName(oldClassName, classNameOrToggle, part);
         if (className === oldClassName) return;
         this._className = className;
         this.outClassNameChange(className, oldClassName);
@@ -119,3 +105,5 @@ Amm.Trait.Visual.prototype = {
     },
     
 };
+
+// Amm.extend(Amm.Trait.Visual, Amm.Util); // required dependency

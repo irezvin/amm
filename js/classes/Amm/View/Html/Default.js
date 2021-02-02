@@ -119,7 +119,9 @@ Amm.View.Html.Default.prototype = {
             nodes[0].parentNode.insertBefore(newNodes[i], nodes[0]);
         }
         for (i = 0; i < nodes.length; i++) {
-            nodes[i].parentNode.removeChild(nodes[i]);
+            if (nodes[i].parentNode) {
+                nodes[i].parentNode.removeChild(nodes[i]);
+            }
         }
     },
 

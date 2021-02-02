@@ -3,7 +3,7 @@
 Amm.Instantiator.Proto = function(optionsOrProto, assocProperty, revAssocProperty) {
     
     Amm.Instantiator.call(this);
-    if (typeof optionsOrProto !== 'object' || optionsOrProto && !optionsOrProto.proto) {
+    if (typeof optionsOrProto !== 'object' || optionsOrProto && !('proto' in optionsOrProto)) {
         optionsOrProto = {
             proto: optionsOrProto
         };
@@ -13,7 +13,7 @@ Amm.Instantiator.Proto = function(optionsOrProto, assocProperty, revAssocPropert
     }
     if (assocProperty) optionsOrProto.assocProperty = assocProperty;
     if (revAssocProperty) optionsOrProto.revAssocProperty = revAssocProperty;
-    Amm.init(this, optionsOrProto);
+    Amm.WithEvents.call(this, optionsOrProto);
 
 };
 
@@ -23,6 +23,11 @@ Amm.Instantiator.Proto.prototype = {
     
     proto: null,
     
+    /**
+     *  when both instantiator.`proto` and `object` argument to construct() 
+     *  are plain objects, `object` will override `proto` to get final "prototype"
+     *  of instance that will be created
+     */
     overrideProto: false,
     
     isElement: false,
@@ -31,19 +36,67 @@ Amm.Instantiator.Proto.prototype = {
     
     revAssocProperty: null,
     
+    protoCallback: null,
+    
+    protoCallbackScope: null,
+    
+    instanceCallback: null,
+    
+    instanceCallbackScope: null,
+    
+    // required/default class in Amm.constructInstance
+    requiredClass: null,
+    
     construct: function(object) {
-        if (!this.proto) throw Error("`proto` must be set");
-        var proto = this.proto;
-        var res;
-        if (this.overrideProto && object && typeof object === 'object' && !Amm.getClass(object)) {
-            proto = Amm.override({}, proto);
-            Amm.override(proto, object);
+        var proto = this.generatePrototype(object);
+        var instance;
+        if (this.isElement) instance = new Amm.Element(proto);
+            else instance = Amm.constructInstance(proto, this.requiredClass); 
+        if (this.assocProperty) Amm.setProperty(instance, this.assocProperty, object);
+        if (this.revAssocProperty) Amm.setProperty(object, this.revAssocProperty, instance);
+        this.applyInstanceCallbacks(instance, object);
+        return instance;
+    },
+    
+    generatePrototype: function(object) {
+        var proto;
+        if (this.proto && typeof this.proto === 'object' && !Amm.getClass(this.proto) &&
+            !Amm.isDomNode(this.proto)
+        ) {
+            proto = Amm.override({}, this.proto);
+            if (this.overrideProto && object && typeof object === 'object' && !Amm.getClass(object)) {
+                Amm.override(proto, object);
+            }
+        } else {
+            proto = this.proto || {};
         }
-        if (this.isElement) res = new Amm.Element(proto);
-            else res = Amm.constructInstance(proto, null); 
-        if (this.assocProperty) Amm.setProperty(res, this.assocProperty, object);
-        if (this.revAssocProperty) Amm.setProperty(object, this.revAssocProperty, res);
-        return res;
+        var ret = {proto: proto};
+        this.applyProtoCallbacks(ret, object);
+        return ret.proto;
+    },
+    
+    applyProtoCallbacks: function(ret, object) {
+        if (!this.protoCallback && !this._subscribers.protoCallback) return;
+        if (this.protoCallback) {
+            this.protoCallback.call(this.protoCallbackScope || this, ret, object);
+        }
+        this.outProtoCallback(ret, object);
+    },
+    
+    outProtoCallback: function(ret, object) {
+        return this._out('protoCallback', ret, object);
+    },
+    
+    applyInstanceCallbacks: function(instance, object) {
+        if (!this.instanceCallback && !this._subscribers.instanceCallback) return;
+        if (this.instanceCallback) {
+            this.instanceCallback.call(this.instanceCallbackScope || this, instance, object);
+        }
+        this.outInstanceCallback(instance, object);
+    },
+    
+    outInstanceCallback: function(instance, object) {
+        return this._out('instanceCallback', instance, object);
     },
     
     destruct: function(object) {
@@ -54,5 +107,5 @@ Amm.Instantiator.Proto.prototype = {
     
 };
 
-
+Amm.extend(Amm.Instantiator.Proto, Amm.WithEvents);
 Amm.extend(Amm.Instantiator.Proto, Amm.Instantiator);

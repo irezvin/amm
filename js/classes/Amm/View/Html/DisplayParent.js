@@ -24,14 +24,32 @@ Amm.View.Html.DisplayParent.prototype = {
     
     scanForDisplayOrder: true,
     
+    createItemHtml: function(item) {
+        // To-be-overridden
+        console.log('foo');
+        return "<div>Overwrite createItemHtml!</div>";
+    },
+    
     getItemHtmlElement: function(item, dontThrow) {
         var cv = this._getItemView(item, dontThrow);
         var res = null;
         if (cv) res = cv.getHtmlElement();
+        if (!res && item.constructDefaultViews !== Amm.Element.prototype.constructDefaultViews) {
+            
+            // TODO: we have to create default view(s) and add its' element(s)???
+            
+            var v = new Amm.View.Html.Default({
+                replaceOwnHtmlElement: true,
+                htmlElement: document.createElement('div'),
+                element: item, 
+            });
+            res = v.getHtmlElement();
+            if (res) this._htmlElement.appendChild(res);
+        }
         if (!res && !dontThrow) {
             Error("Collection item doesn't have view with htmlElement");
         }
-        if (!res[this._mappingProp]) {
+        if (res && !res[this._mappingProp]) {
             res[this._mappingProp] = item;
             item[this._mappingProp] = res;
         }

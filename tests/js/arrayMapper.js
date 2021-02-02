@@ -350,5 +350,17 @@
         
     });
     
+    QUnit.test("ArrayMapper: sort order maintenance", function(assert) {
+        
+        var src = new Amm.Collection(mkSample().cars);
+        var dest = new Amm.Collection();
+        var am = new Amm.ArrayMapper({src: src, dest: dest});
+        var ord = Amm.getProperty(src.getItems(), 'brand');
+        src.moveItem(3, 0);
+        var ordSrc = Amm.getProperty(src.getItems(), 'brand');
+        var ordDest = Amm.getProperty(dest.getItems(), 'brand');
+        assert.deepEqual(ordSrc, ordDest);
+    });
+    
     
 }) ();

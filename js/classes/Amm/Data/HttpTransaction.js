@@ -390,3 +390,6 @@ Amm.Data.HttpTransaction.prototype = {
 
 Amm.extend(Amm.Data.HttpTransaction, Amm.Data.Transaction);
 
+// We need to specify dependency to Amm.Remote.Transport.JqXhr because it is part of prototype
+// Amm.extend(Amm.Data.HttpTransaction, Amm.Remote.Transport.JqXhr);
+

@@ -720,6 +720,7 @@ Amm.ArrayMapper.prototype = {
             srcItem = changes.deleted[i][0];
             srcIndex = changes.deleted[i][1];
             srcEntry = this._srcEntries[srcIndex];
+            if (!srcEntry) continue; // TODO: Why this happens on Amm.Table.cleanup()?
             destEntry = srcEntry[Amm.ArrayMapper._SRC_REF_TO_DEST];
             destItem = destEntry[Amm.ArrayMapper._DEST_REF_TO_SRC];
             if (destItem !== undefined) {
@@ -744,8 +745,9 @@ Amm.ArrayMapper.prototype = {
         for (i = 0, l = changes.moved.length; i < l; i++) {
             srcItem = changes.moved[i][0];
             srcIndex = changes.moved[i][1];
-            newSrcIndex = changes.moved[i][1];
+            newSrcIndex = changes.moved[i][2];
             srcEntry = this._srcEntries[srcIndex];
+            if (!srcEntry) continue; // TODO: Why this happens on Amm.Table.cleanup()?
             srcEntry[Amm.ArrayMapper._SRC_INDEX] = newSrcIndex;
             destEntry = srcEntry[Amm.ArrayMapper._SRC_REF_TO_DEST];
             destEntry[Amm.ArrayMapper._DEST_SORT_VALUE] = this._getSortValue(srcItem, newSrcIndex);

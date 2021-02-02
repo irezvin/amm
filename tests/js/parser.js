@@ -197,7 +197,7 @@
             
             "a.b::arg1 :: :: arg3":
                 ["PropertyAccess",["Identifier","a"],["Constant","b"],["PropertyArgs",[["Constant","arg1"], ["Constant", undefined], ["Constant", "arg3"]],false],false,null],
-            
+        
             "a.b::arg1 :: :: :: arg3":
                 ["PropertyAccess",["Identifier","a"],["Constant","b"],["PropertyArgs",[["Constant","arg1"], ["Constant", undefined], ["Constant", undefined], ["Constant", "arg3"]],false],false,null],
 

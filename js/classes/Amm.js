@@ -165,8 +165,11 @@ Amm = {
             throw Error("Cannot augment: `instance` already implements same interfaces as the `traitInstance`: "
                 + conflicts.join(', ') + ")");
         for (var i in traitInstance) if (i.slice(0, 2) !== '__') {
-            if (instance[i] === undefined || typeof instance[i] === 'function') 
+            if (instance[i] === undefined || typeof instance[i] === 'function')
+            {
+                if (instance[i] !== Amm.Element['prototype'][i]) continue;
                 instance[i] = traitInstance[i];
+            }
         }
         if (typeof traitInstance.__augment === 'function') {
             traitInstance.__augment.call(instance, traitInstance, options);
@@ -348,7 +351,7 @@ Amm = {
     
     is: function(item, className, throwIfNot) {
         if (className instanceof Array) {
-            for (var j = 0, n = j.length; j < n; j++) if (Amm.is(item, className[j])) return true;
+            for (var j = 0, n = className.length; j < n; j++) if (Amm.is(item, className[j])) return true;
             if (throwIfNot) {
                 var argname = typeof throwIfNot === 'string'? throwIfNot : '`item`';
                 throw Error(argname + " must be an instance of " + className.join("|") + "; given: " + Amm.describeType(item));
@@ -621,9 +624,11 @@ Amm = {
             };
         }
         if (defineProperty) {
+            var enumerable = defineProperty.enumerable !== undefined? defineProperty.enumerable : true;
+            var configurable = defineProperty.configurable !== undefined? defineProperty.configurable : true;
             Object.defineProperty(target, l, {
-                enumerable: true,
-                configurable: true,
+                enumerable:  enumerable,
+                configurable: configurable,
                 get: function() { 
                     return this[getterName](); 
                 }, 
@@ -1053,6 +1058,58 @@ Amm = {
         }
         res = Amm.Array.unique(res);
         return res;
+    },
+    
+    /**
+     * Subscribes to new association events, optionally unsubscribes from old association' events.
+     * Is done to automate tedious task of procedurally re-subscribing when associated object
+     * changes.
+     * 
+     * `event` may be string (than handler is required), Array (list of events, that will have
+     * the same handler), or hash in format event: handler.
+     * 
+     * `handler` can be string, fn or Array[handlerFn, extra] where extra is additional argument
+     * that will be passed to the handler.
+     * 
+     * @param {Amm.WithEvents} assoc
+     * @param {Amm.WithEvents} oldAssoc
+     * @param scope
+     * @param {string|object|Array} event
+     * @param {string} handler
+     */
+    subUnsub: function(assoc, oldAssoc, scope, event, handler) {
+        if (event && typeof event === 'object') {
+            if (event instanceof Array) {
+                for (var i = 0, l = event.length; i < l; i++) {
+                    this.subUnsub(assoc, oldAssoc, scope, event[i], handler);
+                }
+            } else {
+                if (handler) {
+                    throw Error(
+                        "Amm.subUnsub: when `event` is a hash, `handler` must not be set"
+                    );
+                }
+                for (i in event) if (event.hasOwnProperty(i)) {
+                    this.subUnsub(assoc, oldAssoc, scope, i, event[i]);
+                }
+            }
+            return;
+        }
+        if (!handler) throw Error("`handler` is required");
+        var extra;
+        if (handler instanceof Array) {
+            extra = handler[1];
+            handler = handler[0];
+        }
+        if (oldAssoc) oldAssoc.unsubscribe(event, handler, scope, extra);
+        if (assoc) assoc.subscribe(event, handler, scope, extra);
+    },
+    
+    isDomNode: function(object) {
+        return object
+            && (typeof object === 'object') 
+            && ('nodeType' in object)
+            && ('parentNode' in object);
     }
     
 };

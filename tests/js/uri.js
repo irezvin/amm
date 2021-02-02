@@ -112,12 +112,14 @@
             ['mailto:john.doe@example.com', 'Mailto protocol'],
             ['//example.com?whatever',      'Non-RFC query string'],
             ['//example.com?whatever=',     'Empty param in query string'],
+            ['//example.com?' + encodeURIComponent('юникод') + '=' + encodeURIComponent('еще немного юникода'),     'unicode param'],
         ];
         
         for (var i = 0; i < tests.length; i++) {
-            assert.equal((new Amm.Remote.Uri(tests[i][0])).toString(), tests[i][0], tests[i][1]);
+            var u = new Amm.Remote.Uri(tests[i][0]);
+            u._strQuery = null;
+            assert.equal(u.toString(), tests[i][0], tests[i][1]);
         }
-        
         
         log = [];
         u1.setUri('https://example.com');

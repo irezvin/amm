@@ -22,16 +22,7 @@ Amm.Trait.DisplayParent.prototype = {
     
     __augment: function(traitInstance, options) {
         
-        var proto = {
-            requirements: ['Visual'],
-            assocInstance: this,
-            assocProperty: 'displayParent',
-            indexProperty: 'displayOrder',
-            observeIndexProperty: true,
-            assocEvents: {
-                cleanup: '_handleDisplayChildCleanup'
-            }
-        };
+        var proto = this._getDefaultDisplayChildrenPrototype();
         
         if (this._displayChildrenPrototype) {
             Amm.overrideRecursive(proto, this._displayChildrenPrototype);
@@ -40,6 +31,19 @@ Amm.Trait.DisplayParent.prototype = {
         this.displayChildren = new Amm.Collection(proto);
         
         Amm.Element.regInit(this, '99_DisplayParent_observe', this._observeDisplayChildrenForComponent);
+    },
+    
+    _getDefaultDisplayChildrenPrototype: function() {
+        return {
+            requirements: ['Visual'],
+            assocInstance: this,
+            assocProperty: 'displayParent',
+            indexProperty: 'displayOrder',
+            observeIndexProperty: true,
+            assocEvents: {
+                cleanup: '_handleDisplayChildCleanup'
+            }
+        };  
     },
     
     setDisplayChildrenPrototype: function(displayChildrenPrototype) {

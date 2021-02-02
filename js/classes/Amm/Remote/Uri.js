@@ -88,7 +88,11 @@ Amm.Remote.Uri.prototype = {
     _oldUri: null,
     
     _strQuery: null,
-
+    
+    // will exclude empty query string arguments like ?foo=
+    // (this will make parsing-and-producing queries asymmetric)
+    _skipEmptyArgs: false,
+    
     setUri: function(uri, part) {
         if (part === undefined || part === null || part === '') {
             if (uri && uri['Amm.Remote.Uri']) {
@@ -218,17 +222,19 @@ Amm.Remote.Uri.prototype = {
         } else if (data instanceof Array) {
         	if (data.length) {
 	            for (i = 0; i < data.length; i++) {
-                        res = res + this._buildQuery(data[i], paramName? paramName + '[' + i + ']' : i);
+                    res = res + this._buildQuery(data[i], paramName? paramName + '[' + i + ']' : i);
 	            }
         	} else {
+                if (!this._skipEmptyArgs) {
                     res = '&' + paramName + '=';
-        	}
-        } else {
-            if ((typeof data) === 'object') {
-                for (i in data) if (data.hasOwnProperty(i)) {
-                    res = res + this._buildQuery(data[i], paramName? paramName + '[' + i + ']' : i);
                 }
-            } else {
+            }
+        } else if ((typeof data) === 'object') {
+            for (i in data) if (data.hasOwnProperty(i)) {
+                res = res + this._buildQuery(data[i], paramName? paramName + '[' + i + ']' : i);
+            }
+        } else {
+            if (!this._skipEmptyArgs || ('' + data).length) {
                 res = '&' + paramName + '=' + encodeURIComponent(data);
             }
         }
@@ -246,9 +252,10 @@ Amm.Remote.Uri.prototype = {
     	var pairs = string.split(delim), l = pairs.length, res = [];
     	for (var i = 0; i < l; i++) {
             var nameVal = pairs[i].split(eq, 2), path = nameVal[0].replace(']', '');
+            path = decodeURIComponent(path);
             path = path.replace(/\]/g, '').split('[');
             if (nameVal.length < 2) nameVal.push('');
-            res = Amm.Util.setByPath(res, path, nameVal[1]);
+            res = Amm.Util.setByPath(res, path, decodeURIComponent(nameVal[1]));
     	}
     	return res;
     },
@@ -410,8 +417,18 @@ Amm.Remote.Uri.prototype = {
         path = '/' + path.join('/');
         res._path = path;
         return res;
-    }
+    },
     
+    setSkipEmptyArgs: function(skipEmptyArgs) {
+        var oldSkipEmptyArgs = this._skipEmptyArgs;
+        if (oldSkipEmptyArgs === skipEmptyArgs) return;
+        this.beginUpdate();
+        this._skipEmptyArgs = skipEmptyArgs;
+        this.endUpdate();
+        return true;
+    },
+
+    getSkipEmptyArgs: function() { return this._skipEmptyArgs; },
     
 };
 

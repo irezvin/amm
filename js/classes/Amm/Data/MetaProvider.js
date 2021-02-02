@@ -67,6 +67,7 @@ Amm.Data.MetaProvider.prototype = {
     _combineMeta: function() {
         if (this._combinedMeta) return this._combinedMeta;
         if (!this._metaProvider) {
+            if (!this._meta) this._meta = {};
             this._combinedMeta = this._meta;
             return this._meta;
         }

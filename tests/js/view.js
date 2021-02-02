@@ -355,9 +355,6 @@
         
     });
     
-    /*
-     * This test is the same as previous one, except element views' have two sibling HTML Nodes
-     */
     QUnit.test("Amm.View.Html.Expressions", function(assert) {
 
         var fx = jQuery('#qunit-fixture');        
@@ -446,6 +443,78 @@
                 'new element observed: setting class works (1)');
             assert.equal(div.css('background-color'), 'rgb(255, 192, 203)',
                 'new element observed: setting style works');
+        
+        Amm.cleanup(elem, elem1);
+        
+    });
+    
+    QUnit.test("Amm.View.Html.Expressions: paths and default html", function(assert) {
+
+        var fx = jQuery('#qunit-fixture');        
+        var div = jQuery('<div></div>');
+        fx.append(div);
+        
+        var elem = new Amm.Element({
+            properties: {
+                name: 'John',
+                surname: 'Doe',
+                age: 17,
+                gender: 'male',
+                married: false,
+                employeed: true
+            }
+        });
+        
+        var elem1 = new Amm.Element({
+            properties: {
+                name: 'Karen',
+                surname: 'Dobbs',
+                age: 23,
+                gender: 'female',
+                married: true,
+                employeed: false
+            }
+        });
+        
+        var v = new Amm.View.Html.Expressions({
+            defaultHtml: 
+                    '<p>Name: <span class="name"></span></p>'
+                +   '<p>Surname: <span class="surname"></span></p>'
+                +   '<p class="married">Married</p>'
+                +   '<input type="checkbox" name="employeed" />'
+                +   '<input type="text" name="age" />',
+            map: {
+                '.name:::_html': 'name',
+                '.name:::data-value': 'name',
+                '.surname:::_html': 'surname',
+                '.surname:::data-value': 'surname',
+                '.married:::_visible': 'married',
+                'input[name=employeed]:::dom__checked': 'employeed',
+                'input[name=age]:::jquery__val': 'age',
+            }
+        });
+        
+        v.setElement(elem);
+        v.setHtmlElement(div);
+        
+            assert.deepEqual(div.html(), 
+                    '<p>Name: <span class="name" data-value="John">John</span></p>'
+                +   '<p>Surname: <span class="surname" data-value="Doe">Doe</span></p>'
+                +   '<p class="married" style="display: none;">Married</p>'
+                +   '<input type="checkbox" name="employeed">'
+                +   '<input type="text" name="age">',
+                "mapping of internal elements works");
+                
+            assert.deepEqual(div.find("input[name=employeed]")[0].checked, true, 'dom prop set');
+            assert.deepEqual(div.find("input[name=age]").val(), "17", 'dom prop set');
+                
+            var nameEl = div.find('.name');
+            var surnameEl = div.find('.surname');
+                
+        v.setElement(elem1);
+        
+        assert.deepEqual(nameEl.html(), 'Karen');
+        assert.deepEqual(surnameEl.html(), 'Dobbs');
         
         Amm.cleanup(elem, elem1);
         

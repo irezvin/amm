@@ -170,6 +170,38 @@ Amm.Util = {
        var res = {};
        for (var i in hash) if (hash.hasOwnProperty(i)) res[hash[i]] = i;
        return res;
-    }
+    },
+    
+    /**
+     * Alters CSS 'class' attribute by optionally adding or removing one or more parts.
+     * Returns new value for the attribute.
+     * 
+     * @param {string} className Original 'class' attribute value to modify
+     * @param {type} classNameOrToggle new class name or true/false to add/remove `part`
+     * @param {type} part Part to add or remove (required if `classNameOrToggle` is provided)
+     * @returns {string} new class attribute value
+     */
+    alterClassName: function(className, classNameOrToggle, part) {
+        if (!className) {
+            className = '';
+        }
+
+        if (!part) return classNameOrToggle;
+        else if (!className) return classNameOrToggle? part : className;
+        
+        var res = className;
+        
+        var rx = new RegExp('\\s*\\b' + Amm.Util.regexEscape(part) + '\\b\\s*', 'g');
+        if (!classNameOrToggle) {
+            res = res.replace(rx, ' ').replace(/ {2,}/g, ' ');
+            if (res[0] === ' ') res = res.slice(1);
+            if (res[res.length - 1] === ' ') res = res.slice(0, -1);
+        } else {
+            if (!rx.exec(res)) 
+                res += ' ' + part;
+        }
+        return res;
+    },
+    
     
 };

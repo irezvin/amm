@@ -12,24 +12,24 @@ table.data th {
     white-space: nowrap;
 }
 
-table.data thead:first-of-type th:first-child {
+table.data thead tr:first-child th:first-child {
     border-radius: 1em 0 0 0;
 }
 
-table.data thead:first-of-type th:last-child {
+table.data tr:first-child th:last-child {
     border-radius: 0 1em 0 0;
 }
 
-table.data thead:first-of-type th {
+table.data tr:not(:last-child) th {
     padding-bottom: 0;
 }
 
-table.data thead:nth-child(2) th {
+table.data tr:not(:first-child) th {
     padding-top: 0;
     padding-bottom: 1em;
 }
 
-table.data thead:first-of-type th:first-child {
+table.data tr:first-child th:first-child {
     border-radius: 1em 0 0 0;
 }
 
@@ -47,6 +47,29 @@ table.data thead th, table.data tbody tr:nth-child(even) td {
     
 table.data tbody tr:nth-child(odd) td {
     background-color: rgba(0, 0, 0, 0.3);
+}
+
+table.data thead th.light, 
+
+table.data tbody tr:nth-child(even) td.light {
+    background-color: rgba(32, 32, 32, 0.25);
+}
+
+table.data tbody tr:nth-child(even):hover td.light {
+    background-color: rgba(255, 219, 0, 0.9);
+};
+    
+table.data tbody tr:nth-child(odd) td.light {
+    background-color: rgba(32, 32, 32, 0.1);
+}
+
+table.data tbody tr:nth-child(odd):hover td.light {
+    background-color: rgba(255, 219, 0, 1);
+};
+
+
+table.data .border {
+    border: 2px solid gold;
 }
 
 table.data thead:last-of-type th {

@@ -10,6 +10,13 @@
         <div data-amm-e="{
                 extraTraits: t.Component, 
                 id: cnt,
+                prop__state: {
+                    __construct: Amm.State,
+                    implementation: {
+                        class: Amm.State.Hash
+                    }
+                },
+                prop__filter: 'Bishkek',
                 prop__records: {
                     __construct: Amm.Remote.Fetcher,
                     firstDelay: 300,
@@ -25,32 +32,37 @@
                 <!-- repeater children container -->
                 <table style="width: 100%" class="data">
                 <thead>
-                    <th style="width: available">Name</th>
-                    <th style="width: 100px">Procurement Ref</th>
-                    <th style="width: 100px">Location</th>
-                </thead>
-                <thead class="flt">
-                    <th><input type="text" data-amm-e="{
-                        prop__q: name,
-                        expr__query: {
-                            src: 'this.value.split(/ +/)',
-                            writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
-                        }
-                    }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
-                    <th><input type="text" data-amm-e="{
-                        prop__q: procurementRef,
-                        expr__query: {
-                            src: 'this.value.split(/ +/)',
-                            writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
-                        }
-                    }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
-                    <th><input type="text" data-amm-e="{
-                        prop__q: location,
-                        expr__query: {
-                            src: 'this.value.split(/ +/)',
-                            writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
-                        }
-                    }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
+                    <tr>
+                        <th style="width: available">Name</th>
+                        <th style="width: 100px">Procurement Ref</th>
+                        <th style="width: 100px">Location</th>
+                    </tr>
+                    <tr lass="flt">
+                        <th><input type="text" data-amm-e="{
+                            prop__q: name,
+                            sync__value: 'cnt.state.data::filterName::\'\'',
+                            expr__query: {
+                                src: 'this.value.split(/ +/)',
+                                writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
+                            }
+                        }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
+                        <th><input type="text" data-amm-e="{
+                            prop__q: procurementRef,
+                            sync__value: 'cnt.state.data::filterProcRef::\'\'',
+                            expr__query: {
+                                src: 'this.value.split(/ +/)',
+                                writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
+                            }
+                        }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
+                        <th><input type="text" data-amm-e="{
+                            prop__q: location,
+                            sync__value: 'cnt.state.data::filterLocation::\'\'',
+                            expr__query: {
+                                src: 'this.value.split(/ +/)',
+                                writeProperty: 'this.component.records.requestProducer.uri::{\'f[\'+ this.q +\']\'}',
+                            }
+                        }" data-amm-v="[v.Visual, {class: v.Input, updateOnKeyUp: true}]" placeholder="Filter..." /></th>
+                    </tr>
                 </thead>
                 <tbody data-amm-e="{
                        id: rpt, 

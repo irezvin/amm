@@ -9,13 +9,15 @@ Amm.Element = function(options) {
     this._beginInit();
     this._cleanupList = [];
     this._expressions = {};
-    if (!options) {
-        Amm.WithEvents.call(this);
-        this._endInit();
-        return;
-    }
+    
+//    if (!options) {
+//        Amm.WithEvents.call(this);
+//        this._endInit();
+//        return;
+//    }
 
-    options = Amm.Element._checkAndApplyOptionsBuilderSource(options);
+    if (options) options = Amm.Element._checkAndApplyOptionsBuilderSource(options);
+    else options = {};
     
     // since we delete keys in options, we must clone the hash in case it will be reused
     if (options && typeof options === 'object') {
