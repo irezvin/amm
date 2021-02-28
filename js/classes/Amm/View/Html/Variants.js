@@ -97,8 +97,8 @@ Amm.View.Html.Variants.scanNodeForVairants = function(node) {
             console.error(Amm.View.Html.Variants.ERROR_INVALID_ATTRIBUTE, n);
             throw Error(n);
         }
-        id = cond._id || 'condition_' + conditions.length;
-        cond._id = id;
+        id = cond.id || 'condition_' + conditions.length;
+        cond.id = id;
         conditions.push(cond);
         prototypes[id] = n;
     }

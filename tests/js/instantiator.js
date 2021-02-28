@@ -156,10 +156,10 @@ QUnit.test("Instantiator.Variants: filter and objects' observation", function(as
         filter: {
             conditions: [
                 {
-                    _id: 'type1', type: 1
+                    id: 'type1', props: { type: 1 }
                 },
                 {
-                    _id: 'type2', type: 2
+                    id: 'type2', props: { type: 2 }
                 }
             ]
         },
@@ -174,7 +174,7 @@ QUnit.test("Instantiator.Variants: filter and objects' observation", function(as
         rb.push([Amm.getProperty(objects, 'id'), matches]);
     });
     
-        assert.deepEqual(Amm.getClass(ins.getFilter()), 'Amm.Filter',
+        assert.deepEqual(Amm.getClass(ins.getFilter()), 'Amm.MultiObserver.Filter',
             'Instantiator created and associated filter using provided prototype');
         
         assert.deepEqual(ins.getFilterIsAggregate(), true, 
@@ -270,10 +270,10 @@ QUnit.test("Instantiator.Variants.allowNullInstance", function(assert) {
     
     // now things will become a bit more interesting
     
-    var f = new Amm.Filter({
+    var f = new Amm.MultiObserver.Filter({
         conditions: [
-            {r: 'a', _id: 'a'},
-            {r: 'b', _id: 'b'}
+            { props: {r: 'a'}, id: 'a' },
+            { props: {r: 'b'}, id: 'b' }
         ]
     });
     
@@ -379,7 +379,7 @@ QUnit.test("Instantiator.Variants: allow to pass nulls or non-objects to constru
         allowNullInstance: true,
         filter: {
             conditions: [
-                {dummyProp: 'dummyVal', _id: 'a'},
+                { props: { dummyProp: 'dummyVal' }, id: 'a'},
             ]
         },
         prototypes: {

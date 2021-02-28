@@ -34,6 +34,11 @@ Amm.View.Abstract.Input.prototype = {
     },
     
     setVLocked: function(locked) {
+    },
+    
+    _handleElementActualizeValue: function() {
+        if (!this._element) return;
+        this._element.setValue(this.getVValue());
     }
     
 };

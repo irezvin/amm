@@ -1,12 +1,12 @@
 /* global Amm */
 
-Amm.Filter = function(options) {
-    Amm.FilterSorter.call(this, options);
+Amm.MultiObserver.Filter = function(options) {
+    Amm.MultiObserver.Abstract.call(this, options);
 };
 
-Amm.Filter.prototype = {
+Amm.MultiObserver.Filter.prototype = {
     
-    'Amm.Filter': '__CLASS__',
+    'Amm.MultiObserver.Filter': '__CLASS__',
     
     _oldMatchingObjects: null,
     
@@ -33,8 +33,8 @@ Amm.Filter.prototype = {
         if (id) {
             if (conditions) {
                 if (typeof conditions !== 'object') throw Error("setConditions(`conditions`, `id`): `conditions` must be a null or an object");
-                conditions._id = id;
-                condition = this._createCondition(conditions);
+                conditions.id = id;
+                condition = this._createCondition(conditions, id);
             }
             this.beginUpdate();
             for (i = 0, l = this._observers.length; i < l; i++) {
@@ -100,7 +100,7 @@ Amm.Filter.prototype = {
     
     beginUpdate: function() {
         if (!this._updateLevel) this._oldMatchingObjects = this.getMatchingObjects();
-        Amm.FilterSorter.prototype.beginUpdate.call(this);
+        Amm.MultiObserver.Abstract.prototype.beginUpdate.call(this);
         this._matchingObjects = null;
     },
     
@@ -121,18 +121,21 @@ Amm.Filter.prototype = {
     _createCondition: function(condition) {
 
         if (condition && typeof condition === 'string') {
-            console.log(condition);
-            condition = {_expr: condition};
+            condition = {expression: condition};
         }
 
         if (!condition || typeof condition !== 'object')
-            throw Error("filter condition must be an object, given: " 
+            throw Error("filter condition must be a string or an object, given: " 
                 + Amm.describeType(condition));
-
-        if (condition._expr) return new Amm.Filter.ExpressionCondition(this, condition);
-
-        return new Amm.Filter.PropsCondition(this, condition);
-
+        
+        if (!condition.class) {
+            condition.class = condition.expression? 
+                Amm.MultiObserver.Filter.ExpressionCondition : 
+                Amm.MultiObserver.Filter.PropsCondition;
+        }
+        
+        return Amm.constructInstance(condition, Amm.MultiObserver.Filter.Condition,
+            {multiObserver: this}, true);
     },
     
     setRequireAll: function(requireAll) {
@@ -192,7 +195,7 @@ Amm.Filter.prototype = {
         var res;
         for (var i = 0, l = this._observers.length; i < l; i++) {
             res = false;
-            if (this._observers[i].match(object))
+            if (this._observers[i].getValue(object))
                 res = this._observers[i].id || i + 1;
             if (this._requireAll) {
                 if (!res) return false;
@@ -210,4 +213,4 @@ Amm.Filter.prototype = {
 
 };
 
-Amm.extend(Amm.Filter, Amm.FilterSorter);
+Amm.extend(Amm.MultiObserver.Filter, Amm.MultiObserver.Abstract);

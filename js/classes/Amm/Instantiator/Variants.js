@@ -219,8 +219,8 @@ Amm.Instantiator.Variants.prototype = {
     setFilter: function(filter) {
         var isAggregate = false;
         if (filter) {
-            if (typeof filter === 'object' && !filter['Amm.Filter']) {
-                filter = Amm.constructInstance(filter, 'Amm.Filter');
+            if (typeof filter === 'object' && !filter['Amm.MultiObserver.Filter']) {
+                filter = Amm.constructInstance(filter, 'Amm.MultiObserver.Filter');
                 isAggregate = true;
             }
         }  else {

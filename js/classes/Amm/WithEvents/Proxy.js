@@ -5,6 +5,8 @@ Amm.WithEvents.Proxy = function() {
 
 Amm.WithEvents.Proxy.prototype = {
     
+    'Amm.WithEvents.Proxy': '__CLASS__',
+    
     subscribeObject: function(object, eventName, handler, scope, extra, decorator) {
         return object.subscribe(eventName, handler, scope, extra, decorator);
     },

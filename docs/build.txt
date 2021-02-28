@@ -1,0 +1,33 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.6
+Creation-Date: 2021-02-26T11:15:59+02:00
+
+====== Структура файлов и сборка ======
+Created Friday 26 February 2021
+
+Дерево файлов в Amm выглядит таким образом:
+
+Amm.js
+Amm/Operator.js
+Amm/Operator/Range.js
+Amm/Operator/Range/Condition.js
+
+Принципы:
+* принцип "один класс-один файл"
+* класс или namespace с именем Root.Parent.Child находится в Root/Parent/Child.js
+
+и так далее.
+
+Для сборки используется утилита из build/amm-utils.php. Она может использоваться
+* а) для сборки в один файл (при наличии uglifyjs); 
+* б) для генерации списка тегов <script> в нужном порядке.
+
+Сборка в единый файл осуществляется следующим способом:
+
+* параметр сборки - имя "корневого" namespace (в данном случае Amm)
+* все классы у нас имеют формат RootNamespace.SubIdent.SubSubIdent и так далее (с большой буквы, через точку)
+* первый вид зависимости: имена классов
+	* Class.Name.SubName.prototype означает, что в данном файле определяется класс Class.Name.SubName, и что он обязателно требует включения файлов Class.js, Class/Name.js и Class.SubName.js
+* второй вид зависимости: наследование: строчка Amm.extends(Child.Class.Name, Parent.Class.Name) означает, что **до** файла, в котором встретилось это сочетание, нужно будет загрузить Parent/Class/Name.js
+* принудительно (редкий случай): можно написать // Amm.extends(...), то есть в js код выполнен не будет, а скрипт сборки определит это, как зависимости
+

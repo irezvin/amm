@@ -124,7 +124,7 @@ Amm.Trait.Repeater.prototype = {
         var res = {
             dest: this.displayChildren,
             filter: {
-                'class': Amm.Filter,
+                'class': Amm.MultiObserver.Filter,
                 conditions: conditions
             },
             instantiator: instantiatorPrototype

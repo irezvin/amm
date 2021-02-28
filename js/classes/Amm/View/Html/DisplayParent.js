@@ -26,7 +26,6 @@ Amm.View.Html.DisplayParent.prototype = {
     
     createItemHtml: function(item) {
         // To-be-overridden
-        console.log('foo');
         return "<div>Overwrite createItemHtml!</div>";
     },
     
@@ -38,9 +37,13 @@ Amm.View.Html.DisplayParent.prototype = {
             
             // TODO: we have to create default view(s) and add its' element(s)???
             
+            var el = document.createElement('div');
+            
+            el.setAttribute('data-amm-dv', true);
+            
             var v = new Amm.View.Html.Default({
                 replaceOwnHtmlElement: true,
-                htmlElement: document.createElement('div'),
+                htmlElement: el,
                 element: item, 
             });
             res = v.getHtmlElement();

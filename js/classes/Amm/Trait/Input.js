@@ -78,6 +78,10 @@ Amm.Trait.Input.prototype = {
     },
 
     getFocusedView: function() { return this._focusedView; },
+    
+    focus: function() {
+        this.setFocusedView(this.getUniqueSubscribers('Amm.View.Abstract.Input')[0] || null);
+    },
 
     outFocusedViewChange: function(focusedView, oldFocusedView) {
         this._out('focusedViewChange', focusedView, oldFocusedView);
@@ -111,6 +115,14 @@ Amm.Trait.Input.prototype = {
  
     outLockedChange: function(locked, oldLocked) {
         this._out('lockedChange', locked, oldLocked);
+    },
+    
+    actualizeValue: function() {
+        this.outActualizeValue();
+    },
+    
+    outActualizeValue: function() {
+        this._out('actualizeValue');
     }
 
 };

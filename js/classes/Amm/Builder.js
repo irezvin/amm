@@ -141,7 +141,9 @@ Amm.Builder.prototype = {
             jQuery(root)
             .filter(this.sel)
             .add(jQuery(root).find(this.sel))
-            .not(this.selIgnore);
+          .not(jQuery(root).find(this.selIgnore))
+          .not(this.selIgnore)
+    ; 
         jq.each(function(i, htmlElement) {
             var node = t._createNode(htmlElement);
             htmlElement[scProp] = allNodes.length;
@@ -213,44 +215,49 @@ Amm.Builder.prototype = {
         return json;
     },
     
-    _createNode: function(htmlElement) {
-        var json = window.RJSON || window.JSON; // use relaxed json when possible
-        var n = new Amm.Builder.Node(), a;
-        n.htmlElement = htmlElement;
-        a = htmlElement.getAttribute('data-amm-v');
+    _parseJson: function(attr, element) {
+        var content = element.getAttribute(attr);
+        if (!content || !content.length) return null;
+        var res, json = window.RJSON || window.JSON; // use relaxed json when possible
         try {
-            if (a && a.length) {
-                n.v = this._replaceRefsAndInstaniateObjects(json.parse(a), n.htmlElement);
-                if (!(n.v instanceof Array)) n.v = n.v? [n.v] : [];
-                for (var i = 0, l = n.v.length; i < l; i++) {
-                    if ((typeof n.v[i]) === 'string') {
-                        n.v[i] = {class: n.v[i]};
-                    }
-                    n.v[i].htmlElement = htmlElement;
-                }
-            }
-            a = htmlElement.getAttribute('data-amm-e');
-            if (a && a.length) n.e = this._replaceRefsAndInstaniateObjects(json.parse(a), n.htmlElement);
-            a = htmlElement.getAttribute('data-amm-id');
-            if (a && a.length) {
-                a = a.replace(/^\s+|\s+$/g, '');
-                if (a[0] === '@' && a[1]) {
-                    n.global = true;
-                    a = a.slice(1);
-                    if (!this._globalIds[a]) this._globalIds[a] = [n];
-                        else this._globalIds[a].push(n);
-                }
-            }
+            res = json.parse(content);
         } catch (e) {
-            console.error("Cannot parse relaxed json in node", htmlElement);
+            console.error("Cannot parse relaxed json in attribute '" + attr + "' of element", element);
             throw e;
         }
-        if (a && a.length) {
-            n.id = a;
-            n.connected.id = a; // add to shared array for speedup
+        res = this._replaceRefsAndInstaniateObjects(res, element);
+        return res;
+    },
+    
+    _createNode: function(htmlElement) {
+        var n = new Amm.Builder.Node(), id;
+        n.htmlElement = htmlElement;
+        n.v = this._parseJson('data-amm-v', n.htmlElement);
+        if (n.v) {
+            if (!(n.v instanceof Array)) n.v = n.v? [n.v] : [];
+            for (var i = 0, l = n.v.length; i < l; i++) {
+                if ((typeof n.v[i]) === 'string') {
+                    n.v[i] = {'class': n.v[i]};
+                }
+                n.v[i].htmlElement = htmlElement;
+            }
         }
-        a = htmlElement.getAttribute('data-amm-x');
-        if (a && a.length) n.x = this._replaceRefsAndInstaniateObjects(json.parse(a), n.htmlElement);
+        n.e = this._parseJson('data-amm-e', n.htmlElement);
+        id = htmlElement.getAttribute('data-amm-id');
+        if (id && id.length) {
+            id = id.replace(/^\s+|\s+$/g, '');
+            if (id[0] === '@' && id[1]) {
+                n.global = true;
+                id = id.slice(1);
+                if (!this._globalIds[id]) this._globalIds[id] = [n];
+                    else this._globalIds[id].push(n);
+            }
+        }
+        if (id && id.length) {
+            n.id = id;
+            n.connected.id = id; // add to shared array for speedup
+        }
+        n.x = this._parseJson('data-amm-x', n.htmlElement);
         return n;
     },
 
@@ -508,11 +515,14 @@ Amm.Builder.calcPrototypeFromSource = function(builderSource, dontClone, views) 
     var jq = jQuery(source);
     if (!jq.length) throw Error("Cannot resolve builderSource reference");
     if (dontClone === undefined) dontClone = jq.attr('data-amm-dont-build') === undefined;
-    if (!dontClone) jq = jq.clone();
+    var old;
+    if (!dontClone) {
+        old = jq;
+        jq = jq.clone();
+    }
     jq.removeAttr('data-amm-dont-build');
     var builder = new Amm.Builder(jq);
     var proto = views? builder.calcViewPrototypes() : builder.calcPrototypes(true);
-    
     if (!proto.length) throw Error("Builder returned no prototypes");
     if (!views) {
         if (proto.length > 1) throw Error("Builder returned more than one prototype");
@@ -521,7 +531,6 @@ Amm.Builder.calcPrototypeFromSource = function(builderSource, dontClone, views) 
     }
     return proto;
 };
-
 
 
 

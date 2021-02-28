@@ -805,7 +805,7 @@
     QUnit.test("Collection.sorter", function(assert) {
         
         var collection = new Amm.Collection();
-        var sorter = new Amm.Sorter();
+        var sorter = new Amm.MultiObserver.Sorter();
         var sam = getSample();
         var changes = [];
         collection.setItems(sam.items);

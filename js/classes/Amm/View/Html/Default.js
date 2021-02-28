@@ -194,7 +194,7 @@ Amm.View.Html.Default.prototype = {
     },
     
     _releaseResources: function() {
-        this._setViewHtmlElements([]);
+        if (!(this._isElementCleanup && this.cleanupWithElement)) this._setViewHtmlElements([]);
         if (!this._defaultViews) return;
         for (var i = 0, l = this._defaultViews.length; i < l; i++) {
             this._defaultViews[i].setElement(null);

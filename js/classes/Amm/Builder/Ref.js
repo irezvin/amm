@@ -30,7 +30,23 @@ Amm.Builder.Ref.prototype = {
     _index: 0,
 
     _global: false,
+
+    _clone: false,
     
+    _dynamic: false,
+    
+    _result: undefined,
+    
+    setDynamic: function(dynamic) {
+        dynamic = !!dynamic;
+        var oldDynamic = this._dynamic;
+        if (oldDynamic === dynamic) return;
+        this._dynamic = dynamic;
+        return true;
+    },
+
+    getDynamic: function() { return this._dynamic; },
+
     toJSON: function() {
         var res = { $ref: this._find };
         if (this._closest !== null) res.closest = this._closest;
@@ -56,6 +72,16 @@ Amm.Builder.Ref.prototype = {
     },
 
     getGlobal: function() { return this._global; },
+    
+    setClone: function(clone) {
+        clone = !!clone;
+        var oldClone = this._clone;
+        if (oldClone === clone) return;
+        this._clone = clone;
+        return true;
+    },
+
+    getClone: function() { return this._clone; },
 
     setParent: function(parent) {
         if (typeof parent !== 'number') {
@@ -100,6 +126,16 @@ Amm.Builder.Ref.prototype = {
     
     resolve: function(onlyScalar) {
         
+        if (!this._dynamic) {
+            if (this._result) return this._result;
+            this._dynamic = true;
+            this._result = this.resolve(onlyScalar);
+            this._dynamic = false;
+            return this._result;
+        }
+        
+        var c;
+        
         if (!this._global && !this._node) throw Error("Cannot resolve without `node`");
         
         var curr = this._global? jQuery : jQuery(this._node);
@@ -122,10 +158,20 @@ Amm.Builder.Ref.prototype = {
         }
         
         if (this._index !== null) {
-            return curr[this._index] || null;
+            c = curr[this._index] || null;
+            if (this._clone) return jQuery(c).clone()[0];
+            return c;
         }
         
-        if (onlyScalar) return curr[0] || null;
+        if (onlyScalar) {
+            c = curr[0] || null;
+            if (this._clone) return jQuery(c).clone()[0];
+            return c;
+        }
+        
+        if (this._clone) {
+            return curr.clone();
+        }
         
         return curr;
         

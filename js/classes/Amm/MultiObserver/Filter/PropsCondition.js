@@ -1,26 +1,30 @@
 /* global Amm */
 
-Amm.Filter.PropsCondition = function(filter, options) {
-    
-    options = Amm.override({}, options);
-    if ('_allowExpressions' in options) {
-        this.allowExpressions = !!options._allowExpressions;
-        delete options._allowExpressions;
-    }
-    this._props = {};
+Amm.MultiObserver.Filter.PropsCondition = function(options) {
     this._expressions = {};
     this._evaluators = {};
     this._propList = [];
-    Amm.Filter.Condition.call(this, filter, options);
-    this.setProps(options);
-    
+    this._props = {};
+    var props;
+    if (options) {
+        if ('allowExpressions' in options) {
+            this.allowExpressions = options.allowExpressions;
+        }
+        if ('props' in options) {
+            options = Amm.override({}, options);
+            props = options.props;
+            delete options.props;
+        }
+    }
+    Amm.MultiObserver.Filter.Condition.call(this, options);
+    if (props) this.setProps(props);
 };
 
-Amm.Filter.propNameRx = /^\w+$/;
+Amm.MultiObserver.Filter.propNameRx = /^\w+$/;
 
-Amm.Filter.PropsCondition.prototype = {
+Amm.MultiObserver.Filter.PropsCondition.prototype = {
 
-    'Amm.Filter.PropsCondition': '__CLASS__', 
+    'Amm.MultiObserver.Filter.PropsCondition': '__CLASS__', 
     
     allowExpressions: true,
     
@@ -37,7 +41,7 @@ Amm.Filter.PropsCondition.prototype = {
     _checkProps: function(props, expressionList) {
         if (!expressionList) expressionList = {};
         for (var i = 0, l = props.length; i < l; i++) {
-            if (Amm.Filter.propNameRx.exec(props[i])) continue;
+            if (Amm.MultiObserver.Filter.propNameRx.exec(props[i])) continue;
             if (!this.allowExpressions) {
                 throw Error("'" + props[i] + "' doesn't look like simple property name; "
                     + " set `allowExpressions` to true to access expression values");
@@ -47,7 +51,7 @@ Amm.Filter.PropsCondition.prototype = {
                 continue;
             }
             expressionList[props[i]] = new Amm.Expression(props[i]);
-            expressionList[props[i]].setEventsProxy(this._filterSorter);
+            expressionList[props[i]].setEventsProxy(this._multiObserver);
         }
     },
     
@@ -85,23 +89,23 @@ Amm.Filter.PropsCondition.prototype = {
         if (this._subscribers.propsChange)
             this.outPropsChange(this._props, oldProps);
         this._noRefresh--;
-        if (!this._noRefresh) this._filterSorter.refresh();
+        if (!this._noRefresh) this._multiObserver.refresh();
     },
     
     _handleChange: function() {
         var o = Amm.event.origin; // event origin must be our object
         
         // sub-optimal (eval all conditions for all observed change events)
-        this._filterSorter.refresh(o); 
+        this._multiObserver.refresh(o); 
     },
     
     _handleExpressionChange: function(value, oldValue) {
         var o = Amm.event.origin.getExpressionThis();
-        this._filterSorter.refresh(o); 
+        this._multiObserver.refresh(o); 
     },
     
     _sub: function(props, objects) {
-        var oo = objects || this._filterSorter._objects, l = oo.length, i, o, ev;
+        var oo = objects || this._multiObserver._objects, l = oo.length, i, o, ev;
         if (!props) props = this._propList;
         var j, pl = props.length;
         for (i = 0; i < l; i++) {
@@ -122,14 +126,14 @@ Amm.Filter.PropsCondition.prototype = {
                 // no need to subscribe objects that don't have required class
                 if (this.requiredClass && !Amm.is(o, this.requiredClass)) continue; 
                 if (!o.hasEvent(ev)) continue;
-                this._filterSorter.subscribeObject(o, ev, this._handleChange, this);
+                this._multiObserver.subscribeObject(o, ev, this._handleChange, this);
             }
         }
     },
     
     // if props is not provided, will unsubscribe from all events
     _unsub: function(props, objects) {
-        var oo = objects || this._filterSorter._objects, l = oo.length, i, o, ev;
+        var oo = objects || this._multiObserver._objects, l = oo.length, i, o, ev;
         if (!props) props = this._propList;
         var j, pl = props? props.length : 0;
         for (i = 0; i < l; i++) {
@@ -148,12 +152,12 @@ Amm.Filter.PropsCondition.prototype = {
                 ev = props[j] + 'Change';
                 if (this._expressions[props[j]]) continue;
                 if (!o.hasEvent(ev)) continue;
-                this._filterSorter.unsubscribeObject(o, ev, this._handleChange, this);
+                this._multiObserver.unsubscribeObject(o, ev, this._handleChange, this);
             }
         }
     },
     
-    _doMatch: function(object) {
+    _doGetValue: function(object) {
         var exp, ctxId, val;
         for (var i = 0, l = this._propList.length; i < l; i++) {
             if ((exp = this._expressions[this._propList[i]])) {
@@ -174,7 +178,7 @@ Amm.Filter.PropsCondition.prototype = {
             } else {
                 val = Amm.getProperty(object, this._propList[i]);
             }
-            if (!Amm.Filter.Condition.testValue(val, this._props[this._propList[i]])) {
+            if (!Amm.MultiObserver.Filter.Condition.testValue(val, this._props[this._propList[i]])) {
                 return false;
             }
         }
@@ -222,12 +226,16 @@ Amm.Filter.PropsCondition.prototype = {
             this._propList = Amm.Array.diff(this._propList, propName);
         }
         
-        if (!this._noRefresh) this._filterSorter.refresh();
+        if (!this._noRefresh) this._multiObserver.refresh();
         
     },
     
+    outPropsChange: function(props, oldProps) {
+        return this._out('propsChange', props, oldProps);
+    },
+    
     cleanup: function() {
-        Amm.Filter.Condition.prototype.cleanup.call(this);
+        Amm.MultiObserver.Filter.Condition.prototype.cleanup.call(this);
         for (var i in this._expressions) if (this._expressions.hasOwnProperty(i)){
             this._expressions[i].cleanup();
         }
@@ -240,4 +248,4 @@ Amm.Filter.PropsCondition.prototype = {
     
 };
 
-Amm.extend(Amm.Filter.PropsCondition, Amm.Filter.Condition);
+Amm.extend(Amm.MultiObserver.Filter.PropsCondition, Amm.MultiObserver.Filter.Condition);

@@ -932,6 +932,23 @@ Amm.Collection.prototype = {
     },
     
     moveItem: function(index, newIndex) {
+        var val;
+        if (typeof index !== 'number') {
+            val = parseInt(index);
+            if (isNaN(val)) {
+                throw Error("moveItem(): `index` must be a number or a numeric string; given: '" 
+                    + index + "'");
+            }
+            index = val;
+        }
+        if (typeof newIndex !== 'number') {
+            val = parseInt(newIndex);
+            if (isNaN(val)) {
+                throw Error("moveItem(): `newIndex` must be a number or a numeric string; given: '" 
+                    + newIndex + "'");
+            }
+            newIndex = val;
+        }
         if (!this._allowChangeOrder) throw Error(Amm.Collection.ERR_REORDER_DISALLOWED);
         if (this._sorted) {
             throw Error("Cannot moveItem() on sorted Collection. Check with getIsSorted() next time");
@@ -1218,18 +1235,12 @@ Amm.Collection.prototype = {
             observe = !this._sorted && this._indexProperty !== null;
         }
         if (this._indexPropertyIsWatched !== observe) {
-            var eventName = this._indexProperty + 'Change';
             this._indexPropertyIsWatched = observe;
-            if (this._indexPropertyIsWatched) {
-                for (var i = 0, l = this.length; i < l; i++) {
-                    this[i].subscribe(eventName, 
-                        this._reportItemIndexPropertyChange, this);
-                }
-            } else {
-                for (var i = 0, l = this.length; i < l; i++) {
-                    this[i].unsubscribe(eventName, 
-                        this._reportItemIndexPropertyChange, this);
-                }
+            var eventName = this._indexProperty + 'Change',
+                method = this._indexPropertyIsWatched? 'subscribe' : 'unsubscribe';
+            for (var i = 0, l = this.length; i < l; i++) {
+                this[i][method](eventName, 
+                    this._reportItemIndexPropertyChange, this);
             }
         }
     },
@@ -1238,6 +1249,7 @@ Amm.Collection.prototype = {
         if (this._suppressIndexEvents) {
             return;
         }
+        if (typeof value !== 'number') return;
         var item = Amm.event.origin;
         // check if item property change event is suppressed
         //if (!this._suppressIndexEvents.length && Amm.Array.indexOf(item, this._suppressIndexEvents) >= 0) return;
@@ -1541,8 +1553,8 @@ Amm.Collection.prototype = {
     setSorter: function(sorter) {
         var isAggregate = false;
         if (sorter) {
-            if (typeof sorter === 'object' && !sorter['Amm.Sorter']) {
-                sorter = Amm.constructInstance(sorter, 'Amm.Sorter');
+            if (typeof sorter === 'object' && !sorter['Amm.MultiObserver.Sorter']) {
+                sorter = Amm.constructInstance(sorter, 'Amm.MultiObserver.Sorter');
                 isAggregate = true;
             }
         }  else {
@@ -1919,13 +1931,16 @@ Amm.Collection.prototype = {
     getAllowChangeOrder: function() { return this._allowChangeOrder; },
     
     cleanup: function() {
+        
         var tmp = this._allowDelete;
         if (!tmp) this.setAllowDelete(true);
         if (this._sorterIsAggregate) {
             this._sorter.cleanup();
             this._sorter = null;
         }
+        this._suppressIndexEvents++;
         Amm.Array.prototype.cleanup.call(this);
+        this._suppressIndexEvents--;
         if (!tmp) this.setAllowDelete(tmp);
     },
     

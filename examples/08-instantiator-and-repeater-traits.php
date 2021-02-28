@@ -25,15 +25,15 @@
                 <div data-amm-v="v.DisplayParent" data-amm-id="@cnt">
                 </div>
                 <div data-amm-v="v.Variants" style="display: none" data-amm-id="@cnt">
-                    <div data-amm-dont-build="" data-amm-condition="{type: tablet}" data-amm-e="{id: tablet}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
+                    <div data-amm-dont-build="" data-amm-condition="{props: { type: tablet } }" data-amm-e="{id: tablet}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
                         <h1>Tablet</h1>
                         <label data-amm-v="[v.Visual]" data-amm-e="{id: stylus}">Stylus <input type="checkbox" data-amm-v="v.Toggle" /></label>
                     </div>
-                    <div data-amm-dont-build="" data-amm-condition="{type: laptop}" data-amm-e="{id: laptop}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
+                    <div data-amm-dont-build="" data-amm-condition="{props: { type: laptop } }" data-amm-e="{id: laptop}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
                         <h1>Laptop</h1>
                         <label data-amm-v="[v.Visual]" data-amm-e="{id: touch}">Touch screen <input type="checkbox" data-amm-v="v.Toggle" /></label>
                     </div>
-                    <div data-amm-dont-build="" data-amm-condition="{type: phone}" data-amm-e="" data-amm-v="[v.Visual, v.StaticDisplayParent]">
+                    <div data-amm-dont-build="" data-amm-condition="{props: { type: phone} }" data-amm-e="" data-amm-v="[v.Visual, v.StaticDisplayParent]">
                         <h1>Phone</h1>
                         <label data-amm-v="[v.Visual]" data-amm-e="{id: supports4g}">4G <input type="checkbox" data-amm-v="v.Toggle" /></label><br />
                         <label data-amm-v="[v.Visual]" data-amm-e="{id: supports5g}">5G <input type="checkbox" data-amm-v="v.Toggle" /></label>
@@ -44,10 +44,10 @@
                 <div data-amm-v="v.DisplayParent" data-amm-id="@rpt">
                 </div>
                 <div data-amm-x="Amm.View.Html.Variants.build" data-amm-id="@rpt" style="display: none">
-                <div data-amm-dont-build="" data-amm-condition="{type: a}" data-amm-e="{prop__src: null}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
+                <div data-amm-dont-build="" data-amm-condition="{ props: { type: a } }" data-amm-e="{prop__src: null}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
                     <h1>A</h1>
                 </div>
-                <div data-amm-dont-build="" data-amm-condition="{type: b}" data-amm-e="{prop__src: null}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
+                <div data-amm-dont-build="" data-amm-condition="{ props: { type: b } }" data-amm-e="{prop__src: null}" data-amm-v="[v.Visual, {class: v.StaticDisplayParent, buildItems: true}]">
                     <h1>B</h1>
                 </div>
                 </div>

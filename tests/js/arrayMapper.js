@@ -196,15 +196,19 @@
 
         var sam = mkSample();
         var src = new Amm.Collection();
-        var filter = new Amm.Filter({
+        var filter = new Amm.MultiObserver.Filter({
             conditions: [
                 {
-                    _id: 'dieselCar',
-                    type: 'Diesel'
+                    id: 'dieselCar',
+                    props: {
+                        type: 'Diesel'
+                    }
                 },
                 {
-                    _id: 'petrolCar',
-                    type: 'Petrol'
+                    id: 'petrolCar',
+                    props: {
+                        type: 'Petrol'
+                    }
                 }
             ]
         });
@@ -257,9 +261,9 @@
         assert.deepEqual(destItems, [['petrol Toyota', 'petrol Subaru', 'petrol Lada', 'petrol ZAZ', 
             'diesel Lexus', 'petrol Geely', 'diesel VW']], 'new instance replaced old instance');
         
-        var insFilter = new Amm.Filter({conditions: [
-            {_id: 'new', 'year': new Amm.Validator.Number({gt: 2010}) },
-            {_id: 'old', 'year': new Amm.Validator.Number({le: 2010}) }
+        var insFilter = new Amm.MultiObserver.Filter({conditions: [
+            {id: 'new', props: { 'year': new Amm.Validator.Number({gt: 2010}) } },
+            {id: 'old', props: { 'year': new Amm.Validator.Number({le: 2010}) } }
         ]});
         
         destItems = [];
@@ -285,7 +289,7 @@
         
         var sam = mkSample();
         var src = new Amm.Collection();
-        var sorter = new Amm.Sorter({
+        var sorter = new Amm.MultiObserver.Sorter({
             criteria: ['type', 'year DESC']
         });
         var dest = new Amm.Collection();

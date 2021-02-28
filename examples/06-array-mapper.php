@@ -108,7 +108,7 @@
                     }, 'item'),
                     src: window.items,
                     dest: window.list.displayChildren,
-                    sort: new Amm.Sorter({
+                    sort: new Amm.MultiObserver.Sorter({
                         criteria: ['age', 'name']
                     })
                 });

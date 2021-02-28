@@ -249,7 +249,7 @@ Amm.ArrayMapper.prototype = {
         if (oldFilter === filter) return;
         if (!filter) {
         } else if (typeof filter === 'object') {
-            filter = Amm.constructInstance(filter, 'Amm.Filter', filter);
+            filter = Amm.constructInstance(filter, 'Amm.MultiObserver.Filter', filter);
             this._filterIsFn = false;
         } else if (typeof filter === 'function') {
             this._filterIsFn = true;
@@ -351,16 +351,16 @@ Amm.ArrayMapper.prototype = {
         if (oldSort === sort) return;
         if (!sort) {
         } else if (typeof sort === 'object') {
-            sort = Amm.constructInstance(sort, 'Amm.Sorter');
+            sort = Amm.constructInstance(sort, 'Amm.MultiObserver.Sorter');
             this._sortIsFn = false;
-            if (this._sort && this._sort['Amm.Sorter']) this._unsubscribeSort();
+            if (this._sort && this._sort['Amm.MultiObserver.Sorter']) this._unsubscribeSort();
         } else if (typeof sort === 'function') {
             this._sortIsFn = true;
         } else if (!(sort === Amm.ArrayMapper.SORT_DIRECT || sort === Amm.ArrayMapper.SORT_REVERSE)) {
             throw Error("`sort` must be an object, a function, Amm.ArrayMapper.SORT_ constant or a null");
         }
         this._sort = sort;
-        if (sort && sort['Amm.Sorter']) this._subscribeSort();
+        if (sort && sort['Amm.MultiObserver.Sorter']) this._subscribeSort();
         this.applySort();
         return true;
     },
@@ -534,7 +534,7 @@ Amm.ArrayMapper.prototype = {
     _subscribeInstantiator: function() {
         if (!(this._instantiator && this._instantiator['Amm.Instantiator.Variants'])) return;
         this._instantiator.subscribe('needRebuild', this._handleInstantiatorNeedRebuild, this);
-        if (this._filter && this._filter['Amm.Filter']) {
+        if (this._filter && this._filter['Amm.MultiObserver.Filter']) {
             this._filter.subscribe('matchesChange', this._setInstantiatorMatches, this);
         }
     },
@@ -542,7 +542,7 @@ Amm.ArrayMapper.prototype = {
     _unsubscribeInstantiator: function() {
         if (!(this._instantiator && this._instantiator['Amm.Instantiator.Variants'])) return;
         this._instantiator.unsubscribe('needRebuild', this._handleInstantiatorNeedRebuild, this);
-        if (this._filter && this._filter['Amm.Filter']) {
+        if (this._filter && this._filter['Amm.MultiObserver.Filter']) {
             this._filter.unsubscribe('matchesChange', this._setInstantiatorMatches, this);
         }
     },
@@ -694,7 +694,7 @@ Amm.ArrayMapper.prototype = {
             // we register item in filter or sort objects' first, then retrieve filter or sort value
             if (srcItem && (typeof srcItem === 'object')) {
                 if (this._filter && !this._filterIsFn) this._filter.observeObject(srcItem);
-                if (this._sort && this._sort['Amm.Sorter']) {
+                if (this._sort && this._sort['Amm.MultiObserver.Sorter']) {
                     this._sort.observeObject(srcItem);
                 }
             }
@@ -735,7 +735,7 @@ Amm.ArrayMapper.prototype = {
             if (destEntryIdx >= 0) this._destEntries.splice(destEntryIdx, 1);
             if (srcItem && (typeof srcItem === 'object')) {
                 if (this._filter && !this._filterIsFn) this._filter.unobserveObject(srcItem);
-                if (this._sort && this._sort['Amm.Sorter']) this._sort.unobserveObject(srcItem);
+                if (this._sort && this._sort['Amm.MultiObserver.Sorter']) this._sort.unobserveObject(srcItem);
             }
             
         }
@@ -816,6 +816,10 @@ Amm.ArrayMapper.prototype = {
         this.endUpdate();
     },
     
+    rebuild: function() {
+        this._rebuild();
+    },
+    
     /**
      * Should be called when we already have this._srcEntries and this._destEntries
      */
@@ -840,7 +844,7 @@ Amm.ArrayMapper.prototype = {
         if (this._sort) {
             // we keep sorted destEntries instead of post-filter array to have less work on subsequent sorts
             k = Amm.ArrayMapper._DEST_SORT_VALUE;
-            if (this._sort['Amm.Sorter']) {
+            if (this._sort['Amm.MultiObserver.Sorter']) {
                 var s = this._sort;
                 this._destEntries.sort(function(a, b) {return s.compareMatches(a[k], b[k]);});
             } else {
@@ -934,7 +938,7 @@ Amm.ArrayMapper.prototype = {
             this._unsubscribeFilter();
             this._filter = null;
         }
-        if (this._sort && this._sort['Amm.Sorter']) {
+        if (this._sort && this._sort['Amm.MultiObserver.Sorter']) {
             this._unsubscribeSort();
             this._sort = null;
         }

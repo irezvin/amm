@@ -11,7 +11,7 @@ Amm.Decorator.Data.prototype = {
     _filter: null,
     
     /**
-     * "conditions" parameter for Amm.Filter intance
+     * "conditions" parameter for Amm.MultiObserver.Filter intance
      * @type object
      */
     _conditions: null,
@@ -73,10 +73,10 @@ Amm.Decorator.Data.prototype = {
             var c = [], cond;
             for (var i in this._conditions) if (this._conditions.hasOwnProperty(i)) {
                 cond = this._conditions[i];
-                if (typeof cond === 'string') cond = {_expr: cond};
-                c.push(Amm.override({_id: i}, cond));
+                if (typeof cond === 'string') cond = {expression: cond};
+                c.push(Amm.override({id: i}, cond));
             }
-            this._filter = new Amm.Filter({conditions: c});
+            this._filter = new Amm.MultiObserver.Filter({conditions: c});
         }
         var result = this._filter.evaluateMatch(value);
         if (!this._actions[result]) result = 'default';

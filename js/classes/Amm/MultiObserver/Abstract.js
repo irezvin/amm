@@ -1,13 +1,12 @@
 /* global Amm */
 
 /**
- * Base class for both Amm.Filter and Amm.Sorter. Observes multiple objects by multiple observers. 
+ * Base class for both Amm.MultiObserver.Filter and Amm.MultiObserver.Sorter. Observes multiple objects by multiple observers. 
  * Each observer computes "match" for every object.
  * Matches are cached and their changes produce events.
  */
 
-
-Amm.FilterSorter = function(options) {
+Amm.MultiObserver.Abstract = function(options) {
     this._observers = [];
     this._objects = [];
     this._matches = [];
@@ -16,9 +15,11 @@ Amm.FilterSorter = function(options) {
     Amm.WithEvents.call(this, options);    
 };
 
-Amm.FilterSorter.prototype = {
+Amm.MultiObserver.Abstract.prototype = {
     
-    'Amm.FilterSorter': '__CLASS__',
+    'Amm.MultiObserver.Abstract': '__CLASS__',
+    
+    _initEventsOnly: false,
     
     _observers: null,
     
@@ -319,7 +320,7 @@ Amm.FilterSorter.prototype = {
         if (indexes !== undefined && !(indexes instanceof Array)) indexes = [indexes];
         if (!this._cacheProp) {
             Amm.registerItem(this);
-            this._cacheProp = '_Amm.FilterSorter.' + this._amm_id;
+            this._cacheProp = '_Amm.MultiObserver.' + this._amm_id;
             Amm.unregisterItem(this);
         }
         for (var i = 0, l = indexes? indexes.length : this._objects.length; i < l; i++) {
@@ -367,5 +368,5 @@ Amm.FilterSorter.prototype = {
 
 };
 
-Amm.extend(Amm.FilterSorter, Amm.WithEvents.DispatcherProxy);
-Amm.extend(Amm.FilterSorter, Amm.WithEvents);
+Amm.extend(Amm.MultiObserver.Abstract, Amm.WithEvents.DispatcherProxy);
+Amm.extend(Amm.MultiObserver.Abstract, Amm.WithEvents);

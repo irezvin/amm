@@ -376,6 +376,16 @@ Amm = {
         return res;
     },
     
+    ucFirst: function(str) {
+        str = '' + str;
+        return str.slice(0, 1).toUpperCase() + str.slice(1);
+    },
+    
+    lcFirst: function(str) {
+        str = '' + str;
+        return str.slice(0, 1).toUpperCase() + str.slice(1);
+    },
+    
     /**
      * If Array propList is provided, only properties in propList will be used to initialize object.
      * Found properties will be deleted from options array.

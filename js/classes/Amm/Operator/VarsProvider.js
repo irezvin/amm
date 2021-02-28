@@ -58,6 +58,7 @@ Amm.Operator.VarsProvider.prototype = {
     
     
     _doSetValue: function(value, checkOnly) {
+        this._propagateContext('operator', this._operatorOperator, true);
         if (!checkOnly) this._operatorOperator._doSetValue(value);
         var readonly = this._operatorOperator.getReadonly();
         return readonly;

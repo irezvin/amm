@@ -638,8 +638,10 @@ Amm.Operator.prototype = {
     // changes operand context (down === true) or own context (down === false)
     // if our context differs with operand operator' context
     _propagateContext: function(operand, operator, down) {
-        if (down) operator.setContextId(this._contextId);
-            else this.setContextId(operator._contextId);
+        if (down) {
+            if (!operator) return;
+            operator.setContextId(this._contextId);
+        } else this.setContextId(operator._contextId);
     },
     
     _getOperandValue: function(operand, again) {
@@ -819,6 +821,7 @@ Amm.Operator.prototype = {
     
     listContexts: function() {
         var res = [];
+        if (!this._contextState) return res;
         for (var i in this._contextState)
             if (this._contextState.hasOwnProperty(i) && this._contextState[i] !== null) {
                 res.push(i);

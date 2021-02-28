@@ -1,16 +1,16 @@
 /* global Amm */
 
-Amm.Sorter = function(options) {
+Amm.MultiObserver.Sorter = function(options) {
     this._compareClosureFn = ( function(o) { return function(a, b) { return o.compareObjects(a, b); }; } ) (this);    
-    Amm.FilterSorter.call(this, options);
+    Amm.MultiObserver.Abstract.call(this, options);
 };
 
-Amm.Sorter.ascendingDescRx = /\s+(asc|desc)$/i;
-Amm.Sorter.propNameRx = /^\w+$/;
+Amm.MultiObserver.Sorter.ascDescRx = /\s+(asc|desc)$/i;
+Amm.MultiObserver.Sorter.propNameRx = /^\w+$/;
 
-Amm.Sorter.prototype = {
+Amm.MultiObserver.Sorter.prototype = {
 
-    'Amm.Sorter': '__CLASS__', 
+    'Amm.MultiObserver.Sorter': '__CLASS__', 
     
     _needReorderCriteria: false,
     
@@ -107,7 +107,7 @@ Amm.Sorter.prototype = {
                 proto.push(p);
             }
             
-            var newCriteria = Amm.constructMany(proto, 'Amm.Sorter.Criterion');
+            var newCriteria = Amm.constructMany(proto, 'Amm.MultiObserver.Sorter.Criterion');
             newCriteria.sort(function(a, b) {
                 return a.getIndex() - b.getIndex();
             });
@@ -147,8 +147,8 @@ Amm.Sorter.prototype = {
         var res;
 
         if (criterion && typeof criterion === 'object') {
-            if (criterion['Amm.Sorter.Criterion']) {
-                if (criterion.getFilterSorter() !== this) {
+            if (criterion['Amm.MultiObserver.Sorter.Criterion']) {
+                if (criterion.getMultiObserver() !== this) {
                     throw Error("setCriteria(): `criteria[" + index + "]` doesn't belong to current Sorter");
                 }
                 if (criterion.getIndex() === null) criterion.setIndex(index);
@@ -157,7 +157,7 @@ Amm.Sorter.prototype = {
                 res = {}.override(criterion);
                 if (typeof res.index !== 'number') res.index = index;
             }
-            res.filterSorter = this;
+            res.multiObserver = this;
             return res;
         }
 
@@ -170,22 +170,22 @@ Amm.Sorter.prototype = {
                 + Amm.describeType(criterion));
         
         if (this._parseAscendingDesc) {
-            matches = Amm.Sorter.ascendingDescRx.exec(criterion);
+            matches = Amm.MultiObserver.Sorter.ascDescRx.exec(criterion);
             if (matches) {
                 ascending = matches[1].toLowerCase() === 'asc';
                 criterion = criterion.slice(0, -matches[0].length);
             }
         }
-        if (this._allowExpressions && !Amm.Sorter.propNameRx.exec(criterion)) {
+        if (this._allowExpressions && !Amm.MultiObserver.Sorter.propNameRx.exec(criterion)) {
             res.expression = criterion;
-            res.class = Amm.Sorter.Expression;
+            res.class = Amm.MultiObserver.Sorter.Expression;
         } else {
-            res.class = Amm.Sorter.Property;
+            res.class = Amm.MultiObserver.Sorter.Property;
             res.property = criterion;
         }
         if (!('index' in res)) res.index = index;
         res.ascending = ascending;
-        res.filterSorter = this;
+        res.multiObserver = this;
         return res;
     },
     
@@ -306,14 +306,14 @@ Amm.Sorter.prototype = {
     },
     
     beginUpdate: function() {
-        Amm.FilterSorter.prototype.beginUpdate.call(this);
+        Amm.MultiObserver.Abstract.prototype.beginUpdate.call(this);
         if (this._updateLevel === 1) {
             this._oldDirections = this._getDirections();
         }
     },
     
     endUpdate: function() {
-        Amm.FilterSorter.prototype.endUpdate.call(this);
+        Amm.MultiObserver.Abstract.prototype.endUpdate.call(this);
         if (this._oldDirections && !this._directions && !Amm.Array.equal(this._getDirections(), this._oldDirections)) {
             this._directions = null;
             this.outNeedSort();
@@ -323,5 +323,5 @@ Amm.Sorter.prototype = {
 
 };
 
-Amm.extend(Amm.Sorter, Amm.FilterSorter);
+Amm.extend(Amm.MultiObserver.Sorter, Amm.MultiObserver.Abstract);
 

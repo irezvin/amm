@@ -1,5 +1,7 @@
 /* global Amm */
 
+// TODO: set per-context dispatcher proxy, otherwise we won't be able to properly cache expressions?!
+
 /**
  * Provides high-level methods to access value of operator and subscribe 
  * to its' events. Acts as event dispatcher between child operators 
@@ -141,7 +143,8 @@ Amm.Expression.prototype = {
         _src: true,
         _subscriptions: true,
         _eventsProxy: true,
-        scope: true
+        scope: true,
+        supportsAssign: true
     },
     
     setExpressionThis: function(expressionThis) {
@@ -390,6 +393,7 @@ Amm.Expression.prototype = {
     subscribeOperator: function(target, eventName, operator, method, extra) {
         var contextId = operator._contextId;
         if (extra === undefined) extra = null;
+        if (!this._eventsProxy) console.log('xx', this.getSrc(), this._contextId, this._contextState);
         this.subscribeObject(target, eventName, method, operator, [contextId, extra]);
     },
     

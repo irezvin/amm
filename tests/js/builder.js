@@ -205,6 +205,7 @@
         ));
 
         var r = new Amm.Builder.Ref();
+        r.setDynamic(true); // we will move this ref around a lot
         r.setNode(fx.find('.li2')[0]);
         assert.ok(r.resolve() === r.getNode());
         r.setFind('.li6');
@@ -254,6 +255,9 @@
                             __construct: 'Amm.Instantiator.Proto',
                             proto: {
                                 'class': 'Amm.Element',
+                                //builderSource: {$ref: '.childProto[data-amm-dont-build]'}
+                                
+                                // todo: resolve-once refs
                                 builderSource: {$ref: '.childProto'}
                             },
                         }
@@ -276,6 +280,7 @@
         assert.ok(Amm.is(e, 'DisplayParent'), 'Created container element has DisplayParent trait');
         
         var e1 = e.displayChildren.createItem();
+        
         assert.ok(Amm.is(e1, 'Visual'), 'Created sub-element has Visual trait');
         assert.ok(Amm.is(e1, 'Content'), 'Created sub-element has Content trait');
         
@@ -283,6 +288,10 @@
         assert.ok(e.findView('Amm.View.Html.DisplayParent').getHtmlElement());
         assert.ok(e1.findView('Amm.View.Html.Visual').getHtmlElement());
         assert.ok(e1.findView('Amm.View.Html.Content').getHtmlElement());
+        
+        var e2 = e.displayChildren.createItem();
+        assert.ok(e2.findView('Amm.View.Html.Visual').getHtmlElement());
+        assert.ok(e2.findView('Amm.View.Html.Content').getHtmlElement());
         
         Amm.cleanup(e, e1);
         

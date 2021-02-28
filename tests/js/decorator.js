@@ -48,13 +48,13 @@ QUnit.module("Decorator");
            
             conditions: {
                 
-                type1: { problem: { and: [{not: null}, {not: undefined}] } },
+                type1: { props: { problem: { and: [{not: null}, {not: undefined}] } } },
                 
                 type2: "this.response.type == 'error'",
                 
                 type3: "this.code >= 400",
                 
-                type4: { error: { and: [{not: null}, {not: undefined}], 'typeof': 'object' } },
+                type4: { props: { error: { and: [{not: null}, {not: undefined}], 'typeof': 'object' } } },
                 
                 type5: "this.response.type == 'success'"
                 
@@ -98,6 +98,8 @@ QUnit.module("Decorator");
             r5: { data: { id: 10, email: "test@example.com", age: 14 } }
             
         };
+        
+        d.d = dataDecorator;
         
         for (var i in tests) if (tests.hasOwnProperty(i)) {
             

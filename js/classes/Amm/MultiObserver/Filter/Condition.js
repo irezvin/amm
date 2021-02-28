@@ -1,26 +1,8 @@
 /* global Amm */
 
-Amm.Filter.Condition = function(filter, options) {
-    
-    if (options && options._id) {
-        this.id = options._id;
-        delete options._id;
-    }
-    
-    if (options && options._class) {
-        this.requiredClass = options._class;
-        delete options._class;
-    }
-    
-    if (options && options._not) {
-        this.not = true;
-        delete options._not;
-    }
-    
-    Amm.FilterSorter.Observer.call(this, filter, options, true);
-    
+Amm.MultiObserver.Filter.Condition = function(options) {
+    Amm.MultiObserver.Abstract.Observer.call(this, options);
 };
-
 
 /**
  * Function to check if `value` matches `criterion`.
@@ -46,17 +28,17 @@ Amm.Filter.Condition = function(filter, options) {
  * -    { strict: `testValue` }: value === `testValue` (force strict comparison)
  * -    `otherCriterion`: value == `otherCriterion` (all other criterion values: non-strict comparison)
  */
-Amm.Filter.Condition.testValue = function(value, criterion) {
+Amm.MultiObserver.Filter.Condition.testValue = function(value, criterion) {
     var i, l;
     if (value instanceof Array || value && value['Amm.Array']) {
         if (typeof criterion === 'object' && criterion && criterion.only) { // will return TRUE only if ALL array items meet condition
             for (i = 0, l = value.length; i < l; i++) {
-                if (!Amm.Filter.Condition.testValue(value[i], criterion.only)) return false;
+                if (!Amm.MultiObserver.Filter.Condition.testValue(value[i], criterion.only)) return false;
             }
             return true;
         }
         for (i = 0, l = value.length; i < l; i++) {
-            if (Amm.Filter.Condition.testValue(value[i], criterion)) return true;
+            if (Amm.MultiObserver.Filter.Condition.testValue(value[i], criterion)) return true;
         }
         return false;
     }
@@ -74,18 +56,18 @@ Amm.Filter.Condition.testValue = function(value, criterion) {
     }
     if (typeof criterion === 'object' && criterion) {
         if ('and' in criterion) {
-            if (!criterion.and || !(criterion.and instanceof Array)) return Amm.Filter.Condition.testValue(value, criterion.and);
+            if (!criterion.and || !(criterion.and instanceof Array)) return Amm.MultiObserver.Filter.Condition.testValue(value, criterion.and);
             for (i = 0, l = criterion.and.length; i < l; i++) {
                 if (!this.testValue(value, criterion.and[i])) return false;
             }
             return true;
         }
-        if ('only' in criterion) return Amm.Filter.Condition.testValue(value, criterion.only);
+        if ('only' in criterion) return Amm.MultiObserver.Filter.Condition.testValue(value, criterion.only);
         if ('typeof' in criterion) {
-            return Amm.Filter.Condition.testValue(typeof value, criterion.typeof)
+            return Amm.MultiObserver.Filter.Condition.testValue(typeof value, criterion.typeof);
         }
         if (typeof criterion.fn === 'function') return criterion.scope? criterion.fn.call(criterion.scope, value) : criterion.fn(value);
-        if ('regExp' in criterion) return Amm.Filter.Condition.testValue(value, new RegExp(criterion.regExp, criterion.flags || ''));
+        if ('regExp' in criterion) return Amm.MultiObserver.Filter.Condition.testValue(value, new RegExp(criterion.regExp, criterion.flags || ''));
         if ('validator' in criterion) {
             return !Amm.Validator.iErr(criterion, 'validator', value);
         }
@@ -94,15 +76,15 @@ Amm.Filter.Condition.testValue = function(value, criterion) {
         }
         if ('strict' in criterion) return value === criterion.strict;
         if ('rq' in criterion) return Amm.meetsRequirements(value, criterion.rq);
-        if ('not' in criterion) return !Amm.Filter.Condition.testValue(value, criterion.not);
+        if ('not' in criterion) return !Amm.MultiObserver.Filter.Condition.testValue(value, criterion.not);
         throw Error ("object `test` must contain at least one of following keys: `and`, `only`, `fn`, `regExp`, `validator`, `strict`, `rq`, `not`");
     }
     return criterion == value; // non-strict comparison
 };
 
-Amm.Filter.Condition.prototype = {
+Amm.MultiObserver.Filter.Condition.prototype = {
     
-    'Amm.Filter.Condition': '__CLASS__',
+    'Amm.MultiObserver.Filter.Condition': '__CLASS__',
     
     id: null, // For named conditions
     
@@ -110,32 +92,24 @@ Amm.Filter.Condition.prototype = {
     
     not: false, // inverses the condition
     
-    match: function(object) {
+    _defaultValue: false,
+    
+    getValue: function(object) {
         var res = true;
         
         if (this.requiredClass && !Amm.is(object, this.requiredClass)) res = false;
-        else res = this._doMatch(object);
+        else res = this._doGetValue(object);
         
         if (this.not) res = !res;
+        else if (res === undefined) res = this._defaultValue;
+        
         return res;
     },
     
-    _doMatch: function(object) {
+    _doGetValue: function(object) {
         return true;
     },
     
-    setProps: function(props, propName) {
-        // template method
-    },
-    
-    getProps: function(propName) {
-        // template method
-    },
-    
-    outPropsChange: function(props, oldProps) {
-        return this._out('propsChange', props, oldProps);
-    }
-    
 };
 
-Amm.extend(Amm.Filter.Condition, Amm.FilterSorter.Observer);
+Amm.extend(Amm.MultiObserver.Filter.Condition, Amm.MultiObserver.Abstract.Observer);

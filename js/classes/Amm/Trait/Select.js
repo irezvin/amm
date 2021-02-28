@@ -468,7 +468,7 @@ Amm.Trait.Select.prototype = {
     },
 
     /**
-     * @param {object|Amm.Sorter} sorter Sorter or its' prototype
+     * @param {object|Amm.MultiObserver.Sorter} sorter Sorter or its' prototype
      */
     setSorter: function(sorter) {
         if (this.options) return this.options.setSorter(sorter);

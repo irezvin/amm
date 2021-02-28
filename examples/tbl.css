@@ -55,15 +55,16 @@ table.data tbody tr:nth-child(even) td.light {
     background-color: rgba(32, 32, 32, 0.25);
 }
 
-table.data tbody tr:nth-child(even):hover td.light {
+table.data:not(.nohover) tbody tr:nth-child(even):hover td.light {
     background-color: rgba(255, 219, 0, 0.9);
-};
+}
     
+
 table.data tbody tr:nth-child(odd) td.light {
-    background-color: rgba(32, 32, 32, 0.1);
+    background-color: rgba(0, 0, 0, 0.1);
 }
 
-table.data tbody tr:nth-child(odd):hover td.light {
+table.data:not(.nohover) tbody tr:nth-child(odd):hover td.light {
     background-color: rgba(255, 219, 0, 1);
 };
 
@@ -82,7 +83,7 @@ table.data th, table.data td {
 table.data tbody tr:first-child td {
 }
 
-table.data tbody tr:hover td {
+table.data.htlhover tbody tr:hover td {
     color: #333;
     background-color: gold;
 }

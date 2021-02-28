@@ -2,7 +2,7 @@
 /* global QUnit */
 
 (function() { 
-    QUnit.module("FilterSorter");
+    QUnit.module("MultiObserver");
 
     var names = function(people) {
         return Amm.getProperty(people, "name");
@@ -50,61 +50,61 @@
         var comment;
       
         comment = "{ only: [`criterion`, `criterion`, `criterion`] }: when array `value` provided, all items should match at least one of specified criteria";
-        assert.ok(Amm.Filter.Condition.testValue([1, 2, 3, 2, 1, 3], {only: [1, 2, 3]}), comment);
-        assert.notOk(Amm.Filter.Condition.testValue([1, 2, 4, 2, 1, 4], {only: [1, 2, 3]}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue([1, 2, 3, 2, 1, 3], {only: [1, 2, 3]}), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue([1, 2, 4, 2, 1, 4], {only: [1, 2, 3]}), comment);
         
         comment = "{ and: ['`criterion`, `criterion`, `criterion`] }: value must meet ALL of specified criteria; when array `value` provided, all items must match all specified criteria";
-        assert.ok(Amm.Filter.Condition.testValue('foobar', {and: [/foo/, /bar/]}), comment);
-        assert.ok(Amm.Filter.Condition.testValue(['foobar', 'barfoo', 'foo'], {and: [/foo/, /bar/]}), comment);
-        assert.notOk(Amm.Filter.Condition.testValue('foo', {and: [/foo/, /bar/]}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue('foobar', {and: [/foo/, /bar/]}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue(['foobar', 'barfoo', 'foo'], {and: [/foo/, /bar/]}), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue('foo', {and: [/foo/, /bar/]}), comment);
         
         comment = "{ not: `criterion` }: TRUE if value does NOT meet specified criterion";
-        assert.ok(Amm.Filter.Condition.testValue('foo', {not: 'bar'}), comment);
-        assert.notOk(Amm.Filter.Condition.testValue('foo', {not: 'foo'}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue('foo', {not: 'bar'}), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue('foo', {not: 'foo'}), comment);
         
         comment = "function(value): callback that returns true if test is passed";
-        assert.ok(Amm.Filter.Condition.testValue('xx', function(v) {return v == 'xx';}), comment);
-        assert.notOk(Amm.Filter.Condition.testValue('yy', function(v) { return v == 'xx';}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue('xx', function(v) {return v == 'xx';}), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue('yy', function(v) { return v == 'xx';}), comment);
         
         comment = "{ fn: function(value), [scope: object] }: callback that will be called with provided scope";
-        assert.ok(Amm.Filter.Condition.testValue('xx',{fn: function(v) {return v == this.test}, scope: {test: 'xx'}}), comment);
-        assert.notOk(Amm.Filter.Condition.testValue('xx',{fn: function(v) {return v == this.test}, scope: {test: 'yy'}}), comment);
-        assert.ok(Amm.Filter.Condition.testValue('zz',{fn: function(v) {return v == 'zz'}}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue('xx',{fn: function(v) {return v == this.test}, scope: {test: 'xx'}}), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue('xx',{fn: function(v) {return v == this.test}, scope: {test: 'yy'}}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue('zz',{fn: function(v) {return v == 'zz'}}), comment);
         
         comment = "/RegExp/: value matches RegExp";
-        assert.ok(Amm.Filter.Condition.testValue('foobar', /foo/), comment);
-        assert.notOk(Amm.Filter.Condition.testValue('foobar', /abc/), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue('foobar', /foo/), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue('foobar', /abc/), comment);
         
         comment = "{ regExp: '/RegExp/', [flags: 'flags'] }: value matches RegExp (with provided string definition)";
-        assert.ok(Amm.Filter.Condition.testValue('FOOBAR', { regExp: "foo", flags: "i" }), comment);
-        assert.notOk(Amm.Filter.Condition.testValue('FOOBAR', { regExp: "foo" }), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue('FOOBAR', { regExp: "foo", flags: "i" }), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue('FOOBAR', { regExp: "foo" }), comment);
         
         comment = "{ validator: `validator` }: value passes Amm.Validator (prototype may be provided instead of instance)";
-        assert.ok(Amm.Filter.Condition.testValue(10, { validator: new Amm.Validator.Number({gt: 9, lt: 11})}), comment);
-        assert.ok(Amm.Filter.Condition.testValue(10, { validator: { class: "Amm.Validator.Number", gt: 9, lt: 11 } }), comment);
-        assert.notOk(Amm.Filter.Condition.testValue('zz', { validator: new Amm.Validator.Number({gt: 9, lt: 11})}), comment);
-        assert.notOk(Amm.Filter.Condition.testValue('zz', { validator: { class: "Amm.Validator.Number", gt: 9, lt: 11 } }), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue(10, { validator: new Amm.Validator.Number({gt: 9, lt: 11})}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue(10, { validator: { class: "Amm.Validator.Number", gt: 9, lt: 11 } }), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue('zz', { validator: new Amm.Validator.Number({gt: 9, lt: 11})}), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue('zz', { validator: { class: "Amm.Validator.Number", gt: 9, lt: 11 } }), comment);
         
         comment = "Amm.Validator instance: value passes Amm.Validator";
-        assert.ok(Amm.Filter.Condition.testValue(10, new Amm.Validator.Number({gt: 9, lt: 11})), comment);
-        assert.notOk(Amm.Filter.Condition.testValue('zz', new Amm.Validator.Number({gt: 9, lt: 11})), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue(10, new Amm.Validator.Number({gt: 9, lt: 11})), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue('zz', new Amm.Validator.Number({gt: 9, lt: 11})), comment);
         
         comment = "{ rq: `requirements` }: Amm.meetsRequirements(value, `requirements`";
-        assert.ok(Amm.Filter.Condition.testValue(new Amm.Element, {rq: ['Amm.Element']}), comment);
-        assert.notOk(Amm.Filter.Condition.testValue(new Amm.WithEvents, {rq: ['Amm.Element']}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue(new Amm.Element, {rq: ['Amm.Element']}), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue(new Amm.WithEvents, {rq: ['Amm.Element']}), comment);
         
         comment = "{ strict: `testValue` }: value === `value` (force strict comparison)";
-        assert.ok(Amm.Filter.Condition.testValue(3, {strict: 3}), comment);
-        assert.notOk(Amm.Filter.Condition.testValue(3, {strict: '3'}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue(3, {strict: 3}), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue(3, {strict: '3'}), comment);
         
         comment = "`otherCriterion`: value == `otherCriterion` (all other criterion values: non-strict comparison)";
-        assert.ok(Amm.Filter.Condition.testValue(3, 3), comment);
-        assert.ok(Amm.Filter.Condition.testValue(3, '3'), comment);
-        assert.notOk(Amm.Filter.Condition.testValue(2, 3), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue(3, 3), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue(3, '3'), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue(2, 3), comment);
         
         comment = "{ typeof: `type` }: typeof value === `type`";
-        assert.ok(Amm.Filter.Condition.testValue('foo', {'typeof': 'string'}), comment);
-        assert.notOk(Amm.Filter.Condition.testValue(3, {'typeof': 'string'}), comment);
+        assert.ok(Amm.MultiObserver.Filter.Condition.testValue('foo', {'typeof': 'string'}), comment);
+        assert.notOk(Amm.MultiObserver.Filter.Condition.testValue(3, {'typeof': 'string'}), comment);
         
     });
     
@@ -112,14 +112,16 @@
         
         var sam = getSample();
         
-        var f = new Amm.Filter();
+        var f = new Amm.MultiObserver.Filter();
         
         f.setObservedObjects(sam.people);
         
         f.setConditions([
             {
-                technology: 'PHP',
-                _allowExpressions: false
+                props: {
+                    technology: 'PHP',
+                },
+                allowExpressions: false
             }
         ]);
         
@@ -153,6 +155,9 @@
         
             assert.deepEqual(currMatches, ['Anna', 'Vika'],
                 "change event was triggered too");
+            
+        
+        d.f = f;
             
         f.getConditions(1).setProps('Javascript', 'technology');
         
@@ -226,7 +231,7 @@
                 'foo.bar': 'baz'
             });
         }, /set.*allowExpressions.*to true/, 
-            'Error triggered when attempting to specify non-simple property in PropsCondition');
+            'Error triggered when attempting to specify non-simple property in propsCondition');
         
         
         Amm.cleanup(newList);
@@ -240,20 +245,20 @@
         
         var sam = getSample();
         
-        var f = new Amm.Filter();
+        var f = new Amm.MultiObserver.Filter();
         
         f.setObservedObjects(sam.people);
         
         f.setConditions([
             {
-                _id: 'p',
-                _allowExpressions: false,
-                technology: 'PHP',
+                id: 'p',
+                allowExpressions: false,
+                props: { technology: 'PHP' },
             },
             {
-                _id: 'pj',
-                _allowExpressions: false,
-                technology: ['PHP', 'Javascript'],
+                id: 'pj',
+                allowExpressions: false,
+                props: { technology: ['PHP', 'Javascript'] },
             }
         ]);
         
@@ -270,9 +275,11 @@
         assert.deepEqual(sam.people[0].getSubscribers('technologyChange').length, 1, 
             'Only one subscriber despite 2 conditions in the filter'
         );
-        
+
         assert.equal(f.getMatch(sam.p.Vika), 'p', 'First matching condition ID is returned');
         assert.equal(f.getMatch(sam.p.John), 'pj', 'First matching condition ID is returned');
+        
+        return;
         
         sam.p.Vika.setTechnology('Javascript');
         assert.deepEqual(o, [], 'No matchingObjects change triggered despite matchesChange');
@@ -288,7 +295,7 @@
         
         var sam = getSample();
         
-        var f = new Amm.Filter();
+        var f = new Amm.MultiObserver.Filter();
         
         var o = [], m = [];
         
@@ -309,12 +316,12 @@
         
         f.setConditions([
             {
-                _id: 'a',
-                technology: 'PHP'
+                id: 'a',
+                props: { technology: 'PHP' }
             },
             {
-                _id: 'b',
-                technology: 'SQL'
+                id: 'b',
+                props: { technology: 'SQL' }
             }
         ]);
         
@@ -324,12 +331,12 @@
         m = [];
         f.setConditions([
             {
-                _id: 'z',
-                technology: 'PHP'
+                id: 'z',
+                props: { technology: 'PHP' }
             },
             {
-                _id: 'f',
-                technology: 'SQL'
+                id: 'f',
+                props: { technology: 'SQL' }
             }
         ]);
         
@@ -341,7 +348,7 @@
         ]]);
 
         f.setConditions(
-            { technology: 'Javascript' }, 'z'
+            { props: { technology: 'Javascript' } }, 'z'
         );
 
         assert.ok(f.getConditions('z'));
@@ -355,7 +362,7 @@
     QUnit.test("Filter.expressionCondition", function(assert) {
         
         var sam = getSample();
-        var f = new Amm.Filter();
+        var f = new Amm.MultiObserver.Filter();
         var o = [], m = [];
 
         d.sam = sam;
@@ -373,16 +380,18 @@
             m.push([names(objects), matches, oldMatches]);
         });
         
+        d.f = f;
+        
         f.setConditions([
             {
-                _expr: "this.department.location === $country",
-                country: 'USA'
+                expression: "this.department.location === $country",
+                vars: { country: 'USA' }
             }
         ]);
         
             assert.deepEqual(o, [['John', 'Dmitry']],
             'Expression condition basically works');
-        
+            
         o = [];
         
         sam.d.Development.setLocation('USA');
@@ -410,11 +419,11 @@
             'Unobserved element has no subscribers anymore');
         
         var nx = new Amm.Element({prop__department: sam.d.Design});
-            assert.ok(f.getConditions(1).match(nx), 
+            assert.ok(f.getConditions(1).getValue(nx), 
             'Expression condition can be used to test non-subscribed objects');
         
         nx.setDepartment(null);
-            assert.notOk(f.getConditions(1).match(nx),
+            assert.notOk(f.getConditions(1).getValue(nx),
             'Expression condition can be used to test non-subscribed objects');
         
         Amm.cleanup(sam.people);
@@ -426,7 +435,7 @@
     QUnit.test("Filter.mixedCondition", function(assert) {
         
         var sam = getSample();
-        var f = new Amm.Filter();
+        var f = new Amm.MultiObserver.Filter();
         var o = [], m = [];
 
         d.sam = sam;
@@ -446,8 +455,10 @@
         
         f.setConditions([
             {
-                'this.department.location': 'USA',
-                'name': /i/i // AND name has 'I' or 'i' in it
+                props: { 
+                    'this.department.location': 'USA',
+                    'name': /i/i // AND name has 'I' or 'i' in it
+                }
             }
         ]);
             assert.deepEqual(o, [['Mike', 'Dmitry']],
@@ -466,7 +477,7 @@
         o = [];
         f.setConditions([
             {
-                'technology': 'SQL'
+                props: { 'technology': 'SQL' }
             }
         ]);
         
@@ -482,7 +493,7 @@
     
     QUnit.test("Filter.requireAll", function(assert) {
         var sam = getSample();
-        var f = new Amm.Filter();
+        var f = new Amm.MultiObserver.Filter();
         var o = [], m = [];
 
         d.sam = sam;
@@ -502,10 +513,14 @@
         
         f.setConditions([
             {
-                'age': { 'validator': { 'class': 'Amm.Validator.Number', ge: 30 } }
+                props: {
+                    'age': { 'validator': { 'class': 'Amm.Validator.Number', ge: 30 } }
+                }
             },
             {
-                'technology': 'PHP'
+                props: {
+                    'technology': 'PHP'
+                }
             }
         ]);
         
@@ -520,7 +535,7 @@
     QUnit.test("Filter.events", function(assert) {
         
         var sam = getSample();
-        var f = new Amm.Filter();
+        var f = new Amm.MultiObserver.Filter();
         var o = [], m = [];
 
         d.sam = sam;
@@ -540,14 +555,18 @@
         
         f.setConditions([
             {
-                _id: 'loc',
-                'this.department.location': 'USA'
+                id: 'loc',
+                props: {
+                    'this.department.location': 'USA'
+                }
             },
             {
-                _id: 'age',
-                _expr: 'this.age >= $min && this.age <= $max', // TODO: why this is non-cacheable too?!
-                min: 30,
-                max: 40
+                id: 'age',
+                expression: 'this.age >= $min && this.age <= $max', // TODO: why this is non-cacheable too?!
+                vars: {
+                    min: 30,
+                    max: 40
+                }
             }            
         ]);
         
@@ -556,16 +575,19 @@
         var expr1 = new Amm.Expression("this.conditions::loc.props::'this.department.location'", f);
         expr1.subscribe('valueChange', function(v) { expr1value = v; });
             assert.ok(expr1.getIsCacheable(), 
-                'PropsCondition: Expression that refers to Filter.conditions::condition.props::prop is cacheable');
+                'propsCondition: Expression that refers to Filter.conditions::condition.props::prop is cacheable');
             assert.equal(expr1.getValue(), 'USA',
-                'PropsCondition.props::prop returns valid value');
+                'propsCondition.props::prop returns valid value');
         
-        var expr2 = new Amm.Expression("(this.conditions::age).props::min", f);
+        var expr2 = new Amm.Expression("(this.conditions::age).vars::min", f);
         expr2.subscribe('valueChange', function(v) { expr2value = v; });
             assert.ok(expr2.getIsCacheable(),
-                'ExpressionCondition: Expression that refers to Filter.conditions::condition.props::prop is cacheable');
+                'ExpressionCondition: Expression that refers to Filter.conditions::condition.vars::var is cacheable');
             assert.equal(expr2.getValue(), 30,
-                'ExpressionCondition.props::prop returns valid value');
+                'ExpressionCondition.vars::var returns valid value');
+        
+        d.e = expr2;
+        d.f = f;
         
         var minMaxExpr = f.getConditions('age')._expression;
         
@@ -575,25 +597,24 @@
         
         o = [];
         expr2.setValue(27);
-            f.getConditions(2).getProps('min', 27);
             assert.deepEqual(o, [['Mike', 'John', 'Dmitry']],
-                'Filter returns proper result after PropsCondition::props change');
+                'Filter returns proper result after propsCondition::props change');
             assert.deepEqual(expr2value, 27,
-                'PropsCondition::props return valid value');
+                'propsCondition::props return valid value');
         
         o = [];
-        f.getConditions(2).setProps(30, 'min');
+        f.getConditions(2).setVars(30, 'min');
             assert.deepEqual(o, [['Mike', 'Dmitry']], 
-                'Filter returns proper result after PropsCondition::props change (2)');
+                'Filter returns proper result after VarsCondition::vars change (2)');
             assert.deepEqual(expr2value, 30, 
-                'PropsCondition::props return valid value');
+                'VarsCondition::vars return valid value');
         
         o = [];
         expr1.setValue('Ukraine');
             assert.deepEqual(o, [['Anna', 'Ivan']], 
-                'Filter returns proper result after ExpressionCondition::props change');
+                'Filter returns proper result after ExpressionCondition::vars change');
             assert.deepEqual(expr1value, 'Ukraine',
-                'ExpressionCondition::props return valid value');
+                'ExpressionCondition::vars return valid value');
             
         f.cleanup(); // doesn't cleanup conditions -- Amm.getRoot() still has 'interval' subscribers
         
@@ -601,7 +622,7 @@
     
     QUnit.test("Sorter.basicSort", function(assert) {
         
-        var s = new Amm.Sorter;
+        var s = new Amm.MultiObserver.Sorter;
         
         var sam = getSample();
         
@@ -696,7 +717,7 @@
     
     QUnit.test("Sorter.setCriteria => matches change", function(assert) {
         
-        var s = new Amm.Sorter;
+        var s = new Amm.MultiObserver.Sorter;
         
         var sam = getSample();
         
@@ -734,7 +755,7 @@
         
         var ns = 0;
         
-        var s = new Amm.Sorter({'criteria': 'name ASC', on__needSort: function() { ns++; }});
+        var s = new Amm.MultiObserver.Sorter({'criteria': 'name ASC', on__needSort: function() { ns++; }});
         
         var sam = getSample();
         

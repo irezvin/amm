@@ -137,6 +137,11 @@ Amm.Trait.DisplayParent.prototype = {
     },
     
     _cleanup_DisplayParent: function() {
+        // WTF
+        if (this.displayChildren.length && this.displayChildren[0] === this.displayChildren[1]) {
+            console.log(this.displayChildren.length);
+            throw new Error("WTF - displayChildren collection corrupted during cleanup");
+        }
         this.displayChildren.cleanup();
     },
     

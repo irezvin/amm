@@ -99,7 +99,7 @@ QUnit.test("Amm.Trait.Instantiator: Variants + builder extensions", function(ass
                     {
                         $: 'div',
                         data_amm_dont_build: '', 
-                        data_amm_condition: '{type: "A"}',
+                        data_amm_condition: '{ props: { type: "A" }}',
                         data_amm_e: {
                             prop__ref: null, 
                             prop__type: 'typeA',
@@ -109,7 +109,7 @@ QUnit.test("Amm.Trait.Instantiator: Variants + builder extensions", function(ass
                     {
                         $: 'div',
                         data_amm_dont_build: '', 
-                        data_amm_condition: '{type: "B"}',
+                        data_amm_condition: '{ props: { type: "B" }}',
                         data_amm_e: {
                             prop__ref: null, 
                             prop__type: 'typeB',
@@ -264,7 +264,7 @@ QUnit.test("Amm.Trait.Repeater: Variants + builder extensions", function(assert)
                     {
                         $: 'div',
                         data_amm_dont_build: '', 
-                        data_amm_condition: '{type: "A"}',
+                        data_amm_condition: '{props: { type: "A" }}',
                         data_amm_e: {
                             prop__ref: null, 
                             prop__type: 'typeA',
@@ -274,7 +274,7 @@ QUnit.test("Amm.Trait.Repeater: Variants + builder extensions", function(assert)
                     {
                         $: 'div',
                         data_amm_dont_build: '', 
-                        data_amm_condition: '{type: "B"}',
+                        data_amm_condition: '{ props: { type: "B" } }',
                         data_amm_e: {
                             prop__ref: null, 
                             prop__type: 'typeB',
@@ -294,7 +294,7 @@ QUnit.test("Amm.Trait.Repeater: Variants + builder extensions", function(assert)
         assert.ok(Amm.is(vr.getArrayMapper().getInstantiator(), 'Amm.Instantiator.Variants'),
             'since several prototypes were provided, Amm.Instantiator.Variants was created');
     
-        assert.ok(Amm.is(vr.getArrayMapper().getFilter(), 'Amm.Filter'),
+        assert.ok(Amm.is(vr.getArrayMapper().getFilter(), 'Amm.MultiObserver.Filter'),
             'array mapper has the filter, not instantiator');
         
     var e1 = new Amm.Element({prop__type: "A"});
