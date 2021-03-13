@@ -1,0 +1,2 @@
+/* global Amm */
+Amm.MultiObserver = {};
