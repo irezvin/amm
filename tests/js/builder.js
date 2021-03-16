@@ -293,7 +293,7 @@
         assert.ok(e2.findView('Amm.View.Html.Visual').getHtmlElement());
         assert.ok(e2.findView('Amm.View.Html.Content').getHtmlElement());
         
-        Amm.cleanup(e, e1);
+        Amm.cleanup(e, e1, e2);
         
     });
     

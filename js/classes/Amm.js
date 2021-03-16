@@ -72,6 +72,7 @@ Amm = {
         if (!this._root) {
             this._root = new this.Root();
             this.r = this._root;
+            if (this._eventStack.length) this._root.beginDefer();
         }
         return this._root;
     },
@@ -467,6 +468,7 @@ Amm = {
     },
     
     pushEvent: function(event) {
+        if (!this._eventStack.length && this._root) this._root.beginDefer();
         var tmp = this.event;
         event.parent = tmp;
         this._eventStack.push(this.event);
@@ -475,6 +477,9 @@ Amm = {
     
     popEvent: function() {
         this.event = this._eventStack.pop();
+        if (!this._eventStack.length && this._root) {
+            this._root.endDefer();
+        }
     },
     
     /**

@@ -123,7 +123,7 @@ Amm.ObservableFunction.prototype = {
     },
     
     clean: function(unusedOnly) {
-        for (i = this._links.length - 1; i >= 0; i--) {
+        for (var i = this._links.length - 1; i >= 0; i--) {
             if (unusedOnly && this._links[i].used) continue;
             this._links[i].dispose(true);
             if (unusedOnly) this._links.splice(i, 1);

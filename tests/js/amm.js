@@ -659,3 +659,55 @@ QUnit.test("Amm.createClass", function(assert) {
 });
    
     
+QUnit.test("Amm.getRoot().defer()", function(assert) {
+   
+    var msg = [];
+    
+    var first = function() { 
+        var sfx = (arguments.length)? ' ' + arguments[0] : '';
+        msg.push('first' + sfx); 
+    };
+    
+    var second = function() { 
+        Amm.getRoot().defer(third);
+        var sfx = (arguments.length)? ' ' + arguments[0] : ''; 
+        msg.push('second' + sfx + ' ' + Amm.event.name); 
+    };
+    
+    var third = function() {
+        var sfx = (arguments.length)? ' ' + arguments[0] : ''; 
+        msg.push('third' + sfx + ' ' + Amm.event.name); 
+    };
+    
+    Amm.getRoot().defer(first);
+    
+        assert.deepEqual(msg, ['first']); // first handler called immediately
+        
+
+    msg = [];
+    Amm.getRoot().beginDefer();
+    Amm.getRoot().defer(first);
+    
+        assert.deepEqual(msg, []);
+    
+    Amm.getRoot().endDefer();
+        assert.deepEqual(msg, ['first']); // first handler called immediately
+
+
+    msg = [];
+        
+    Amm.getRoot().subscribe('testEvent', function() {
+        Amm.getRoot().defer(second);
+        msg.push('event');
+    });
+
+    Amm.getRoot()._deferredCounter = 0;
+    
+    Amm.getRoot().raiseEvent('testEvent');
+        assert.deepEqual(msg, ['event', 'second deferred_1', 'third deferred_2']);
+        
+    Amm.getRoot().unsubscribe('testEvent');
+    
+    
+    
+});
