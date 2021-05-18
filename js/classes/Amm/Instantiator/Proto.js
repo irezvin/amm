@@ -47,22 +47,20 @@ Amm.Instantiator.Proto.prototype = {
     // required/default class in Amm.constructInstance
     requiredClass: null,
     
-    construct: function(object) {
-        var proto = this.generatePrototype(object);
+    construct: function(object, match) {
+        var proto = this.generatePrototype(object, match);
         var instance;
         if (this.isElement) instance = new Amm.Element(proto);
             else instance = Amm.constructInstance(proto, this.requiredClass); 
         if (this.assocProperty) Amm.setProperty(instance, this.assocProperty, object);
         if (this.revAssocProperty) Amm.setProperty(object, this.revAssocProperty, instance);
-        this.applyInstanceCallbacks(instance, object);
+        this.applyInstanceCallbacks(instance, object, match);
         return instance;
     },
     
-    generatePrototype: function(object) {
+    generatePrototype: function(object, match) {
         var proto;
-        if (this.proto && typeof this.proto === 'object' && !Amm.getClass(this.proto) &&
-            !Amm.isDomNode(this.proto)
-        ) {
+        if (this.proto && typeof this.proto === 'object' && !Amm.isDomNode(this.proto) && !Amm.getClass(this.proto)) {
             proto = Amm.override({}, this.proto);
             if (this.overrideProto && object && typeof object === 'object' && !Amm.getClass(object)) {
                 Amm.override(proto, object);
@@ -71,32 +69,32 @@ Amm.Instantiator.Proto.prototype = {
             proto = this.proto || {};
         }
         var ret = {proto: proto};
-        this.applyProtoCallbacks(ret, object);
+        this.applyProtoCallbacks(ret, object, match);
         return ret.proto;
     },
     
-    applyProtoCallbacks: function(ret, object) {
+    applyProtoCallbacks: function(ret, object, match) {
         if (!this.protoCallback && !this._subscribers.protoCallback) return;
         if (this.protoCallback) {
-            this.protoCallback.call(this.protoCallbackScope || this, ret, object);
+            this.protoCallback.call(this.protoCallbackScope || this, ret, object, match);
         }
-        this.outProtoCallback(ret, object);
+        this.outProtoCallback(ret, object, match);
     },
     
-    outProtoCallback: function(ret, object) {
-        return this._out('protoCallback', ret, object);
+    outProtoCallback: function(ret, object, match) {
+        return this._out('protoCallback', ret, object, match);
     },
     
-    applyInstanceCallbacks: function(instance, object) {
+    applyInstanceCallbacks: function(instance, object, match) {
         if (!this.instanceCallback && !this._subscribers.instanceCallback) return;
         if (this.instanceCallback) {
-            this.instanceCallback.call(this.instanceCallbackScope || this, instance, object);
+            this.instanceCallback.call(this.instanceCallbackScope || this, instance, object, match);
         }
-        this.outInstanceCallback(instance, object);
+        this.outInstanceCallback(instance, object, match);
     },
     
-    outInstanceCallback: function(instance, object) {
-        return this._out('instanceCallback', instance, object);
+    outInstanceCallback: function(instance, object, match) {
+        return this._out('instanceCallback', instance, object, match);
     },
     
     destruct: function(object) {

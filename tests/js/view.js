@@ -362,7 +362,7 @@
         fx.append(div);
         
         var elem = new Amm.Element({
-            properties: {
+            props: {
                 name: 'John',
                 surname: 'Doe',
                 age: 17,
@@ -373,7 +373,7 @@
         });
         
         var elem1 = new Amm.Element({
-            properties: {
+            props: {
                 name: 'Karen',
                 surname: 'Dobbs',
                 age: 23,
@@ -455,7 +455,7 @@
         fx.append(div);
         
         var elem = new Amm.Element({
-            properties: {
+            props: {
                 name: 'John',
                 surname: 'Doe',
                 age: 17,
@@ -466,7 +466,7 @@
         });
         
         var elem1 = new Amm.Element({
-            properties: {
+            props: {
                 name: 'Karen',
                 surname: 'Dobbs',
                 age: 23,

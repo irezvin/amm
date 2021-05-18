@@ -80,13 +80,13 @@ Amm.Element = function(options) {
     }
     Amm.WithEvents.call(this);
     var onHandlers = this._extractOnHandlers(options);
-    Amm.init(this, options, ['id', 'properties']);
+    Amm.init(this, options, ['id', 'props']);
     Amm.init(this, options);
-    if (extraProps) this.setProperties(extraProps);
+    if (extraProps) this.setProps(extraProps);
     if (extraPropsVals) {
         Amm.init(this, extraPropsVals);
     }
-    if (inProps.length) this._initInProperties(inProps);
+    if (inProps.length) this._initInProps(inProps);
     if (expressions) this.setExpressions(expressions);
     if (onHandlers) this._initOnHandlers(onHandlers);
     this._endInit();
@@ -350,17 +350,20 @@ Amm.Element.prototype = {
         return items;
     },
     
-    setProperties: function(properties) {
-        if (!properties || typeof properties !== 'object') {
-            throw Error("`properties` must be an object");
+    setProps: function(props) {
+        if (!props || typeof props !== 'object') {
+            throw Error("`props` must be an object");
         }
         var hh = [];
-        for (var i in properties) if (properties.hasOwnProperty(i)) {
-            var value = properties[i], onChange = undefined;
+        for (var i in props) if (props.hasOwnProperty(i)) {
+            var value = props[i], onChange = undefined;
             if (i.slice(0, 4) === 'in__') {
                 i = i.slice(4);
                 hh.push([i, value, Amm.Element.EXPROP_IN]);
                 value = undefined;
+            } else if (value && typeof value === 'function') {
+                this['_calc' + Amm.ucFirst(i)] = value;
+                Amm.ObservableFunction.createCalcProperty(i, this);
             } else if (value && typeof value === 'object'
               && ('onChange' in value || 'defaultValue' in value || 'in__' in value)) {
                 if ('in__' in value) {
@@ -371,10 +374,10 @@ Amm.Element.prototype = {
             }
             Amm.createProperty(this, i, value, onChange, true);
         }
-        if (hh.length) this._initInProperties(hh);
+        if (hh.length) this._initInProps(hh);
     },
     
-    _initInProperties: function(arrPropValues) {
+    _initInProps: function(arrPropValues) {
         for (var i = 0, l = arrPropValues.length; i < l; i++) {
             var propName = arrPropValues[i][0];
             var definition = arrPropValues[i][1];

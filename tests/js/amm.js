@@ -708,6 +708,22 @@ QUnit.test("Amm.getRoot().defer()", function(assert) {
         
     Amm.getRoot().unsubscribe('testEvent');
     
+});
+
     
+QUnit.test("Amm.overrideRecursive: detect instances", function(assert) {
+    
+    var el1 = new Amm.Element, el2 = new Amm.Element;
+    
+    var src = {foo: el1, obj: {something: 'someValue'}};
+    
+    var dest = {foo: el2, obj: {somethingElse: 'somethingMore'}};
+    
+    Amm.overrideRecursive(src, dest);
+    
+    assert.ok(src.foo === el2, 'Instances are overwritten');
+
+    assert.ok(src.obj.somethingElse === 'somethingMore', 'Plain ojects are merged');
     
 });
+

@@ -109,7 +109,7 @@ Amm.Table.Section.prototype = {
     },
     
     _setComponent_TableSection: function(component, oldComponent) {
-        if (component) Amm.is(component, 'Amm.Table', 'component');
+        if (component) Amm.is(component, 'Amm.Table.Table', 'component');
     },
     
     setTable: function(table) {

@@ -54,7 +54,7 @@ Created Tuesday 08 September 2020
 
 Создание нового namespace:
 
-'''
+{{{code: lang="js" linenumbers="False"
 SampleApp = {
 	
 	SampleClass: function() {
@@ -67,26 +67,34 @@ SampleApp = {
 
 SampleApp.SampleClass.SubClass = function()	
 Amm.registerNamespace ('SampleApp', SampleApp);
-'''
+
+}}}
 
 
 теперь можно получать конструкторы так:
 
-'''
-> Amm.getFunction('SampleApp.SampleClass')
-< function SampleClass()
+{{{code: lang="js" linenumbers="False"
 
-> Amm.getFunction('SampleApp.SampleClass.SubClass')
-< function SubClass()
-'''
+//>
+Amm.getFunction('SampleApp.SampleClass')
+
+//< function SampleClass()
+
+//>
+Amm.getFunction('SampleApp.SampleClass.SubClass')
+
+//< function SubClass()
+}}}
 
 
 поскольку Amm.getFunction может получать саму функцию в качестве параметра, подобные вызовы идентичны:
 
-'''
-> Amm.getFunction('SampleApp.SampleClass') === Amm.getFunction(SampleApp.SampleClass
-< true
-'''
+{{{code: lang="js" linenumbers="False"
+//>
+Amm.getFunction('SampleApp.SampleClass') === Amm.getFunction(SampleApp.SampleClass
+
+//< true
+}}}
 
 
 ===== имена классов, наследование и интерфейсы =====
@@ -101,7 +109,7 @@ Amm.registerNamespace ('SampleApp', SampleApp);
 
 Допустим, мы используем namespace SampleApp из прошлого примера, чтобы создать класс, унаследованный от Amm.WithEvents. Правильное создание самого простого класса при помощи Amm выполняется так: 
 
-'''
+{{{code: lang="js" linenumbers="False"
 SampleApp.SampleClass = function(options) {
 	Amm.WithEvents.prototype.call(this, options);
 }
@@ -109,8 +117,7 @@ SampleApp.SampleClass = function(options) {
 SampleApp.SampleClass.prototype = {
 	"SampleApp.SampleClass": "__CLASS__"
 }
-
-'''
+}}}
 
 ==== Проверка класса ====
 
@@ -128,35 +135,49 @@ SampleApp.SampleClass.prototype = {
 		* строка paramName - если параметр throwIfNot содержит строку, то вместо абстрактного "item" в тексте исключения будет метка paramName
 
 === Пример ===
-'''
-> obj = new SampleApp.SampleClass()
-< object
-> Amm.getClass(obj)
-< 'SampleApp.SampleClass'
-> Amm.is(obj, 'SampleApp.SampleClass')
-< true
-> Amm.is(obj, SampleApp.SampleClass) // нет кавычек - сразу используем конструктор
-< true
-'''
 
+{{{code: lang="js" linenumbers="False"
+//>
+obj = new SampleApp.SampleClass()
 
-'''
-> Amm.is(obj, 'Amm.WithEvents')
-< false
-'''
+//< object
+
+//>
+Amm.getClass(obj)
+
+//< 'SampleApp.SampleClass'
+
+//>
+Amm.is(obj, 'SampleApp.SampleClass')
+
+//< true
+
+//>
+Amm.is(obj, SampleApp.SampleClass) // нет кавычек - сразу используем конструктор
+
+//< true
+
+//>
+Amm.is(obj, 'Amm.WithEvents')
+
+//< false
+}}}
 
 
 === Использование Amm.is для проверки параметров функций ===
 Использование метода Amm.is(item, className, throwIfNot) со строкой в качестве throwIfNot, удобно для проверок в начале функций, ожидающих получить параметр нужного класса; например, у нас есть функция, которая ожидает, что первый параметр унаследован от Amm.WithEvents:
 
-'''
+{{{code: lang="js" linenumbers="False"
 function listEventHandlers(inspectedObject, eventName) {
 	Amm.is(inspectedObject, "Amm.WithEvents", "inspectedObject");
 	// ...
 }
-> listEventHandlers(new Amm.Builder.Ref, "someEvent")
-< Uncaught Error: inspectedObject must be an instance of Amm.WithEvents; given: Amm.Builder.Ref
-'''
+
+//>
+listEventHandlers(new Amm.Builder.Ref, "someEvent")
+
+//< Uncaught Error: inspectedObject must be an instance of Amm.WithEvents; given: Amm.Builder.Ref
+}}}
 
 
 то есть, если у нас есть метод с несколькими параметрами, в этой форме мы получим сообщение об ошибке, описывающее, с каким же именно параметром у нас проблема.
@@ -181,13 +202,15 @@ function listEventHandlers(inspectedObject, eventName) {
 
 То есть, приблизительно, то, что делает функция Amm.is(object, className) - это проверяет, чтобы соблюдалось условие 
 
-''object[className] === "__CLASS__" || object[className] === "__PARENT__"''
+{{{code: lang="js" linenumbers="False"
+object[className] === "__CLASS__" || object[className] === "__PARENT__"
+}}}
 
 Таким образом, проверка срабатывает не только на класс экземпляра, но и на классы его предков.
 
 === Пример ===
 
-'''
+{{{code: lang="js" linenumbers="False"
 SampleApp.SampleClass = function(options) {
 	Amm.WithEvents.prototype.call(this, options);
 }
@@ -197,27 +220,47 @@ SampleApp.SampleClass.prototype = {
 }
 
 Amm.extend(SampleApp.SampleClass, Amm.WithEvents);
-'''
 
+//>
+obj = new SampleApp.SampleClass()
 
-'''
-> obj = new SampleApp.SampleClass()
-< object
-> Amm.getClass(obj)
-< 'SampleApp.SampleClass'
-> Amm.is(obj, 'SampleApp.SampleClass')
-< true
-> Amm.is(obj, 'Amm.WithEvents')
-< true
-> Amm.is(obj, 'Amm.Element')
-< false
-> obj['SampleApp.SampleClass']
-< "__CLASS__"
-> obj['Amm.WithEvents']
-< "__PARENT__"
-> Amm.is(obj, SampleApp.SampleClass) // нет кавычек - сразу используем конструктор
-< true
-'''
+//< object
+
+//>
+Amm.getClass(obj)
+
+//< 'SampleApp.SampleClass'
+
+//>
+Amm.is(obj, 'SampleApp.SampleClass')
+
+//< true
+
+//>
+Amm.is(obj, 'Amm.WithEvents')
+
+//< true
+
+//> 
+Amm.is(obj, 'Amm.Element')
+
+//< false
+
+//>
+obj['SampleApp.SampleClass']
+
+//< "__CLASS__"
+
+//>
+obj['Amm.WithEvents']
+
+//< "__PARENT__"
+
+//>
+Amm.is(obj, SampleApp.SampleClass) // нет кавычек - сразу используем конструктор
+
+//< true
+}}}
 
 
 ==== Множественное наследование ====
@@ -226,7 +269,7 @@ Amm.extend(SampleApp.SampleClass, Amm.WithEvents);
 
 === Пример ===
 
-'''
+{{{code: lang="js" linenumbers="False"
 // из реализации Amm:
 
 Amm.View.Html.Collection = function(options) {
@@ -256,12 +299,17 @@ Amm.extend(Amm.View.Html.Collection, Amm.View.Html);
 // наследуем от второго предка:
 Amm.extend(Amm.View.Html.Collection, Amm.View.Abstract.Collection);
 
-> htmlCollection = new Amm.View.Html.Collection()
-> Amm.is(htmlCollection, 'Amm.View.Html')
-< true
-> Amm.is(htmlCollection, 'Amm.View.Abstract.Collection')
-< true
-'''
+//>
+htmlCollection = new Amm.View.Html.Collection()
+Amm.is(htmlCollection, 'Amm.View.Html')
+
+//< true
+
+//>
+Amm.is(htmlCollection, 'Amm.View.Abstract.Collection')
+
+//< true
+}}}
 
 ==== Наследование свойств, определенных при помощи Object.defineProperty ====
 
@@ -301,24 +349,39 @@ Amm.extend(Amm.View.Html.Collection, Amm.View.Abstract.Collection);
 
 === Пример ===
 
-'''
+{{{code: lang="js" linenumbers="False"
 MyClass = function() {}
+
 MyClass.prototype = {
 	"Boring": "__INTERFACE__",
 	"Dummy": "__INTERFACE__"
 }
-> instance = new MyClass()
-> Amm.getInterfaces(instance)
-< ["Boring", "Dummy"]
-> Amm.hasInterfaces(instance, "Boring")
-< true
-> Amm.hasInterface(instance, ["Dummy", "Boring"])
-< true
-> Amm.hasInterface(instance, ["Dummy", "Boring", "Other"])
-< false
-> Amm.is(instance, "Boring")
-< true
-'''
+//>
+instance = new MyClass()
+Amm.getInterfaces(instance)
+
+//< ["Boring", "Dummy"]
+
+//>
+Amm.hasInterfaces(instance, "Boring")
+
+//< true
+
+//>
+Amm.hasInterface(instance, ["Dummy", "Boring"])
+
+//< true
+
+//>
+Amm.hasInterface(instance, ["Dummy", "Boring", "Other"])
+
+//< false
+
+//>
+Amm.is(instance, "Boring")
+
+//< true
+}}}
 
 ==== Requirements ====
 
@@ -338,7 +401,7 @@ MyClass.prototype = {
 
 === Пример ===
 
-'''
+{{{code: lang="js" linenumbers="False"
 MyListClass = function() {}
 MyListClass.prototype = {
 	getList(): function() { return []; },
@@ -347,15 +410,26 @@ MyListClass.prototype = {
 MySecondListClass = function() {
         "WithList": "__INTERFACE__"
 }
-> myList = new MyListClass()
-> mySecondList = new MySecondListClass()
-> Amm.meetsRequirements (myList, [["getList", "setList, "deleteList"]])
-< false // поскольку у myList нет метода deleteList, а нам нужно все три
-> Amm.meetsRequirements (myList, ['WithList', ["getList", "setList"]])
-< true // поскольку срабатывает условие 2
-> Amm.meetsRequirements (mySecondList, ['WithList', ["getList", "setList"]])
-< true // поскольку срабатывает условие 1, у него есть интерфейс WithList
-'''
+
+//>
+myList = new MyListClass()
+mySecondList = new MySecondListClass()
+
+//>
+Amm.meetsRequirements (myList, [["getList", "setList, "deleteList"]])
+
+//< false // поскольку у myList нет метода deleteList, а нам нужно все три
+
+//>
+Amm.meetsRequirements (myList, ['WithList', ["getList", "setList"]])
+
+//< true // поскольку срабатывает условие 2
+
+//>
+Amm.meetsRequirements (mySecondList, ['WithList', ["getList", "setList"]])
+
+//< true // поскольку срабатывает условие 1, у него есть интерфейс WithList
+}}}
 
 
 ===== Amm.createClass(name, parent, proto, constructorFn) =====
@@ -374,7 +448,7 @@ MySecondListClass = function() {
 
 Возвращает созданную функцию.
 
-'''
+{{{code: lang="js" linenumbers="False"
 var GuyClass = Amm.createClass('GuyClass', 'Amm.WithEvents', { 
 	prop__name: null, 
 	prop__birthDate: null
@@ -386,20 +460,26 @@ var guy = new GuyClass ({
 	on__nameChange: function(newName) { console.log("new name is", newName); }
 });
 
+//>
 guy.name = 'xx';
-// "new name is", "xx"
 
+//<< "new name is", "xx"
+
+//>
 guy.getBirthDate();
-// '01.01.2001'
 
+//<< '01.01.2001'
+
+//>
 Amm.getClass(guy);
-// 'GuyClass'
 
+//< 'GuyClass'
+
+//>
 Amm.is(guy, 'Amm.WithEvents');
-// true
-'''
 
-
+//< true
+}}}
 
 
 

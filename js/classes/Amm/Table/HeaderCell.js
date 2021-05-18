@@ -25,7 +25,8 @@ Amm.Table.HeaderCell.prototype = {
             $: 'th',
             data_amm_v: [
                 {
-                    class: 'v.Visual'
+                    class: 'v.Visual',
+                    delay: 0,
                 },
             ],
             $$: [

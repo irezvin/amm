@@ -28,11 +28,11 @@
             assert.equal(r3.getOperator(0).valueVar, null, 'valueVar is null when not provided');
         
         var pp = [
-            new Amm.Element({properties: {name: 'Pup1', age: 6}}),
-            new Amm.Element({properties: {name: 'Pup2', age: 7}}),
-            new Amm.Element({properties: {name: 'Pup3', age: 8}}),
-            new Amm.Element({properties: {name: 'Pup4', age: 5}}),
-            new Amm.Element({properties: {name: 'Pup5', age: 4}}) 
+            new Amm.Element({props: {name: 'Pup1', age: 6}}),
+            new Amm.Element({props: {name: 'Pup2', age: 7}}),
+            new Amm.Element({props: {name: 'Pup3', age: 8}}),
+            new Amm.Element({props: {name: 'Pup4', age: 5}}),
+            new Amm.Element({props: {name: 'Pup5', age: 4}}) 
         ];
         var ncpp = [
             { name: 'Pup6', age: 11 },
@@ -277,7 +277,7 @@
     
     var mkElement = function(name, pass) {
         return new Amm.Element({
-            properties: {
+            props: {
                 name: name,
                 pass: pass
             }
@@ -489,14 +489,14 @@
     
     QUnit.test("Access operator ranges", function(assert) {
         
-        var c = new Amm.Element({traits: ['Amm.Trait.Component'], properties: {name: 'c', v: 5}});
-        var d = new Amm.Element({id: 'x', properties: {name: 'd', v: 10}, component: c});
-        var e = new Amm.Element({properties: {name: 'e', v: 5}, component: c});
-        var f = new Amm.Element({traits: ['Amm.Trait.Component'], properties: {name: 'f', v: 10}, isComponent: false, component: c});
-        var g = new Amm.Element({id: 'x', properties: {name: 'g', v: 5}, component: f});
-        var h = new Amm.Element({id: 'x', properties: {name: 'h', v: 10}, component: c});
-        var i = new Amm.Element({properties: {name: 'i', v: 5}, component: f});
-        var j = new Amm.Element({properties: {name: 'j', v: 10}, component: c});
+        var c = new Amm.Element({traits: ['Amm.Trait.Component'], props: {name: 'c', v: 5}});
+        var d = new Amm.Element({id: 'x', props: {name: 'd', v: 10}, component: c});
+        var e = new Amm.Element({props: {name: 'e', v: 5}, component: c});
+        var f = new Amm.Element({traits: ['Amm.Trait.Component'], props: {name: 'f', v: 10}, isComponent: false, component: c});
+        var g = new Amm.Element({id: 'x', props: {name: 'g', v: 5}, component: f});
+        var h = new Amm.Element({id: 'x', props: {name: 'h', v: 10}, component: c});
+        var i = new Amm.Element({props: {name: 'i', v: 5}, component: f});
+        var j = new Amm.Element({props: {name: 'j', v: 10}, component: c});
         
         var ex = new Amm.Expression("this->x{$item: $item.v == 10}", c);
         window.d.ex = ex;

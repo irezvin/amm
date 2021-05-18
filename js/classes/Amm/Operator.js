@@ -424,7 +424,7 @@ Amm.Operator.prototype = {
         Error("Call to abstract method _doSetValue");
     },
     
-    getReadonly: function() {
+    getReadOnly: function() {
         var res = this.supportsAssign? this._doSetValue(undefined, true) : "assignment not supported";
         if (!res) res = false;
         return res;

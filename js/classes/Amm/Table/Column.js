@@ -1,7 +1,12 @@
 /* global Amm */
 
 Amm.Table.Column = function(options) {
+    if (!options) options = {};
+    else options = Amm.override({}, options);
+    var editor = options.editor;
+    delete options.editor;
     Amm.Element.call(this, options);
+    if (editor) this.setEditor(editor);
 };
 
 Amm.Table.Column.prototype = {
@@ -10,16 +15,17 @@ Amm.Table.Column.prototype = {
 
     _enabled: true,
 
-    // element responsible for cell editor
-    _editor: null,
-    
     _caption: null,
 
     _displayOrder: null,
 
     _cellClassName: null,
 
+    _cellProto: null,
+
     _width: '',
+    
+    _tableActiveProp: 'activeColumn',
     
     _getDefaultTraits: function(options) {
         return [Amm.Trait.Visual];
@@ -68,6 +74,9 @@ Amm.Table.Column.prototype = {
     },
     
     configureCellProto: function(ret, row) {
+        if (this._cellProto) {
+            Amm.overrideRecursive(ret.proto, this._cellProto);
+        }
     },
     
     configureCellInstance: function(ret, row) {
@@ -77,7 +86,7 @@ Amm.Table.Column.prototype = {
         var res = Amm.html({
             $: 'col',
             data_amm_v: [
-                'v.Visual',
+                { class: 'v.Visual', delay: 0, },
                 {
                     class: 'v.Expressions',
                     map: {
@@ -117,8 +126,57 @@ Amm.Table.Column.prototype = {
     outCellClassNameChange: function(cellClassName, oldCellClassName) {
         this._out('cellClassNameChange', cellClassName, oldCellClassName);
     },
+    
+    setCellProto: function(cellProto) {
+        var oldCellProto = this._cellProto;
+        if (oldCellProto === cellProto) return;
+        this._cellProto = cellProto;
+        this.outCellProtoChange(cellProto, oldCellProto);
+        var t = this;
+        var affectedCells = this.findCells(function(cell) {
+            return (
+                cell.row 
+                && cell.row['Amm.Table.RowOfCells'] 
+                && cell.row.getColumnsConfigureCells()
+            );
+        }, true);
+        for (var i = 0, l = affectedCells.length; i < l; i++) {
+            affectedCells[i].row.rebuildCells([affectedCells[i]]);
+        }
+        return true;
+    },
+
+    getCellProto: function() { return this._cellProto; },
+
+    outCellProtoChange: function(cellProto, oldCellProto) {
+        this._out('cellProtoChange', cellProto, oldCellProto);
+    },
+    
+    _calcCanActivate: function(get) {
+        
+        if (get('locked')) return false;
+
+        var v = get('visible'), dp;
+        
+        return (v || v === undefined)
+            && get('enabled')
+            && (dp = get('displayParent'))
+            && Amm.is(dp, 'Amm.Table.ColGroup')
+            && Amm.is(get(dp, 'displayParent'), 'Amm.Table.Table');
+    
+    },
+    
+    findCells: function(callback, all) {
+        if (!this._component) return [];
+        var t = this;
+        return this._component.findCells(function(cell) {
+            return cell.column === t && (!callback || callback(cell));
+        }, all);
+    },
 
 };
 
 Amm.extend(Amm.Table.Column, Amm.Element);
+Amm.extend(Amm.Table.Column, Amm.Table.WithEditor);
+Amm.extend(Amm.Table.Column, Amm.Table.WithActive);
 

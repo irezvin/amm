@@ -393,7 +393,6 @@ Amm.Expression.prototype = {
     subscribeOperator: function(target, eventName, operator, method, extra) {
         var contextId = operator._contextId;
         if (extra === undefined) extra = null;
-        if (!this._eventsProxy) console.log('xx', this.getSrc(), this._contextId, this._contextState);
         this.subscribeObject(target, eventName, method, operator, [contextId, extra]);
     },
     

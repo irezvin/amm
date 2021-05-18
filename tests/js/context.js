@@ -7,19 +7,19 @@ QUnit.module("Context");
     QUnit.test("Context.basic", function(assert) {
         
         var e1 = new Amm.Element({
-            properties: {
+            props: {
                 a: 10,
                 b: 20
             }
         });
         var e2 = new Amm.Element({
-            properties: {
+            props: {
                 a: 100,
                 b: 200
             }
         });
         var e3 = new Amm.Element({
-            properties: {
+            props: {
                 a: 1,
                 b: 2
             }
@@ -100,7 +100,7 @@ QUnit.module("Context");
     QUnit.test("Context.mixedCacheability", function(assert) {
         
         var a = new Amm.Element({
-            properties: {
+            props: {
                 x: 10,
                 y: 20
             }
@@ -199,22 +199,22 @@ QUnit.module("Context");
     QUnit.test("Context.cleanup", function(assert) {
         
         var e1 = new Amm.Element({
-            properties: {
+            props: {
                 a: 10
             }
         });
         var e2 = new Amm.Element({
-            properties: {
+            props: {
                 a: 20
             }
         });
         var e3 = new Amm.Element({
-            properties: {
+            props: {
                 a: 30
             }
         });
         var o = new Amm.Element({
-            properties: {
+            props: {
                 v3: null
             }
         });

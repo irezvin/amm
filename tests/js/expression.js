@@ -1086,7 +1086,7 @@
         var strConstructor = function(arg) { return arg || 'RegExp'; };
             
         el = new Amm.Element({
-            prop__cls: window.RegExp,
+            prop__cls: { defaultValue: window.RegExp },
             getCon: function(arg) { return arg || 'RegExp'; }
         });
         

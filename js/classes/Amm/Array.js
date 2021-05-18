@@ -590,11 +590,11 @@ Amm.Array.prototype = {
         for (evName in events)
             if (events.hasOwnProperty(evName)) ev.push(evName);
         // ev contains only names of events (keys from `events` argument)
-        var evl = ev.length;
-        for (var i = 0, l = this._evCache.length; i < l; i++) {
+        var evl = ev.length, ec = this._evCache;
+        for (var i = 0, l = ec.length; i < l; i++) {
             for (var j = 0; j < evl; j++) {
                 evName = ev[j];
-                if (this._evCache[i][evName]) { // found suitable subscriber
+                if (ec[i][evName]) { // found suitable subscriber
                     var args = events[evName];
                     if (!args) {
                         args = [];
@@ -615,7 +615,7 @@ Amm.Array.prototype = {
                         this,  // origin
                         evName,  // event name
                         args, // args (in "events[evName]")
-                        this._evCache[i][evName] // event observers (same scope)
+                        ec[i][evName] // event observers (same scope)
                     );
                     // first index in _evCache is reserved 
                     // to the subscribers w/o scope, so we notify them all

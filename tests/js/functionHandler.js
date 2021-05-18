@@ -6,30 +6,30 @@
         
         var sub1, sub2, sub3;
         var adder = new Amm.Element({
-            properties: {
+            props: {
                 a: 'sub1',
                 b: 'sub2',
                 sum: 0,
                 oldSum: undefined,
                 sub1: sub1 = new Amm.Element({
-                    properties: {
+                    props: {
                         value: 100
                     }
                 }),
                 sub2: sub2 = new Amm.Element({
-                    properties: {
+                    props: {
                         value: 2000
                     }
                 }),
                 sub3: sub3 = new Amm.Element({
-                    properties: {
+                    props: {
                         value: 300
                     }
                 })
             }
         });
         var alt = new Amm.Element({
-            properties: {
+            props: {
                 value: 150
             }
         });

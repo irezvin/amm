@@ -45,7 +45,9 @@ Amm.Table.RowOfCells.prototype = {
     cellProtoCallback: function(ret, column) {
         if (!ret.proto.class) ret.proto.class = this._cellClass;
         if (this._cellProto) Amm.override(ret.proto, this._cellProto);
-        if (this._columnsConfigureCells) column.configureCellProto(ret, this);
+        if (this._columnsConfigureCells) {
+            column.configureCellProto(ret, this);
+        }
         if (this._table) {
             this._table.outCellProtoCallback(ret, column);
         }
@@ -81,6 +83,29 @@ Amm.Table.RowOfCells.prototype = {
             this._cellMapper.cleanup();
             this._cellMapper = null;
         }
+    },
+    
+    setCellProto: function(cellProto) {
+        var oldCellProto = this._cellProto;
+        if (oldCellProto === cellProto) return;
+        this._cellProto = cellProto;
+        if (this._cellMapper) this._cellMapper.rebuild();
+        this.outCellProtoChange(cellProto, oldCellProto);
+        return true;
+    },
+
+    getCellProto: function() { return this._cellProto; },
+
+    outCellProtoChange: function(cellProto, oldCellProto) {
+        this._out('cellProtoChange', cellProto, oldCellProto);
+    },
+    
+    getColumnsConfigureCells: function() {
+        return this._columnsConfigureCells;
+    },
+    
+    rebuildCells: function(cells) {
+        if (this._cellMapper) this._cellMapper.rebuildObjects(Amm.getProperty(cells, 'column'));
     },
     
 };

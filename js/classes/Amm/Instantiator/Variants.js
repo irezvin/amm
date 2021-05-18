@@ -173,6 +173,19 @@ Amm.Instantiator.Variants.prototype = {
         }
     },
     
+    getMatches: function(objects) {
+        var dupes = Amm.Array.findDuplicates([].concat(this._objects, objects), false, null, this._objects.length);
+        if (!dupes.length) return;
+        var i, l, myIdx, inIdx;
+        var res = [];
+        for (i = 0, l = objects.length; i < l; i++) res.push(undefined);
+        for (i = 0, l = dupes.length; i < l; i++) {
+            var myIdx = dupes[i][0], inIdx = dupes[i][1] - this._objects.length;
+            res[inIdx] = this._matches[myIdx];
+        }
+        return res;
+    },
+    
     setMatches: function(objects, matches) {
         if (!objects.length || !this._objects.length) return;
         if (matches.length !== objects.length) throw Exception("`objects` and `matches` must have same length (are: " + objects.length + " and " + matches.length + ")");

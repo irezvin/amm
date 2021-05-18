@@ -20,6 +20,8 @@ Amm.Table.ObservingCell.prototype = {
     
     _value: null,
     
+    _valueVisible: true,
+    
     _doOnColumnChange: function(column, oldColumn) {
         Amm.Table.Cell.prototype._doOnColumnChange.call(this, column, oldColumn);
         Amm.subUnsub(column, oldColumn, this, ['sourceChange', 'idChange'], '_updateSource');
@@ -47,8 +49,40 @@ Amm.Table.ObservingCell.prototype = {
         this._unobserve();
         this._source = source;
         this._observe();
+        if (source && source['Amm.Expression']) {
+            var oldExpression = null;
+            if (oldSource && oldSource['Amm.Expression']) oldExpression = oldSource;
+        }
         this.outSourceChange(source, oldSource);
         return true;
+    },
+
+    _calcValueUpdateable: function(g) {
+        if (Amm.Table.Cell.prototype._calcValueUpdateable.call(this, g)) return true;
+        if (g('readOnly')) return false;
+        var source = g('source');
+        if (source && source['Amm.Expression']) {
+            source.setContextId(this._contextId);
+            return !g(source, 'readOnly', null, ['writeDestinationChanged']);
+        }
+        if (!source || (!g('item') || (typeof g('item')) !== 'object')) return false;
+        var caps = {};
+        Amm.detectProperty(g('item'), source, caps);
+        return !!caps.setterName;
+    },
+    
+    _doUpdateValue: function(value, editor, ret) {
+        ret.done = true;
+        if (!this.getValueUpdateable()) return;
+        if (this._source && this._source['Amm.Expression']) {
+            this._source.setContextId(this._contextId);
+            if (!this._source.getReadOnly()) {
+                this._source.setValue(value);
+                ret.done = true;
+            }
+        } else if (this._source && this._item) {
+            Amm.setProperty(this._item, this._source, value);
+        }
     },
     
     _unobserve: function() {
@@ -116,29 +150,50 @@ Amm.Table.ObservingCell.prototype = {
         this.setItem(null);
         this.setSource(null); 
     },
-   
+
+    setValueVisible: function(valueVisible) {
+        console.warn('Amm.Table.ObservingCell.setValueVisible() has no effect');
+    },
+
+    getValueVisible: function() { return !this._editing; },
+
+    outEditingChange: function(editing, oldEditing) {
+        Amm.Table.Cell.prototype.outEditingChange.call(this, editing, oldEditing);
+        this.outValueVisibleChange(!editing, !oldEditing);
+    },
+    
+    outValueVisibleChange: function(valueVisible, oldValueVisible) {
+        this._out('valueVisibleChange', valueVisible, oldValueVisible);
+    },
+
     constructDefaultViews: function() {
         var res = Amm.html({
             $: 'td',
+            tabindex: 0,
             data_amm_v: [
                 {
-                    class: 'v.Visual'
+                    class: 'v.Visual',
+                    delay: 0,
                 },
             ],
             $$: [
                 {
                     $: 'div',
+                    'class': 'value',
                     data_amm_value: true,
+                    data_amm_id: '__parent',
                     data_amm_v: {
                         class: 'v.Expressions',
                         map: {
-                            _html: 'value'
+                            _html: 'value',
+                            _visible: 'valueVisible'
                         }
                     }
                 },
                 {
                     $: 'div',
-                    class: 'v.DisplayParent'
+                    data_amm_id: '__parent',
+                    data_amm_v: 'v.DisplayParent'
                 }
             ]
         });

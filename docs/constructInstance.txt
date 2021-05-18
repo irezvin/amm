@@ -36,7 +36,7 @@ Created понеділок 05 жовтня 2020
 
 Для начала создадим два класса: человек (Person) с свойствами name, birthDate и occupation, и сотрудник (Employee) - класс-наследник, у которого будут также свойства position и salary.
 
-'''
+{{{code: lang="js" linenumbers="False"
 var Sample = {};
 
 Amm.registerNamespace('Sample', Sample);
@@ -51,10 +51,7 @@ Amm.createClass('Sample.Employee', 'Sample.Person', {
 	prop__position: null,
 	prop__salary: null
 });
-'''
-
-
-
+}}}
 
 
 ===== Amm.constructMany: function(manyOptions, baseClass, defaults, keyToProperty, setToDefaults, requirements) =====

@@ -262,7 +262,7 @@ Amm.WithEvents.prototype = {
             this._subscribers[r[3]].splice(r[4], 1);
             if (!this._subscribers[r[3]].length) {
                 delete this._subscribers[r[3]];
-                var fn = '_unsubscribeLast_' + eventName;
+                var fn = '_unsubscribeLast_' + r[3];
                 if (this[fn] && typeof this[fn] === 'function') this[fn]();
             }
         }
@@ -270,7 +270,13 @@ Amm.WithEvents.prototype = {
     },
     
     cleanup: function() {
+        var tmp = this._subscribers, fn;
         this._subscribers = {};
+        for (var i in tmp) if (tmp.hasOwnProperty(i)) {
+            if ((typeof this[fn = 'unsubscribeLast_' + i]) === 'function') {
+                this[fn]();
+            }
+        }
         Amm.unregisterItem(this);
     },
 

@@ -26,7 +26,7 @@ changeEvent должен срабатывать только в случае, е
 
 Чтобы создать класс с минимально функционирующим свойством "value", нужен следующий код:
 
-'''
+{{{code: lang="js" linenumbers="False"
 ClassWithValue = function(options) {
 	Amm.WithEvents.call(this, options);
 }
@@ -60,15 +60,26 @@ var Sample = new ClassWithValue({
 	}
 });
 
-> Sample.getValue()
-< 50
-> Sample.setValue(30)
-<< 'value changed from', 50, 'to', 30
-> Sample.setValue(30)
-<< // консоль ничего не выдает
-> Sample.setValue('30')
-<< 'value changed from', 30, 'to', '30' // поскольку сравнение строгое
-'''
+//>
+Sample.getValue()
+
+//< 50
+
+//>
+Sample.setValue(30)
+
+//<< 'value changed from', 50, 'to', 30
+
+//>
+Sample.setValue(30)
+
+//<< // консоль ничего не выдает
+
+//>
+Sample.setValue('30')
+
+// << 'value changed from', 30, 'to', '30' // поскольку сравнение строгое
+{{{code: lang="js" linenumbers="False"
 
 ===== Генерация кода для свойств при помощи утилиты командной строки =====
 
@@ -77,16 +88,19 @@ var Sample = new ClassWithValue({
 
 Формат вызова:
 
-''$> ./mk.php -p <propName1> [<propName2> <propName3> ...]''
+{{{code: lang="sh" linenumbers="False"
+#>
+./mk.php -p <propName1> [<propName2> <propName3> ...]
+}}}
 
 Утилита выдает "protected"-члены для свойств _propName1, _propName2... в начале (значение по умолчанию - null), после чего get-, set- и out-методы для каждого свойства. (Код практически идентичен приведенному выше).
 
 Чтобы сразу поместить это определение в буфер обмена, можно использовать xclip:
 
-'''
+{{{code: lang="sh" linenumbers="False"
 #!/bin/bash
 php /path/to/mk.php -p $* | xclip -i -selection clipboard
-'''
+}}}
 
 
 ===== Что делать в setter'е и getter'е (часть 1) =====
@@ -122,13 +136,15 @@ php /path/to/mk.php -p $* | xclip -i -selection clipboard
 
 В примере ниже мы создаем свойство не у объекта, а у его прототипа, чтобы оно появлялось у всех экземпляров.
 
-'''
+{{{code: lang="js" linenumbers="False"
 var ClassWithNumber = function(options) {
     Amm.WithEvents.call(this, options);
 }
+
 ClassWithNumber.prototype = {	
     'ClassWithNumber': '__CLASS__',
 }
+
 Amm.createProperty(ClassWithNumber.prototype, 'number', 0, {
     before: function(number, old) {
         if (typeof number === 'number') return;
@@ -148,22 +164,37 @@ var Sample = new ClassWithNumber({
 	}
 });
 
-> Sample.number
-< 0
-> Sample.number = 30.5
-<< 'number changed from', 0, 'to', 30.5
-> Sample.number = '20.5'
-<< 'number changed from', 30, 'to', 20.5
-> Sample.number
-< 20.5 // преобразовано в число
-> Sample.number = 'xxx'
-< Uncaught Error: Please specify proper number; given: 'xxx'
+//>
+Sample.number
 
-'''
+//< 0
+
+//>
+Sample.number = 30.5
+
+//<< 'number changed from', 0, 'to', 30.5
+
+//>
+Sample.number = '20.5'
+
+//<< 'number changed from', 30, 'to', 20.5
+
+//>
+Sample.number
+
+//< 20.5 // преобразовано в число
+
+//>
+Sample.number = 'xxx'
+
+//<< Uncaught Error: Please specify proper number; given: 'xxx'
+}}}
+
 ==== Пример с наследованием ====
 (продолжая предыдущий)
 
-'''
+{{{code: lang="js" linenumbers="False"
+
 var ClassWithInt = function(options) { return ClassWithNumber.call(this, options); };
 
 // класс, который округляет значение свойства
@@ -181,18 +212,31 @@ ClassWithInt.prototype = {
 Amm.extend(ClassWithInt, ClassWithNumber);
 
 var Sample2 = new ClassWithInt();
-> Sample2.number
-< 0
-> Sample2.number = 20.1
-> Sample2.number
-< 20 // сработало округление при помощи Math.round()
-> Sample2.number = '20.7'
-> Sample2.number
-< 21 // сработало преобразование и округление
-> Sample2.number = 'zzz'
-< Uncaught error: Please specify proper number; given: 'zzz' // сработал код класса-предка
-'''
+//>
+Sample2.number
 
+//< 0
+
+//>
+Sample2.number = 20.1
+
+//>
+Sample2.number
+
+//<20 // сработало округление при помощи Math.round()
+
+//>
+Sample2.number = '20.7'
+Sample2.number
+
+//< 21 // сработало преобразование и округление
+
+//>
+Sample2.number = 'zzz'
+
+//<< Uncaught error: Please specify proper number; given: 'zzz' // сработал код класса-предка
+
+}}}
 
 ===== Функции Amm для работы со свойствами =====
 
@@ -248,21 +292,37 @@ var Sample2 = new ClassWithInt();
 
 Например:
 
-'''
-> foo.setClassName("table empty")
-> foo.getClassName()
-< "table empty"
-> foo.getClassName("table") 
-< true
-> foo.getClassName("empty")
-< true
-> foo.setClassName(false, "empty") // убрали "empty"
-> foo.getClassName()
-< "table"
-> foo.setClassName(true, "empty") // добавили "empty"
-> foo.getClassName()
-< "table empty"
-'''
+{{{code: lang="js" linenumbers="False"
+//>
+foo.setClassName("table empty")
+
+//>
+foo.getClassName()
+
+//< "table empty"
+
+//>
+foo.getClassName("table") 
+
+//< true
+
+//>
+foo.getClassName("empty")
+
+//< true
+
+//>
+foo.setClassName(false, "empty") // убрали "empty"
+foo.getClassName()
+
+//< "table"
+
+//>
+foo.setClassName(true, "empty") // добавили "empty"
+foo.getClassName()
+
+//< "table empty"
+}}}
 
 
 Важно учитывать следующие моменты:

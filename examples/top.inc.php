@@ -13,8 +13,10 @@
 <html data-amm-build="">
     <head>
         <title><?php echo $prefix.$title; ?> &mdash; A.M.M. Examples</title>
-        <meta charset='utf-8'>
-        <link rel="stylesheet" type="text/css" href="example.css" />
+        <meta charset='utf-8' />
+<?php   if (!(isset($skipExampleCss) && $skipExampleCss)) { ?>
+            <link rel="stylesheet" type="text/css" href="example.css" /> 
+<?php   } ?>
         <script src="../vendor/jquery.js"></script>
         <script src="../vendor/relaxed-json.js"></script>
 <?php 

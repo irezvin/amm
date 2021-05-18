@@ -1,6 +1,6 @@
 /* global Amm */
 
-Amm.ObservableFunction = function(fn, expressionThis, writeProperty, writeObject) {
+Amm.ObservableFunction = function(fn, expressionThis, propertyOrHandler, writeObjectOrScope, update) {
 
     var options;
     
@@ -10,10 +10,12 @@ Amm.ObservableFunction = function(fn, expressionThis, writeProperty, writeObject
         delete options.fn;
         expressionThis = options.expressionThis;
         delete options.expressionThis;
-        writeProperty = options.writeProperty;
-        delete options.writeProperty;
-        writeObject = options.writeObject;
-        delete options.writeObject;
+        propertyOrHandler = options.propertyOrHandler;
+        delete options.propertyOrHandler;
+        writeObjectOrScope = options.writeObjectOrScope;
+        delete options.writeObjectOrScope;
+        update = options.update;
+        delete options.update;
     }
     
     Amm.WithEvents.call(this);
@@ -22,11 +24,8 @@ Amm.ObservableFunction = function(fn, expressionThis, writeProperty, writeObject
     if (!fn || typeof fn !== 'function') throw Error("`fn` is required and must be a function");
     this._fn = fn;
     this._expressionThis = expressionThis || null;
-    if (expressionThis && expressionThis['Amm.WithEvents'] && expressionThis.hasEvent('cleanup')) {
-        expressionThis.subscribe('cleanup', this.handleExpressionThisCleanup, this);
-    }
-    this._writeObject = writeObject || null;
-    this._writeProperty = writeProperty || null;
+    this._writeObjectOrScope = writeObjectOrScope || null;
+    this._propertyOrHandler = propertyOrHandler || null;
     var t = this;
     this._get = function(source, property, args, extraEvents) {
         if (arguments.length === 1) return t.get(source);
@@ -47,9 +46,13 @@ Amm.ObservableFunction = function(fn, expressionThis, writeProperty, writeObject
     Amm.init(this, options);
     if (onHandlers) this._initOnHandlers(onHandlers);
     this._checkNeedObserve();
-    if (this._writeProperty && (this._writeObject || this._expressionThis)) {
+    if (update) {
+        this._updates = true;
+    }
+    if (this._propertyOrHandler && (this._writeObjectOrScope || this._expressionThis)) {
         this.update();
     }
+    this._updates = true;
 };
 
 Amm.ObservableFunction.prototype = {
@@ -75,14 +78,26 @@ Amm.ObservableFunction.prototype = {
     
     _observes: false,
     
+    _updates: false,
+    
     cleanupWithExpressionThis: true,
     
     _setObserves: function(observes) {
         observes = !!observes;
         if (observes === this._observes) return;
         this._observes = observes;
-        if (observes) this.update();
-            else this.clean();
+        var ev = this._expressionThis;
+        if (observes) {
+            if (this._updates) this.update();
+            if (ev && ev['Amm.WithEvents'] && ev.hasEvent('cleanup')) {
+                ev.subscribe('cleanup', this.handleExpressionThisCleanup, this);
+            }
+        } else {
+            this.clean();
+            if (ev && ev['Amm.WithEvents'] && ev.hasEvent('cleanup')) {
+                ev.unsubscribe('cleanup', this.handleExpressionThisCleanup, this);
+            }
+        }
     },
     
     getObserves: function() {
@@ -99,8 +114,9 @@ Amm.ObservableFunction.prototype = {
     
     _checkNeedObserve: function() {
         var needObserve = false;
-        if (this._writeProperty && (this._writeObject || this._expressionThis)) needObserve = true;
-        else if (this._subscribers['valueChange']) needObserve = true;
+        if (this._propertyOrHandler && (this._writeObjectOrScope || this._expressionThis)) {
+            needObserve = true;
+        } else if (this._subscribers['valueChange']) needObserve = true;
         if (needObserve !== this._observes) this._setObserves(needObserve);
     },
     
@@ -187,9 +203,15 @@ Amm.ObservableFunction.prototype = {
         var oldValue = this._value;
         if (oldValue === value) return;
         this._value = value;
-        if (this._writeProperty) {
-            var writeObject = this._writeObject || this._expressionThis;
-            if (writeObject) Amm.setProperty(writeObject, this._writeProperty, value);
+        if (!this._updates) return true;
+        if (this._propertyOrHandler) {
+            var writeObjectOrScope = this._writeObjectOrScope || this._expressionThis;
+            if (typeof this._propertyOrHandler === 'function') {
+                this._propertyOrHandler.call(writeObjectOrScope || window, value, oldValue);
+            } else {
+                
+                if (writeObjectOrScope) Amm.setProperty(writeObjectOrScope, this._propertyOrHandler, value);
+            }
         }
         this.outValueChange(value, oldValue);
         return true;
@@ -214,7 +236,7 @@ Amm.ObservableFunction.prototype = {
         this.clean();
         this._links = [];
         this._expressionThis = null;
-        this._writeObject = null;
+        this._writeObjectOrScope = null;
         this._value = null;
         this._fn = null;
         this._get = null;
@@ -294,5 +316,41 @@ Amm.ObservableFunction.prepareArgs = function(args) {
     }
     if (args === null || args === undefined) return null;
     return args;
+};
+
+Amm.ObservableFunction.createCalcProperty = function(propName, object) {
+    var ucPropName = Amm.ucFirst(propName);
+    var calc = '_calc' + ucPropName;
+    var ofun = '_ofun' + ucPropName;
+    var ev = propName + 'Change';
+    var outFn = 'out' + Amm.ucFirst(ev);
+    if (object && typeof object[calc] !== 'function') {
+        throw Error("Cannot createCalcProperty(object, `" + propName + "`): object."
+            + calc + " is not a function");
+    }
+    var proto = {};
+    proto[ofun] = null;
+    proto['get' + ucPropName] = function() {
+        return (this[ofun] || new Amm.ObservableFunction(this[calc], this)).getValue();
+    };
+    proto['set' + ucPropName] = function(val) {
+        console.warn(Amm.getClass(this) + '.set' + ucPropName + '() has no effect');
+    };
+    proto[outFn] = function(value, oldValue) {
+        return this._out(ev, value, oldValue);
+    };
+    proto['_subscribeFirst_' + ev] = function() {
+        this[ofun] = new Amm.ObservableFunction(this[calc], this, this[outFn]);
+    };
+    proto['_unsubscribeLast_' + ev] = function() {
+        if (!this[ofun]) return;
+        this[ofun].cleanup();
+        this[ofun] = null;
+    };
+    if (!object) return proto;
+    for (var i in proto) if (proto.hasOwnProperty(i)) {
+        if (!object[i]) object[i] = proto[i];
+    }
+    return proto;    
 };
 

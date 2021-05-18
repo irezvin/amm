@@ -73,7 +73,7 @@ Amm.View.Html.Visual.prototype = {
     getSuggestedTraits: function() {
         return [Amm.Trait.Visual];
     }
-    
+        
 };
 
 Amm.extend(Amm.View.Html.Visual, Amm.View.Html);

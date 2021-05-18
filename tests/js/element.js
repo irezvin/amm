@@ -6,7 +6,7 @@
     QUnit.test("Element.PropertyInitializers", function(assert) {
         var chg = [];
         var e = new Amm.Element({
-            properties: {
+            props: {
                 a: 10,
                 b: {
                     defaultValue: 15
@@ -45,7 +45,7 @@
         
         var e2 = new Amm.Element({
             prop__extra: null,
-            properties: {
+            props: {
                 extra2: null,
             },
             extra: 50,
@@ -60,7 +60,7 @@
     QUnit.test("Element.ElementHandlers", function(assert) {
         var v = new Amm.Element({
             traits: ['Amm.Trait.Input'],
-            properties: {
+            props: {
                 e: new Amm.Element({traits: ['Amm.Trait.Input'], value: 20})
             },
             in__value: 'this.e.value + 20',

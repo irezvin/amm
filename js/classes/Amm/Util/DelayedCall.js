@@ -11,7 +11,7 @@ Amm.Util.DelayedCall = function(func, contextObject, args, delay, immediate) {
 
 Amm.Util.DelayedCall.prototype = {
     
-	'Amm.Util.DelayedCall': '__CLASS__', 
+    'Amm.Util.DelayedCall': '__CLASS__', 
     
     func: null,
     
@@ -40,8 +40,8 @@ Amm.Util.DelayedCall.prototype = {
     },
 
     call: function() {
-    	this._clearTimeout();
-    	
+        this._clearTimeout();
+        
         if (this.delay) {
             if (!this._tmFn) this._tmFn = function(t) {
                 return function() {t._run();};
@@ -52,8 +52,8 @@ Amm.Util.DelayedCall.prototype = {
     },
     
     callWithArgs: function() {
-    	this.args = Array.prototype.slice.call(arguments, 0);
-    	this.call();
+        this.args = Array.prototype.slice.call(arguments, 0);
+        this.call();
     },
 
     _run: function() {
@@ -65,7 +65,7 @@ Amm.Util.DelayedCall.prototype = {
     },
     
     immediate: function() {
-    	this.cancel();
+        this.cancel();
         if (this.func) {
             var ctx = this.contextObject? this.contextObject : this;
             this.func.apply(ctx, this.args);
@@ -73,7 +73,7 @@ Amm.Util.DelayedCall.prototype = {
     },
     
     isActive: function() {
-    	return !!this._timeout;
+        return !!this._timeout;
     },
 
     cleanup: function() {

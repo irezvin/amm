@@ -279,8 +279,6 @@
         assert.equal(f.getMatch(sam.p.Vika), 'p', 'First matching condition ID is returned');
         assert.equal(f.getMatch(sam.p.John), 'pj', 'First matching condition ID is returned');
         
-        return;
-        
         sam.p.Vika.setTechnology('Javascript');
         assert.deepEqual(o, [], 'No matchingObjects change triggered despite matchesChange');
         assert.deepEqual(m, [[

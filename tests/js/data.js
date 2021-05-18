@@ -191,7 +191,7 @@
         
         var simp = new Amm.Data.Model();
         var simpCheck = simp.mm.check();
-        assert.ok(simpCheck, 'Data.Model without properties: check() returns true');
+        assert.ok(simpCheck, 'Data.Model without props: check() returns true');
         assert.deepEqual(simp.mm.getErrors(), null,
             'Data.Model after successful check(): getErrors() is NULL');
         

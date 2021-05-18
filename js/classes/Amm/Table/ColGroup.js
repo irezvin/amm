@@ -37,7 +37,7 @@ Amm.Table.ColGroup.prototype = {
     },
     
     _setComponent_TableColGroup: function(component, oldComponent) {
-        if (component) Amm.is(component, 'Amm.Table', 'component');
+        if (component) Amm.is(component, 'Amm.Table.Table', 'component');
     },
     
     setTable: function(table) {

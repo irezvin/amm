@@ -35,7 +35,7 @@ Amm.Table.ObservingColumn.prototype = {
         this.outSourceChange(source, oldSource);
         return true;
     },
-
+    
     getSource: function() { return this._source; },
 
     outSourceChange: function(source, oldSource) {
@@ -54,6 +54,7 @@ Amm.Table.ObservingColumn.prototype = {
     },
     
     configureCellProto: function(ret, row) {
+        Amm.Table.Column.prototype.configureCellProto.call(this, ret, row);
         ret.proto.class = 'Amm.Table.ObservingCell';
     }
 

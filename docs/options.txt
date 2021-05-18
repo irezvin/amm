@@ -11,7 +11,7 @@ Created Monday 21 September 2020
 
 Большинство конструкторов в Amm принимают хеш "опций", то есть пар property: value, которые устанавливаются при инициализации.
 
-'''
+{{{code: lang="js" linenumbers="False"
 var options = {
 	prop1: value1, 
 	prop2: value2,
@@ -22,21 +22,25 @@ var options = {
 	}
 };
 var Instance = new Namespace.SomeClass(options);
-'''
+}}}
 
 
 Даже те конструкторы, которые допускают другие наборы параметров, в большинстве случаев проверяют стандартную форму вызова (один параметр - объект) - например, Amm.Expression:
 
-''var expr = new Amm.Expression("'Number of products: ' + this.component.products.length", this);''
+{{{code: lang="js" linenumbers="False"
+var expr = new Amm.Expression("'Number of products: ' + this.component.products.length", this);
+}}}
+
 
 аналогично следующему коду:
 
-'''
+{{{code: lang="js" linenumbers="False"
 var expr = new Amm.Expression({
 	src: "'Number of products: ' + this.component.products.length",
 	expressionThis: this
 });
-'''
+}}}
+
 
 
 **Важно: порядок установки свойств обычно такой, в котором они перечислены в массиве options.** 
@@ -75,7 +79,7 @@ var expr = new Amm.Expression({
 
 Ниже приведен намеренно идиотский пример класса "мебель" с тремя свойствами: тип (стол или стул), ширина и высота в миллиметрах. Ширина меньше 500 может быть только у стульев, а высота больше 800 - только у столов. Проверка сделана в setter'ах. Поскольку нам нужно знать тип до назначения ширины или высоты, мы вызываем init два раза: сначала только для типа, затем - для всего остального (так как первый вызов разрушающий, мы предварительно клонируем объект). Чтобы упростить код и не приходилось делать повторные проверки при изменении type, мы даем установить type только один раз.
 
-'''
+{{{code: lang="js" linenumbers="False"
 var Furniture = function(options) {
 	if (!options) return;
 	if (typeof options !== 'object') 
@@ -110,14 +114,10 @@ Amm.createProperty(Furniture.prototype, 'width', undefined, function(width) {
 Amm.createProperty(Furniture.prototype, 'height', undefined, function(height) {
 	if (this.type !== 'table' && height > 800)
 		throw Error("Only table can be higher than 800");
-'''
-
-
-'''
 });
 
 var chair = new Furniture ({height: 300, width: 400, type: 'chair'});
 var table = new Furniture ({width: 600, height: 900, type: 'table'});
 
-'''
+}}}
 **TODO: сделать Amm.init(), Amm.WithEvents() и подобные функции без побочных эффектов (точнее, клонировать только раз, и только когда разрушение понадобилось). После этого обновить документацию.**

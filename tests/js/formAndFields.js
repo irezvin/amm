@@ -251,7 +251,7 @@
         
         experience = new Amm.Element({
             traits: ['Amm.Trait.Field'],
-            properties: {
+            props: {
                 age: age
             },
             validationExpressions: [

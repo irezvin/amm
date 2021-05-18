@@ -777,14 +777,14 @@
     var getSample = function() {
         var res = {
             items: [
-                new Amm.Element({properties: {name: 'c', group: 'omega', points: 40}}),
-                new Amm.Element({properties: {name: 'z', group: 'omega', points: 30}}),
+                new Amm.Element({props: {name: 'c', group: 'omega', points: 40}}),
+                new Amm.Element({props: {name: 'z', group: 'omega', points: 30}}),
  
-                new Amm.Element({properties: {name: 'w', group: 'alpha', points: 90}}),
-                new Amm.Element({properties: {name: 'y', group: 'alpha', points: 80}}),
+                new Amm.Element({props: {name: 'w', group: 'alpha', points: 90}}),
+                new Amm.Element({props: {name: 'y', group: 'alpha', points: 80}}),
  
-                new Amm.Element({properties: {name: 'a', group: 'omega', points: 60}}),
-                new Amm.Element({properties: {name: 'b', group: 'omega', points: 50}}),
+                new Amm.Element({props: {name: 'a', group: 'omega', points: 60}}),
+                new Amm.Element({props: {name: 'b', group: 'omega', points: 50}}),
             ]
         };
         for (var i = 0, l = res.items.length; i < l; i++) {

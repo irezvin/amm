@@ -552,6 +552,14 @@ Amm.ArrayMapper.prototype = {
         this._instantiator.handleFilterMatchesChange(objects, matches, oldMatches);
     },
     
+    rebuildObjects: function(srcObjects) {
+        var matches;
+        if (this._instantiator && !this._instantiatorIsFn && this._instantiator.getMatches) {
+            matches = this._instantiator.getMatches(srcObjects);
+        }
+        this._handleInstantiatorNeedRebuild(srcObjects, matches);
+    },
+    
     _handleInstantiatorNeedRebuild: function(objects, matches) {
         var i, l, idx, dest, destItem, destIdx = -1, item, srcUnique, match, newDestItem;
         srcUnique = this._src.getUnique();
@@ -559,11 +567,15 @@ Amm.ArrayMapper.prototype = {
             this._dest.beginUpdate();
         }
         for (i = 0, l = objects.length; i < l; i++) {
-            match = matches[i];
-            // not interesed in non-matching object 
-            // (it's dest instance won't appear in _dest because of filter)
+            if (matches) {  
+                match = matches[i];
+                // not interesed in non-matching object 
+                // (its' dest instance won't appear in _dest because of filter)
+                if (!match) continue; 
+            } else {
+                match = undefined;
+            }
             
-            if (!match) continue; 
             item = objects[i];
             while ((idx = Amm.Array.indexOf(item, this._src, idx)) >= 0) {
                 dest = this._srcEntries[idx][Amm.ArrayMapper._SRC_REF_TO_DEST];
@@ -583,14 +595,14 @@ Amm.ArrayMapper.prototype = {
         if (objects.length > 1 || !this._src.getUnique()) this._dest.endUpdate();
     },
     
-    _construct: function(srcItem, pass) {
+    _construct: function(srcItem, match) {
         if (!this._instantiator) return srcItem;
-        if (this._instantiatorIsFn) return this._instantiator(srcItem, this);
+        if (this._instantiatorIsFn) return this._instantiator(srcItem, match, this);
         if (this._instantiator.getFilter) {
             var f = this._instantiator.getFilter();
-            if (f && f !== this._filter) pass = undefined;
+            if (f && f !== this._filter) match = undefined;
         }
-        return this._instantiator.construct(srcItem, pass, this);
+        return this._instantiator.construct(srcItem, match, this);
     },
     
     _destruct: function(destItem) {

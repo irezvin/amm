@@ -127,17 +127,22 @@ Amm = {
             skip = parentClass.beforeExtend(subClass, parentClass, dontIndicateParent);
         }
     	if (!skip) {
-            for (var i in parentClass.prototype) 
-                if (!(i in subClass.prototype) && parentClass.prototype.hasOwnProperty(i)) {
-                    var propertyDescriptor = Object.getOwnPropertyDescriptor(parentClass.prototype, i);
-                    if (propertyDescriptor.get || propertyDescriptor.set || !propertyDescriptor.writable) {
-                        Object.defineProperty(subClass.prototype, i, propertyDescriptor);
-                        continue;
-                    }
-                    subClass.prototype[i] = parentClass.prototype[i];
-                    if (!dontIndicateParent && subClass.prototype[i] === '__CLASS__')
-                        subClass.prototype[i] = '__PARENT__';
+            // we need to use getOwnPropertyNames instead of for..in to be able to inherit
+            // non-enumerable properties created with Object.defineProperty(class.prototype...)
+            var pn = Object.getOwnPropertyNames(parentClass.prototype);
+            for (var i = 0, l = pn.length; i < l; i++) {
+                var prop = pn[i];
+                if (prop in subClass.prototype) continue;
+                var propertyDescriptor = Object.getOwnPropertyDescriptor(parentClass.prototype, prop);
+                if (propertyDescriptor.get || propertyDescriptor.set || !propertyDescriptor.writable) {
+                    Object.defineProperty(subClass.prototype, prop, propertyDescriptor);
+                    continue;
                 }
+                if (!parentClass.prototype.hasOwnProperty(prop)) continue;
+                subClass.prototype[prop] = parentClass.prototype[prop];
+                if (!dontIndicateParent && subClass.prototype[prop] === '__CLASS__')
+                    subClass.prototype[prop] = '__PARENT__';
+            }
         }
         if (typeof parentClass.afterExtend === 'function') {
             parentClass.afterExtend(subClass, parentClass, dontIndicateParent);
@@ -212,12 +217,23 @@ Amm = {
         return res;
     },
     
-    overrideRecursive: function(modifiedObject, overrider, noOverwrite, deduplicate) {
+    overrideRecursive: function(modifiedObject, overrider, noOverwrite, deduplicate, detectInstances) {
+        if (detectInstances === undefined) detectInstances = true;
         if (typeof modifiedObject !== 'object' || typeof overrider !== 'object')
             throw Error('Both modifiedObject and overrider must be objects');
 
         for (var i in overrider) if (overrider.hasOwnProperty(i)) {
-            if (modifiedObject[i] instanceof Array && overrider[i] instanceof Array) {
+            var recurse = (typeof modifiedObject[i] === 'object' && typeof overrider[i] === 'object');
+            if (recurse && detectInstances) {
+                if (typeof detectInstances === 'function') {
+                    var ret = detectInstances(modifiedObject[i], overrider[i], noOverwrite, deduplicate, detectInstances);
+                    if (ret === false) recurse = false;
+                    if (ret === true) continue;
+                } else if (Amm.getClass(modifiedObject[i]) || Amm.getClass(overrider[i])) {
+                    recurse = false;
+                }
+            }
+            if (recurse && modifiedObject[i] instanceof Array && overrider[i] instanceof Array) {
                 if (!deduplicate || !modifiedObject[i].length) {
                     modifiedObject[i] = modifiedObject[i].concat(overrider[i]);
                     continue;
@@ -226,8 +242,8 @@ Amm = {
                     if (Amm.Array.indexOf(overrider[i][j], modifiedObject[i]) >= 0) continue;
                     modifiedObject[i].push(overrider[i][j]); 
                 }
-            } else if (typeof modifiedObject[i] === 'object' && typeof overrider[i] === 'object')  {
-                this.overrideRecursive(modifiedObject[i], overrider[i], noOverwrite, deduplicate);
+            } else if (recurse) {
+                this.overrideRecursive(modifiedObject[i], overrider[i], noOverwrite, deduplicate, detectInstances);
             } else if (!noOverwrite || !(i in modifiedObject)) {
                 modifiedObject[i] = overrider[i];
             }
@@ -307,7 +323,7 @@ Amm = {
     },
     
     getClass: function(object, all) {
-        var r;
+        var r = null;
         if (all) r = [];
         for (var i in object) {
             if (object[i] === '__CLASS__' || (all && object[i] === '__PARENT__')) {
@@ -1091,12 +1107,13 @@ Amm = {
      * @param scope
      * @param {string|object|Array} event
      * @param {string} handler
+     * @param {boolean} reverse Subscribe new object first, unsubscribe old last
      */
-    subUnsub: function(assoc, oldAssoc, scope, event, handler) {
+    subUnsub: function(assoc, oldAssoc, scope, event, handler, reverse) {
         if (event && typeof event === 'object') {
             if (event instanceof Array) {
                 for (var i = 0, l = event.length; i < l; i++) {
-                    this.subUnsub(assoc, oldAssoc, scope, event[i], handler);
+                    this.subUnsub(assoc, oldAssoc, scope, event[i], handler, reverse);
                 }
             } else {
                 if (handler) {
@@ -1105,7 +1122,7 @@ Amm = {
                     );
                 }
                 for (i in event) if (event.hasOwnProperty(i)) {
-                    this.subUnsub(assoc, oldAssoc, scope, i, event[i]);
+                    this.subUnsub(assoc, oldAssoc, scope, i, event[i], reverse);
                 }
             }
             return;
@@ -1116,8 +1133,9 @@ Amm = {
             extra = handler[1];
             handler = handler[0];
         }
+        if (reverse && assoc) assoc.subscribe(event, handler, scope, extra);
         if (oldAssoc) oldAssoc.unsubscribe(event, handler, scope, extra);
-        if (assoc) assoc.subscribe(event, handler, scope, extra);
+        if (!reverse && assoc) assoc.subscribe(event, handler, scope, extra);
     },
     
     isDomNode: function(object) {
