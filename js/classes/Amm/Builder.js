@@ -54,7 +54,7 @@ Amm.Builder.prototype = {
     // 'root' is Amm.Root
     topLevelComponent: null,
     
-    // whether to save all created top-level elements to this.elementsp
+    // whether to save all created top-level elements to this.elements
     rememberElements: false,
     
     // whether to save issued problems

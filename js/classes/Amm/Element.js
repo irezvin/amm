@@ -227,6 +227,7 @@ Amm.Element.prototype = {
             for (var i = 0, l = ii.length; i < l; i++) this._init[ii[i]].call(this);
         }
         this._init = null;
+        this._callOwnMethods('_endInit_');
     },
     
     setId: function(id) {
@@ -476,12 +477,24 @@ Amm.Element.prototype = {
         this[priv] = expression;
     },
     
+    notifyViewAdded: function(view) {
+        this.outViewAdded(view);
+    },
+    
     outViewAdded: function(view) {
         this._out('viewAdded', view);
     },
     
+    notifyViewDeleted: function(view) {
+        this.outViewDeleted(view);
+    },
+    
     outViewDeleted: function(view) {
         this._out('viewDeleted', view);
+    },
+    
+    notifyViewReady: function(view) {
+        this.outViewReady(view);
     },
     
     outViewReady: function(view) {
@@ -491,7 +504,7 @@ Amm.Element.prototype = {
     findView: function(id, className) {
         var s = this.getUniqueSubscribers('Amm.View.Abstract');
         for (var i = 0, l = s.length; i < l; i++) {
-            if (id !== undefined && s[i].id !== id) continue;
+            if ((id !== null && id !== undefined) && s[i].id !== id) continue;
             if (className !== undefined && !Amm.is(s[i], className)) 
                 continue;
             return s[i];

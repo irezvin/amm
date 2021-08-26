@@ -1,0 +1,4 @@
+/* global Amm */
+
+Amm.Drag = {
+};

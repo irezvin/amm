@@ -400,7 +400,7 @@ Amm = {
     
     lcFirst: function(str) {
         str = '' + str;
-        return str.slice(0, 1).toUpperCase() + str.slice(1);
+        return str.slice(0, 1).toLowerCase() + str.slice(1);
     },
     
     /**
@@ -967,10 +967,20 @@ Amm = {
      * Traverses dom tree up until discovers Amm view that is bound to the node.
      * Returns element of that view
      */
-    findElement: function(domNode) {
-        var views = Amm.DomHolder.find(domNode);
-        if (views[0] && views[0]['Amm.View.Abstract']) return views[0].getElement();
-        return null;
+    findElement: function(domNode, requirements, scope) {
+        var res, found = true;
+        while (domNode) {
+            res = null;
+            var views = Amm.DomHolder.find(domNode);
+            if (!(views[0] && views[0]['Amm.View.Abstract'])) break;
+            res = views[0].getElement();
+            if (!requirements) break;
+            if (typeof requirements === 'function') {
+                if (requirements.call(scope || window, res)) break;
+            } else if (Amm.meetsRequirements(res, requirements)) break;
+            domNode = domNode.parentNode;
+        }
+        return res;
     },
     
     callMethods: function(object, prefix /*, ...*/) {
@@ -1102,6 +1112,19 @@ Amm = {
      * `handler` can be string, fn or Array[handlerFn, extra] where extra is additional argument
      * that will be passed to the handler.
      * 
+     * Special form: assigning handlers to events using prefix
+     * 
+     * If `event` is a string, and no handler is provided, event is treated like method prefix,
+     * `scope` is scanned for functions with prefix `event`, and remaining part of method name
+     * is treated like name of event that it handles, i.e.
+     *  
+     * subUnsub: function(element, oldElement, view, '_handleElement')
+     * 
+     * when view has methods _handleElementVisibleChange, _handleElementEnabledChange
+     * 
+     * will subscribe to event visibleChange with handler view._handleElementVisibleChange, 
+     * and event enabledChange with handler view._handleElementEnabledChange.
+     * 
      * @param {Amm.WithEvents} assoc
      * @param {Amm.WithEvents} oldAssoc
      * @param scope
@@ -1110,6 +1133,26 @@ Amm = {
      * @param {boolean} reverse Subscribe new object first, unsubscribe old last
      */
     subUnsub: function(assoc, oldAssoc, scope, event, handler, reverse) {
+        
+        if (scope && typeof scope === 'object' && event && typeof event === 'string' && !handler) {
+            // prefix-type call
+            
+            var prefix = event, map = {}, foundAny = false;
+            for (var method in scope) {
+                if (!(typeof scope[method] === 'function'
+                    && method[0] === prefix[0]
+                    && method[1] === prefix[1]
+                    && method.slice(0, prefix.length) === prefix
+                    && method.length > prefix.length
+                )) continue;
+                foundAny = true;
+                map[Amm.lcFirst(method.slice(prefix.length))] = scope[method];
+            }
+            if (!foundAny) return;
+            return Amm.subUnsub(assoc, oldAssoc, scope, map, undefined, reverse);
+            
+        }
+        
         if (event && typeof event === 'object') {
             if (event instanceof Array) {
                 for (var i = 0, l = event.length; i < l; i++) {

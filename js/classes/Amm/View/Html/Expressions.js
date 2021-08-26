@@ -154,8 +154,8 @@ Amm.View.Html.Expressions.prototype = {
         this._needUpdateElement = true;
     },
     
-    _observeElementIfPossible: function() {
-        var res = Amm.View.Abstract.prototype._observeElementIfPossible.call(this);
+    _tryObserve: function() {
+        var res = Amm.View.Abstract.prototype._tryObserve.call(this);
         if (res) {
             this._subscribe();
         }

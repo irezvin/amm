@@ -140,8 +140,8 @@ Amm.View.Abstract.Collection.prototype = {
         this._checkCollectionProperty(!!oldElement);
     },
 
-    _observeElementIfPossible: function() {
-        var res = Amm.View.Abstract.prototype._observeElementIfPossible.call(this);
+    _tryObserve: function() {
+        var res = Amm.View.Abstract.prototype._tryObserve.call(this);
         this._observeCollectionIfPossible();
         if (!res) return res;
         if (this._collectionProperty) {

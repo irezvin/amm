@@ -13,6 +13,7 @@
 <html data-amm-build="">
     <head>
         <title><?php echo $prefix.$title; ?> &mdash; A.M.M. Examples</title>
+        <meta name="viewport" content="width=device-width">
         <meta charset='utf-8' />
 <?php   if (!(isset($skipExampleCss) && $skipExampleCss)) { ?>
             <link rel="stylesheet" type="text/css" href="example.css" /> 

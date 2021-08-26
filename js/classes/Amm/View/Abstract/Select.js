@@ -13,8 +13,8 @@ Amm.View.Abstract.Select.prototype = {
     
     _collectionView: null,
     
-    _observeElementIfPossible: function() {
-        var res = Amm.View.Abstract.prototype._observeElementIfPossible.call(this);
+    _tryObserve: function() {
+        var res = Amm.View.Abstract.prototype._tryObserve.call(this);
         if (res) this._doObserveSelect();
         return res;
     },

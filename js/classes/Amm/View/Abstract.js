@@ -66,11 +66,11 @@ Amm.View.Abstract.prototype = {
     
     _doElementChange: function(element, oldElement) {
         if (this._observing) this._endObserve();
-        if (oldElement) oldElement.outViewDeleted(this);
+        if (oldElement) oldElement.notifyViewDeleted(this);
         Amm.ElementBound.prototype._doElementChange.call(this, element, oldElement);
-        if (element) element.outViewAdded(this);
+        if (element) element.notifyViewAdded(this);
         Amm.callMethods(this, '_elementChange_', element, oldElement);
-        this._observeElementIfPossible();
+        this._tryObserve();
     },
     
     _canObserve: function() {
@@ -84,7 +84,7 @@ Amm.View.Abstract.prototype = {
         this._releaseResources();
     },
     
-    _observeElementIfPossible: function() {
+    _tryObserve: function() {
         var can = this._canObserve();
         if (!can) {
             if (this._observing) this._endObserve();
@@ -113,7 +113,7 @@ Amm.View.Abstract.prototype = {
             }
         }
         this._initProperties(bindList);
-        this._element.outViewReady(this);
+        this._element.notifyViewReady(this);
         return true;
     },
     

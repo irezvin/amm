@@ -26,8 +26,12 @@ table.data th, table.data td {
     border: 1px solid silver;
 }
 
-table.data th {
-    white-space: nowrap;
+table.data th, table.data td {
+    overflow: hidden;
+}
+
+table.data th {    
+    /* white-space: nowrap; */
 }
 
 .data, .cnt {
@@ -73,5 +77,53 @@ tbody .activeRow > *:first-child {
 
 .data th.activeColumn {
     border-top: 3px solid orangered;
+}
+
+thead th {
+    position: relative;
+}
+
+thead th .resizeHandle {
+    display: none;
+}
+
+thead th:hover .resizeHandle, thead th.isResizing .resizeHandle {
+    display: block;
+}
+
+thead th .resizeHandle {
+    width: 4px;
+}
+
+thead th .resizeHandle:hover, thead th.isResizing .resizeHandle {
+    background-color: skyblue;
+}
+
+thead th .resizeHandle {
+    cursor: ew-resize;
+    position: absolute;
+    right: 0px;
+    top: 0;
+    height: 100%;
+}
+
+thead th.active > div:first-child {
+    cursor: grab;
+}
+
+.dragShadow {
+    position: absolute;
+    z-index: 999999;
+    background-color: rgba(255,255,255,0.5);
+    pointer-events: none;
+}
+
+.data th.dragDestBefore, .data td.dragDestBefore {
+    border-left: 2px solid lightskyblue;
+}
+
+
+.data th.dragDestAfter, .data td.dragDestAfter {
+    border-right: 2px solid lightskyblue;
 }
 

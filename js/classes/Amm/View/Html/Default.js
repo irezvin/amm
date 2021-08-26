@@ -52,8 +52,8 @@ Amm.View.Html.Default.prototype = {
         return this._defaultViews? [].concat(this._defaultViews) : [];
     },
     
-    _observeElementIfPossible: function() {
-        var res = Amm.View.Abstract.prototype._observeElementIfPossible.call(this);
+    _tryObserve: function() {
+        var res = Amm.View.Abstract.prototype._tryObserve.call(this);
         if (!res) return res;
         var defaultViews;
         if (this._defaultViews) defaultViews = this._defaultViews; 

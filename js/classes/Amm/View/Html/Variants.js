@@ -36,8 +36,8 @@ Amm.View.Html.Variants.prototype = {
 //        return [Amm.Trait.Instantiator];
 //    },
     
-    _observeElementIfPossible: function() {
-        var res = Amm.View.Abstract.prototype._observeElementIfPossible.call(this);
+    _tryObserve: function() {
+        var res = Amm.View.Abstract.prototype._tryObserve.call(this);
         if (!res) return res;
         
         this._scanHtmlElementAndConfigureInstantiator();

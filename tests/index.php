@@ -5,6 +5,7 @@
         <meta charset='utf-8'>
         <script src="../vendor/jquery.js"></script>
         <script src="../vendor/relaxed-json.js"></script>
+        <script src="jquery.simulate.js"></script>
         <link rel="stylesheet" type="text/css" href="qunit/qunit-2.0.1-dark.css" />
 <?php   
     
@@ -17,13 +18,14 @@
         $loader->showScripts();
         
 ?>
+        
+        <script src="qunit/qunit-2.0.1.js"></script>
+        <script src="TestUtils.js"></script>
     </head>
     <body>
     
         <div id="qunit"></div>
         <div id="qunit-fixture"></div>
-        <script src="qunit/qunit-2.0.1.js"></script>
-        <script src="TestUtils.js"></script>
         <script type='text/javascript'>
             // registry of tests which created global refs in Amm._items
             window.stats = {

@@ -19,8 +19,8 @@ Amm.View.Abstract.Annotated.prototype = {
     // and will return first non-empty result
     enumerateExisting: true,
 
-    _observeElementIfPossible: function() {
-        var r = Amm.View.Abstract.prototype._observeElementIfPossible.call(this);
+    _tryObserve: function() {
+        var r = Amm.View.Abstract.prototype._tryObserve.call(this);
         if (r) {
             if (this.enumerateExisting) this._createExisting();
         }

@@ -45,7 +45,7 @@ Amm.View.Html.prototype = {
         }
         this._htmlElement = htmlElement;
         this._doSetHtmlElement(htmlElement, old);
-        this._observeElementIfPossible();
+        this._tryObserve();
         return true;
     },
 
