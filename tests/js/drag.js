@@ -20,12 +20,12 @@
             res.push(entry);
         }
         if (returnAll) return res;
-        if (res.length == 1) return res[0]; 
+        if (res.length === 1) return res[0]; 
         if (res.length > 1) {
             throw "More than one event with name '" + name + "' registered in the log";                
         }
         return null;
-    }
+    };
     
     var center = function(element, dx, dy, client) {
         if (dx === true && dy === undefined && client === undefined) {
@@ -42,7 +42,7 @@
         o.top -= doc && doc.scrollTop || body && body.scrollTop || 0;
         o.left -= doc && doc.scrollLeft || body && body.scrollLeft || 0;
         return o;
-    }
+    };
         
     QUnit.test("Amm.Drag - Basic", function(assert) {
         

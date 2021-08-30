@@ -20,18 +20,20 @@
                 _handleElementDragVectorChange: function(vector) {
                     var d = this._s.getDelta();
                     if (this._resize) {
-                        var w = this._jq.width();
-                        var h = this._jq.height();
+                        var w = this._element.getWidth();
+                        var h = this._element.getHeight();
                         w += d.dX;
                         h += d.dY;
-                        this._jq.width(w);
-                        this._jq.height(h);
+                        this._element.setWidth(w);
+                        this._element.setHeight(h);
                     } else {
                         // move
-                        var o = this._jq.offset();
-                        o.top += d.dY;
-                        o.left += d.dX;
-                        this._jq.offset(o);
+                        var left = this._element.getLeft();
+                        var top = this._element.getTop();
+                        left += d.dX;
+                        top += d.dY;
+                        this._element.setLeft(left);
+                        this._element.setTop(top);
                     }
                 },
                 _handleElementDragTargetChange: function(t) {
@@ -156,18 +158,27 @@
                 border: 2px solid lightblue;
             }
             
+            #ds1 {
+                width: 100px;
+                height: 100px;
+                position: absolute;
+            }
+            *[data-amm-id="t1"] {
+                margin-top: 120px;
+            }
+            
         </style>
     </head>
     <body>
         <h1>Drag example</h1>
         <div 
+            id="ds1"
             data-amm-id="ds1"
-            data-amm-v="[v.Drag.Source, Test.DragSourceView]"
+            data-amm-v="[v.Drag.Source, Test.DragSourceView, v.Dimensions]"
             data-amm-e="{
                 handleSelector: '.dr'
             }"
-            class="draggable"
-            style="width: 100px; height: 100px">
+            class="draggable">
             <div style="position: absolute; left: 100%; padding-left: 2px">
                 <div class="dr move">move</div>
                 <div class="dr resize">resize</div>
