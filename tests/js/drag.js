@@ -177,6 +177,43 @@
         Amm.cleanup(dc);                
         
     });    
+        
+    QUnit.test("Amm.Drag - Drag Vector Constraints", function(assert) {
+        
+        var dv = new Amm.Drag.Vector({x0: 10, y0: 10, x1: 20, y1: 20});
+        var sess = new Amm.Drag.Session({vector: dv});
+        var x1max15 = new Amm.Drag.Constraint.MinMax({prop: 'x1', max: 15});
+        var y1min25 = new Amm.Drag.Constraint.MinMax({prop: 'y1', min: 25});
+        
+        sess.setConstraints([x1max15]);
+            assert.deepEqual(sess.getVector().x1, 15, 'Constraint applied');
+            
+        sess.setConstraints([x1max15, y1min25]);
+            assert.deepEqual(sess.getVector().y1, 25, 'Second constraint applied');
+            
+        sess.setVector(new Amm.Drag.Vector({x0: 12, y0: 12, x1: 95, y1: 0}));
+            assert.deepEqual(sess.getVector().x0, 12, 'New vector applied (1)');
+            assert.deepEqual(sess.getVector().y0, 12, 'New vector applied (2)');
+            assert.deepEqual(sess.getVector().x1, 15, 'Constraints applied to new vector (1)');
+            assert.deepEqual(sess.getVector().y1, 25, 'Constraints applied to new vector (2)');
+        
+        sess.setDelta(new Amm.Drag.Vector({dX: 10, dY: 10}));
+            assert.deepEqual(sess.getVector().x0, 12, 'Delta applied to new vector (1)');
+            assert.deepEqual(sess.getVector().y0, 12, 'Delta applied to new vector (2)');
+            assert.deepEqual(sess.getVector().x1, 15, 'Constraint applied to new vector on delta (1)');
+            assert.deepEqual(sess.getVector().y1, 25 + 10, 'Constraint applied to new vector on delta (2)');
+            
+        sess.setDeltaConstraints([new Amm.Drag.Constraint.MinMax({prop: 'dY', min: 0, max: 0})]);
+        sess.setDelta(new Amm.Drag.Vector({dX: -5, dY: 10}));
+            assert.deepEqual(sess.getDelta().dY, 0, 'Constraint applied to delta');
+            assert.deepEqual(sess.getVector().x0, 12, 'Delta: x0 not changed');
+            assert.deepEqual(sess.getVector().y0, 12, 'Delta: x1 not changed');
+            assert.deepEqual(sess.getVector().x1, 15 - 5, 'Delta: x1 changed');
+            assert.deepEqual(sess.getVector().y1, 35, 'Delta: y1 not changed since dY is 0 by constraint requrement');
+            
+        
+        
+    });
     
     
 }) (); 

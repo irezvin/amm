@@ -16,6 +16,7 @@
                     this._s = session;
                     this._jq = jQuery(this._htmlElement);
                     this._resize = jQuery(session.getStartNativeItem()).hasClass('resize');
+                    this._s.setDropEnabled(!this._resize);
                 },
                 _handleElementDragVectorChange: function(vector) {
                     var d = this._s.getDelta();
@@ -39,6 +40,7 @@
                 _handleElementDragTargetChange: function(t) {
                     console.log('dragTarget', t? t.getId() : null);
                 },
+                
                 _handleElementTargetNativeItemChange: function(item, old) {
                     console.log("targetNativeItemChange");
                     if (item) jQuery(item).addClass('dragHover');

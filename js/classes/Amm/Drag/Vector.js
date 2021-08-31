@@ -13,17 +13,17 @@ Amm.Drag.Vector.prototype = {
     
     precision: Amm.Drag.Vector.defaultPrecision,
     
-    _x0: null,
+    _x0: 0,
 
-    _y0: null,
+    _y0: 0,
 
-    _x1: null,
+    _x1: 0,
 
-    _y1: null,
+    _y1: 0,
     
-    _dX: null,
+    _dX: 0,
 
-    _dY: null,
+    _dY: 0,
     
     _immutable: false,
     

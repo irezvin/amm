@@ -215,11 +215,12 @@ Amm.Drag.Session.prototype = {
      * @param {Amm.Element|null} target
      */
     applyDragData: function(delta, nativeItem, target, nativeEventInfo) {
+        if (!this._dropEnabled) target = null;
         if (nativeEventInfo) this.nativeEventInfo = nativeEventInfo;
         var oldNativeItem = this._nativeItem;
         var oldDragTarget = this._target;
         var oldTargetNativeItem = this._targetNativeItem;
-        var targetNativeItem = target? nativeItem : null;
+        var targetNativeItem = target? nativeItem : null;        
         if (!this._dropEnabled) target = null;
         this._target = target;
         this._nativeItem = nativeItem;
