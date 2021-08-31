@@ -13,7 +13,7 @@
             +   '<style type="text/css">\n'
             +   '   #dims {width: 150px; height: 50px; left: -30px; position: relative}\n'
             +   '</style>\n'
-            +   '<div id="dims" class="draggable" data-amm-v="Amm.View.Html.Dimensions" data-amm-id="dims" id="dims">\n'
+            +   '<div id="dims" class="draggable" data-amm-v="v.Dimensions" data-amm-id="dims" id="dims">\n'
             +   '</div>\n'
         );
         
@@ -68,7 +68,7 @@
         // Unset width, height
             
         dims.setWidth(null);
-        dims.setHeight(null);        
+        dims.setHeight(null);
         dims.setLeft(null);
         dims.setTop(null);
         

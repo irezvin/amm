@@ -968,17 +968,19 @@ Amm = {
      * Returns element of that view
      */
     findElement: function(domNode, requirements, scope) {
-        var res, found = true;
+        var res;
         while (domNode) {
             res = null;
-            var views = Amm.DomHolder.find(domNode);
+            var nodes = [];
+            var views = Amm.DomHolder.find(domNode, false, false, nodes);
             if (!(views[0] && views[0]['Amm.View.Abstract'])) break;
             res = views[0].getElement();
             if (!requirements) break;
             if (typeof requirements === 'function') {
-                if (requirements.call(scope || window, res)) break;
+                var callRet = requirements.call(scope || window, res);
+                if (callRet) break;
             } else if (Amm.meetsRequirements(res, requirements)) break;
-            domNode = domNode.parentNode;
+            domNode = nodes.length? nodes[0].parentNode : null;
         }
         return res;
     },

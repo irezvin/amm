@@ -58,6 +58,7 @@ Amm.Drag.Session.prototype = {
     
     setConstraints: function(constraints) {
         this._constraints = Amm.constructMany(constraints, 'Amm.Drag.Constraint');
+        if (this._constraints.length && this._vector) this.setVector(this._vector);
     },
     
     setDeltaConstraints: function(deltaConstraints) {

@@ -3,15 +3,17 @@
 Amm.DomHolder = function() {
 };
 
-Amm.DomHolder.find = function(selector, inside, throwIfNotFound) {
+Amm.DomHolder.find = function(selector, inside, throwIfNotFound, retArr) {
     var att = Amm.domHolderAttribute, res = [], lst = {};
     jQuery(selector)[inside? 'find' : 'closest']('[' + att + ']').each(function(idx, domNode) {
         var ids = domNode.getAttribute(att).split(' ');
-        for (var i = 0, l = ids.length; i < l; i++) if (ids[i].length) lst[ids[i]] = 1;
+        for (var i = 0, l = ids.length; i < l; i++) if (ids[i].length) lst[ids[i]] = domNode;
     });
     for (var i in lst) if (lst.hasOwnProperty(i)) {
         var elm = Amm.getItem(i, throwIfNotFound);
-        if (elm) res.push(elm);
+        if (!elm) continue;
+        res.push(elm);
+        if (retArr && retArr.push) retArr.push(lst[i]);
     }
     return res;
 };
