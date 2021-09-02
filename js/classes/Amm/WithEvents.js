@@ -119,7 +119,11 @@ Amm.WithEvents.prototype = {
 
     /**
      * Check if there's a "built-in" event `eventName` and returns method name to raise it 
-     * (event 'foo' is built-in if function this['outFoo'] exists, and name of that function will be returned)
+     * (event 'foo' is built-in if function this['outFoo'] exists, and name of that function will be returned).
+     * 
+     * Also checks for meta-events subscribeFirst_`eventName` and unsubscribeLast_`eventName`, in that case
+     * returns true if corresponding event (`eventName`) exists.
+     * 
      * @param {string} eventName
      * @returns {String} Empty string if there is no such event, or method name to raise the event
      */
@@ -130,6 +134,13 @@ Amm.WithEvents.prototype = {
         }
         var res = '', n = 'out' + cu + eventName.slice(1);
         if (typeof this[n] === 'function') res = n;
+        if (eventName[14] === '_' && eventName.slice(0, 15) === 'subscribeFirst_') {
+            return this.hasEvent(eventName.slice(15))? true : null;
+        }
+        if (eventName[15] === '_' && eventName.slice(0, 16) === 'unsubscribeLast_') {
+            console.log(eventName.slice(0, 16), eventName.slice(16));
+            return this.hasEvent(eventName.slice(16))? true : null;
+        }
         return res;
     },
     
@@ -166,8 +177,9 @@ Amm.WithEvents.prototype = {
             res = true;
         }
         if (isFirst) {
-            var fn = '_subscribeFirst_' + eventName;
+            var ev = 'subscribeFirst_' + eventName, fn = '_' + ev;
             if (this[fn] && typeof this[fn] === 'function') this[fn]();
+            if (this._subscribers[ev]) this._out(ev);
         }
         return res;
     },
@@ -235,7 +247,8 @@ Amm.WithEvents.prototype = {
         this._subscribers[eventName].splice(index, 1);
         if (!this._subscribers[eventName].length) {
             delete this._subscribers[eventName];
-            var fn = '_unsubscribeLast_' + eventName;
+            var ev = 'unsubscribeLast_' + eventName, fn = '_' + ev;
+            if (this._subscribers[ev]) this._out(ev);
             if (this[fn] && typeof this[fn] === 'function') this[fn]();
         }
         return res;
@@ -262,7 +275,8 @@ Amm.WithEvents.prototype = {
             this._subscribers[r[3]].splice(r[4], 1);
             if (!this._subscribers[r[3]].length) {
                 delete this._subscribers[r[3]];
-                var fn = '_unsubscribeLast_' + r[3];
+                var ev = 'unsubscribeLast_' + r[3], fn = '_' + ev;
+                if (this._subscribers[ev]) this._out(ev);
                 if (this[fn] && typeof this[fn] === 'function') this[fn]();
             }
         }
@@ -273,9 +287,9 @@ Amm.WithEvents.prototype = {
         var tmp = this._subscribers, fn;
         this._subscribers = {};
         for (var i in tmp) if (tmp.hasOwnProperty(i)) {
-            if ((typeof this[fn = 'unsubscribeLast_' + i]) === 'function') {
-                this[fn]();
-            }
+            var ev = 'unsubscribeLast_' + i, fn = '_' + ev;
+            if (tmp[ev]) Amm.WithEvents.invokeHandlers.call(this, ev, [], tmp[ev]);
+            if (this[fn] && typeof this[fn] === 'function') this[fn]();
         }
         Amm.unregisterItem(this);
     },

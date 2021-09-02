@@ -128,6 +128,9 @@ QUnit.module("WithEvents");
         assert.deepEqual(e.listEvents(), ['eventA', 'eventB']);
         
         assert.equal(e.hasEvent('eventA'), 'outEventA');
+        assert.equal(e.hasEvent('subscribeFirst_eventA'), true);
+        assert.equal(e.hasEvent('unsubscribeLast_eventA'), true);
+            
         assert.equal(e.hasEvent('eventB'), 'outEventB');
         assert.equal(e.hasEvent('eventC'), false);
 
@@ -242,19 +245,50 @@ QUnit.module("WithEvents");
         e._subscribeFirst_eventA = function() { l.push('sub'); };
         e._unsubscribeLast_eventA = function() { l.push('unsub'); };
         
+        e.subscribe('subscribeFirst_eventA', function() { l.push('subEvent'); } );
+        e.subscribe('unsubscribeLast_eventA', function() { l.push('unsubEvent'); } );
+        
         var h1 = function() {};
         var h2 = function() {};
         
         e.subscribe('eventA', h1);
-        assert.deepEqual(l, ['sub']);
+            assert.deepEqual(l, ['sub', 'subEvent'], 
+                'Object subscribed: subscription callback fn called & meta-event triggered');
+            
+        l = [];
         e.subscribe('eventA', h2);
         e.unsubscribe('eventA', h1);
         e.unsubscribe('eventA', h2);
-        assert.deepEqual(l, ['sub', 'unsub']);
+            assert.deepEqual(l, ['unsubEvent', 'unsub'],
+                'Additional object subscribed, both unsubscribed: unsub fn & meta-event called');
+            
+        l = [];
         e.subscribe('eventA', h1);
-        assert.deepEqual(l, ['sub', 'unsub', 'sub']);
+            assert.deepEqual(l, ['sub', 'subEvent'],
+                'Object subscribed again: sub fn & meta-event called');
+        
+        l = [];
         e.unsubscribeByIndex('eventA', 0);
-        assert.deepEqual(l, ['sub', 'unsub', 'sub', 'unsub']);
+            assert.deepEqual(l, ['unsubEvent', 'unsub'],
+                'unsubscribeByIndex() unsubbed only handler: unsub fn & meta-event called');
+            
+        l = [];
+        e.subscribe('eventA', h1);
+        e.subscribe('eventA', h2);
+        e.unsubscribe('eventA');
+            assert.deepEqual(l, ['sub', 'subEvent', 'unsubEvent', 'unsub'],
+                '2 subscribed, all unsubscribed by event name: sub, unsub fn & meta-event called');
+            
+            
+        l = [];
+        e.subscribe('eventA', h1);
+        e.subscribe('eventA', h2);
+        e.cleanup();
+            assert.deepEqual(l, ['sub', 'subEvent', 'unsubEvent', 'unsub'],
+                '2 subscribed, all unsubscribed by cleanup routine: sub, unsub fn & meta-event called');
+       
+        
+        
     });
     
     QUnit.test("event.parent", function(assert) {
