@@ -25,6 +25,16 @@ Amm.Table.Row.prototype = {
     _table: null,
     
     _tableActiveProp: 'activeRow',
+    
+    _size: null,
+    
+    _offset: null,
+    
+    _lockSetSize: 0,
+    
+    _resizable: null,
+
+    _draggable: null,
 
     _getDefaultTraits: function(options) {
         return [Amm.Trait.Component, Amm.Trait.Visual, Amm.Trait.DisplayParent];
@@ -97,6 +107,22 @@ Amm.Table.Row.prototype = {
         else table = null;
         var oldTable = this._table;
         if (oldTable === table) return;
+        if (oldTable) {
+            if (this._subscribers['sizeChange']) {
+                oldTable.unobserveRowSize(this);
+            }
+            if (this._subscribers['offsetChange']) {
+                oldTable.unobserveRowOffset(this);
+            }
+        }
+        if (table) {
+            if (this._subscribers['sizeChange']) {
+                table.observeRowSize(this);
+            }
+            if (this._subscribers['offsetChange']) {
+                table.observeRowOffset(this);
+            }
+        }
         this._table = table;
         this.outTableChange(table, oldTable);
         return true;
@@ -220,7 +246,133 @@ Amm.Table.Row.prototype = {
             && get('table')
             && (section = get('section'))
             && (sectionVisible = get(section, 'visible') || sectionVisible === undefined);
-    }
+    },
+    
+    setSize: function(size) {
+        var oldSize = this._size;
+        if (oldSize === size) return;
+        this._size = size;
+        this.outSizeChange(size, oldSize);
+        if (!this._lockSetSize && this._enabled && this._table) {
+            this._table.setRowSize(this, size);            
+        }
+        return true;
+    },
+    
+    reportSize: function(size) {
+        this._lockSetSize++;
+        this.setSize(size);
+        this._lockSetSize--;
+    },
+
+    getSize: function() { 
+        if (!this._enabled || !this._table) {
+            return this._size;
+        }
+        var size = this._table.getRowSize(this, size);
+        if (size !== this._size) {
+            var oldSize = this._size;
+            this._size = size;
+            this.outSizeChange(size, oldSize);
+        }
+        return this._size; 
+    },
+
+    outSizeChange: function(size, oldSize) {
+        this._out('sizeChange', size, oldSize);
+    },
+    
+    _subscribeFirst_sizeChange: function() {
+        if (this._table) this._table.observeRowSize(this);
+    },
+    
+    _unsubscribeLast_sizeChange: function() {
+        if (this._table) this._table.unobserveRowSize(this);
+    },
+    
+    setOffset: function(offset) {
+    },
+    
+    getOffset: function() { 
+        if (!this._enabled || !this._table) {
+            return this._offset;
+        }
+        var offset = this._table.getRowOffset(this);
+        if (offset !== this._offset) {
+            var oldOffset = this._offset;
+            this._offset = offset;
+            this.outOffsetChange(offset, oldOffset);
+        }
+        return this._offset; 
+    },
+    
+    reportOffset: function(offset) {
+        var oldOffset = this._offset;
+        if (oldOffset === offset) return;
+        this._offset = offset;
+        this.outOffsetChange(offset, oldOffset);
+        return true;
+    },
+
+    outOffsetChange: function(offset, oldOffset) {
+        this._out('offsetChange', offset, oldOffset);
+    },    
+    
+    _subscribeFirst_offsetChange: function() {
+        if (this._table) this._table.observeRowOffset(this);
+    },
+    
+    _unsubscribeLast_offsetChange: function() {
+        if (this._table) this._table.unobserveRowOffset(this);
+    },
+
+    setResizable: function(resizable) {
+        var oldResizable = this._resizable;
+        if (oldResizable === resizable) return;
+        this._resizable = resizable;
+        this.outResizableChange(resizable, oldResizable);
+        return true;
+    },
+
+    getResizable: function() { return this._resizable; },
+
+    outResizableChange: function(resizable, oldResizable) {
+        this._out('resizableChange', resizable, oldResizable);
+    },
+
+    setDraggable: function(draggable) {
+        var oldDraggable = this._draggable;
+        if (oldDraggable === draggable) return;
+        this._draggable = draggable;
+        this.outDraggableChange(draggable, oldDraggable);
+        return true;
+    },
+
+    getDraggable: function() { return this._draggable; },
+
+    outDraggableChange: function(draggable, oldDraggable) {
+        this._out('draggableChange', draggable, oldDraggable);
+    },
+    
+    _calcIsDraggable: function(get) {
+        var res;
+        res = get.prop('draggable').val();
+        if (res !== null) return !!res;
+        res = get.prop('section').prop('rowsDraggable').val();
+        if (res !== null) return !!res;
+        res = get.prop('table').prop('rowsDraggable').val();
+        return !!res;
+    },
+    
+    _calcIsResizable: function(get) {
+        var res;
+        res = get.prop('resizable').val();
+        if (res !== null) return !!res;
+        res = get.prop('section').prop('rowsResizable').val();
+        if (res !== null) return !!res;
+        res = get.prop('table').prop('rowsResizable').val();
+        return !!res;
+    },
     
 };
 
@@ -229,3 +381,6 @@ Amm.createProperty(Amm.Table.Row.prototype, 'table', null, null, {enumerable: fa
 
 Amm.extend(Amm.Table.Row, Amm.Element);
 Amm.extend(Amm.Table.Row, Amm.Table.WithActive);
+
+Amm.ObservableFunction.createCalcProperty('isDraggable', Amm.Table.Row.prototype);
+Amm.ObservableFunction.createCalcProperty('isResizable', Amm.Table.Row.prototype);

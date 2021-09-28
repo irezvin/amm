@@ -1,8 +1,8 @@
 /* global Amm */
 
 Amm.View.Abstract.Dimensions = function(options) {
-    Amm.View.Abstract.call(this, options);
     this._requireInterfaces('Dimensions');
+    Amm.View.Abstract.call(this, options);
 };
 
 Amm.View.Abstract.Dimensions.prototype = {

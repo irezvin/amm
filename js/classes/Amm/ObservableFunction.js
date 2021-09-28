@@ -318,7 +318,7 @@ Amm.ObservableFunction.prepareArgs = function(args) {
     return args;
 };
 
-Amm.ObservableFunction.createCalcProperty = function(propName, object) {
+Amm.ObservableFunction.createCalcProperty = function(propName, object, onGet) {
     var ucPropName = Amm.ucFirst(propName);
     var calc = '_calc' + ucPropName;
     var ofun = '_ofun' + ucPropName;
@@ -330,9 +330,25 @@ Amm.ObservableFunction.createCalcProperty = function(propName, object) {
     }
     var proto = {};
     proto[ofun] = null;
-    proto['get' + ucPropName] = function() {
-        return (this[ofun] || new Amm.ObservableFunction(this[calc], this)).getValue();
-    };
+    if (!onGet) {
+        proto['get' + ucPropName] = function() {
+            return (this[ofun] || new Amm.ObservableFunction(this[calc], this)).getValue();
+        };
+    } else if (typeof onGet === 'string') {
+        proto['get' + ucPropName] = function() {
+            var res = (this[ofun] || new Amm.ObservableFunction(this[calc], this)).getValue();
+            if (typeof this[onGet] === 'function') {
+                if (!arguments.length) return this[onGet](res);
+                if (arguments.length == 1) return this[onGet](res, arguments[0]);
+                return this[onGet].apply(this, [res].concat(Array.prototype.slice.apply(arguments)));
+            }
+        };
+    } else if (typeof onGet === 'function') {
+        proto['get' + ucPropName] = function() {
+            var res = (this[ofun] || new Amm.ObservableFunction(this[calc], this)).getValue();
+            return onGet.apply(this, [res].concat(Array.prototype.slice.apply(arguments)));
+        };
+    }
     proto['set' + ucPropName] = function(val) {
         console.warn(Amm.getClass(this) + '.set' + ucPropName + '() has no effect');
     };

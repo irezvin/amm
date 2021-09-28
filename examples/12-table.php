@@ -251,7 +251,7 @@
                 type="text" size="1"
                 data-amm-id="xx"
                 data-amm-e=""
-                onblur="window.editorBlur(event);"
+                onblur="//window.editorBlur(event);"
                 onkeyup="window.editorKeyUp(event);"
                 onkeypress="window.editorKeyPress(event);"
                 onkeydown="window.editorKeyDown(event);"
@@ -283,7 +283,11 @@
                     builderSource: {$ref: '#lib .ed-proto', global: true, clone: true}
                 },
                 columns: {
-                    idx: {caption: '#', source: '$cell.component.displayOrder + 1'},
+                    idx: {
+                        caption: '#', 
+                        source: '\'r\' + $cell.component.displayOrder + 1', 
+                        class: 'Amm.Table.RowHeaderColumn'
+                    },
                     firstName: {
                         caption: 'First Name', 
                     },

@@ -8,47 +8,60 @@ Amm.Table.HeaderCell.prototype = {
 
     'Amm.Table.HeaderCell': '__CLASS__', 
     
-    _doOnColumnChange: function(column, oldColumn) {
-        Amm.Table.Cell.prototype._doOnColumnChange.call(this, column, oldColumn);
-        Amm.subUnsub(column, oldColumn, this, ['captionChange', 'idChange'], '_handleColumnCaptionChange');
-        if (column) this._handleColumnCaptionChange(column.getCaption(), null);
-    },
+    _hasVerticalHandle: false,
     
-    _handleColumnCaptionChange: function(caption, oldCaption) {
-        var cap = caption;
-        if (!cap && this._column) cap = this._column.getId();
-        this.setValue(cap);
-    },
+    _hasHorizontalHandle: false,
     
     constructDefaultViews: function() {
-        var res = Amm.html({
+        var innerItems = [
+            {
+                $: 'div',
+                'class': 'value',
+                data_amm_value: true,
+                data_amm_v: {
+                    class: 'v.Expressions',
+                    map: {
+                        _html: 'value'
+                    }
+                }
+            },
+        ];
+        if (this._hasVerticalHandle) {
+            innerItems.push({
+                $: 'div',
+                class: 'resizeHandle resizeHandleVertical'
+            });
+        }
+        if (this._hasHorizontalHandle) {
+            innerItems.push({
+                $: 'div',
+                class: 'resizeHandle resizeHandleHorizontal'
+            });
+        }
+        var viewProto = [
+            {
+                class: 'v.Table.Cell',
+            }
+        ];
+        var def = {
             $: 'th',
-            data_amm_v: [
-                {
-                    class: 'v.Visual',
-                    delay: 0,
-                },
-            ],
+            data_amm_v: viewProto,
             $$: [
                 {
                     $: 'div',
-                    data_amm_value: true,
-                    data_amm_v: {
-                        class: 'v.Expressions',
-                        map: {
-                            _html: 'value'
-                        }
-                    }
-                },
-                {
-                    $: 'div',
-                    class: 'v.DisplayParent'
+                    class: 'cellContent',
+                    $$: innerItems,
                 }
             ]
-        });
+        };
+        var res = Amm.html(def);
         return res;
-    }
+    },
     
+    _getDefaultTraits: function(options) {
+        var res = Amm.Table.Cell.prototype._getDefaultTraits.call(options);
+        return res;
+    },
 
 };
 

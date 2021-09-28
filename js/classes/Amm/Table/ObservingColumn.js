@@ -55,6 +55,7 @@ Amm.Table.ObservingColumn.prototype = {
     
     configureCellProto: function(ret, row) {
         Amm.Table.Column.prototype.configureCellProto.call(this, ret, row);
+        if (Amm.is(row, 'Amm.Table.HeaderRow')) return;
         ret.proto.class = 'Amm.Table.ObservingCell';
     }
 

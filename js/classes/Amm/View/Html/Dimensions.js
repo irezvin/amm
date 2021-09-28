@@ -1,10 +1,5 @@
 /* global Amm */
 
-/**
- * Subscribes to change, focus, blur events.
- * jQuery to Element: value, focus
- * Element to JQuery: value, focus, readOnly, enabled
- */
 Amm.View.Html.Dimensions = function(options) {
     Amm.View.Abstract.Dimensions.call(this, options);
     Amm.View.Html.call(this);

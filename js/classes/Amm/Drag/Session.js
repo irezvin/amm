@@ -229,7 +229,7 @@ Amm.Drag.Session.prototype = {
         if (oldNativeItem !== this._nativeItem) {
             this.outNativeItemChange(this._nativeItem, oldNativeItem);
         }
-        if (oldDragTarget !== this._target) {            
+        if (oldDragTarget !== this._target) {
             if (oldDragTarget) {
                 oldDragTarget.setDragInfo(null, null, null);
             }

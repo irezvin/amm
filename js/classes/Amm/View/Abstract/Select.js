@@ -1,8 +1,8 @@
 /* global Amm */
 
 Amm.View.Abstract.Select = function(options) {
-    Amm.View.Abstract.call(this, options);
     this._requireInterfaces('Select');
+    Amm.View.Abstract.call(this, options);
 };
 
 Amm.View.Abstract.Select.prototype = {

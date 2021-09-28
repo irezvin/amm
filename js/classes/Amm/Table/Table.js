@@ -234,7 +234,14 @@ Amm.Table.Table.prototype = {
             | Amm.Table.Table.EDITOR_FOLLOWS_ACTIVE,
     
     _getDefaultTraits: function() {
-        return [ 'Amm.Trait.Visual', 'Amm.Trait.Component', 'Amm.Trait.DisplayParent' ];
+        return [ 
+            'Amm.Trait.Visual',
+            'Amm.Trait.Component',
+            'Amm.Trait.DisplayParent',
+            'Amm.Trait.Drag.Source',
+            'Amm.Trait.Table.DragDrop',
+            'Amm.Trait.Table.Dimensions',
+        ];
     },
     
     _getDefaultDisplayChildrenPrototype: function() {
@@ -370,7 +377,13 @@ Amm.Table.Table.prototype = {
                 },
                 {
                     class: 'v.DisplayParent'
-                }
+                },
+                {
+                    class: 'v.Table.DragDrop'
+                },
+                {
+                    class: 'v.Table.Dimensions'
+                },
             ]
         });
         return res;

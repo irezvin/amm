@@ -138,7 +138,6 @@ Amm.WithEvents.prototype = {
             return this.hasEvent(eventName.slice(15))? true : null;
         }
         if (eventName[15] === '_' && eventName.slice(0, 16) === 'unsubscribeLast_') {
-            console.log(eventName.slice(0, 16), eventName.slice(16));
             return this.hasEvent(eventName.slice(16))? true : null;
         }
         return res;

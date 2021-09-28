@@ -95,9 +95,7 @@ Amm.Trait.Visual.prototype = {
     },
 
     getClassName: function(part) { 
-        if (!part) 
-            return this._className; 
-        return (' ' + this._className + ' ').indexOf(' ' + part + ' ') >= 0;
+        return Amm.Util.getClassNameOrPart(this._className, part);
     },
  
     outClassNameChange: function(className, oldClassName) {

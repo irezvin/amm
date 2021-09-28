@@ -1,8 +1,8 @@
 /* global Amm */
 
 Amm.View.Abstract.Visual = function(options) {
-    Amm.View.Abstract.call(this, options);
     this._requireInterfaces('Visual', 'ClassName');
+    Amm.View.Abstract.call(this, options);
 };
 
 Amm.View.Abstract.Visual.prototype = {

@@ -172,28 +172,34 @@ Amm.Table.ObservingCell.prototype = {
             tabindex: 0,
             data_amm_v: [
                 {
-                    class: 'v.Visual',
-                    delay: 0,
+                    class: 'v.Table.Cell',
                 },
             ],
             $$: [
                 {
                     $: 'div',
-                    'class': 'value',
-                    data_amm_value: true,
-                    data_amm_id: '__parent',
-                    data_amm_v: {
-                        class: 'v.Expressions',
-                        map: {
-                            _html: 'value',
-                            _visible: 'valueVisible'
+                    class: 'cellContent',
+                    $$: [
+                        {
+                            $: 'div',
+                            'class': 'value',
+                            data_amm_value: true,
+                            data_amm_id: '__parent',
+                            data_amm_v: {
+                                class: 'v.Expressions',
+                                map: {
+                                    _html: 'value',
+                                    _visible: 'valueVisible'
+                                }
+                            }
+                        },
+                        {
+                            $: 'div',
+                            'class': 'cellItems',
+                            data_amm_id: '__parent',
+                            data_amm_v: 'v.DisplayParent'
                         }
-                    }
-                },
-                {
-                    $: 'div',
-                    data_amm_id: '__parent',
-                    data_amm_v: 'v.DisplayParent'
+                    ]
                 }
             ]
         });

@@ -1,0 +1,2 @@
+Amm.Trait.Table = {    
+}

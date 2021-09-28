@@ -203,5 +203,14 @@ Amm.Util = {
         return res;
     },
     
+    /**
+     * When `part` provided, retrurns TRUE if specified part is present in `className` (or FALSE if not).
+     * When `part` not provided, returns whole `className`.
+     */
+    getClassNameOrPart: function(className, part) {
+        if (!part) 
+            return className; 
+        return (' ' + className + ' ').indexOf(' ' + part + ' ') >= 0;
+    }
     
 };

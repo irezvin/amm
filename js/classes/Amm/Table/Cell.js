@@ -50,11 +50,16 @@ Amm.Table.Cell.prototype = {
             tabindex: 0,
             data_amm_v: [
                 {
-                    class: 'v.Visual',
-                    delay: 0,
-                },
+                    class: 'v.Table.Cell',
+                }
+            ],
+            $$: [
                 {
-                    class: 'v.DisplayParent'
+                    $: 'div',
+                    class: 'cellContent',
+                    data_amm_v: {
+                        class: 'v.DisplayParent'
+                    }
                 }
             ]
         });
@@ -75,7 +80,7 @@ Amm.Table.Cell.prototype = {
         this.outColumnChange(column, oldColumn);
         return true;
     },
-
+    
     getColumn: function () {
         return this._column;
     },
@@ -86,7 +91,6 @@ Amm.Table.Cell.prototype = {
 
     _doOnColumnChange: function (column, oldColumn) {
         Amm.subUnsub(column, oldColumn, this, {
-            'cellClassNameChange': 'handleColumnCellClassNameChange',
             'displayOrderChange': 'handleColumnDisplayOrderChange',
             'visibleChange': 'handleColumnVisibleChange',
             'idChange': 'setId',
@@ -95,26 +99,42 @@ Amm.Table.Cell.prototype = {
             this.setDisplayOrder(column.getDisplayOrder());
             this.setId(column.getId());
         }
-        this.handleColumnCellClassNameChange();
         this.handleColumnVisibleChange();
     },
 
     handleColumnDisplayOrderChange: function (v) {
         this.setDisplayOrder(v);
     },
+    
+    setOwnClassName: function(ownClassNameOrToggle, part) {
+        var oldOwnClassName = this._ownClassName;
+        var ownClassName = Amm.Util.alterClassName(oldOwnClassName, ownClassNameOrToggle, part);
+        if (ownClassName === oldOwnClassName) return;
+        this._ownClassName = ownClassName;
+        this.outOwnClassNameChange(ownClassName, oldOwnClassName);
+        return true;
+    },
 
-    handleColumnCellClassNameChange: function (cellClassName) {
-        if (this._ignoreColumnCellClassName)
-            cellClassName = '';
-        else if (cellClassName === undefined) {
-            cellClassName = this._column ? this._column.getCellClassName() : '';
+    getOwnClassName: function() { return this._ownClassName; },
+
+    outOwnClassNameChange: function(ownClassName, oldOwnClassName) {
+        this._out('ownClassNameChange', ownClassName, oldOwnClassName);
+    },
+    
+    setClassName: function(classnameOrToggle, part) {
+        return this.setOwnClassName(classnameOrToggle, part);
+    },
+    
+    _calcClassName: function(get) {
+        var res = get.prop('ownClassName').val() || '';
+        if (!get.prop('ignoreColumnCellClassName').val()) {
+            res = Amm.Util.trim(res + ' ' + (get.prop('column').prop('cellClassName').val() || ''));
         }
-        if (!cellClassName)
-            cellClassName = '';
-        this._lockClassName++;
-        var res = this.setClassName(this._ownClassName + (cellClassName && this._ownClassName ? ' ' : '') + cellClassName);
-        this._lockClassName--;
         return res;
+    },
+    
+    _onGetClassName: function(res, part) {
+        return Amm.Util.getClassNameOrPart(res, part);
     },
 
     handleColumnVisibleChange: function (columnVisible) {
@@ -219,7 +239,6 @@ Amm.Table.Cell.prototype = {
             return;
         this._ignoreColumnCellClassName = ignoreColumnCellClassName;
         this.outIgnoreColumnCellClassNameChange(ignoreColumnCellClassName, oldIgnoreColumnCellClassName);
-        this.handleColumnCellClassNameChange();
         return true;
     },
 
@@ -229,18 +248,6 @@ Amm.Table.Cell.prototype = {
 
     outIgnoreColumnCellClassNameChange: function (ignoreColumnCellClassName, oldIgnoreColumnCellClassName) {
         this._out('ignoreColumnCellClassNameChange', ignoreColumnCellClassName, oldIgnoreColumnCellClassName);
-    },
-
-    setClassName: function (classNameOrToggle, part) {
-        if (this._lockClassName) {
-            return Amm.Trait.Visual.prototype.setClassName.call(this, classNameOrToggle, part);
-        }
-        var oldOwnClassName = this._ownClassName,
-                newOwnClassName = Amm.Util.alterClassName(this._ownClassName, classNameOrToggle, part);
-        if (oldOwnClassName !== newOwnClassName) {
-            this._ownClassName = newOwnClassName;
-            return this.handleColumnCellClassNameChange();
-        }
     },
 
     setReadOnly: function(readOnly) {
@@ -519,3 +526,4 @@ Amm.extend(Amm.Table.Cell, Amm.Table.WithActive);
 
 Amm.ObservableFunction.createCalcProperty('address', Amm.Table.Cell.prototype);
 Amm.ObservableFunction.createCalcProperty('valueUpdateable', Amm.Table.Cell.prototype);
+Amm.ObservableFunction.createCalcProperty('className', Amm.Table.Cell.prototype, '_onGetClassName');

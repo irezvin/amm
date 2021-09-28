@@ -29,7 +29,6 @@ Amm.Table.Section.TAG[Amm.Table.Section.TYPE.HEADER] = 'thead';
 Amm.Table.Section.TAG[Amm.Table.Section.TYPE.BODY] = 'tbody';
 Amm.Table.Section.TAG[Amm.Table.Section.TYPE.FOOTER] = 'tfoot';
 
-
 Amm.Table.Section._TYPE = Amm.Util.swapKeysValues(Amm.Table.Section.TYPE);
 
 Amm.Table.Section.prototype = {
@@ -39,6 +38,10 @@ Amm.Table.Section.prototype = {
     _type: Amm.Table.Section.TYPE.BODY,
     
     _sortOrder: Amm.Table.Section.ORDER[Amm.Table.Section.TYPE.BODY],
+    
+    _rowsResizable: null,
+
+    _rowsDraggable: null,
     
     _getDefaultTraits: function(options) {
         return [Amm.Trait.Component, Amm.Trait.Visual, Amm.Trait.DisplayParent];
@@ -125,8 +128,35 @@ Amm.Table.Section.prototype = {
     outComponentChange: function(component, oldComponent) {
         Amm.Element.prototype.outComponentChange.call(this, component, oldComponent);
         this.outTableChange(component, oldComponent);
-    }
+    },
+    
+    setRowsResizable: function(rowsResizable) {
+        var oldRowsResizable = this._rowsResizable;
+        if (oldRowsResizable === rowsResizable) return;
+        this._rowsResizable = rowsResizable;
+        this.outRowsResizableChange(rowsResizable, oldRowsResizable);
+        return true;
+    },
 
+    getRowsResizable: function() { return this._rowsResizable; },
+
+    outRowsResizableChange: function(rowsResizable, oldRowsResizable) {
+        this._out('rowsResizableChange', rowsResizable, oldRowsResizable);
+    },
+
+    setRowsDraggable: function(rowsDraggable) {
+        var oldRowsDraggable = this._rowsDraggable;
+        if (oldRowsDraggable === rowsDraggable) return;
+        this._rowsDraggable = rowsDraggable;
+        this.outRowsDraggableChange(rowsDraggable, oldRowsDraggable);
+        return true;
+    },
+
+    getRowsDraggable: function() { return this._rowsDraggable; },
+
+    outRowsDraggableChange: function(rowsDraggable, oldRowsDraggable) {
+        this._out('rowsDraggableChange', rowsDraggable, oldRowsDraggable);
+    }
     
 };
 

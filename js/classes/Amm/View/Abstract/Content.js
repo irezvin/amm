@@ -1,8 +1,8 @@
 /* global Amm */
 
 Amm.View.Abstract.Content = function(options) {
-    Amm.View.Abstract.call(this, options);
     this._requireInterfaces('Content');
+    Amm.View.Abstract.call(this, options);
 };
 
 Amm.View.Abstract.Content.prototype = {

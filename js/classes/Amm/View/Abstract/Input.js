@@ -1,8 +1,8 @@
 /* global Amm */
 
 Amm.View.Abstract.Input = function(options) {
-    Amm.View.Abstract.call(this, options);
     this._requireInterfaces('Focusable', 'Editor', 'Lockable');
+    Amm.View.Abstract.call(this, options);
 };
 
 Amm.View.Abstract.Input.prototype = {

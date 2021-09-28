@@ -9,12 +9,6 @@ Amm.Element = function(options) {
     this._beginInit();
     this._cleanupList = [];
     this._expressions = {};
-    
-//    if (!options) {
-//        Amm.WithEvents.call(this);
-//        this._endInit();
-//        return;
-//    }
 
     if (options) options = Amm.Element._checkAndApplyOptionsBuilderSource(options);
     else options = {};

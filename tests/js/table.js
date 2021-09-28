@@ -1,10 +1,10 @@
-/* global Amm */
 /* global QUnit */
+/* global TestUtils */
 
 (function() {
 
     QUnit.module("Table");
-        
+    
     var getSectionRows = function(table) {
         return table.header.rows.getItems().concat(table.body.rows.getItems(), table.footer.rows.getItems());
     };
@@ -69,8 +69,14 @@
     };
     
     QUnit.test("Amm.Table - Basic", function(assert) {
-        var tableCopy = {};
         var t = new Amm.Table.Table({
+            
+            // remove add dnd support to test cell class names
+            columnsResizable: false,
+            columnsDraggable: false,
+            rowsResizable: false,
+            rowsDraggable: false,
+            
             columns: {
                 index: {caption: 'item #', source: "$cell.row.index + 1"},
                 visIndex: {caption: 'vis #', source: "$cell.row.displayOrder === null? '' : $cell.row.displayOrder + 1"},
@@ -386,8 +392,14 @@
     
     QUnit.test("Amm.Table - Active cell/row/column", function(assert) {
         
-        var tableCopy = {};
         var t = new Amm.Table.Table({
+            
+            // remove add dnd support to test cell class names
+            columnsResizable: false,
+            columnsDraggable: false,
+            rowsResizable: false,
+            rowsDraggable: false,
+            
             columns: {
                 a: {},
                 b: {},
@@ -1478,11 +1490,796 @@
             assert.deepEqual(t.rows[1].cells[2].getValue(), 'Jamesy',
                 'Deactivation confirmed editing changes');
         
+    });
+    
+    QUnit.test("Amm.Table: Dimensions trait", function(assert) {
+        
+        var fx = jQuery('#qunit-fixture');
+        
+        var t = new Amm.Table.Table({
+            columns: {
+                a: {},
+                b: {},
+                c: {},
+            },
+            header: {
+                rows: ['Amm.Table.HeaderRow']
+            },
+            items: 
+            [
+                new Amm.Element({props: {a: 'e1-a', b: 'e1-b', c: 'e1-c'}}),
+                new Amm.Element({props: {a: 'e2-a', b: 'e2-b', c: 'e2-c'}}),
+                new Amm.Element({props: {a: 'e3-a', b: 'e3-b', c: 'e3-c'}}),
+            ]
+        });
+        
+        window.d.t = t;
+        
+        var numInterval = Amm.r.getSubscribers('interval').length;
+        
+        fx.html('<div id="tblContainer"></div>');
+        
+        var v = new Amm.View.Html.Default({
+            'htmlElement': fx.find('#tblContainer')[0],
+            'element': t
+        });
+        
+            assert.ok(fx.find('table').length, 'Table was rendered');
+
+            assert.equal(t.columns[0].getOffset(),
+                fx.find('td:nth-child(1) > .cellContent').offset().left,
+                'Proper column offset is reported');
+
+            assert.equal(t.columns[0].getSize(),
+                fx.find('td:nth-child(1) > .cellContent').width(),
+                'Proper column width is reported');
+
+            assert.equal(t.rows[0].getOffset(),
+                fx.find('tbody tr:nth-child(1)').offset().top,
+                'Proper row offset is reported');
+
+            assert.equal(t.rows[0].getSize(),
+                fx.find('tbody tr:nth-child(1) > *:first-child').innerHeight(),
+                'Proper row height is reported');
+          
+        var dims = {};
+        
+        var rep = function(v) {
+            var dim = (Amm.event.origin['Amm.Table.Row']? 'r.' : 'c.') + Amm.event.name[0];
+            dims[dim] = v;
+        };
+        
+        t.columns[1].subscribe('sizeChange', rep);
+        t.rows[1].subscribe('sizeChange', rep);
+        
+            assert.equal(Amm.r.getSubscribers('interval').length, numInterval + 1,
+                'Size subscription: first interval event subscribed');
+        
+        t.columns[1].subscribe('offsetChange', rep);
+        t.rows[1].subscribe('offsetChange', rep);
+        
+            assert.equal(Amm.r.getSubscribers('interval').length, numInterval + 2,
+                'Offset subscription: second interval event subscribed');
             
+        Amm.r.outInterval();
+        
+            assert.deepEqual(dims, {
+                'c.o': t.columns[1].getOffset(),
+                'c.s': t.columns[1].getSize(),
+                'r.o': t.rows[1].getOffset(),
+                'r.s': t.rows[1].getSize(),
+            },
+            'Dimensions & offset reported after interval');
             
+        var oldDims = Amm.override({}, dims), dRow = 50, dCol = 30;
+        
+            var oldCol0size = t.columns[0].getSize();
+            var oldRow0size = t.rows[0].getSize();
+            
+            t.columns[0].setSize(t.columns[0].getSize() + dCol);
+            t.rows[0].setSize(t.rows[0].getSize() + dRow);
+            
+        Amm.r.outInterval();
+        
+            assert.deepEqual(dims, {
+                'c.o': oldDims['c.o'] + dCol,
+                'c.s': t.columns[1].getSize(),
+                'r.o': oldDims['r.o'] + dRow,
+                'r.s': t.rows[1].getSize()
+            },
+            'First row/column changed size: second row/column offset changes reported');
+        
+        fx.find('td:nth-child(2) > .cellContent').width(200);
+        fx.find('tbody tr:nth-child(2) > *:first-child').innerHeight(150);
+        Amm.r.outInterval();
+        
+            assert.deepEqual(dims['c.s'], 200, 
+                'Changed cell size directly -> proper new column size reported');
+            assert.deepEqual(dims['r.s'], 150, 
+                'Changed cell size directly -> proper new row size reported');
+            
+        t.columns[1].setSize(null);
+        t.rows[1].setSize(null);
+        Amm.r.outInterval();
+
+            assert.deepEqual(dims['c.s'], oldDims['c.s'], 
+                'Set col size to null -> old size reported');
+            assert.deepEqual(dims['r.s'], oldDims['r.s'], 
+                'Set row size to null -> old size reported');
+
+        t.columns[1].unsubscribe('sizeChange', rep);
+        t.rows[1].unsubscribe('sizeChange', rep);
+        
+            assert.equal(Amm.r.getSubscribers('interval').length, numInterval + 1,
+                'Unsubscribed from size events -> one interval event less');
+        
+        t.columns[1].unsubscribe('offsetChange', rep);
+        t.rows[1].unsubscribe('offsetChange', rep);
+        
+            assert.equal(Amm.r.getSubscribers('interval').length, numInterval,
+                'Unsubscribed from offset events -> original ## of events');
+
+        Amm.cleanup(t);
         
     });
     
-    
+    QUnit.test("Amm.Table: Drag and Drop trait", function(assert) {
+
+        var fx = jQuery('<div style="position: absolute; left: 0px; top: 0px; height: 1000px; width: 1000px; z-index: 9999;"></div>');
+        fx.appendTo(document.body);
+        try {
+            // we need to have visible element inside the viewport 
+            // to have elementsFromPoint work properly
+            
+            var t = new Amm.Table.Table({
+
+                columns: {
+                    index: {
+                        caption: 'item #', source: "$cell.row.index + 1",
+                        'class': 'Amm.Table.RowHeaderColumn', // required to have resizable rows
+                    },
+                    visIndex: {caption: 'vis #', source: "$cell.row.displayOrder === null? '' : $cell.row.displayOrder + 1"},
+                    recordId: {caption: 'ID'},
+                    name: {},
+                    surname: {},
+                    age: {},
+                    fullName: {caption: 'Full Name', source: "this.name + ' ' + this.surname"}
+                },
+                header: {
+                    rows: ['Amm.Table.HeaderRow']
+                },
+            });
+            window.d.t = t;
+            var items = new Amm.Collection(Amm.constructMany([
+                {props: {recordId: 1, name: 'John', surname: 'James', age: 20}},
+                {props: {recordId: 2, name: 'Jane', surname: 'James', age: 25}},
+                {props: {recordId: 3, name: 'Mike', surname: 'Doe', age: 52}},
+                {props: {recordId: 4, name: 'Kate', surname: 'Doe', age: 48}},
+            ], 'Amm.Element'));
+
+            t.setItems(items);
+            
+            fx.html('<div id="tbl"></div>');
+            
+            var v = new Amm.View.Html.Default({element: t, htmlElement: fx.find('#tbl')});
+
+            // # columns
+            
+            // ## columns.draggable
+            
+            assert.equal(fx.find('th.draggableColumn').length, t.columns.length - 1, 
+                'All columns except header are draggable by default');
+                    
+            t.columns[1].setDraggable(false);
+                    
+                assert.equal(fx.find('th.draggableColumn').length, t.columns.length - 2, 
+                    'column draggable property overrides global');
+                    
+            t.setColumnsDraggable(false);
+            
+                assert.equal(fx.find('th.draggableColumn').length, 0, 
+                    'table.setColumnsDraggable(false) => none columns draggable');
+                    
+            t.columns[1].setDraggable(true);
+                
+                assert.equal(fx.find('th.draggableColumn').length, 1, 
+                    'column\'s draggable value overrides table\'s');
+
+            t.columns[1].setDraggable(null);
+            
+                assert.equal(fx.find('th.draggableColumn').length, 0, 
+                    'column draggable set to null => default to table global setting');
+            
+            t.setColumnsDraggable(true);
+            
+                assert.equal(fx.find('th.draggableColumn').length, t.columns.length - 1, 
+                    'table.setColumnsDraggable(true) => all columns draggable (except header)');
+
+            //  ## columns.resizable
+            
+            assert.equal(fx.find('th.resizableColumn').length, t.columns.length, 
+                'All columns resizable by default');
+            
+            t.columns[1].setResizable(false);
+                    
+                assert.equal(fx.find('th.resizableColumn').length, t.columns.length - 1, 
+                    'column resizable property overrides global');
+                    
+            t.setColumnsResizable(false);
+            
+                assert.equal(fx.find('th.resizableColumn').length, 0, 
+                    'table.setColumnsResizable(false) => none columns resizable');
+                    
+            t.columns[1].setResizable(true);
+                
+                assert.equal(fx.find('th.resizableColumn').length, 1, 
+                    'column\'s resizable value overrides table\'s');
+
+            t.columns[1].setResizable(null);
+            
+                assert.equal(fx.find('th.resizableColumn').length, 0, 
+                    'column resizable set to null => default to table global setting');
+            
+                    
+            t.setColumnsResizable(true);
+            
+                assert.equal(fx.find('th.resizableColumn').length, t.columns.length, 
+                    'table.setColumnsResizable(true) => all columns resizable');
+
+            // ## columns.drag
+            
+            // ### start dragging -- class changed, shadow appeared
+            
+            var cell = fx.find('th[data-col-id=name]'), cellCenter = TestUtils.center(cell, true),
+                dc = Amm.Drag.Controller.getInstance();
+            var cellElement = Amm.findElement(cell, 'Amm.Table.Cell');
+            cellElement.setActive(true);
+            cell.simulate('mousedown', {clientX: cellCenter.left, clientY: cellCenter.top});
+            cell.simulate('mousemove', {clientX: cellCenter.left - 10, clientY: cellCenter.top - 10});
+            
+                assert.ok(dc.getSession(), 'Drag session started');
+                assert.ok(t.getDragObject() === cellElement, 'Drag object is a header cell');
+                assert.ok(t.getDragAction() === Amm.Trait.Table.DragDrop.ACTION.DRAG_COLUMN,
+                    'Drag action is DRAG_COLUMN');
+                assert.ok(jQuery('*.dragShadow.colDragShadow').length,  
+                    'Drag shadow is created');
+                assert.ok(cell.is('.isDragging'), '.isDragging class assigned to the cell');
+                
+            // ### drag over some column before - proper class
+            
+            var targetCoords = TestUtils.center('th[data-col-id=recordId]');
+            
+            cell.simulate('mousemove', {
+                clientX: targetCoords.left,
+                clientY: targetCoords.top
+            });
+            
+                assert.equal(
+                    jQuery('th[data-col-id=recordId], td[data-col-id=recordId]')
+                        .filter('.dragDestBefore').length,
+                    t.header.rows.length + t.body.rows.length,
+                    'All drag-over before-placed-column cells have dragDestBefore class'
+                );
+        
+                assert.ok(t.getDragActionTarget() === t.header.rows[0].e.recordId, 
+                    'dragActionTaraget is target header cell');
+
+            // ### drag over some column after - proper class
+            
+            targetCoords = TestUtils.center('th[data-col-id=surname]');
+            
+            cell.simulate('mousemove', {
+                clientX: targetCoords.left,
+                clientY: targetCoords.top
+            });
+            
+                assert.equal(
+                    jQuery('th[data-col-id=recordId], td[data-col-id=recordId]')
+                        .filter('.dragDestBefore').length, 
+                    0,
+                    'Prev drag target column doesn\'t have dragDestBefore class anymore'
+                );
+        
+                assert.ok(t.getDragActionTarget() === t.header.rows[0].e.surname, 
+                    'dragActionTaraget is target header cell (2)');
+            
+                assert.equal(
+                    jQuery('th[data-col-id=surname], td[data-col-id=surname]')
+                        .filter('.dragDestAfter').length,
+                    t.header.rows.length + t.body.rows.length,
+                    'All drag-over before-placed-column cells have dragDestBefore class'
+                );            
+            
+            // ### drag over itself - cursor "not-allowed"
+            
+            cell.simulate('mousemove', {
+                clientX: cellCenter.left,
+                clientY: cellCenter.top
+            });
+            
+                assert.equal(
+                    jQuery('th[data-col-id=surname], td[data-col-id=surname]')
+                        .filter('.dragDestAfter').length, 
+                    0,
+                    'Prev drag target column doesn\'t have dragDestAfter class anymore'
+                );
+                
+                assert.ok(t.getDragActionTarget() === null, 
+                    'drag over itself: dragActionTaraget is null');
+                    
+                assert.ok(jQuery(document.body).css('cursor'), 'not-allowed',
+                    'Cannot drop: cursor is not-allowed');
+        
+            // ### drag outside - cursor "not-allowed"
+            
+            targetCoords = TestUtils.center(fx.find('table'), .6, .6, true);
+            
+            cell.simulate('mousemove', {
+                clientX: targetCoords.left,
+                clientY: targetCoords.top
+            });
+            
+                assert.ok(t.getDragActionTarget() === null, 
+                    'drag outside: dragActionTaraget is null');
+                    
+                assert.ok(jQuery(document.body).css('cursor'), 'not-allowed',
+                    'drag outside: cursor is not-allowed');
+        
+            // ### drag over non-draggable column is not allowed
+            
+            t.e.age.setDraggable(false);
+            
+            targetCoords = TestUtils.center(fx.find('thead th[data-col-id=age]'), true);
+            
+            cell.simulate('mousemove', {clientX: targetCoords.left, clientY: targetCoords.top});
+            
+                assert.ok(t.getDragActionTarget() === null, 
+                    'drag over non-draggable column: dragActionTaraget is null');
+                    
+                assert.ok(jQuery(document.body).css('cursor'), 'not-allowed',
+                    'drag over non-draggable column: cursor is not-allowed');
+            
+            // ### drop - event triggered
+            
+            targetCoords = TestUtils.center('th[data-col-id=surname]');
+            
+            cell.simulate('mousemove', {
+                clientX: targetCoords.left,
+                clientY: targetCoords.top
+            });
+            
+            var eventInfo;
+            
+            t.subscribe('reorderColumns', function(f) { eventInfo = Amm.override({}, Amm.event); });
+            
+            cell.simulate('mouseup');
+                    
+                assert.ok(eventInfo, 'reorderColumns event was triggered');
+            
+                if (eventInfo) {
+                    
+                    assert.deepEqual(Amm.getProperty(eventInfo.args[0], 'id'), ['name'],
+                        'Column dropped - outReorderRows argument #0 is array with src column');
+
+                    assert.equal(Amm.getProperty(eventInfo.args[1], 'id'), 'surname',
+                        'Column dropped - outReorderRows argument #1 is dest column');
+
+                    assert.deepEqual(eventInfo.args[2], {preventDefault: false},
+                        'Column dropped - outReorderRows argument #2 is object with key `preventDefault`');
+
+                    assert.deepEqual(Amm.getProperty(t.columns.getItems(), 'id'),
+                        ['index', 'visIndex', 'recordId', 'surname', 'name', 'age', 'fullName'],
+                        'Columns were reordered');
+                
+                }
+                    
+            // ### try to drag non-draggble column
+            
+            cell = fx.find('th[data-col-id=index]');
+            cellCenter = TestUtils.center(cell, true);
+            cellElement = Amm.findElement(cell, 'Amm.Table.Cell');
+            cellElement.setActive(true);
+            cell.simulate('mousedown', {clientX: cellCenter.left, clientY: cellCenter.top});
+            cell.simulate('mousemove', {clientX: cellCenter.left - 10, clientY: cellCenter.top - 10});
+            
+                assert.notOk(t.getDragAction(), 'Drag action not initiated when trying to drag non-draggable cell');
+            
+            // ## columns.resize
+            
+            // ### simple resize
+            
+            cell = fx.find('th[data-col-id=surname]');
+            var handle = cell.find('.resizeHandleVertical');
+            var oldSize = Math.round(t.e.surname.getSize());
+            targetCoords = TestUtils.center(handle, true);
+            handle.simulate('mousedown', {clientX: targetCoords.left, clientY: targetCoords.top});
+            handle.simulate('mousemove', {clientX: targetCoords.left + 15, clientY: targetCoords.top});
+            
+                assert.deepEqual(t.getDragAction(), Amm.Trait.Table.DragDrop.ACTION.RESIZE_COLUMN,
+                    'Resize-column-by-drag initiated');
+                assert.ok(t.getDragObject() === t.header.rows[0].e.surname,
+                    'table.getDragObject() returns currently resizing column header');
+                assert.ok(cell.is('.isResizing'), 
+                    'Proper class assigned to column header during resize action');
+            
+            handle.simulate('mousemove', {clientX: targetCoords.left + 50, clientY: targetCoords.top});
+                    
+            // @TODO: always apply initial drag vector during resize, so "-15" not necessary
+            
+                assert.deepEqual(Math.round(t.e.surname.getSize()), oldSize + 50,
+                    'Resize-by-drag: size properly changes');
+            
+            handle.simulate('mousemove', {clientX: targetCoords.left + 25, clientY: targetCoords.top});
+            
+                assert.deepEqual(Math.round(t.e.surname.getSize()), oldSize + 25,
+                    'Resize-by-drag: size properly changes (2)');
+                
+            handle.simulate('mouseup');
+            
+                assert.deepEqual(Math.round(t.e.surname.getSize()), oldSize + 25, 
+                    'End resize: new size remains');
+                assert.notOk(t.getDragObject(),
+                    'End resize: no more drag object');
+                assert.notOk(t.getDragAction(),
+                    'End resize: no more drag action');
+                assert.notOk(cell.is('.isResizing'),
+                    'End resize: no more isResizing class');
+                    
+            // ### dbl-click to reset width
+                    
+            handle.simulate('dblclick');
+                assert.deepEqual(Math.round(t.e.surname.getSize()), oldSize, 
+                    'Resize handle double-click: old size applied');
+            
+            // ### cannot resize non-resizable
+            
+            t.e.surname.setResizable(false);
+            
+            targetCoords = TestUtils.center(handle, true);
+            handle.simulate('mousedown', {clientX: targetCoords.left, clientY: targetCoords.top});
+            handle.simulate('mousemove', {clientX: targetCoords.left + 15, clientY: targetCoords.top});
+            
+                assert.deepEqual(t.getDragAction(), Amm.Trait.Table.DragDrop.ACTION.NONE,
+                    'Resize-by-drag of non-resizable column NOT initiated');
+                assert.notOk(!!t.getDragObject(),
+                    'table.getDragObject() returns null');
+                assert.notOk(cell.is('.isResizing'), 
+                    "Column that's not resizing doesn't have corresponding class");
+            
+            // # rows
+            
+            // ## rows.draggable
+            
+            assert.equal(fx.find('th.draggableRow').length, t.body.rows.length, 
+                'All rows except header are draggable by default');
+                    
+            t.rows[1].setDraggable(false);
+                    
+                assert.equal(fx.find('th.draggableRow').length, t.body.rows.length - 1, 
+                    'row draggable property overrides global');
+                    
+            t.body.setRowsDraggable(false);
+            
+                assert.equal(fx.find('th.draggableRow').length, 0, 
+                    'section rowsDraggable overrides table preference');
+            
+            t.body.setRowsDraggable(null);
+                    
+                assert.equal(fx.find('th.draggableRow').length, t.body.rows.length - 1, 
+                    'section rowsDraggable reset to default');
+                    
+            t.setRowsDraggable(false);
+            
+                assert.equal(fx.find('th.draggableRow').length, 0, 
+                    'table.setRowsDraggable(false) => none rows draggable');
+                    
+            t.rows[1].setDraggable(true);
+                
+                assert.equal(fx.find('th.draggableRow').length, 1, 
+                    'row\'s draggable value overrides table\'s');
+
+            t.rows[1].setDraggable(null);
+            
+                assert.equal(fx.find('th.draggableRow').length, 0, 
+                    'row draggable set to null => default to table global setting');
+            
+            t.setRowsDraggable(true);
+            
+                assert.equal(fx.find('th.draggableRow').length, t.body.rows.length, 
+                    'table.setRowsDraggable(true) => all rows draggable (except header)');
+
+            // ## rows.resizable
+            
+            assert.equal(fx.find('th.resizableRow').length, t.header.rows.length + t.body.rows.length, 
+                'All rows resizable by default');
+                    
+            t.header.setRowsResizable(false);
+            
+                assert.equal(fx.find('th.resizableRow').length, t.body.rows.length, 
+                    'section rowsResizable overrides table preference');
+            
+            t.header.setRowsResizable(null);
+                    
+                assert.equal(fx.find('th.resizableRow').length, t.header.rows.length + t.body.rows.length, 
+                    'section rowsResizable reset to default');
+                
+            t.rows[1].setResizable(false);
+                    
+                assert.equal(fx.find('th.resizableRow').length, t.header.rows.length + t.body.rows.length - 1, 
+                    'row resizable property overrides global');
+                    
+            t.setRowsResizable(false);
+            
+                assert.equal(fx.find('th.resizableRow').length, 0, 
+                    'table.setRowsResizable(false) => none rows resizable');
+                    
+            t.rows[1].setResizable(true);
+                
+                assert.equal(fx.find('th.resizableRow').length, 1, 
+                    'row\'s resizable value overrides table\'s');
+
+            t.rows[1].setResizable(null);
+            
+                assert.equal(fx.find('th.resizableRow').length, 0, 
+                    'row resizable set to null => default to table global setting');
+            
+            t.setRowsResizable(true);
+            
+                assert.equal(fx.find('th.resizableRow').length, 
+                    t.header.rows.length + t.body.rows.length, 
+                    'table.setRowsResizable(true) => all rows resizable');
+            
+            
+            
+            
+            // ## rows.drag
+            
+            // ### start dragging -- class changed, shadow appeared
+            
+            var cell = fx.find('tbody tr:nth-child(2) th'), cellCenter = TestUtils.center(cell, true),
+                dc = Amm.Drag.Controller.getInstance();
+                
+            var cellElement = Amm.findElement(cell, 'Amm.Table.Cell');
+            cellElement.setActive(true);
+            cell.simulate('mousedown', {clientX: cellCenter.left, clientY: cellCenter.top});
+            cell.simulate('mousemove', {clientX: cellCenter.left - 10, clientY: cellCenter.top - 10});
+            
+                assert.ok(dc.getSession(), 'Drag session started');
+                assert.ok(t.getDragObject() === cellElement, 'Drag object is a header cell');
+                assert.ok(t.getDragAction() === Amm.Trait.Table.DragDrop.ACTION.DRAG_ROW,
+                    'Drag action is DRAG_ROW');
+                assert.ok(jQuery('*.dragShadow.rowDragShadow').length,  
+                    'Drag shadow is created');
+                assert.ok(cell.is('.isDragging'), '.isDragging class assigned to the cell');
+                
+            // ### drag over some row before - proper class
+            
+            var targetCoords = TestUtils.center('tbody tr:nth-child(1) th');
+            
+            cell.simulate('mousemove', {
+                clientX: targetCoords.left,
+                clientY: targetCoords.top
+            });
+            
+                assert.ok(
+                    jQuery('tbody tr:nth-child(1)').is('.dragDestBefore'),
+                    'Drag-over before-placed-row has dragDestBefore class'
+                );
+        
+                assert.ok(t.getDragActionTarget() === t.rows[0].e.index,
+                    'dragActionTaraget is target header cell');
+
+            // ### drag over some row after - proper class
+            
+            targetCoords = TestUtils.center('tbody tr:nth-child(3) th');
+            
+            cell.simulate('mousemove', {
+                clientX: targetCoords.left,
+                clientY: targetCoords.top
+            });
+            
+                assert.notOk(
+                    jQuery('tbody tr:nth-child(1)').is('.dragDestBefore'),
+                    'Old drag target row doesn\'t have dragDestBefore class anymore'
+                );
+            
+                assert.ok(
+                    jQuery('tbody tr:nth-child(3)').is('.dragDestAfter'),
+                    'Next drag target row has dragDestAfter class'
+                );
+        
+            // ### drag over itself - cursor "not-allowed"
+            
+            cell.simulate('mousemove', {
+                clientX: cellCenter.left,
+                clientY: cellCenter.top
+            });
+            
+                assert.notOk(
+                    jQuery('tbody tr:nth-child(3)').is('.dragDestAfter'), 
+                    'Prev drag target row doesn\'t have dragDestAfter class anymore'
+                );
+                
+                assert.ok(t.getDragActionTarget() === null, 
+                    'drag over itself: dragActionTaraget is null');
+                    
+                assert.ok(jQuery(document.body).css('cursor'), 'not-allowed',
+                    'Cannot drop: cursor is not-allowed');
+        
+            // ### drag outside - cursor "not-allowed"
+            
+            targetCoords = TestUtils.center(fx.find('table'), .6, .6, true);
+            
+            cell.simulate('mousemove', {
+                clientX: targetCoords.left,
+                clientY: targetCoords.top
+            });
+            
+                assert.ok(t.getDragActionTarget() === null, 
+                    'drag outside: dragActionTaraget is null');
+                    
+                assert.ok(jQuery(document.body).css('cursor'), 'not-allowed',
+                    'drag outside: cursor is not-allowed');
+                    
+            // ### drag over different section is not allowed
+            
+            t.header.rows[0].setDraggable(true);
+            targetCoords = TestUtils.center(fx.find('thead th:first-child'), true);
+            
+            cell.simulate('mousemove', {
+                clientX: targetCoords.left,
+                clientY: targetCoords.top
+            });
+            
+                assert.ok(t.getDragActionTarget() === null, 
+                    'drag over different section: dragActionTaraget is null');
+                    
+                assert.ok(jQuery(document.body).css('cursor'), 'not-allowed',
+                    'drag over different section: cursor is not-allowed');
+                    
+            t.body.rows[0].setDraggable(false);
+            
+            targetCoords = TestUtils.center(fx.find('tbody tr:nth-child(1) th'), true);
+            cell.simulate('mousemove', {clientX: targetCoords.left, clientY: targetCoords.top});
+            
+                assert.ok(t.getDragActionTarget() === null, 
+                    'drag over non-draggable row: dragActionTaraget is null');
+                    
+                assert.ok(jQuery(document.body).css('cursor'), 'not-allowed',
+                    'drag over non-draggable row: cursor is not-allowed');
+                    
+            // ### drag over non-draggable row is not allowed
+            
+            // ### drop - event triggered
+            
+            targetCoords = TestUtils.center('tbody tr:nth-child(3) > th');
+            
+            cell.simulate('mousemove', {
+                clientX: targetCoords.left,
+                clientY: targetCoords.top
+            });
+            
+            eventInfo = null;
+            
+            t.subscribe('reorderRows', function(f) { eventInfo = Amm.override({}, Amm.event); });
+            
+            cell.simulate('mouseup');
+                    
+                assert.ok(eventInfo, 'reorderRows event was triggered');
+            
+                if (eventInfo) {
+                    
+                    assert.deepEqual(eventInfo.args[0][0].getItem().name, 'Jane',
+                        'Row dropped - outReorderRows argument #0 is array with src row');
+
+                    assert.equal(eventInfo.args[1].getItem().name, 'Mike',
+                        'Row dropped - outReorderRows argument #1 is dest row');
+
+                    assert.deepEqual(eventInfo.args[2], {preventDefault: false},
+                        'Row dropped - outReorderRows argument #2 is object with key `preventDefault`');
+
+                    assert.deepEqual(Amm.getProperty(t.getItems().getItems(), 'name'),
+                        ['John', 'Mike', 'Jane', 'Kate'],
+                        'Rows were reordered');
+                
+                }
+                    
+            // ### try to drag non-draggble row
+            
+            cell = fx.find('thead th:first-child');
+            cellCenter = TestUtils.center(cell, true);
+            cellElement = Amm.findElement(cell, 'Amm.Table.Cell');
+            cellElement.setActive(true);
+            cell.simulate('mousedown', {clientX: cellCenter.left, clientY: cellCenter.top});
+            cell.simulate('mousemove', {clientX: cellCenter.left - 10, clientY: cellCenter.top - 10});
+            
+                assert.notOk(t.getDragAction(), 'Drag action not initiated when trying to drag non-draggable cell');
+            
+            // ## rows.resize
+            
+            // ### simple resize
+            
+            cell = fx.find('tbody tr:nth-child(2) th');
+            var handle = cell.find('.resizeHandleHorizontal');
+            var oldSize = Math.round(t.rows[1].getSize());
+            targetCoords = TestUtils.center(handle, true);
+            handle.simulate('mousedown', {clientX: targetCoords.left, clientY: targetCoords.top});
+            handle.simulate('mousemove', {clientX: targetCoords.left, clientY: targetCoords.top + 15});
+            
+                assert.deepEqual(t.getDragAction(), Amm.Trait.Table.DragDrop.ACTION.RESIZE_ROW,
+                    'Resize-row-by-drag initiated');
+                assert.ok(t.getDragObject() === t.rows[1].e.index,
+                    'table.getDragObject() returns currently resizing row header');
+                assert.ok(cell.parent().is('.isResizing'), 
+                    'Proper class assigned to row during resize action');
+            
+            handle.simulate('mousemove', {clientX: targetCoords.left, clientY: targetCoords.top + 50});
+                    
+            // @TODO: always apply initial drag vector during resize, so "-15" not necessary
+            
+                assert.deepEqual(Math.round(t.rows[1].getSize()), oldSize + 50,
+                    'Resize-by-drag: size properly changes');
+            
+            handle.simulate('mousemove', {clientX: targetCoords.left, clientY: targetCoords.top + 25});
+            
+                assert.deepEqual(Math.round(t.rows[1].getSize()), oldSize + 25,
+                    'Resize-by-drag: size properly changes (2)');
+                
+            handle.simulate('mouseup');
+            
+                assert.deepEqual(Math.round(t.rows[1].getSize()), oldSize + 25, 
+                    'End resize: new size remains');
+                assert.notOk(t.getDragObject(),
+                    'End resize: no more drag object');
+                assert.notOk(t.getDragAction(),
+                    'End resize: no more drag action');
+                assert.notOk(cell.is('.isResizing'),
+                    'End resize: no more isResizing class');
+                    
+            // ### dbl-click to reset width
+                    
+            handle.simulate('dblclick');
+                assert.deepEqual(Math.round(t.rows[1].getSize()), oldSize, 
+                    'Resize handle double-click: old size applied');
+            
+            // ### cannot resize non-resizable
+            
+            t.rows[1].setResizable(false);
+            
+            targetCoords = TestUtils.center(handle, true);
+            handle.simulate('mousedown', {clientX: targetCoords.left, clientY: targetCoords.top});
+            handle.simulate('mousemove', {clientX: targetCoords.left + 15, clientY: targetCoords.top});
+            
+                assert.deepEqual(t.getDragAction(), Amm.Trait.Table.DragDrop.ACTION.NONE,
+                    'Resize-by-drag of non-resizable row NOT initiated');
+                assert.notOk(!!t.getDragObject(),
+                    'table.getDragObject() returns null');
+                assert.notOk(cell.is('.isResizing'), 
+                    "Row that's not resizing doesn't have corresponding class");            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            window.d.fx = fx;
+            
+            //fx.remove();
+            
+            Amm.cleanup(t, dc);
+            
+        } finally {
+            
+            fx.css('left', "-10000px");
+            
+        }
+        
+        
+    });
     
 }) ();

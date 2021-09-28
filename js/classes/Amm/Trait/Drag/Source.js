@@ -114,4 +114,8 @@ Amm.Trait.Drag.Source.prototype = {
         this._out('dragCursorChange', dragCursor, oldDragCursor);
     },
     
+    _cleanup_AmmTraitDragSource: function() {
+        if (this.getDragSession()) this.getDragSession().cancel();
+    }
+    
 };

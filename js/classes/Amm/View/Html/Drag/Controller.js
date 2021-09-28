@@ -127,10 +127,7 @@ Amm.View.Html.Drag.Controller.prototype = {
             this._lastX = event.pageX;
             this._lastY = event.pageY;
             var dragTarget = null;
-            var targetElement = event.target;
-            if (event.type === 'pointermove') {
-                targetElement = document.elementsFromPoint(event.pageX, event.pageY)[0];
-            }
+            var targetElement = document.elementsFromPoint(event.clientX, event.clientY)[0];
             if (targetElement) {
                 dragTarget = this._detectDragTarget(targetElement);
             }
@@ -209,18 +206,17 @@ Amm.View.Html.Drag.Controller.prototype = {
     },
     
     _setCursor: function(cursor) {
-        if (!cursor) {
-            if (!this._cursorStylesheet) return;
+        if (this._cursorStylesheet) {
             this._cursorStylesheet.parentNode.removeChild(this._cursorStylesheet);
             this._cursorStylesheet = null;
-            return;
         }
+        if (!cursor) return;
         if (!this._cursorStylesheet) {
             this._cursorStylesheet = document.createElement('style');
             this._cursorStylesheet.setAttribute('type', 'text/css');
             document.head.appendChild(this._cursorStylesheet);
         }
-        this._cursorStylesheet.innerText = "* {cursor: " + cursor + "}";
+        this._cursorStylesheet.innerText = "* {cursor: " + cursor + "!important}";
     },
     
     _releaseResources: function() {

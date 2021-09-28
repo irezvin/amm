@@ -40,8 +40,9 @@ Amm.ElementBound.prototype = {
         if (element !== null) {
             if (this.requiredElementClass)
                 Amm.is(element, this.requiredElementClass, 'element');
-            if (this.requiredElementInterfaces)
+            if (this.requiredElementInterfaces) {
                 Amm.hasInterfaces(element, this.requiredElementInterfaces, 'element');
+            }
         }
         var o = this._element;
         if (element === o) return; // nothing to do

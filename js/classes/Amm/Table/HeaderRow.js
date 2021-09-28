@@ -10,7 +10,14 @@ Amm.Table.HeaderRow.prototype = {
     
     _cellClass: 'Amm.Table.HeaderCell',
     
-    _columnsConfigureCells: false,
+    _columnsConfigureCells: true,
+    
+    _draggable: false,
+    
+    cellProtoCallback: function(ret, column) {
+        ret.proto.class = 'Amm.Table.ColumnHeaderCell';
+        Amm.Table.RowOfCells.prototype.cellProtoCallback.call(this, ret, column);
+    },
 
 };
 

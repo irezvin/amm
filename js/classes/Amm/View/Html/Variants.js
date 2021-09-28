@@ -18,10 +18,10 @@
  * </div>
  */
 Amm.View.Html.Variants = function(options) {
+    this._requireInterfaces('InstantiatorOrRepeater');
     Amm.View.Abstract.call(this, options);
     Amm.View.Html.call(this, options);
     Amm.DomHolder.call(this);
-    this._requireInterfaces('InstantiatorOrRepeater');
 };
 
 Amm.View.Html.Variants.ERROR_BOTH_ATTRIBS = "HTML definition of variant prototype cannot have both data-amm-default and data-amm-condition";

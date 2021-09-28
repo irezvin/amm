@@ -23,9 +23,17 @@ Amm.Table.Column.prototype = {
 
     _cellProto: null,
 
-    _width: '',
-    
     _tableActiveProp: 'activeColumn',
+    
+    _size: null,
+    
+    _offset: null,
+    
+    _lockSetSize: 0,
+    
+    _resizable: null,
+
+    _draggable: null,
     
     _getDefaultTraits: function(options) {
         return [Amm.Trait.Visual];
@@ -74,6 +82,9 @@ Amm.Table.Column.prototype = {
     },
     
     configureCellProto: function(ret, row) {
+        if (Amm.is(row, 'Amm.Table.HeaderRow')) {
+            return;
+        }
         if (this._cellProto) {
             Amm.overrideRecursive(ret.proto, this._cellProto);
         }
@@ -87,31 +98,11 @@ Amm.Table.Column.prototype = {
             $: 'col',
             data_amm_v: [
                 { class: 'v.Visual', delay: 0, },
-                {
-                    class: 'v.Expressions',
-                    map: {
-                        style__width: 'width'
-                    }
-                }
             ]
         });
         return res;
     },
 
-    setWidth: function(width) {
-        var oldWidth = this._width;
-        if (oldWidth === width) return;
-        this._width = width;
-        this.outWidthChange(width, oldWidth);
-        return true;
-    },
-
-    getWidth: function() { return this._width; },
-
-    outWidthChange: function(width, oldWidth) {
-        this._out('widthChange', width, oldWidth);
-    },
-    
     setCellClassName: function(cellClassNameOrToggle, part) {
         var oldCellClassName = this._cellClassName;
         var cellClassName = Amm.Util.alterClassName(this._cellClassName, cellClassNameOrToggle, part);
@@ -173,6 +164,147 @@ Amm.Table.Column.prototype = {
             return cell.column === t && (!callback || callback(cell));
         }, all);
     },
+    
+    setSize: function(size) {
+        var oldSize = this._size;
+        if (oldSize === size) return;
+        this._size = size;
+        this.outSizeChange(size, oldSize);
+        if (!this._lockSetSize && this._enabled && this._component) {
+            this._component.setColumnSize(this, size);            
+        }
+        return true;
+    },
+    
+    reportSize: function(size) {
+        this._lockSetSize++;
+        this.setSize(size);
+        this._lockSetSize--;
+    },
+
+    getSize: function() { 
+        if (!this._enabled || !this._component) {
+            return this._size;
+        }
+        var size = this._component.getColumnSize(this, size);
+        if (size !== this._size) {
+            var oldSize = this._size;
+            this._size = size;
+            this.outSizeChange(size, oldSize);
+        }
+        return this._size; 
+    },
+
+    outSizeChange: function(size, oldSize) {
+        this._out('sizeChange', size, oldSize);
+    },
+    
+    _subscribeFirst_sizeChange: function() {
+        if (this._component) this._component.observeColumnSize(this);
+    },
+    
+    _unsubscribeLast_sizeChange: function() {
+        if (this._component) this._component.unobserveColumnSize(this);
+    },
+    
+    _setComponent_tableColumn: function(component, oldComponent) {
+        if (oldComponent) {
+            if (this._subscribers['sizeChange']) {
+                oldComponent.unobserveColumnSize(this);
+            }
+            if (this._subscribers['offsetChange']) {
+                oldComponent.unobserveColumnOffset(this);
+            }
+        }
+        if (component) {
+            if (this._subscribers['sizeChange']) {
+                component.observeColumnSize(this);
+            }
+            if (this._subscribers['offsetChange']) {
+                component.observeColumnOffset(this);
+            }
+        }
+    },
+    
+    setOffset: function(offset) {
+    },
+    
+    getOffset: function() { 
+        if (!this._enabled || !this._component) {
+            return this._offset;
+        }
+        var offset = this._component.getColumnOffset(this, offset);
+        if (offset !== this._offset) {
+            var oldOffset = this._offset;
+            this._offset = offset;
+            this.outOffsetChange(offset, oldOffset);
+        }
+        return this._offset; 
+    },
+    
+    reportOffset: function(offset) {
+        var oldOffset = this._offset;
+        if (oldOffset === offset) return;
+        this._offset = offset;
+        this.outOffsetChange(offset, oldOffset);
+        return true;
+    },
+
+    outOffsetChange: function(offset, oldOffset) {
+        this._out('offsetChange', offset, oldOffset);
+    },    
+    
+    _subscribeFirst_offsetChange: function() {
+        if (this._component) this._component.observeColumnOffset(this);
+    },
+    
+    _unsubscribeLast_offsetChange: function() {
+        if (this._component) this._component.unobserveColumnOffset(this);
+    },
+
+    setResizable: function(resizable) {
+        var oldResizable = this._resizable;
+        if (oldResizable === resizable) return;
+        this._resizable = resizable;
+        this.outResizableChange(resizable, oldResizable);
+        return true;
+    },
+
+    getResizable: function() { return this._resizable; },
+
+    outResizableChange: function(resizable, oldResizable) {
+        this._out('resizableChange', resizable, oldResizable);
+    },
+
+    setDraggable: function(draggable) {
+        var oldDraggable = this._draggable;
+        if (oldDraggable === draggable) return;
+        this._draggable = draggable;
+        this.outDraggableChange(draggable, oldDraggable);
+        return true;
+    },
+
+    getDraggable: function() { return this._draggable; },
+
+    outDraggableChange: function(draggable, oldDraggable) {
+        this._out('draggableChange', draggable, oldDraggable);
+    },
+    
+    _calcIsDraggable: function(get) {
+        var res;
+        res = get.prop('draggable').val();
+        if (res !== null) return !!res;
+        res = get.prop('table').prop('columnsDraggable').val();
+        return !!res;
+    },
+    
+    _calcIsResizable: function(get) {
+        var res;
+        res = get.prop('resizable').val();
+        if (res !== null) return !!res;
+        res = get.prop('table').prop('columnsResizable').val();
+        return !!res;
+    },
 
 };
 
@@ -180,3 +312,5 @@ Amm.extend(Amm.Table.Column, Amm.Element);
 Amm.extend(Amm.Table.Column, Amm.Table.WithEditor);
 Amm.extend(Amm.Table.Column, Amm.Table.WithActive);
 
+Amm.ObservableFunction.createCalcProperty('isDraggable', Amm.Table.Column.prototype);
+Amm.ObservableFunction.createCalcProperty('isResizable', Amm.Table.Column.prototype);

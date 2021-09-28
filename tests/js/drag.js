@@ -1,5 +1,6 @@
 /* global Amm */
 /* global QUnit */
+/* global TestUtils */
 
 (function() {
 
@@ -27,26 +28,13 @@
         return null;
     };
     
-    var center = function(element, dx, dy, client) {
-        if (dx === true && dy === undefined && client === undefined) {
-            dx = undefined;
-            client = true;
-        }
-        var e = jQuery(element), o = e.offset(), w = e.width(), h = e.height();
-        if (dx && Math.abs(dx) < 1) dx *= e.w;
-        if (dy && Math.abs(dy) < 1) dy *= e.h;
-        o.left += w/2 + (dx || 0);
-        o.top += h/2 + (dy || 0);
-        if (client) return o;
-        var doc = document.documentElement, body = doc.body;
-        o.top -= doc && doc.scrollTop || body && body.scrollTop || 0;
-        o.left -= doc && doc.scrollLeft || body && body.scrollLeft || 0;
-        return o;
-    };
+    var center = TestUtils.center;
         
     QUnit.test("Amm.Drag - Basic", function(assert) {
         
-        var fx = jQuery("#qunit-fixture");
+        // we need to have visible element inside the viewport to have elementsFromPoint work properly
+        var fx = jQuery('<div style="position: absolute; left: 0px; top: 0px; height: 1000px; width: 1000px; z-index: 9999;"></div>');
+        fx.appendTo(document.body);
        
         fx.html( ''
             +   '<style type="text/css">\n'
@@ -109,9 +97,11 @@
         fx.find('#t1').simulate('mousemove', {clientX: o.left, clientY: o.top});
         
             assert.ok(ds1.getDragSession().getTarget() === Amm.r.e.dt1, 'Proper drag target assigned to the session');
-            assert.ok(ds1.getDragSession().getTargetNativeItem() === fx.find('#t1')[0], 'Proper drag target HTML element assigned to the session');
+            
+            assert.ok(ds1.getDragSession().getTargetNativeItem() === fx.find('#dt1-t1-sub')[0], 'Proper drag target HTML element assigned to the session');
+                console.log(ds1.getDragSession().getTargetNativeItem());
             assert.ok(Amm.r.e.dt1.getDragSource() === Amm.r.e.ds1, 'Drag target receives instance of current drag source');
-            assert.ok(Amm.r.e.dt1.getTargetNativeItem() === fx.find('#t1')[0], 'Drag target receives instance of current target HTML element');
+            assert.ok(Amm.r.e.dt1.getTargetNativeItem() === fx.find('#dt1-t1-sub')[0], 'Drag target receives instance of current target HTML element');
             
             assert.equal(evLog.length, 4, 'Only 4 events logged');
             assert.ok(findEvent('dragNativeItemChange'), 'drag: dragSource: dragNativeItemChange event triggered');
@@ -175,6 +165,7 @@
             
         Amm.cleanup(elements);
         Amm.cleanup(dc);                
+        fx.remove();
         
     });    
         

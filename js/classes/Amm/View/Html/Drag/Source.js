@@ -16,6 +16,8 @@ Amm.View.Html.Drag.Source.prototype = {
     
     _pointerEvents: null,
     
+    disablePointerEvents: true,
+    
     getSuggestedTraits: function() {
         return [Amm.Trait.Drag.Source];
     },
@@ -60,6 +62,7 @@ Amm.View.Html.Drag.Source.prototype = {
     },
     
     _endObserve: function() {
+        Amm.View.Abstract.prototype._endObserve.apply(this);
         this._unregMousedown();
     },
     
@@ -71,12 +74,18 @@ Amm.View.Html.Drag.Source.prototype = {
          * this._element.getDragSession() will be null (or will not be active).
          */
         if (!this._element.getDragSession() || !this._element.getDragSession().getActive()) return;
-        this._pointerEvents = jQuery(this._htmlElement).css('pointerEvents');
-        jQuery(this._htmlElement).css('pointerEvents', 'none');
+        if (this.disablePointerEvents) {
+            this._pointerEvents = jQuery(this._htmlElement).css('pointerEvents');
+            jQuery(this._htmlElement).css('pointerEvents', 'none');
+        } else {
+            this._pointerEvents = false;
+        }
     },
     
     _handleElementDragEnd: function() {
-        jQuery(this._htmlElement).css('pointerEvents', this._pointerEvents);
+        if (this._pointerEvents !== false) {
+            jQuery(this._htmlElement).css('pointerEvents', this._pointerEvents);
+        }
     },
     
     setDragCursor: function(dragCursor) {

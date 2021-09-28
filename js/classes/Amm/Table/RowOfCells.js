@@ -113,4 +113,3 @@ Amm.Table.RowOfCells.prototype = {
 Amm.createProperty(Amm.Table.RowOfCells.prototype, 'cells', null, null, true);
 
 Amm.extend(Amm.Table.RowOfCells, Amm.Table.Row);
-
