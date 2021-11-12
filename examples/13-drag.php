@@ -41,7 +41,7 @@
                     console.log('dragTarget', t? t.getId() : null);
                 },
                 
-                _handleElementTargetNativeItemChange: function(item, old) {
+                _handleElementSourceTargetNativeItemChange: function(item, old) {
                     console.log("targetNativeItemChange");
                     if (item) jQuery(item).addClass('dragHover');
                     if (old) jQuery(old).removeClass('dragHover');
@@ -60,7 +60,7 @@
                 },
             });
             
-            /*window.dragEnd = function() {
+            window.dragEnd = function() {
                 var src = this.getDragSrcItem(), dest = this.getDragDestItem();
                 if (!src || !dest) return;
                 var itemA = src.getSrc(), aDp = src.getDisplayParent();
@@ -74,7 +74,7 @@
                 } else {
                     listA.moveItem(listA.indexOf(itemA), listA.indexOf(itemB));
                 }
-            };*/
+            };
 
 
             Amm.getRoot().subscribe('bootstrap', function() {
@@ -84,43 +84,39 @@
         </script>
         <style type="text/css">
 
-            /*.reorderIntentBefore {
-                border-top: 5px solid blue!important;
-            }
-            
-            .reorderIntentAfter {
-                border-bottom: 5px solid blue!important;
-            }*/
-            
-            .reorderIntentBefore::before {
-                content: "";
-                display: block;
-                border: 3px solid blue;
-            }
-
-            .reorderIntentAfter::after {
-                content: "";
-                display: inherit;
-                border: 1px solid blue;
-            }
-            
-            .reoderDragShadow {
+            .dragItemShadow {
                 position: absolute;
                 z-index: 9999;
                 background-color: rgba(255,255,255,0.5);
                 pointer-events: none;
             }
             
-            .reorderFloating {
+            .dragItemFloating {
                 position: absolute;
                 z-index: 9999;
                 pointer-events: none;
-                background-color: white;
-                opacity: 0.5;
-               
+                opacity: 0.8;
             }
 
-            .reoderStaticDragShadow {
+            .dragItemShadowClone.dragItemStaticShadow {
+                opacity: 0.2;
+                /*pointer-events: none;*/
+                /*visibility: hidden;*/
+            }
+            
+            .itemsContainer {
+                vertical-align: top; 
+                display: inline-block; 
+                border: 1px solid silver; 
+                padding: 1em; 
+                margin: .5em;
+            }
+            
+            .itemsContainer > div > div {
+                overflow: auto;
+            }
+            
+            .reoderStaticDragShadow, .dragItemStaticShadow:not(.dragItemShadowClone) {
                 border: 1px solid lightgray;
                 background-color: darkgrey;
             }
@@ -161,12 +157,32 @@
             }
             
             #ds1 {
+                margin-left: .5em;
                 width: 100px;
                 height: 100px;
                 position: absolute;
             }
             *[data-amm-id="t1"] {
                 margin-top: 120px;
+            }
+            
+            .dragItemIntent_before {
+                border-top: 2px solid lightblue;
+                margin-top: -2px;
+            }
+            
+            .dragItemIntent_after {
+                border-bottom: 2px solid lightblue;
+                margin-bottom: -2px;
+            }
+            
+            .dragItemIntent_over {
+                border: 1px solid lightblue;
+                margin: -1px;
+            }
+            
+            .dragItemIntent_container {
+                border: 2px solid lightblue;
             }
             
         </style>
@@ -195,55 +211,91 @@
             <div class="drop d4">Drop 4</div>
         </div>
         <div>
-            <!--
-            <div style='display: inline-block; border: 1px solid silver; padding:.5em; margin:.5em' 
-                 data-amm-e="{id: rpt, 
+            <div class="itemsContainer"
+                 data-amm-e="{
+                    id: rpt3, 
                     extraTraits: [t.Repeater, t.DisplayParent], 
-                    dragSrcItemRequirements: [['Visual', 'getSrc']],
-                    dragDestItemRequirements: [['Visual', 'getSrc']],
-                    assocProperty: src, withVariantsView: false, items: [
+                    assocProperty: src, 
+                    withVariantsView: false,
+                    intents: 'before,after,container',
+                    //intents: 'over',
+                    items: [
                         { __construct: 'Amm.Element', prop__caption: 'Item A' }, 
                         { __construct: 'Amm.Element', prop__caption: 'Item B' }, 
-                        { __construct: 'Amm.Element', prop__caption: 'Item C' },
                     ],
-                    on__dragEnd: {$ext: dragEnd}
-                }" data-amm-v="[v.Visual]" data-amm-id="@rpt">
-                <div data-amm-v="[v.DisplayParent, v.Drag.Reorder]" data-amm-id="@rpt"
+                    //on__dragEnd: {$ext: dragEnd}
+                }" data-amm-v="[v.Visual]" data-amm-id="@rpt3">
+                <div data-amm-v="[
+                    v.DisplayParent, 
+                    {
+                        class: v.Drag.ItemSource,
+                        itemElementRequirements: ['Visual', 'getSrc'],
+                        itemElementAssocProperty: 'src',
+                        defaultCollection: 'items',
+                        containerSelector: '.itemsContainer',
+                    }, 
+                    {
+                        class: v.Drag.ItemTarget,
+                        itemElementRequirements: ['Visual', 'getSrc'],
+                        itemElementAssocProperty: 'src',
+                        defaultCollection: 'items',
+                        containerSelector: '.itemsContainer',
+                    }
+                ]" data-amm-id="@rpt3"
                 >
                 </div>
-                <div data-amm-x="Amm.View.Html.Variants.build" data-amm-id="@rpt" style="display: none">
+                <div data-amm-x="Amm.View.Html.Variants.build" data-amm-id="@rpt3" style="display: none">
                     <div data-amm-dont-build=""
                          data-amm-default=""
                          data-amm-e="{prop__src: null}" 
                          data-amm-v="[v.Visual, {
                             class: v.Expressions,
                             map: { 'h2:::_html': 'this.src.caption' }
-                        }]",
+                        }]"
                     >
                         <h2></h2>
                     </div>
                 </div>
             </div>
-            <div style='display: inline-block; border: 1px solid silver; padding:.5em; margin:.5em' 
+            <div class="itemsContainer"  
                  data-amm-e="
                     {
-                        id: rpt2, 
-                        extraTraits: [t.Repeater, t.DisplayParent], 
+                        id: rpt4, 
+                        extraTraits: [t.Repeater, t.DisplayParent],
                         assocProperty: src, 
                         withVariantsView: false, 
-                        dragSrcItemRequirements: [['Visual', 'getSrc']],
-                        dragDestItemRequirements: [['Visual', 'getSrc']],
+                        intents: 'before,after,container',
+                        //intents: 'over',
                         items: [
-                            { __construct: 'Amm.Element', prop__caption: 'Item Q' }, 
-                            { __construct: 'Amm.Element', prop__caption: 'Item W' }, 
-                            { __construct: 'Amm.Element', prop__caption: 'Item E' },
+                            { __construct: 'Amm.Element', prop__caption: 'Item C' },
+                            { __construct: 'Amm.Element', prop__caption: 'Item D' },
+                            { __construct: 'Amm.Element', prop__caption: 'Item E' }, 
+                            { __construct: 'Amm.Element', prop__caption: 'Item F' }, 
+                            { __construct: 'Amm.Element', prop__caption: 'Item G' },
+                            { __construct: 'Amm.Element', prop__caption: 'Item H' },
                             
                         ],
-                        on__dragEnd: {$ext: dragEnd}
-                }" data-amm-v="[v.Visual]" data-amm-id="@rpt2">
-                <div data-amm-v="[v.DisplayParent, v.Drag.Reorder]" data-amm-id="@rpt2">
+                        //on__dragEnd: {$ext: dragEnd}
+                }" data-amm-v="[v.Visual]" data-amm-id="@rpt4">
+                <div data-amm-v="[
+                     v.DisplayParent, 
+                    {
+                        class: v.Drag.ItemSource,
+                        itemElementRequirements: ['Visual', 'getSrc'],
+                        itemElementAssocProperty: 'src',
+                        defaultCollection: 'items',
+                        containerSelector: '.itemsContainer',
+                    }, 
+                    {
+                        class: v.Drag.ItemTarget,
+                        itemElementRequirements: ['Visual', 'getSrc'],
+                        itemElementAssocProperty: 'src',
+                        defaultCollection: 'items',
+                        containerSelector: '.itemsContainer',
+                    }
+                ]" data-amm-id="@rpt4">
                 </div>
-                <div data-amm-x="Amm.View.Html.Variants.build" data-amm-id="@rpt2" style="display: none">
+                <div data-amm-x="Amm.View.Html.Variants.build" data-amm-id="@rpt4" style="display: none">
                     <div data-amm-dont-build=""
                          data-amm-default=""
                          data-amm-e="{prop__src: null}" 
@@ -256,6 +308,6 @@
                     </div>
                 </div>
             </div>
-        </div-->
+        </div>
     </body>
 </html>

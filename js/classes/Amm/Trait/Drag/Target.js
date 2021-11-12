@@ -9,7 +9,7 @@ Amm.Trait.Drag.Target.prototype = {
     
     _dropEnabled: true,
        
-    _dragSession: null,
+    _dragTargetSession: null,
 
     _dragSource: null,
 
@@ -35,18 +35,18 @@ Amm.Trait.Drag.Target.prototype = {
         this._out('dropEnabledChange', dropEnabled, oldDropEnabled);
     },
     
-    setDragSession: function(dragSession) {
-        var oldDragSession = this._dragSession;
-        if (oldDragSession === dragSession) return;
-        this._dragSession = dragSession;
-        this.outDragSessionChange(dragSession, oldDragSession);
+    setDragTargetSession: function(dragTargetSession) {
+        var oldDragTargetSession = this._dragTargetSession;
+        if (oldDragTargetSession === dragTargetSession) return;
+        this._dragTargetSession = dragTargetSession;
+        this.outDragTargetSessionChange(dragTargetSession, oldDragTargetSession);
         return true;
     },
 
-    getDragSession: function() { return this._dragSession; },
+    getDragTargetSession: function() { return this._dragTargetSession; },
 
-    outDragSessionChange: function(dragSession, oldDragSession) {
-        this._out('dragSessionChange', dragSession, oldDragSession);
+    outDragTargetSessionChange: function(dragTargetSession, oldDragTargetSession) {
+        this._out('dragTargetSessionChange', dragTargetSession, oldDragTargetSession);
     },
 
     setDragSource: function(dragSource) {
@@ -95,9 +95,19 @@ Amm.Trait.Drag.Target.prototype = {
         var oldDragSource = this._dragSource;
         var oldSourceNativeItem = this._sourceNativeItem;
         var oldTargetNativeItem = this._targetNativeItem;
+        var oldDragTargetSession = this._dragTargetSession;
         this._dragSource = dragSource;
         this._sourceNativeItem = sourceNativeItem;
         this._targetNativeItem = targetNativeItem;
+        if (dragSource) {
+            var ds = dragSource.getDragSession();
+            this._dragTargetSession = ds;
+        } else {
+            this._dragTargetSession = null;
+        }
+        if (this._dragTargetSession !== oldDragTargetSession) {
+            this.outDragTargetSessionChange(this._dragTargetSession, oldDragTargetSession);
+        }
         if (dragSource !== oldDragSource) {
             this.outDragSourceChange(dragSource, oldDragSource);
         }

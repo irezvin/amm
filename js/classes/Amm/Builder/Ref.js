@@ -159,13 +159,13 @@ Amm.Builder.Ref.prototype = {
         
         if (this._index !== null) {
             c = curr[this._index] || null;
-            if (this._clone) return jQuery(c).clone()[0];
+            if (this._clone) return jQuery(c).clone(true, true)[0];
             return c;
         }
         
         if (onlyScalar) {
             c = curr[0] || null;
-            if (this._clone) return jQuery(c).clone()[0];
+            if (this._clone) return jQuery(c).clone(true, true)[0];
             return c;
         }
         

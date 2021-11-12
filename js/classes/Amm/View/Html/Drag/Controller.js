@@ -141,9 +141,11 @@ Amm.View.Html.Drag.Controller.prototype = {
     _detectDragTarget: function(node) {
         var res = null, elem;
         do {
-            elem = Amm.findElement(node);
+            elem = Amm.findElement(node, 'DragTarget');
             if (!elem) return res;
-            if (elem['DragTarget'] && elem.getDropEnabled()) {
+            if (elem['DragTarget'] && elem.getDropEnabled() 
+                && elem.canAcceptDrop(this._session, this._session.getSource(), node)
+            ) {
                 return elem;
             }
             node = node.parent;

@@ -70,10 +70,12 @@ Amm.Drag.Controller.prototype = {
     },
     
     cancelDrag: function() {
+        if (this._session.getActive()) this._session.cancel();
         this.setDragging(false);
     },
     
     endDrag: function() {
+        if (this._session.getActive()) this._session.end();
         this.setDragging(false);
     },
     
@@ -82,6 +84,7 @@ Amm.Drag.Controller.prototype = {
     },
     
     notifyDragEnd: function(x, y, nativeElement, nativeEventInfo) {
+        if (this._session.getActive()) this._session.end();
         this.setDragging(false);
     },
     

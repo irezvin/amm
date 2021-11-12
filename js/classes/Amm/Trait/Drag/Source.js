@@ -33,7 +33,7 @@ Amm.Trait.Drag.Source.prototype = {
         this._dragSession = dragSession;
         this.outDragSessionChange(dragSession, oldDragSession);
         Amm.subUnsub(dragSession, oldDragSession, this, '_handleDragSession');
-        if (this._dragCursor) dragSession.setCursor(this._dragCursor);
+        if (this._dragCursor && dragSession) dragSession.setCursor(this._dragCursor);
         return true;
     },
 
@@ -77,11 +77,11 @@ Amm.Trait.Drag.Source.prototype = {
     },
     
     _handleDragSessionTargetNativeItemChange: function(targetNativeItem, oldTargetNativeItem) {
-        return this.outTargetNativeItemChange(targetNativeItem, oldTargetNativeItem);
+        return this.outSourceTargetNativeItemChange(targetNativeItem, oldTargetNativeItem);
     },
     
-    outTargetNativeItemChange: function(targetNativeItem, oldTargetNativeItem) {
-        return this._out('targetNativeItemChange', targetNativeItem, oldTargetNativeItem);
+    outSourceTargetNativeItemChange: function(targetNativeItem, oldTargetNativeItem) {
+        return this._out('sourceTargetNativeItemChange', targetNativeItem, oldTargetNativeItem);
     },
     
     _handleDragSessionActiveChange: function(active) {

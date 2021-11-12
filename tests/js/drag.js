@@ -33,7 +33,7 @@
     QUnit.test("Amm.Drag - Basic", function(assert) {
         
         // we need to have visible element inside the viewport to have elementsFromPoint work properly
-        var fx = jQuery('<div style="position: absolute; left: 0px; top: 0px; height: 1000px; width: 1000px; z-index: 9999;"></div>');
+        var fx = jQuery('<div data-note="Amm.Drag - Basic" style="position: fixed; left: 0px; top: 0px; height: 1000px; width: 300px; z-index: 9999;"></div>');
         fx.appendTo(document.body);
        
         fx.html( ''
@@ -62,7 +62,7 @@
         var elements = b.build();
         var ds1 = Amm.r.e.ds1;
         
-        Amm.subUnsub(ds1, null, null, ['dragStart', 'dragVectorChange', 'dragNativeItemChange', 'targetNativeItemChange', 'dragTargetChange', 'dragEnd'], 
+        Amm.subUnsub(ds1, null, null, ['dragStart', 'dragVectorChange', 'dragNativeItemChange', 'sourceTargetNativeItemChange', 'dragTargetChange', 'dragEnd'], 
             logEvent);
         
         var oldCursor = jQuery(document.body).css('cursor');
@@ -99,7 +99,7 @@
             assert.ok(ds1.getDragSession().getTarget() === Amm.r.e.dt1, 'Proper drag target assigned to the session');
             
             assert.ok(ds1.getDragSession().getTargetNativeItem() === fx.find('#dt1-t1-sub')[0], 'Proper drag target HTML element assigned to the session');
-                console.log(ds1.getDragSession().getTargetNativeItem());
+                //console.log(ds1.getDragSession().getTargetNativeItem());
             assert.ok(Amm.r.e.dt1.getDragSource() === Amm.r.e.ds1, 'Drag target receives instance of current drag source');
             assert.ok(Amm.r.e.dt1.getTargetNativeItem() === fx.find('#dt1-t1-sub')[0], 'Drag target receives instance of current target HTML element');
             
@@ -107,7 +107,7 @@
             assert.ok(findEvent('dragNativeItemChange'), 'drag: dragSource: dragNativeItemChange event triggered');
             assert.ok(findEvent('dragVectorChange'), 'drag: dragSource: dragVectorChange event triggered');
             assert.ok(findEvent('dragTargetChange'), 'drag: dragSource: dragTargetChange event triggered');
-            assert.ok(findEvent('targetNativeItemChange'), 'drag: dragSource: targetNativeItemChange event triggered');
+            assert.ok(findEvent('sourceTargetNativeItemChange'), 'drag: dragSource: targetNativeItemChange event triggered');
             
             
         evLog = [];
@@ -121,7 +121,7 @@
             assert.equal(evLog.length, 3, 'Only 3 events logged');
             assert.ok(findEvent('dragNativeItemChange'), 'drag: dragSource: dragNativeItemChange event triggered');
             assert.ok(findEvent('dragVectorChange'), 'drag: dragSource: dragVectorChange event triggered');
-            assert.ok(findEvent('targetNativeItemChange'), 'drag: dragSource: targetNativeItemChange event triggered');
+            assert.ok(findEvent('sourceTargetNativeItemChange'), 'drag: dragSource: sourceTargetNativeItemChange event triggered');
             
             
         o = center('#t5', true);
@@ -159,7 +159,7 @@
             assert.equal(evLog.length, 4, 'Only 4 events logged');
             assert.ok(findEvent('dragEnd'), 'drag end: dragSource: dragEnd event triggered');
             assert.ok(findEvent('dragNativeItemChange'), 'drag end: dragSource: dragNativeItemChange event triggered');
-            assert.ok(findEvent('targetNativeItemChange'), 'drag end: dragSource: targetNativeItemChange event triggered');
+            assert.ok(findEvent('sourceTargetNativeItemChange'), 'drag end: dragSource: sourceTargetNativeItemChange event triggered');
             assert.ok(findEvent('dragTargetChange'), 'drag end: dragSource: dragTargetChange event triggered');
             evLog = [];
             
@@ -201,10 +201,363 @@
             assert.deepEqual(sess.getVector().y0, 12, 'Delta: x1 not changed');
             assert.deepEqual(sess.getVector().x1, 15 - 5, 'Delta: x1 changed');
             assert.deepEqual(sess.getVector().y1, 35, 'Delta: y1 not changed since dY is 0 by constraint requrement');
-            
-        
         
     });
+    
+        
+    QUnit.test("Amm.Drag - Item Drag", function(assert) {
+
+        var fx;
+        
+        try {
+       
+        var center = TestUtils.center, 
+            clientXY = TestUtils.clientXY, 
+            startDrag = TestUtils.startDrag,
+            drag = TestUtils.drag,
+            endDrag = TestUtils.endDrag;
+
+        var itemElement = function(id, items, build) {
+            var elItems = [];
+            if (items) {
+                for (var i = 0, l = items.length; i < l; i++) {
+                    elItems.push(new Amm.Element({prop__caption: items[i]}));
+                }
+            }
+            var res = Amm.dom({
+                $: 'div',
+                class: 'itemsContainer',
+                id: id,
+                data_amm_id: id,
+                data_amm_e: {
+                    extraTraits: ['t.Repeater', 't.DisplayParent'],
+                    assocProperty: 'src', 
+                    withVariantsView: false, 
+                    intents: 'before,after,container',
+                    items: elItems,
+                },
+                data_amm_v: 'v.Visual',
+                $$: [
+                    {
+                        $: 'div',
+                        data_amm_id: '__parent',
+                        data_amm_v: [
+                            'v.DisplayParent',
+                            {
+                                class: 'v.Drag.ItemSource',
+                                itemElementRequirements: ['Visual', 'getSrc'],
+                                itemElementAssocProperty: 'src',
+                                defaultCollection: 'items',
+                                containerSelector: '.itemsContainer',
+                            },
+                            {
+                                class: 'v.Drag.ItemTarget',
+                                itemElementRequirements: ['Visual', 'getSrc'],
+                                itemElementAssocProperty: 'src',
+                                defaultCollection: 'items',
+                                containerSelector: '.itemsContainer',
+                            }
+                        ],
+                    },
+                    {
+                        $: 'div',
+                        data_amm_x: "Amm.View.Html.Variants.build",
+                        data_amm_id: '__parent',
+                        style: "display: none",
+                        $$: {
+                            $: 'div',
+                            data_amm_dont_build: true,
+                            data_amm_default: true,
+                            data_amm_e: {prop__src: null}, 
+                            data_amm_v: [
+                                'v.Visual', 
+                                {
+                                    class: 'v.Expressions',
+                                    map: { 'h2:::_html': 'this.src.caption' }
+                                }
+                            ],
+                            $$: { $: 'h2' }
+                        }
+                    }
+                ],
+            });
+            if (build) return new Amm.Element(res);
+            return res;
+        };
+        
+        var css = function(assoc) {
+            var res = '';
+            for (var i in assoc) if (assoc.hasOwnProperty(i)) {
+                res += "\n" + i + " {\n";
+                for (var j in assoc[i]) if (assoc[i].hasOwnProperty(j)) {
+                    j = j.replace(/_/g, '-');
+                    res += "    " + j + ": " + assoc[i][j] + ";" + "\n";
+                }
+                res += "}\n";
+            }
+            return res;
+        };
+        
+        fx = jQuery('<div data-note="Amm.Drag - Item Drag" style="position: fixed; left: 0px; top: 0px; height: 1000px; width: 1000px; z-index: 9999;"></div>');
+        fx.appendTo(document.body);
+       
+        fx.html( ''
+            +   '<style type="text/css">'
+            +   css({
+                
+                    '.dragItemShadow': {
+                        position: 'absolute',
+                        z_index: '9999',
+                        background_color: 'rgba(255,255,255,0.5)',
+                        pointer_events: 'none',
+                    },
+
+                    '.dragItemFloating': {
+                        position: 'absolute',
+                        z_index: '9999',
+                        pointer_events: 'none',
+                        opacity: '0.8',
+                    },
+
+                    '.dragItemShadowClone.dragItemStaticShadow': {
+                        opacity: '0.2',
+                    },
+
+                    '.itemsContainer': {
+                        vertical_align: 'top', 
+                        display: 'inline-block', 
+                        border: '1px solid silver', 
+                        padding: '1em', 
+                        margin: '.5em',
+                        max_width: '150px',
+                    },
+
+                    '.itemsContainer > div > div': {
+                        overflow: 'auto',
+                    },
+
+                    '.reoderStaticDragShadow, .dragItemStaticShadow:not(.dragItemShadowClone)': {
+                        border: '1px solid lightgray',
+                        background_color: 'darkgrey',
+                    },
+
+                    '.dragItemIntent_before': {
+                        border_top: '2px solid lightblue',
+                        margin_top: '-2px',
+                    },
+
+                    '.dragItemIntent_after': {
+                        border_bottom: '2px solid lightblue',
+                        margin_bottom: '-2px',
+                    },
+
+                    '.dragItemIntent_over': {
+                        border: '1px solid lightblue',
+                        margin: '-1px',
+                    },
+
+                    '.dragItemIntent_container': {
+                        border: '2px solid lightblue',
+                    },
+                
+                })
+            +   '</style>\n' );
+    
+        var rpt1 = itemElement('rpt1', ['A', 'B', 'C', 'D', 'E'], true);
+        
+        var rpt2 = itemElement('rpt2', ['F', 'G', 'H', 'I', 'K'], true);
+        
+        window.d.itemElement = itemElement;
+        window.d.rpt1 = rpt1;
+        window.d.rpt2 = rpt2;
+        
+        var con = Amm.Drag.Controller.getInstance();
+        
+        fx.append(Amm.View.Html.findOuterHtmlElement(rpt1));
+        fx.append(Amm.View.Html.findOuterHtmlElement(rpt2));
+        
+        var itemCNode = Amm.View.Html.findOuterHtmlElement(rpt1.displayChildren[2]);
+        var itemBNode = Amm.View.Html.findOuterHtmlElement(rpt1.displayChildren[1]);
+        var itemDNode = Amm.View.Html.findOuterHtmlElement(rpt1.displayChildren[3]);
+        var rpt1Node = Amm.View.Html.findOuterHtmlElement(rpt1);
+        var rpt2Node = Amm.View.Html.findOuterHtmlElement(rpt2);
+        var itemGNode = Amm.View.Html.findOuterHtmlElement(rpt2.displayChildren[1]);
+            
+        var sourceView = rpt1.findView(null, 'Amm.View.Html.Drag.ItemSource');
+        var targetView1 = rpt1.findView(null, 'Amm.View.Html.Drag.ItemTarget');
+        var targetView2 = rpt2.findView(null, 'Amm.View.Html.Drag.ItemTarget');
+        
+        
+        var oldCoords = clientXY(itemCNode);
+        
+        startDrag(rpt1.displayChildren[2]);
+        drag(rpt1.displayChildren[2], 10, 10);
+        
+        assert.ok(con.getSession(), 'Session started');
+        
+        var extra = con.getSession().getExtra('Amm.Drag.Extra.ItemDrag');
+       
+            assert.ok(extra,
+                'Start drag of list item: session was initialized and received proper extra');
+        
+            assert.ok(extra.getItem() === rpt1.getItems()[2], 
+                'extra: item');
+                
+            assert.ok(extra.getCollection() === rpt1.getItems(), 
+                'extra: collection');
+                
+            assert.ok(extra.getItemNativeElement() === itemCNode, 
+                'extra: itemNativeElement');
+                
+            assert.ok(extra.getContainerNativeElement() === rpt1Node, 
+                'extra: containerNativeElement');
+            
+            assert.notOk(extra.getIntent(), 'extra: initially there\'s no drag intent');
+            
+            assert.ok(jQuery(itemCNode).hasClass(sourceView.draggingClass),
+                'Dragging item node has view.draggingClass');
+                
+        var coords = clientXY(itemCNode);
+                
+            assert.ok(oldCoords.clientX !== coords.clientX && oldCoords.clientY !== coords.clientY,
+                'Dragging item node was moved');
+                
+        drag(rpt1.displayChildren[1], 0, 0);
+        
+            assert.ok(extra.getTargetItem() === rpt1.getItems()[1], 
+                'drag before: extra: target item');
+                
+            assert.ok(extra.getTargetCollection() === rpt1.getItems(), 
+                'drag before: extra: target collection');
+                
+            assert.ok(extra.getTargetItemNativeElement() === itemBNode, 
+                'drag before: extra: targetItemNativeElement');
+            
+            assert.equal(extra.getIntent(), Amm.Drag.Extra.ItemDrag.INTENT.BEFORE,
+                'drag before: drag over next item: drag intent after');
+                
+            assert.ok(extra.getTargetContainerNativeElement() === rpt1Node, 
+                'drag before: extra: targetContainerNativeElement');
+                
+            assert.ok(jQuery(itemBNode).hasClass(targetView1.intentClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.BEFORE),
+                'drag before: target node has propert intent class');
+                
+            assert.ok(jQuery(rpt1Node).hasClass(targetView1.elementIntentInsideClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.BEFORE),
+                'drag before: target node\' container has proper intentInside class');
+                
+                
+        drag(rpt1.displayChildren[3], 0, 0);
+        
+            assert.ok(extra.getTargetItem() === rpt1.getItems()[3], 
+                'drag after: extra: target item');
+                
+            assert.ok(extra.getTargetCollection() === rpt1.getItems(), 
+                'drag after: extra: target collection');
+                
+            assert.ok(extra.getTargetItemNativeElement() === itemDNode, 
+                'drag after: extra: targetItemNativeElement');
+            
+            assert.equal(extra.getIntent(), Amm.Drag.Extra.ItemDrag.INTENT.AFTER,
+                'drag after: drag over next item: drag intent after');
+                
+            assert.ok(extra.getTargetContainerNativeElement() === rpt1Node, 
+                'drag after: extra: targetContainerNativeElement');
+                
+            assert.notOk(jQuery(itemBNode).hasClass(targetView1.intentClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.BEFORE),
+                'drag after: prev target node has no old intent class anymore');
+                
+            assert.notOk(jQuery(rpt1Node).hasClass(targetView1.elementIntentInsideClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.BEFORE),
+                'drag after: target node\' container has no old intentInside class anymore');
+                
+            assert.ok(jQuery(itemDNode).hasClass(targetView1.intentClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.AFTER),
+                'drag after: target node has proper intent class');
+                
+            assert.ok(jQuery(rpt1Node).hasClass(targetView1.elementIntentInsideClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.AFTER),
+                'drag after: target node\' container has proper intentInside class');
+             
+        drag(rpt1Node);
+        
+            assert.ok(extra.getTargetItem() === null, 
+                'drag to container: extra: target item');
+                
+            assert.ok(extra.getTargetCollection() === rpt1.getItems(), 
+                'drag to container: extra: target collection');
+                
+            assert.ok(extra.getTargetItemNativeElement() === null, 
+                'drag to container: extra: targetItemNativeElement');
+            
+            assert.equal(extra.getIntent(), Amm.Drag.Extra.ItemDrag.INTENT.CONTAINER,
+                'drag to container: drag intent container');
+                
+            assert.ok(extra.getTargetContainerNativeElement() === rpt1Node, 
+                'drag to container: extra: targetContainerNativeElement');
+                
+            assert.notOk(jQuery(itemDNode).hasClass(targetView1.intentClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.AFTER),
+                'drag to container: prev target node has no old intent class anymore');
+                
+            assert.notOk(jQuery(rpt1Node).hasClass(targetView1.elementIntentInsideClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.AFTER),
+                'drag to container: target node\' container has no old intentInside class anymore');
+                
+            assert.ok(jQuery(rpt1Node).hasClass(targetView1.intentClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.CONTAINER),
+                'drag to container: target node\' container has proper intent class');
+                
+        drag(itemGNode, 0, -0.05);
+        
+            assert.ok(extra.getTargetItem() === rpt2.getItems()[1], 
+                'drag to item in other container: extra: target item');
+                
+            assert.ok(extra.getTargetCollection() === rpt2.getItems(), 
+                'drag to item in other container: extra: target collection');
+                
+            assert.ok(extra.getTargetItemNativeElement() === itemGNode, 
+                'drag to item in other container: extra: targetItemNativeElement');
+            
+            assert.equal(extra.getIntent(), Amm.Drag.Extra.ItemDrag.INTENT.BEFORE,
+                'drag to item in other container: drag intent before');
+                
+            assert.ok(extra.getTargetContainerNativeElement() === rpt2Node, 
+                'drag to item in other container: extra: targetContainerNativeElement');
+            
+            assert.notOk(jQuery(rpt1Node).hasClass(targetView1.intentClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.CONTAINER),
+                'drag to item in other container: old target node\' container has no old intent class anymore');
+                
+            assert.ok(jQuery(rpt2Node).hasClass(targetView2.elementIntentInsideClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.BEFORE),
+                'drag to item in other container: new target node\' container has proper intentInside class');
+                
+        drag(itemGNode, 0, 0.05);
+            
+            assert.equal(extra.getIntent(), Amm.Drag.Extra.ItemDrag.INTENT.AFTER,
+                'drag to item in other container: drag over next item but below the axis: drag intent after');
+
+            assert.notOk(jQuery(rpt2Node).hasClass(targetView2.elementIntentInsideClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.BEFORE),
+                'drag to item in other container: new target node\' container doesn\'t have old intentInside class anymore');
+            
+            assert.ok(jQuery(rpt2Node).hasClass(targetView2.elementIntentInsideClassPrefix + Amm.Drag.Extra.ItemDrag.INTENT.AFTER),
+                'drag to item in other container: new target node\' container has proper intentInside class');
+                
+        // lets drop
+        
+        endDrag(itemGNode);
+        
+            assert.deepEqual(Amm.getProperty(rpt1.getItems().getItems(), 'caption'), ['A', 'B', 'D', 'E'],
+                'Drop: item was removed from source collection');
+        
+            assert.deepEqual(Amm.getProperty(rpt2.getItems().getItems(), 'caption'), ['F', 'G', 'C', 'H', 'I', 'K'],
+                'Drop: item was addd to target collection according to intent');
+                
+            assert.equal(fx.find('*[class *= ntent]').length, 0, 
+                'Drop: no elements with drag intent classes left');
+                
+        Amm.cleanup(rpt1, rpt2);
+        
+        } finally {
+            
+            fx.remove();
+        
+        }
+        
+    });
+    
     
     
 }) (); 

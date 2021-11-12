@@ -223,8 +223,8 @@ class Builder {
     }
     
     protected function calcDependencies($classFile, array $allFiles) {
-            if (in_array($classFile, $this->stack)) {
-            throw new Exception("Circular reference found: ".implode(" -> ", [$this->stack, $classFile]));
+        if (in_array($classFile, $this->stack)) {
+            throw new Exception("Circular reference found: ".implode(" -> ", array_merge($this->stack, [$classFile])));
         }
         array_push($this->stack, $classFile);
         $deps = $this->getDirectDependencies($classFile, $allFiles);

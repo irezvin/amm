@@ -1,5 +1,6 @@
 /* global Amm */
 Amm.Drag.Session = function(options) {
+    this._extra = {};
     Amm.WithEvents.call(this, options);
 };
 
@@ -35,6 +36,34 @@ Amm.Drag.Session.prototype = {
     
     _dropEnabled: true,
     
+    _extra: null,
+    
+    setExtra: function(extra, id) {
+        var oldExtra = Amm.override({}, this._extra);
+        if (extra && typeof extra === 'object') {
+            Amm.is(extra, 'Amm.Drag.Extra', 'extra');
+            var key = extra.getId() || Amm.getClass(extra);
+            if (this._extra[key] === extra) return;
+            if (this._extra[key]) throw Error("Extra '" + key + "' already set in Amm.Drag.Session");
+            this._extra[key] = extra;
+            extra.setSession(this);
+        }
+        this.outExtraChange(extra, oldExtra);
+        return true;
+    },
+    
+    getExtra: function(classOrId) {
+        if (!classOrId) return Amm.override({}, this._extra);
+        if (this._extra[classOrId]) return this._extra[classOrId];
+        for (var i in this._extra) if (this._extra.hasOwnProperty(i)) {
+            if (Amm.is(this._extra[i], classOrId)) return this._extra[i];
+        }
+    },
+    
+    outExtraChange: function(extra, oldExtra) {
+        return this._out('extraChange', extra, oldExtra);
+    },
+    
     _applyConstraints: function(vector, constraints) {
         if (!constraints.length) return vector;
         var res = vector;
@@ -66,11 +95,23 @@ Amm.Drag.Session.prototype = {
     },
     
     cancel: function() {
+        this.outCancel();
+        this.setActive(false);
         Amm.Drag.Controller.getInstance().cancelDrag();
     },
     
     end: function() {
+        this.outEnd();
+        this.setActive(false);
         Amm.Drag.Controller.getInstance().endDrag();
+    },
+    
+    outCancel: function() {
+        return this._out('cancel');
+    },
+    
+    outEnd: function() {
+        return this._out('end');
     },
 
     setSource: function(source) {
@@ -273,6 +314,13 @@ Amm.Drag.Session.prototype = {
     outDropEnabledChange: function(dropEnabled, oldDropEnabled) {
         this._out('dropEnabledChange', dropEnabled, oldDropEnabled);
     },
+    
+    cleanup: function() {
+        var tmp = this._extra;
+        this._extra = {};
+        Amm.cleanup(Amm.values(tmp));
+        Amm.WithEvents.prototype.cleanup.call(this);
+    }
 
 };
 

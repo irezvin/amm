@@ -21,6 +21,8 @@
         
         <script src="qunit/qunit-2.0.1.js"></script>
         <script src="TestUtils.js"></script>
+        <script src="MemStor.js"></script>
+        <script src="mockData.js"></script>
     </head>
     <body>
     

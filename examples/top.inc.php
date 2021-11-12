@@ -1,4 +1,9 @@
 <?php
+
+    ini_set('error_reporting', E_ALL);
+    ini_set('html_errors', 1);
+    ini_set('display_errors', 1);
+
     if (!isset($file)) {
         $data = parse_url($_SERVER['REQUEST_URI']);
         $file = basename($data['path']);

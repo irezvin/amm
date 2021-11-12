@@ -176,6 +176,11 @@ Amm.View.Html.Collection.prototype = {
     
     _handleCollectionSpliceItems: function(index, cut, insert) {
         // will remove the nodes
+        var oldLength = this._collection.length + cut.length - insert.length;
+        if (this._htmlElement.childNodes.length !== oldLength) {
+            this._rebuild();
+            return;
+        }
         if (cut.length >= this._htmlElement.childNodes.length) {
             this._rebuild();
             return;
@@ -197,6 +202,7 @@ Amm.View.Html.Collection.prototype = {
     },
     
     _handleCollectionMoveItem: function(oldIndex, newIndex, item) {
+        if (this._htmlElement.childNodes.length !== this._collection.length) return this._rebuild();
         if (this.debug) console.log(this.debug, '_handleCollectionMoveItem',
             oldIndex, newIndex, item._amm_id);
         var delta, cn = this._htmlElement.childNodes;

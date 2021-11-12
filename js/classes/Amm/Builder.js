@@ -141,9 +141,9 @@ Amm.Builder.prototype = {
             jQuery(root)
             .filter(this.sel)
             .add(jQuery(root).find(this.sel))
-          .not(jQuery(root).find(this.selIgnore))
-          .not(this.selIgnore)
-    ; 
+            .not(jQuery(root).find(this.selIgnore))
+            .not(this.selIgnore)
+        ; 
         jq.each(function(i, htmlElement) {
             var node = t._createNode(htmlElement);
             htmlElement[scProp] = allNodes.length;
@@ -187,6 +187,9 @@ Amm.Builder.prototype = {
     
     _replaceRefsAndInstaniateObjects: function(json, htmlElement) {
         if (!json || typeof json !== 'object') return json;
+        if ('nodeType' in json) return;
+        if (json === window) return;
+        if (Amm.getClass(json)) return json;
         var i, l;
         if ('$ref' in json) {
             return new Amm.Builder.Ref(json, htmlElement);
@@ -216,14 +219,21 @@ Amm.Builder.prototype = {
     },
     
     _parseJson: function(attr, element) {
-        var content = element.getAttribute(attr);
-        if (!content || !content.length) return null;
+        var content = element.getAttribute(attr), data;
+        // support for directly added javascript hashes via Amm.dom
+        if (content === '' && ((data = jQuery.data(element, 'x-' + attr)) !== undefined)) {
+            content = data;
+        } else if (!content || !content.length) return null;
         var res, json = window.RJSON || window.JSON; // use relaxed json when possible
-        try {
-            res = json.parse(content);
-        } catch (e) {
-            console.error("Cannot parse relaxed json in attribute '" + attr + "' of element", element);
-            throw e;
+        if (typeof content === 'string') {
+            try {
+                res = json.parse(content);
+            } catch (e) {
+                console.error("Cannot parse relaxed json in attribute '" + attr + "' of element", element);
+                throw e;
+            }
+        } else {
+            res = content;
         }
         res = this._replaceRefsAndInstaniateObjects(res, element);
         return res;
@@ -494,6 +504,9 @@ Amm.Builder.isPossibleBuilderSource = function(source) {
     if (!source) return false;
     if (source['Amm.Builder.Ref']) return true;
     if (typeof source === 'object' && 'parentNode' in source && 'tagName' in source) return true;
+    if (source instanceof Array && source.length && 'parentNode' in source[0] && 'tagName' in source[0]) {
+        return true;
+    }
     if (source.jquery) return true;
     if (typeof source === 'string' && source.match(/^\<(?:.|[\n])*\>$/)) return true;
     return false;
@@ -503,13 +516,25 @@ Amm.Builder.calcPrototypeFromSource = function(builderSource, dontClone, views) 
     if (!builderSource) throw Error("`builderSource` is required");
     var source;
     if (typeof builderSource === 'string') {
-        if (builderSource.match(/\s*<(?:.|[\n])*>\s*$/)) dontClone = true;
-        source = builderSource;
+        if (builderSource.match(/\s*<(?:.|[\n])*>\s*$/)) {
+            source = builderSource;
+            dontClone = true;
+        } else {
+            source = builderSource;
+        }
     } else if (builderSource['Amm.Builder.Ref']) {
         source = builderSource.resolve();
     }
-    else if(builderSource.tagName || builderSource.jquery) {
+    else if (builderSource.tagName || builderSource.jquery) {
         source = builderSource;
+        if (builderSource.tagName && !builderSource.parentNode || builderSource.jquery && builderSource[0] && !builderSource[0].parentNode) {
+            dontClone = true; // don't need to clone out-of-DOM elements
+        }
+    } else if (builderSource instanceof Array && builderSource.length && builderSource[0].tagName) {
+        source = builderSource;
+        if (!builderSource[0].parentNode) {
+            dontClone = true; // don't need to clone out-of-DOM elements
+        }
     }
     else throw Error ("Unsupported builderSource type: " + Amm.describeType(builderSource));
     var jq = jQuery(source);
@@ -518,7 +543,7 @@ Amm.Builder.calcPrototypeFromSource = function(builderSource, dontClone, views) 
     var old;
     if (!dontClone) {
         old = jq;
-        jq = jq.clone();
+        jq = jq.clone(true, true);
     }
     jq.removeAttr('data-amm-dont-build');
     var builder = new Amm.Builder(jq);

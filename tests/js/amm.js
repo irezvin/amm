@@ -111,9 +111,12 @@
         assert.ok(Amm.hasInterfaces(c1, 'traitY'));
         assert.ok(Amm.hasInterfaces(c1, ['traitX', 'traitY']));
         assert.notOk(Amm.hasInterfaces(c1, ['traitX', 'traitY', 'traitZ']));
+        var tmp = Amm.debugTraitConflicts;
+        Amm.debugTraitConflicts = true;
         assert.throws(function() {
             Amm.augment(c1, new traitXbogus()); // already implements interface X
         });
+        Amm.debugTraitConflicts = tmp;
         assert.throws(function() {
             Amm.hasInterface(c1, 'nonExistentTrait', true); // throwIfNot := true
         });
