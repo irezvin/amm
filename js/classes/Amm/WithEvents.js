@@ -10,6 +10,10 @@ Amm.WithEvents = function(options, initOnHandlersOnly) {
     if (onHandlers) this._initOnHandlers(onHandlers);
 };
 
+Amm.WithEvents.debugDuplicateSubscribers = false;
+
+Amm.WithEvents._oCache = {};
+
 /* 
  * invokes event handler - this. must be set to the object that originated the event
  * {eventName} name of an event - will be usually accessible 
@@ -128,19 +132,18 @@ Amm.WithEvents.prototype = {
      * @returns {String} Empty string if there is no such event, or method name to raise the event
      */
     hasEvent: function(eventName) {
-        var c = eventName.charAt(0), cu = c.toUpperCase();
-        if (c === cu) { // event name cannot begin from upper-case letter
-            return null;
+        var n = Amm.WithEvents._oCache[eventName];
+        if (!n) {
+            n = Amm.WithEvents._oCache[eventName] = 'out' + eventName.charAt(0).toUpperCase() + eventName.slice(1);
         }
-        var res = '', n = 'out' + cu + eventName.slice(1);
-        if (typeof this[n] === 'function') res = n;
+        if (typeof this[n] === 'function') return n;
         if (eventName[14] === '_' && eventName.slice(0, 15) === 'subscribeFirst_') {
             return this.hasEvent(eventName.slice(15))? true : null;
         }
         if (eventName[15] === '_' && eventName.slice(0, 16) === 'unsubscribeLast_') {
             return this.hasEvent(eventName.slice(16))? true : null;
         }
-        return res;
+        return '';
     },
     
     /**
@@ -166,15 +169,18 @@ Amm.WithEvents.prototype = {
             if (miss === false) return true;
         }
         var isFirst = false;
+        
+        if (Amm.WithEvents.debugDuplicateSubscribers && this.getSubscribers(eventName, handler, scope, extra).length) {
+            throw Error("Duplicate subscription to the same event/handler pair - this should be avoided");
+        }
+            
         if (!this._subscribers[eventName]) {
             this._subscribers[eventName] = [];
             isFirst = true;
         }
         var res;
-        if (!this.getSubscribers(eventName, handler, scope, extra).length) {
-            this._subscribers[eventName].push([handler, scope, extra]);
-            res = true;
-        }
+        this._subscribers[eventName].push([handler, scope, extra]);
+        res = true;
         if (isFirst) {
             var ev = 'subscribeFirst_' + eventName, fn = '_' + ev;
             if (this[fn] && typeof this[fn] === 'function') this[fn]();
@@ -208,6 +214,9 @@ Amm.WithEvents.prototype = {
                 if (scope !== undefined && scope !== arr[j][1]) continue;
                 if (extra !== undefined && extra !== arr[j][2]) continue;
                 res.push([].concat(arr[j], [i, j]));
+                if (eventName !== undefined && handler !== undefined && scope !== undefined && extra !== undefined) {
+                    return res;
+                }
             }
         }
         return res;

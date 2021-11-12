@@ -1,10 +1,10 @@
 /* global Amm */
 
 /**
- * Adapter binds events {Name}Change of element to setV{Name} setters of the adapter.
+ * View binds events {Name}Change of element to setV{Name} setters of the adapter.
  * 
- * Also, initially, adapter applies two-way initialization:
- * - element values that are "undefined" are set to the values extracted from the adapter
+ * Also, initially, view applies two-way initialization:
+ * - element values that are "undefined" are set to the values extracted from the view
  *   (methods getV{Name});
  * - other element values are passed to corresponding setters
  */
@@ -39,12 +39,11 @@ Amm.View.Abstract.stopWaitingForView = function(element, handler) {
     element.unsubscribe('viewReady', handler);
 };
 
-
 Amm.View.Abstract.prototype = {
 
     'Amm.View.Abstract': '__CLASS__', 
     
-    // Init "undefined" element properties with values extracted from the adapter
+    // Init "undefined" element properties with values extracted from the view
     twoWayInit: true,
     
     // Define this in descendants to make _hasPresentation work properly. 
@@ -53,6 +52,8 @@ Amm.View.Abstract.prototype = {
     _presentationProperty: null,
     
     _observing: null,
+    
+    _initDone: false,
     
     id: null,
     
@@ -95,24 +96,24 @@ Amm.View.Abstract.prototype = {
         this._acquireResources();
         var bindList = [], props = {};
         for (var i in this) {
-            if (typeof this[i] === 'function') {
-                var px = ('' + i).slice(0, 4);
-                if (px === 'setV' || px === 'getV') {
-                    var prop = i[4].toLowerCase() + i.slice(5);
-                    if (!props[prop]) {
-                        props[prop] = true;
-                        this._observeProp(prop, 'setV' + i.slice(4), bindList);
-                    }
-                } else {
-                    if (('' + i).slice(0, 14) === '_handleElement') {
-                        var ev = i[14].toLowerCase() + i.slice(15);
-                        if (this._element.hasEvent(ev)) 
-                            this._element.subscribe(ev, this[i], this);
-                    }
+            if (i[3] !== 'V' && i[7] !== 'E') continue;
+            if (typeof this[i] !== 'function') continue;
+            var px = ('' + i).slice(0, 4);
+            if (px === 'setV' || px === 'getV') {
+                var prop = i[4].toLowerCase() + i.slice(5);
+                if (!props[prop]) {
+                    props[prop] = true;
+                    this._observeProp(prop, 'setV' + i.slice(4), bindList);
+                }
+            } else if (i.slice(0, 14) === '_handleElement') {
+                var ev = i[14].toLowerCase() + i.slice(15);
+                if (this._element.hasEvent(ev)) {
+                    this._element.subscribe(ev, this[i], this);
                 }
             }
         }
         this._initProperties(bindList);
+        this._initDone = true;
         this._element.notifyViewReady(this);
         return true;
     },

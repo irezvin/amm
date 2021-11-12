@@ -272,9 +272,17 @@ Amm.Element.prototype = {
     // calls all methods that start with prefix (useful for asking Traits which cannot have methods with the same name)
     // returns result of every method
     _callOwnMethods: function(prefix /*, ...*/) {
-        var rx = prefix instanceof RegExp, aa, res = {};
+        var aa, res = {};
         for (var i in this) {
-            if (typeof this[i] === 'function' && (rx? i.match(rx) : i.indexOf(prefix) === 0)) {
+            if (i.length < prefix.length) continue;
+            if (!(i[0] === prefix[0] && i[1] === prefix[1] && i[2] === prefix[2] &&
+                i.slice(0, prefix.length) === prefix)) continue;
+            if (typeof this[i] !== 'function') continue;
+            if (arguments.length === 1) res = this[i]();
+            else if (arguments.length === 2) res = this[i](arguments[1]);
+            else if (arguments.length === 3) res = this[i](arguments[1], arguments[2]);
+            else if (arguments.length === 4) res = this[i](arguments[1], arguments[2], arguments[3]);
+            else {
                 aa = aa || Array.prototype.slice.call(arguments, 1);
                 res[i] = this[i].apply(this, aa);
             }

@@ -24,6 +24,8 @@ Amm.View.Html.DisplayParent.prototype = {
     
     scanForDisplayOrder: true,
     
+    useIntermediaryDefaultView: false,
+    
     createItemHtml: function(item) {
         // To-be-overridden
         return "<div>Overwrite createItemHtml!</div>";
@@ -35,19 +37,44 @@ Amm.View.Html.DisplayParent.prototype = {
         if (cv) res = cv.getHtmlElement();
         if (!res && item.constructDefaultViews !== Amm.Element.prototype.constructDefaultViews) {
             
-            // TODO: we have to create default view(s) and add its' element(s)???
+            if (this.useIntermediaryDefaultView) {
             
-            var el = document.createElement('div');
+                var el = document.createElement('div');
+
+                el.setAttribute('data-amm-dv', true);
+
+                var v = new Amm.View.Html.Default({
+                    replaceOwnHtmlElement: true,
+                    htmlElement: el,
+                    element: item, 
+                });
+                res = v.getHtmlElement();
+                if (res) this._htmlElement.appendChild(res);
             
-            el.setAttribute('data-amm-dv', true);
+            } else {
+                
+                var def = item.constructDefaultViews();
+                var inst;
+                if (Amm.Builder.isPossibleBuilderSource(def)) {
+                    inst = Amm.Builder.calcPrototypeFromSource(def, true, true);
+                } else if (def instanceof Array) {
+                    inst = def;
+                } else if (def) {
+                    inst = [def];
+                } else {
+                    inst = [];
+                }
+                var views = Amm.constructMany(inst, 'Amm.View.Html', {element: item}, false, true);
+                for (var j = 0, l = views.length; j < l; j++) {
+                    var elem = views[j].getHtmlElement();
+                    if (!elem) continue; // wtf
+                    // we are interested in outermost nodes only
+                    if (elem.parentNode) continue; 
+                    this._htmlElement.appendChild(elem);
+                    if (!res) res = elem;
+                }
             
-            var v = new Amm.View.Html.Default({
-                replaceOwnHtmlElement: true,
-                htmlElement: el,
-                element: item, 
-            });
-            res = v.getHtmlElement();
-            if (res) this._htmlElement.appendChild(res);
+            }
         }
         if (!res && !dontThrow) {
             Error("Collection item doesn't have view with htmlElement");

@@ -17,6 +17,8 @@ Amm.View.Html.Input.prototype = {
 
     'Amm.View.Html.Input': '__CLASS__', 
 
+    _blurTimeoutId: null,
+
     _eventName: 'change focus blur',
     
     _blurTimeoutHandler: null,
@@ -38,10 +40,12 @@ Amm.View.Html.Input.prototype = {
             // then 'focus'. Timeout is added to avoid flapping of `focused` propety when focus
             // is switched to another view of the same element.
             if (!this._blurTimeoutHandler) this._blurTimeoutHandler = function() { 
+                t._blurTimeoutId = null;
+                if (jQuery(t._htmlElement).is(':focus')) return;
                 if (t._element.getFocusedView() === t)
                     t._element.setFocusedView(null);
             };
-            window.setTimeout(this._blurTimeoutHandler, 1);
+            this._blurTimeoutId = window.setTimeout(this._blurTimeoutHandler, 1);
             return true;
         }
         if (!this._element.getReadOnly()) {
@@ -52,15 +56,30 @@ Amm.View.Html.Input.prototype = {
     
     setVFocusedView: function(value) {
         var focused = (value === this);
+        if (this._initDone && !focused && !this._element.getReadOnly()) {
+            var val = this.getVValue();
+            if (val !== undefined) this._element.setValue(val);
+        }
         var q = jQuery(this._htmlElement);        
         if (q[0]) {
-            if (focused && !q.is(':focus')) q.focus();
+            if (focused && !q.is(':focus')) {
+                q.focus();
+            }
             else if (!focused && q.is(':focus')) q.blur();
         }
     },
     
     getVFocusedView: function() { 
         if (jQuery(this._htmlElement).is(':focus')) return this;
+    },
+    
+    _handleElementFocus: function() {
+        var fv = this._element.getFocusedView();
+        if (!fv || fv === this) {
+            Amm.getRoot().defer(function() {
+                this._htmlElement.focus();
+            }, this);
+        }
     },
     
     setVReadOnly: function(readOnly) {

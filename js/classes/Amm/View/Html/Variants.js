@@ -9,7 +9,7 @@
  * 
  * Example markup:
  * 
- * <div data-amm-dont-build="" data-amm-criteria="{json}">
+ * <div data-amm-dont-build="" data-amm-condition="{json}">
  *      <!-- element prototype -->
  * </div>
  * <!-- more such divs ... -->
@@ -47,7 +47,7 @@ Amm.View.Html.Variants.prototype = {
     
     _scanHtmlElementAndConfigureInstantiator: function() {
         
-        var r = Amm.View.Html.Variants.scanNodeForVairants(this._htmlElement);
+        var r = Amm.View.Html.Variants.scanNodeForVariants(this._htmlElement);
         if (!r) return;
         this._element.reportInstantiatorOptions(r.default, r.conditions, r.prototypes);
     
@@ -61,12 +61,12 @@ Amm.extend(Amm.View.Html.Variants, Amm.View.Abstract);
 
 
 Amm.View.Html.Variants.builderExtension_build = function (htmlElement, proto, arg) {
-    var r = Amm.View.Html.Variants.scanNodeForVairants(htmlElement);
+    var r = Amm.View.Html.Variants.scanNodeForVariants(htmlElement);
     if (!r) return;
     proto.initialInstantiatorOptions = [r.default, r.conditions, r.prototypes];
 };
 
-Amm.View.Html.Variants.scanNodeForVairants = function(node) {
+Amm.View.Html.Variants.scanNodeForVariants = function(node) {
 
     var i, id;
 

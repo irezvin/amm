@@ -813,18 +813,18 @@ Amm.Array.prototype = {
         }
     },
 
-    subscribe: function(outEvent, handler, scope, extra, decorator) {    
+    subscribe: function(outEvent, handler, scope, extra) {    
         this._evCache = null;
         if (!this._costlyEvents && Amm.Array.costlyEvents[outEvent])
             this._costlyEvents = true;
         return Amm.WithEvents.prototype.subscribe.call
-            (this, outEvent, handler, scope, extra, decorator);
+            (this, outEvent, handler, scope, extra);
     },
     
-    unsubscribe: function(outEvent, handler, scope) {    
+    unsubscribe: function(outEvent, handler, scope, extra) {    
         this._evCache = null;
         var res = Amm.WithEvents.prototype.unsubscribe.call
-            (this, outEvent, handler, scope);
+            (this, outEvent, handler, scope, extra);
         if (this._costlyEvents && !this._subscribers[outEvent] && Amm.Array.costlyEvents[outEvent]) {
             var hasCostly = false;
             for (var i in this._subscribers) {

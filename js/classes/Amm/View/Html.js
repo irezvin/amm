@@ -51,7 +51,7 @@ Amm.View.Html.prototype = {
 
     _implResolveHtmlElementRelativeToView: function(view) {
         var node, jq;
-        if (this._deferHtmlElementRef['Amm.Builder.Ref']) {
+        if (this._deferHtmlElementRef && this._deferHtmlElementRef['Amm.Builder.Ref']) {
             this._deferHtmlElementRef.setNode(view.getHtmlElement());
             node = this._deferHtmlElementRef.resolve(true);
         } else {
@@ -138,3 +138,14 @@ Amm.View.Html.prototype = {
 };
 
 Amm.extend(Amm.View.Html, Amm.DomHolder);
+
+Amm.View.Html.findOuterHtmlElement = function(element, all) {
+    var containers = Amm.getProperty(element.getUniqueSubscribers('Amm.View.Html'), 'htmlElement');
+    var outermost = [];
+    for (var i = 0, l = containers.length; i < l; i++) {
+        if (jQuery(containers[i]).closest(containers).not(containers[i]).length) continue;
+        if (!all) return containers[i];
+        outermost.push(containers[i]);
+    }
+    return all? outermost : null;
+};

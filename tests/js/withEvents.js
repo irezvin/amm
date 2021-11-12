@@ -138,21 +138,21 @@ QUnit.module("WithEvents");
         
         assert.ok(e.subscribe('eventA', handlerFn), 
             'Subscribe (handler)');
-        assert.notOk(e.subscribe('eventA', handlerFn), 
-            'Must not subscribe second time with same handler');
-        
+//        assert.notOk(e.subscribe('eventA', handlerFn), 
+//            'Must not subscribe second time with same handler');
+//        
         assert.ok(e.subscribe('eventA', sub1.handlerA, sub1), 
             'Subscribe (handler, scope)');
-        assert.notOk(e.subscribe('eventA', sub1.handlerA, sub1),
-            'Must not subscribe second time with same handler, scope');
+//        assert.notOk(e.subscribe('eventA', sub1.handlerA, sub1),
+//            'Must not subscribe second time with same handler, scope');
         
         assert.ok(e.subscribe('eventA', sub2.handlerA, sub2),
             'Subscribe (handler, different scope)');
 
         assert.ok(e.subscribe('eventA', sub1.handlerA, sub1, 'extraA'),
             'Subscribe (handler, scope, extra)');
-        assert.notOk(e.subscribe('eventA', sub1.handlerA, sub1, 'extraA'), 
-            'Must not subscribe second time with same handler, scope, extra');
+//        assert.notOk(e.subscribe('eventA', sub1.handlerA, sub1, 'extraA'), 
+//            'Must not subscribe second time with same handler, scope, extra');
         
         assert.ok(e.subscribe('eventB', sub1.handlerA, sub1, 'extraB'),
             'Subscribe (handler, scope, extra) / different event');

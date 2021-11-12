@@ -17,8 +17,6 @@ Amm.Data.RecordMeta.prototype = {
     
     _updateLevel: 0,
     
-    _modified: null,
-    
     getKey: function() {
         var res = this._mapper.extractKey(this._m._old);
         if (res === undefined) res = this._mapper.extractKey(this._m._data);

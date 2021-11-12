@@ -194,7 +194,7 @@
             className: 'eClass',
             value: 'eValue',
             constructDefaultViews: function() {
-                return Amm.html({
+                return Amm.dom({
                     $: 'div',
                     data_amm_v: ['v.Visual'],
                     $$: {
@@ -224,6 +224,7 @@
         if (assert.ok(v.getOwnHtmlElement() !== null, 'Default view\' getOwnHtmlElement() returns non-null value after element is observed')) {
             assert.notOk(v.getOwnHtmlElement().parentNode, 'Default view\' HTMLElement was detached from DOM tree');
         }
+
         assert.equal(f.find('input').val(), 'eValue', 'Innermost view\' HTMLElement is in place');
         
         v.setHtmlElement(f.find('.otherLocation'));
@@ -276,7 +277,7 @@
             value: 'eValue',
             label: 'The Label',
             constructDefaultViews: function() {
-                return Amm.html([
+                return Amm.dom([
                     {
                         $: 'div',
                         data_amm_id: '__parent',

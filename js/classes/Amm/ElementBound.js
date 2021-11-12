@@ -30,10 +30,10 @@ Amm.ElementBound.prototype = {
     
     _doElementChange: function(element, oldElement) {
         if (oldElement && !this._isElementCleanup) {
-            oldElement.unsubscribe('cleanup', this._handleElementCleanup, this);
+            oldElement.unsubscribe('cleanup', this._onElementCleanup, this);
         }
         this._element = element;
-        if (this._element) this._element.subscribe('cleanup', this._handleElementCleanup, this);
+        if (this._element) this._element.subscribe('cleanup', this._onElementCleanup, this);
     },
     
     setElement: function(element) {
@@ -52,7 +52,7 @@ Amm.ElementBound.prototype = {
     
     getElement: function() { return this._element; },
     
-    _handleElementCleanup: function() {
+    _onElementCleanup: function() {
         this._isElementCleanup++;
         if (this.cleanupWithElement) {
             this.cleanup();

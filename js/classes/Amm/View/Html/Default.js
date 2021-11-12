@@ -81,7 +81,7 @@ Amm.View.Html.Default.prototype = {
                 throw new Error("incorrect result returned by Amm.Element.consturctDefaultViews() - cannot construct view");
             }
             for (var j = 0, l2 = inst.length; j < l2; j++) {
-                inst[j] = Amm.constructInstance(inst[j], null, {element: this._element}, true, ['Amm.View.Html']);               
+                inst[j] = Amm.constructInstance(inst[j], null, {element: this._element}, true, ['Amm.View.Html']);
                 this._defaultViews.push(inst[j]);
                 var viewHtmlElement = inst[j].getHtmlElement();
                 if (viewHtmlElement) {
@@ -129,7 +129,9 @@ Amm.View.Html.Default.prototype = {
         var newNodes, oldNodes;
         newNodes = viewHtmlElements;
         
-        if (!this._replaceOwnHtmlElement) return this._replaceContents(viewHtmlElements);
+        if (!this._replaceOwnHtmlElement) {
+            return this._replaceContents(viewHtmlElements);
+        }
         
         if (!newNodes || !newNodes.length) {
             if (this._ownHtmlElement) newNodes = [this._ownHtmlElement];
@@ -150,7 +152,9 @@ Amm.View.Html.Default.prototype = {
             this._acquireDomNode(newNodes);
         }
         
-        if (oldNodes[0] === this._htmlElement && !this._ownHtmlElement) this._ownHtmlElement = oldNodes[0];
+        if (oldNodes[0] === this._htmlElement && !this._ownHtmlElement) {
+            this._ownHtmlElement = oldNodes[0];
+        }
         
         this._replaceHtmlNodes(oldNodes, newNodes);
         

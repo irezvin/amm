@@ -21,7 +21,7 @@ Amm.View.Html.Visual.prototype = {
         }*/
         var delay = this.delay;
         if (delay === undefined) delay = Amm.View.Html.Visual.defaultDelay;
-        jQuery(this._htmlElement)[visible? 'show' : 'hide'](delay);
+        jQuery(this._htmlElement)[visible? 'show' : 'hide'](delay || undefined);
     },
 
     getVVisible: function() {

@@ -21,10 +21,10 @@ Amm.MultiObserver.Filter.Condition = function(options) {
  * -    function(value): callback that returns true if test is passed
  * -    { fn: function(value), [scope: object] }: callback that will be called with provided scope
  * -    /RegExp/: value matches RegExp
- * -    { regExp: '/RegExp/', [flags: 'flags'] }: value matches RegExp (with provided string definition)
+ * -    { regExp: 'RegExp', [flags: 'flags'] }: value matches RegExp (with provided string definition)
  * -    { validator: `validator` }: value passes Amm.Validator (prototype may be provided instead of instance)
  * -    Amm.Validator instance: value passes Amm.Validator
- * -    { rq: `requirements` }: Amm.meetsRequirements(value, `requirements`
+ * -    { rq: `requirements` }: Amm.meetsRequirements(value, `requirements`)
  * -    { strict: `testValue` }: value === `testValue` (force strict comparison)
  * -    `otherCriterion`: value == `otherCriterion` (all other criterion values: non-strict comparison)
  */

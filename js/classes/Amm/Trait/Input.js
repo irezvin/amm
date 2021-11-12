@@ -1,7 +1,7 @@
 /* global Amm */
 
- Amm.Trait.Input = function() {
- };
+Amm.Trait.Input = function() {
+};
 
 Amm.Trait.Input.prototype = {
 
@@ -55,7 +55,8 @@ Amm.Trait.Input.prototype = {
         focused = !!focused;
         var old = this._focused;
         if (old === focused) return;
-        this._focused = focused;
+        this._focused = focused;        
+        if (!focused) this.setFocusedView(null);
         this.outFocusedChange(focused, old);
         return true;
     },
@@ -81,6 +82,11 @@ Amm.Trait.Input.prototype = {
     
     focus: function() {
         this.setFocusedView(this.getUniqueSubscribers('Amm.View.Abstract.Input')[0] || null);
+        this.outFocus();
+    },
+    
+    outFocus: function() {
+        return this._out('focus');
     },
 
     outFocusedViewChange: function(focusedView, oldFocusedView) {
