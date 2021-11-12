@@ -6,6 +6,8 @@ Amm = {
     
     domHolderAttribute: 'data-amm-iid',
     
+    debugTraitConflicts: false,
+    
     _counter: 1,
     
     _functions: {},
@@ -158,7 +160,7 @@ Amm = {
      *  validation expressions)
      */
     augment: function(instance, trait, options) {
-        var traitInstance, proto;
+        var traitInstance;
         if (typeof trait === 'string') {
             trait = Amm.getFunction(trait);
         }
@@ -166,16 +168,18 @@ Amm = {
         if (typeof trait === 'function') traitInstance = new trait();
         else if (typeof trait === 'object') traitInstance = trait;
         else throw Error("`trait` must be an object or a function (constructor)");
-        var conflicts = this.getInterfaces(instance, traitInstance);
-        if (conflicts.length) 
-            throw Error("Cannot augment: `instance` already implements same interfaces as the `traitInstance`: "
-                + conflicts.join(', ') + ")");
-        for (var i in traitInstance) if (i.slice(0, 2) !== '__') {
-            if (instance[i] === undefined || typeof instance[i] === 'function')
-            {
+        if (Amm.debugTraitConflicts) {
+            var conflicts = this.getInterfaces(instance, traitInstance);
+            if (conflicts.length) 
+                throw Error("Cannot augment: `instance` already implements same interfaces as the `traitInstance`: "
+                    + conflicts.join(', ') + ")");
+        }
+        for (var i in traitInstance) if (!(i[1] === '_' && i[0] === '_')) {
+            if (i in instance) {
+                if (typeof instance[i] !== 'function') continue;
                 if (instance[i] !== Amm.Element['prototype'][i]) continue;
-                instance[i] = traitInstance[i];
             }
+            instance[i] = traitInstance[i];
         }
         if (typeof traitInstance.__augment === 'function') {
             traitInstance.__augment.call(instance, traitInstance, options);
@@ -395,12 +399,12 @@ Amm = {
     
     ucFirst: function(str) {
         str = '' + str;
-        return str.slice(0, 1).toUpperCase() + str.slice(1);
+        return str.charAt(0).toUpperCase() + str.slice(1);
     },
     
     lcFirst: function(str) {
         str = '' + str;
-        return str.slice(0, 1).toLowerCase() + str.slice(1);
+        return str.charAt(0).toLowerCase() + str.slice(1);
     },
     
     /**
@@ -986,12 +990,18 @@ Amm = {
     },
     
     callMethods: function(object, prefix /*, ...*/) {
-        var rx = prefix instanceof RegExp, aa, res = {};
+        var aa, res;
         for (var i in object) {
-            if (typeof object[i] === 'function' && (rx? i.match(rx) : i.indexOf(prefix) === 0)) {
-                aa = aa || Array.prototype.slice.call(arguments, 2);
-                res[i] = object[i].apply(object, aa);
-            }
+            if (i.length < prefix.length) continue;
+            if (!(i[0] === prefix[0] && i[1] === prefix[1] && i[2] === prefix[2] && 
+                i.slice(0, prefix.length) === prefix)) continue;
+            if (typeof object[i] !== 'function') continue;
+            if (arguments.length === 1) res = object[i]();
+            else if (arguments.length === 2) res = object[i](arguments[1]);
+            else if (arguments.length === 3) res = object[i](arguments[1], arguments[2]);
+            else if (arguments.length === 4) res = object[i](arguments[1], arguments[2], arguments[3]);
+            aa = aa || Array.prototype.slice.call(arguments, 2);
+            res = object[i].apply(object, aa);
         }
         return res;
     },
@@ -1085,6 +1095,85 @@ Amm = {
         res += Amm.html(definition.$$, sub, indentIncrease, dontReplaceUnderscores);
         if (sub) res += '\n' + strIndent;
         res += '</' + definition.$ + '>';
+        return res;
+    },
+
+    /**
+     * Same as Amm.html, but directly produces DOM nodes, so they don't need to be parsed by Jquery
+     * 
+     * TODO: 
+     * -    directly store JSON (retrievable by Builder), 
+     * -    assign functions to event handlers, 
+     * -    feature to save references to tagged elements in external hash, 
+     * -    feature to provide overrides of tagged element prototypes in external hash
+     */
+    dom: function(definition, dontReplaceUnderscores, outNodes, stringifyJson) {
+        var res, i, l;
+        if (!definition || typeof definition !== 'object') {
+            definition = '' + definition;
+            if (definition[0] === '<' && definition[definition.length - 1] === '>') return jQuery(definition).get();
+            return document.createTextNode(definition);
+        }
+        if (definition instanceof Array) {
+            res = [];
+            for (i = 0, l = definition.length; i < l; i++) {
+                res.push(Amm.dom(definition[i], dontReplaceUnderscores, outNodes));
+            }
+            return res;
+        }
+        if (!definition.$) throw Error ("`$` (tag name) must be present in attribute definition");
+        res = document.createElement(definition.$);
+        for (i in definition) if (definition.hasOwnProperty(i)) {
+            var nativeJson = false;
+            if (i[0] === '$') continue;
+            var attrValue = definition[i];
+            if (attrValue === false) continue;
+            if (attrValue === true) attrValue = i;
+            if (typeof attrValue === 'object' && attrValue) {
+                if (i === 'style') {
+                    var mkStyle;
+                    mkStyle = function (h, v) {
+                        var res = '';
+                        if (!v || typeof v !== 'object') return h + ': ' + v + '; ';
+                        if (v instanceof Array) return v.join(' ');
+                        if (h.length) h += '-';
+                        for (var i in v) if (v.hasOwnProperty(i)) {
+                            res += mkStyle(h + i, v[i]);
+                        }
+                        return res;
+                    };
+                    attrValue = mkStyle('', attrValue);
+                } else if (i.slice(0, 4) === 'data' && i.slice(5, 8) === 'amm' && !stringifyJson) {
+                    nativeJson = true;
+                } else {
+                    attrValue = JSON.stringify(attrValue);
+                }
+            } else if (typeof attrValue === 'function' && i.slice(0, 2) === 'on') {
+                // not compatible with IE < 9
+                res.addEventListener(i.slice(2), attrValue);
+                continue;
+            }
+            if (i === '_id') {
+                if (outNodes) outNodes[attrValue] = res;
+                continue;
+            }
+            if (i === '_html') {
+                res.innerHTML = attrValue;
+                continue;
+            }
+            if (!dontReplaceUnderscores) i = i.replace(/_/g, '-');
+            if (nativeJson) {
+                jQuery.data(res, 'x-' + i, attrValue);
+                attrValue = '';
+            }
+            res.setAttribute(i, attrValue);
+        }
+        res._ammDom = true;
+        if (!definition.$$) {
+            return res;
+        }
+        var children = Amm.dom(definition.$$ instanceof Array? definition.$$ : [definition.$$], dontReplaceUnderscores, outNodes, stringifyJson);
+        for (i = 0, l = children.length; i < l; i++) res.appendChild(children[i]);
         return res;
     },
     
