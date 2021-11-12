@@ -48,7 +48,6 @@ var TestUtils = {
     },
     
     center: function(element, dx, dy, client) {
-        console.log(Array.prototype.slice.call(arguments));
         element = TestUtils.findNode(element);
         if (dx === true && dy === undefined && client === undefined) {
             dx = undefined;

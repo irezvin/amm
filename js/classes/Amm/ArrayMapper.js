@@ -37,7 +37,7 @@ Amm.ArrayMapper._SRC_REF_TO_DEST = 2;
 
 Amm.ArrayMapper._DEST_REF_TO_SRC = 0;
 
-Amm.ArrayMapper._DEST_PASS = 1;
+Amm.ArrayMapper._FILTER_RESULT = 1;
 
 Amm.ArrayMapper._DEST_SORT_VALUE = 2;
 
@@ -94,7 +94,7 @@ Amm.ArrayMapper.prototype = {
     // always ordered by srcIndex (so we could locate items faster)
     _srcEntries: null,
     
-    // [ [refToSrcEntry, pass, orderValue, inSlice, dest ], ... ]
+    // [ [refToSrcEntry, filterResult, orderValue, inSlice, dest ], ... ]
     _destEntries: null,
     
     /**
@@ -131,8 +131,8 @@ Amm.ArrayMapper.prototype = {
         Amm.is(src, this.srcClass, 'src');
         Amm.is(src, 'Amm.Array', 'src');
         this._srcIsOwn = (src._ammArrayMapper === this);
+        if (oldSrc) this._subscribeSrc(oldSrc, true);
         this._src = src;
-        if (src) this._subscribeSrc(src);
         if (this._dest) {
             this._rebuild();
         }
@@ -158,7 +158,6 @@ Amm.ArrayMapper.prototype = {
         var oldSrcPrototype = this._srcPrototype;
         if (oldSrcPrototype === srcPrototype) return;
         this._srcPrototype = srcPrototype;
-        // TODO: think if we need to change src properties...
         return true;
     },
 
@@ -314,10 +313,10 @@ Amm.ArrayMapper.prototype = {
      * or we know that items are changed.
      * 
      * @param [item] - src array memeber to re-calculate filter (if omitted, all items will be checked)
-     * @param {boolean} [pass] - optonal parameter to provide pre-calculated 'pass' result 
+     * @param {boolean} [filterResult] - optonal parameter to provide pre-calculated 'filterResult' result 
      *      instead of calling the filter
      **/
-    applyFilter: function(item, pass) {
+    applyFilter: function(item, filterResult) {
         if (!this._src) return;
         if (item === undefined) {
             if (this._updateLevel) this._applyFilter = true;
@@ -331,13 +330,13 @@ Amm.ArrayMapper.prototype = {
         var idx = 0;
         while ((idx = Amm.Array.indexOf(item, this._src, idx)) >= 0) {
             var dest = this._srcEntries[idx][Amm.ArrayMapper._SRC_REF_TO_DEST];
-            var old = dest[Amm.ArrayMapper._DEST_PASS];
-            var n = pass === undefined? this._getFilterValue(dest[Amm.ArrayMapper._DEST_ITEM]) : pass;
+            var old = dest[Amm.ArrayMapper._FILTER_RESULT];
+            var n = filterResult === undefined? this._getFilterValue(dest[Amm.ArrayMapper._DEST_ITEM]) : filterResult;
             if (old != n && this._instantiator && this._instantiator['Amm.Instantiator.Variants'] && !this._instantiator.getFilter()) {
                 this._instantiator.setMatches([item], [n]);
             }
             if (!!old !== !!n) {
-                dest[Amm.ArrayMapper._DEST_PASS] = n;
+                dest[Amm.ArrayMapper._FILTER_RESULT] = n;
                 // TODO: optimize for possible change of one item
                 if (!this._updateLevel) this._remap(); 
             }
@@ -427,12 +426,12 @@ Amm.ArrayMapper.prototype = {
                     srcEntry[Amm.ArrayMapper._SRC_ITEM]
                 );
             }
-            changed = this._destEntries[i][Amm.ArrayMapper._DEST_PASS] !== newValue;
+            changed = this._destEntries[i][Amm.ArrayMapper._FILTER_RESULT] !== newValue;
             if (changed && needNotifyInstantiator) {
                 affectedObjects.push(srcEntry[Amm.ArrayMapper._SRC_ITEM]);
                 newMatches.push(newValue);
             }
-            this._destEntries[i][Amm.ArrayMapper._DEST_PASS] = newValue;
+            this._destEntries[i][Amm.ArrayMapper._FILTER_RESULT] = newValue;
         }
         this._applyFilter = false;
         if (affectedObjects.length) this._instantiator.setMatches(affectedObjects, newMatches);
@@ -605,9 +604,9 @@ Amm.ArrayMapper.prototype = {
         return this._instantiator.construct(srcItem, match, this);
     },
     
-    _destruct: function(destItem) {
+    _destruct: function(destItem, match) {
         if (!this._instantiator || this._instantiatorIsFn) return;
-        return this._instantiator.destruct(destItem, this);
+        return this._instantiator.destruct(destItem, match);
     },
     
     _destructAll: function(entries) {
@@ -616,7 +615,7 @@ Amm.ArrayMapper.prototype = {
         for (var i = 0, l = this._destEntries.length; i < l; i++) {
             var item = this._destEntries[i][Amm.ArrayMapper._DEST_ITEM];
             if (!item) continue;
-            if (this._instantiator) this._destruct(item);
+            if (this._instantiator) this._destruct(item, this._destEntries[i][Amm.ArrayMapper._FILTER_RESULT]);
             entries[i][Amm.ArrayMapper._DEST_ITEM] = null;
         }
     },
@@ -628,8 +627,8 @@ Amm.ArrayMapper.prototype = {
             if (entries[i][Amm.ArrayMapper._DEST_ITEM]) continue;
             if (!entries[i][Amm.ArrayMapper._DEST_IN_SLICE]) continue;
             var srcItem = entries[i][Amm.ArrayMapper._DEST_REF_TO_SRC][Amm.ArrayMapper._SRC_ITEM];
-            var pass = entries[i][Amm.ArrayMapper._DEST_PASS];
-            var item = this._instantiator? this._construct(srcItem, pass) : srcItem;
+            var filterResult = entries[i][Amm.ArrayMapper._FILTER_RESULT];
+            var item = this._instantiator? this._construct(srcItem, filterResult) : srcItem;
             entries[i][Amm.ArrayMapper._DEST_ITEM] = item;
         }
     },
@@ -680,6 +679,7 @@ Amm.ArrayMapper.prototype = {
         
         this.beginUpdate();
         
+        if (this._instantiator && !this._instantiatorIsFn) this._instantiator.beginUpdate();
         if (this._filter && !this._filterIsFn) this._filter.beginUpdate();
         if (this._sort && typeof this._sort === 'object') this._sort.beginUpdate();
         
@@ -689,12 +689,15 @@ Amm.ArrayMapper.prototype = {
         var replacement = [], 
             srcItem, srcIndex, newSrcIndex, srcEntry, 
             destEntry, destEntryIdx, destItem, 
-            pass, inSlice, delta;
+            filterResult, inSlice, delta;
         
         // replacement is slice of this._srcEntries that will be put instead of old slice 
         // (between index..index+cut.length)
         
         replacement.length = insert.length;
+        
+        // TODO: when we re-use items, we assign added items to constructed instances of deleted ones
+        // (if filter is used, filter value must match)
         
         // add new items
         for (i = 0, l = changes.added.length; i < l; i++) {
@@ -713,7 +716,7 @@ Amm.ArrayMapper.prototype = {
             
             destEntry = [ 
                 srcEntry, 
-                (pass = this._filter? this._getFilterValue(srcItem) : true), 
+                (filterResult = this._filter? this._getFilterValue(srcItem) : true), 
                 this._getSortValue(srcItem, srcIndex), 
                 (inSlice = this._hasSlice? undefined: true),
                 null
@@ -732,12 +735,12 @@ Amm.ArrayMapper.prototype = {
             srcItem = changes.deleted[i][0];
             srcIndex = changes.deleted[i][1];
             srcEntry = this._srcEntries[srcIndex];
-            if (!srcEntry) continue; // TODO: Why this happens on Amm.Table.cleanup()?
+            if (!srcEntry) continue; // TODO: Why this happens on Amm.Table.Table.cleanup()?
             destEntry = srcEntry[Amm.ArrayMapper._SRC_REF_TO_DEST];
-            destItem = destEntry[Amm.ArrayMapper._DEST_REF_TO_SRC];
+            destItem = destEntry[Amm.ArrayMapper._DEST_ITEM];
             if (destItem !== undefined) {
                 if (destItem !== srcItem && this._instantiator)
-                    this._destruct(destItem);
+                    this._destruct(destItem, destEntry[Amm.ArrayMapper._FILTER_RESULT]);
             }
             destEntry.splice(0, destEntry.length); // delete everything from destEntry
             destEntryIdx = Amm.Array.indexOf(destEntry, this._destEntries);
@@ -759,7 +762,7 @@ Amm.ArrayMapper.prototype = {
             srcIndex = changes.moved[i][1];
             newSrcIndex = changes.moved[i][2];
             srcEntry = this._srcEntries[srcIndex];
-            if (!srcEntry) continue; // TODO: Why this happens on Amm.Table.cleanup()?
+            if (!srcEntry) continue; // TODO: Why this happens on Amm.Table.Table.cleanup()?
             srcEntry[Amm.ArrayMapper._SRC_INDEX] = newSrcIndex;
             destEntry = srcEntry[Amm.ArrayMapper._SRC_REF_TO_DEST];
             destEntry[Amm.ArrayMapper._DEST_SORT_VALUE] = this._getSortValue(srcItem, newSrcIndex);
@@ -798,6 +801,7 @@ Amm.ArrayMapper.prototype = {
         
         if (this._sort && typeof this._sort === 'object') this._sort.endUpdate();
         if (this._filter && !this._filterIsFn) this._filter.endUpdate();
+        if (this._instantiator && !this._instantiatorIsFn) this._instantiator.endUpdate();        
         
         this.endUpdate();
         
@@ -845,12 +849,12 @@ Amm.ArrayMapper.prototype = {
         
         // now recalc everything and replace dest items
         
-        var destItems = [], i, passing, l, e,
-            pass = Amm.ArrayMapper._DEST_PASS,
-            inSlice = Amm.ArrayMapper._DEST_IN_SLICE,
-            destItem = Amm.ArrayMapper._DEST_ITEM,
-            srcReference = Amm.ArrayMapper._DEST_REF_TO_SRC,
-            srcItem = Amm.ArrayMapper._SRC_ITEM,
+        var destItems = [], i, filterResult, l, e,
+            FILTER_RESULT = Amm.ArrayMapper._FILTER_RESULT,
+            IN_SLICE = Amm.ArrayMapper._DEST_IN_SLICE,
+            DEST_ITEM = Amm.ArrayMapper._DEST_ITEM,
+            REF_TO_SRC = Amm.ArrayMapper._DEST_REF_TO_SRC,
+            SRC_ITEM = Amm.ArrayMapper._SRC_ITEM,
             k;
         
         if (this._sort) {
@@ -868,23 +872,25 @@ Amm.ArrayMapper.prototype = {
         
         if (this._hasSlice) passed = [];
         
+        if (this._instantiator && !this._instantiatorIsFn) this._instantiator.beginUpdate();
+        
         for (i = 0, l = this._destEntries.length; i < l; i++) { // find passed items
             e = this._destEntries[i];
-            passing = !this._filter || e[pass];
-            if (!passing) { // surely not in slice
-                e[inSlice] = false;
-                if (e[destItem]) {
-                    if (this._instantiator) this._destruct(e[destItem]);
-                    e[destItem] = null;
+            filterResult = !this._filter || e[FILTER_RESULT];
+            if (!filterResult) { // surely not in slice
+                e[IN_SLICE] = false;
+                if (e[DEST_ITEM]) {
+                    if (this._instantiator) this._destruct(e[DEST_ITEM], filterResult);
+                    e[DEST_ITEM] = null;
                 }                
             } else if (!this._hasSlice) { // surely in slice
-                e[inSlice] = true;
-                if (!e[destItem]) {
-                    e[destItem] = this._instantiator? this._construct(e[srcReference][srcItem], passing) : e[srcReference][srcItem];
+                e[IN_SLICE] = true;
+                if (!e[DEST_ITEM]) {
+                    e[DEST_ITEM] = this._instantiator? this._construct(e[REF_TO_SRC][SRC_ITEM], filterResult) : e[REF_TO_SRC][SRC_ITEM];
                 }
-                destItems.push(e[destItem]);
+                destItems.push(e[DEST_ITEM]);
             } else { // passing && this._hasSlice - dunno if will reach to the slice
-                e[inSlice] = undefined;
+                e[IN_SLICE] = undefined;
                 passed.push(e);
             }
         }
@@ -894,6 +900,7 @@ Amm.ArrayMapper.prototype = {
                 destItems = this._destExtra.concat(destItems);
             }
             this.getDest().setItems(destItems);
+            if (this._instantiator && !this._instantiatorIsFn) this._instantiator.endUpdate();
             return;
         }
         
@@ -904,19 +911,19 @@ Amm.ArrayMapper.prototype = {
         
         for (i = 0, l = sliced.length; i < l; i++) {
             e = sliced[i];
-            e[inSlice] = true;
-            if (!e[destItem]) {
-                e[destItem] = this._instantiator? this._construct(e[srcReference][srcItem], e[pass]) : e[srcReference][srcItem];
+            e[IN_SLICE] = true;
+            if (!e[DEST_ITEM]) {
+                e[DEST_ITEM] = this._instantiator? this._construct(e[REF_TO_SRC][SRC_ITEM], e[FILTER_RESULT]) : e[REF_TO_SRC][SRC_ITEM];
             }
-            destItems.push(e[destItem]);
+            destItems.push(e[DEST_ITEM]);
         }
         
         for (i = 0, l = passed.length; i < l; i++) {
             e = passed[i];
-            e[inSlice] = false;
-            if (e[destItem]) {
-                if (this._instantiator) this._destruct(e[destItem]);
-                e[destItem] = null;
+            e[IN_SLICE] = false;
+            if (e[DEST_ITEM]) {
+                if (this._instantiator) this._destruct(e[DEST_ITEM]);
+                e[DEST_ITEM] = null;
             }       
         }
         
@@ -925,6 +932,7 @@ Amm.ArrayMapper.prototype = {
         }
         
         this.getDest().setItems(destItems);
+        if (this._instantiator && !this._instantiatorIsFn) this._instantiator.endUpdate();
         
     },
     

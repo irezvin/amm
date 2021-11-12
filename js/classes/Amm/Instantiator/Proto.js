@@ -47,11 +47,19 @@ Amm.Instantiator.Proto.prototype = {
     // required/default class in Amm.constructInstance
     requiredClass: null,
     
+    defaultMatch: 1,
+    
     construct: function(object, match) {
-        var proto = this.generatePrototype(object, match);
         var instance;
-        if (this.isElement) instance = new Amm.Element(proto);
-            else instance = Amm.constructInstance(proto, this.requiredClass); 
+        match = match || this.defaultMatch;
+        if (this._reuseInstances) {
+            instance = this._reuse(match);
+        }
+        if (!instance) {
+            var proto = this.generatePrototype(object, match);
+            if (this.isElement) instance = new Amm.Element(proto);
+                else instance = Amm.constructInstance(proto, this.requiredClass); 
+        }
         if (this.assocProperty) Amm.setProperty(instance, this.assocProperty, object);
         if (this.revAssocProperty) Amm.setProperty(object, this.revAssocProperty, instance);
         this.applyInstanceCallbacks(instance, object, match);
@@ -97,11 +105,10 @@ Amm.Instantiator.Proto.prototype = {
         return this._out('instanceCallback', instance, object, match);
     },
     
-    destruct: function(object) {
-        if (object.cleanup) {
-            object.cleanup();
-        }
-    }
+    destruct: function(instance, match) {
+        if (match === undefined) match = this.defaultMatch;
+        return Amm.Instantiator.prototype.destruct.call(this, instance, match);
+    },
     
 };
 

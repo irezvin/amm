@@ -8,6 +8,7 @@ Amm.Instantiator.Variants = function(options) {
     this._instances = [];
     Amm.Instantiator.call(this);
     Amm.WithEvents.call(this, options);
+    this._metaPropsCache = {};
     
 };
 
@@ -38,6 +39,13 @@ Amm.Instantiator.Variants.prototype = {
     _assocProperty: null,
     
     _revAssocProperty: null,
+
+    /**
+     * Used when reuseInstances is TRUE
+     * @type object
+     * { [match]: { assocProperty, revAssocProperty } }
+     */
+    _metaPropsCache: null,
     
     setPrototypes: function(prototypes, match) {
         if (!prototypes || typeof prototypes !== 'object')
@@ -120,9 +128,20 @@ Amm.Instantiator.Variants.prototype = {
     
     _build: function(object, match) {
         
-        var proto, def = this._defaultPrototype;
-        /* TODO: test */
+        var proto, def = this._defaultPrototype, res;
+        
+        if (this._toDispose && this._toDispose[match] && this._toDispose[match].length) {
+            res = this._reuse(match);
+            if (res) {
+                var meta = this._metaPropsCache[match];
+                if (meta && meta.assocProperty) Amm.setProperty(res, meta.assocProperty, object);
+                if (meta && meta.revAssocProperty) Amm.setProperty(object, meta.revAssocProperty, res);
+                return res;
+            }
+        }
+        
         if (this._prototypes[match]) {
+            
             proto = this._prototypes[match];
             if (Amm.Builder.isPossibleBuilderSource(proto)) {
                 proto = Amm.Builder.calcPrototypeFromSource(proto, false);
@@ -136,7 +155,9 @@ Amm.Instantiator.Variants.prototype = {
             } else {
                 proto = Amm.override({}, proto);
             }
+            
         } else {
+            
             if (!this._defaultPrototype) {
                 if (!this._allowNullInstance) {
                     throw Error("No prototype for match '" + match + "' and `defaultPrototype` not set!");
@@ -148,17 +169,25 @@ Amm.Instantiator.Variants.prototype = {
             } else {
                 proto = Amm.override({}, def);
             }
+            
         }
+        
         var assocProperty = this._assocProperty, revAssocProperty = this._revAssocProperty;
+        
+        this._metaPropsCache[match] = {};
+        
         if ('__assocProperty' in proto) {
             assocProperty = proto.__assocProperty;
             delete proto.__assocProperty;
+            this._metaPropsCache[match]['__assocProperty'] = assocProperty;
         }
         if ('__revAssocProperty' in proto) {
             revAssocProperty = proto.__revAssocProperty;
             delete proto.__revAssocProperty;
+            this._metaPropsCache[match]['__revAssocProperty'] = revAssocProperty;
         }
-        var res = Amm.constructInstance(proto);
+        
+        res = Amm.constructInstance(proto);
         if (assocProperty) Amm.setProperty(res, assocProperty, object);
         if (revAssocProperty && typeof object === 'object' && object) {
             Amm.setProperty(object, revAssocProperty, res);
@@ -166,7 +195,15 @@ Amm.Instantiator.Variants.prototype = {
         return res;
     },
     
-    destruct: function(instance) {
+    destruct: function(instance, match) {
+        if (match === undefined && this._toDispose) {
+            var idx = this._findInstance(instance);
+            if (idx) match = this._matches[idx[0]];
+        }
+        return Amm.Instantiator.prototype.destruct.call(this, instance, match);
+    },
+    
+    _destruct: function(instance, match) {
         this.forgetInstance(instance);
         if (instance.cleanup) {
             instance.cleanup();
@@ -288,9 +325,9 @@ Amm.Instantiator.Variants.prototype = {
         return true;
     },
     
-    forgetInstance: function(instance) {
+    forgetInstance: function(instance, idx) {
         if (!instance) return;
-        var idx = this._findInstance(instance);
+        idx = idx || this._findInstance(instance);
         if (!idx) return;
         this._unsubscribeInstance(instance);
         this._instances[idx[0]].splice(idx[1], 1);
@@ -443,8 +480,6 @@ Amm.Instantiator.Variants.prototype = {
 
     getRevAssocProperty: function() { return this._revAssocProperty; },
 
-    
-    
 };
 
 Amm.extend(Amm.Instantiator.Variants, Amm.Instantiator);

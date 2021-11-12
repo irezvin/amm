@@ -418,6 +418,138 @@ QUnit.test("Instantiator.Variants: builderSource as proto", function(assert) {
     
     Amm.cleanup(e1, e2);
 
-});    
+});
+
+QUnit.test("Instantiator.Proto: test instances re-use", function(assert) {
+    
+    var numDestructed = 0;
+    var ins = new Amm.Instantiator.Proto({
+        proto: {
+            'class': 'Amm.Element',
+            prop__src: null,
+            on__cleanup: function() { numDestructed++; },
+        },
+        assocProperty: 'src',
+        revAssocProperty: 'instance',
+        reuseInstances: true,
+    });
+    
+    
+    var objects = {
+        a: new Amm.Element({prop__caption: 'A', prop__instance: null}),
+        b: new Amm.Element({prop__caption: 'B', prop__instance: null}),
+        c: new Amm.Element({prop__caption: 'C', prop__instance: null}),
+        d: new Amm.Element({prop__caption: 'D', prop__instance: null}),
+        e: new Amm.Element({prop__caption: 'E', prop__instance: null}),
+    };
+    
+    var instances = [];
+    
+    instances.push(ins.construct(objects.a));
+    instances.push(ins.construct(objects.b));
+    instances.push(ins.construct(objects.c));
+    
+    ins.beginUpdate();
+    
+    ins.destruct(instances[0]);
+    
+    assert.ok(ins.construct(objects.d) === instances[0], 'First instance re-used');
+    
+    ins.destruct(instances[1]);
+    assert.ok(ins.construct(objects.e) === instances[1], 'Second instance re-used');    
+    
+    ins.destruct(instances[2]);
+    
+    ins.endUpdate();
+    assert.deepEqual(numDestructed, 1, 'After endUpdate(): not re-used is cleaned up');
+    
+    ins.destruct(instances[0]);
+    assert.deepEqual(numDestructed, 2, 'After endUpdate(): clean-up on destruct()');
+    
+    Amm.cleanup(instances[3], ins);
+    
+});
+
+QUnit.test("Instantiator.Variants: test instances re-use", function(assert) {
+    
+    var aDestructed = 0;
+    var bDestructed = 0;
+    var ins = new Amm.Instantiator.Variants({
+        prototypes: {
+            typeA: {
+                'class': 'Amm.Element',
+                prop__type: 'typeA',
+                prop__aSrc: null,
+                __assocProperty: 'aSrc',
+                __revAssocProperty: 'aInstance',
+                on__cleanup: function() { aDestructed++; },
+            },
+            typeB: {
+                'class': 'Amm.Element',
+                prop__type: 'typeB',
+                prop__bSrc: null,
+                __assocProperty: 'bSrc',
+                __revAssocProperty: 'bInstance',
+                on__cleanup: function() { bDestructed++; },
+            },
+        },
+        reuseInstances: true,
+    });
+    
+    
+    var objects = {
+        a1: new Amm.Element({prop__caption: 'a1', prop__aInstance: null}),
+        a2: new Amm.Element({prop__caption: 'a2', prop__aInstance: null}),
+        a3: new Amm.Element({prop__caption: 'a3', prop__aInstance: null}),
+        a4: new Amm.Element({prop__caption: 'a4', prop__aInstance: null}),
+        a5: new Amm.Element({prop__caption: 'a5', prop__aInstance: null}),
+        b1: new Amm.Element({prop__caption: 'b1', prop__bInstance: null}),
+        b2: new Amm.Element({prop__caption: 'b2', prop__bInstance: null}),
+        b3: new Amm.Element({prop__caption: 'b3', prop__bInstance: null}),
+        b4: new Amm.Element({prop__caption: 'b4', prop__bInstance: null}),
+        b5: new Amm.Element({prop__caption: 'b5', prop__bInstance: null}),
+    };
+    
+    var ai = [], bi = [];
+    
+    ai.push(ins.construct(objects.a1, 'typeA'));
+    ai.push(ins.construct(objects.a2, 'typeA'));
+    ai.push(ins.construct(objects.a3, 'typeA'));
+    bi.push(ins.construct(objects.b1, 'typeB'));
+    bi.push(ins.construct(objects.b2, 'typeB'));
+    bi.push(ins.construct(objects.b3, 'typeB'));
+    
+    ins.beginUpdate();
+    
+    ins.destruct(ai[0]);
+    
+    ins.destruct(bi[0]);
+    
+    assert.ok(ins.construct(objects.a3, 'typeA') === ai[0], 'First instance re-used (A)');
+    
+    assert.ok(ins.construct(objects.b3, 'typeB') === bi[0], 'First instance re-used (B)');
+    
+    ins.destruct(bi[1]);
+    assert.ok(ins.construct(objects.b4, 'typeB') === bi[1], 'Second instance re-used (B)');
+    
+    ins.destruct(ai[1]);
+    assert.ok(ins.construct(objects.a4, 'typeA') === ai[1], 'Second instance re-used (A)');    
+    
+    ins.destruct(ai[2]);
+    ins.destruct(bi[2]);
+    
+    ins.endUpdate();
+    assert.deepEqual(aDestructed, 1, 'After endUpdate(): not re-used is cleaned up (A)');
+    assert.deepEqual(bDestructed, 1, 'After endUpdate(): not re-used is cleaned up (B)');
+    
+    ins.destruct(ai[0]);
+    ins.destruct(bi[0]);
+    assert.deepEqual(aDestructed, 2, 'After endUpdate(): clean-up on destruct() (A)');
+    assert.deepEqual(bDestructed, 2, 'After endUpdate(): clean-up on destruct() (B)');
+    
+    Amm.cleanup(ai[3], ins);
+    Amm.cleanup(bi[3], ins);
+    
+});
 
 })();
