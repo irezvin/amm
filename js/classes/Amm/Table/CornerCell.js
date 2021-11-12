@@ -13,6 +13,16 @@ Amm.Table.CornerCell.prototype = {
 
     _hasVerticalHandle: true,
     
+    _getDefaultInnerItems: function() {
+        return [
+            {
+                $: 'div',
+                'class': 'value',
+                data_amm_value: true,
+            },
+        ];  
+    },
+    
     _calcClassName: function(get, ofun, np) {
         var res = Amm.Table.ColumnHeaderCell.prototype._calcClassName.call(this, get);
         res = Amm.Util.trim(res + ' ' + Amm.Table.RowHeaderCell.prototype._calcClassName.call(this, get, true));

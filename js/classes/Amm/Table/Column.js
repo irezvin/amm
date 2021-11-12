@@ -94,7 +94,7 @@ Amm.Table.Column.prototype = {
     },
     
     constructDefaultViews: function() {
-        var res = Amm.html({
+        var res = Amm.dom({
             $: 'col',
             data_amm_v: [
                 { class: 'v.Visual', delay: 0, },

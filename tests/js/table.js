@@ -1,3 +1,4 @@
+/* global Amm */
 /* global QUnit */
 /* global TestUtils */
 
@@ -1625,7 +1626,7 @@
     
     QUnit.test("Amm.Table: Drag and Drop trait", function(assert) {
 
-        var fx = jQuery('<div style="position: absolute; left: 0px; top: 0px; height: 1000px; width: 1000px; z-index: 9999;"></div>');
+        var fx = jQuery('<div data-note="Amm.Table: Drag and Drop trait" style="position: fixed; left: 0px; top: 0px; height: 1000px; width: 1000px; z-index: 9999;"></div>');
         fx.appendTo(document.body);
         try {
             // we need to have visible element inside the viewport 
@@ -2256,15 +2257,6 @@
                     'table.getDragObject() returns null');
                 assert.notOk(cell.is('.isResizing'), 
                     "Row that's not resizing doesn't have corresponding class");            
-            
-            
-            
-            
-            
-            
-            
-            
-            
             
             
             window.d.fx = fx;

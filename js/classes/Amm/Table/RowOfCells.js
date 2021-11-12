@@ -8,6 +8,8 @@ Amm.Table.RowOfCells = function(options) {
             
             proto: this._cellProto,
             
+            reuseInstances: true,
+            
             requiredClass: 'Amm.Table.Cell',
             
             protoCallback: this.cellProtoCallback,

@@ -12,8 +12,8 @@ Amm.Table.HeaderCell.prototype = {
     
     _hasHorizontalHandle: false,
     
-    constructDefaultViews: function() {
-        var innerItems = [
+    _getDefaultInnerItems: function() {
+        return [
             {
                 $: 'div',
                 'class': 'value',
@@ -25,7 +25,11 @@ Amm.Table.HeaderCell.prototype = {
                     }
                 }
             },
-        ];
+        ];  
+    },
+    
+    constructDefaultViews: function() {
+        var innerItems = this._getDefaultInnerItems();
         if (this._hasVerticalHandle) {
             innerItems.push({
                 $: 'div',
@@ -45,6 +49,7 @@ Amm.Table.HeaderCell.prototype = {
         ];
         var def = {
             $: 'th',
+            tabindex: 0,
             data_amm_v: viewProto,
             $$: [
                 {
@@ -54,7 +59,7 @@ Amm.Table.HeaderCell.prototype = {
                 }
             ]
         };
-        var res = Amm.html(def);
+        var res = Amm.dom(def);
         return res;
     },
     

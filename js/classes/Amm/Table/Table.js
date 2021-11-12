@@ -57,6 +57,7 @@ Amm.Table.Table = function(options) {
             proto: {
                 class: 'Amm.Table.RowOfCells'
             },
+            reuseInstances: true,
             protoCallback: this._rowProtoCallback,
             protoCallbackScope: this,
             instanceCallback: this.outRowInstanceCallback,
@@ -227,6 +228,8 @@ Amm.Table.Table.prototype = {
     _preserveActiveCellAddress: true,
     
     _lastActiveCellAddress: null,
+    
+    extraViews: null,
 
     _syncActiveCellEditor: 
             Amm.Table.Table.EDITOR_ACTIVATES_CELL 
@@ -369,9 +372,7 @@ Amm.Table.Table.prototype = {
     },
     
     constructDefaultViews: function() {
-        var res = Amm.html({
-            $: 'table',
-            data_amm_v: [
+        var views = [
                 {
                     class: 'v.Visual'
                 },
@@ -384,7 +385,20 @@ Amm.Table.Table.prototype = {
                 {
                     class: 'v.Table.Dimensions'
                 },
-            ]
+            ];
+        var extraViews = this.extraViews;
+        if (extraViews && typeof extraViews === 'object') {
+            if (!(extraViews instanceof Array)) {
+                if (!extraViews.class) extraViews = Amm.values(extraViews);
+                else extraViews = [extraViews];
+            }
+        } else if (extraViews) {
+            extraViews = [extraViews];
+        }
+        if (extraViews && extraViews.length) views = views.concat(extraViews);
+        var res = Amm.dom({
+            $: 'table',
+            data_amm_v: views
         });
         return res;
     },
@@ -604,8 +618,8 @@ Amm.Table.Table.prototype = {
             if (oldActiveCellEditing) {
                 // recheck if not confirmed/cancel during previous checks
                 if (oldActiveCell.getEditing()) oldActiveCell.confirmEdit();
+                if (activeCell && activeCell.isEditable()) activeCell.setEditing(true);
             }
-            if (activeCell && activeCell.isEditable()) activeCell.setEditing(true);
         }
         if (this._syncActiveCellEditor & Amm.Table.Table.OPEN_EDITOR_WHEN_ACTIVE) {
             if (!activeCell.getEditing()) activeCell.setEditing(true);

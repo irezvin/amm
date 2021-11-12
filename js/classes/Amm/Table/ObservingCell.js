@@ -22,14 +22,16 @@ Amm.Table.ObservingCell.prototype = {
     
     _valueVisible: true,
     
+    _sourceDefaultToColumnId: true,
+    
     _doOnColumnChange: function(column, oldColumn) {
         Amm.Table.Cell.prototype._doOnColumnChange.call(this, column, oldColumn);
         Amm.subUnsub(column, oldColumn, this, ['sourceChange', 'idChange'], '_updateSource');
-        if (column) this.setSource(column.getSource() || column.getId());
+        if (column) this.setSource(column.getSource() || (this._sourceDefaultToColumnId? column.getId() : null));
     },
     
     _updateSource: function() {
-        this.setSource(this._column.getSource() || this._oclumn.getId());
+        this.setSource(this._column.getSource() || this._column.getId());
     },
     
     _doOnItemChange: function(item, oldItem) {
@@ -167,14 +169,12 @@ Amm.Table.ObservingCell.prototype = {
     },
 
     constructDefaultViews: function() {
-        var res = Amm.html({
+        
+        var nodes = {};
+        var dom = Amm.dom({
+            _id: 'cellView',
             $: 'td',
             tabindex: 0,
-            data_amm_v: [
-                {
-                    class: 'v.Table.Cell',
-                },
-            ],
             $$: [
                 {
                     $: 'div',
@@ -184,26 +184,29 @@ Amm.Table.ObservingCell.prototype = {
                             $: 'div',
                             'class': 'value',
                             data_amm_value: true,
-                            data_amm_id: '__parent',
-                            data_amm_v: {
-                                class: 'v.Expressions',
-                                map: {
-                                    _html: 'value',
-                                    _visible: 'valueVisible'
-                                }
-                            }
                         },
                         {
+                            _id: 'displayParentView',
                             $: 'div',
                             'class': 'cellItems',
-                            data_amm_id: '__parent',
-                            data_amm_v: 'v.DisplayParent'
                         }
                     ]
                 }
             ]
+        }, false, nodes);
+        
+        var res = new Amm.View.Html.Table.ObservingCell({
+            element: this, 
+            htmlElement: nodes.cellView
         });
+        
+        new Amm.View.Html.DisplayParent({
+            element: this,
+            htmlElement: nodes.displayParentView,
+        });
+        
         return res;
+        
     }
 
 };

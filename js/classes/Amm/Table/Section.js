@@ -97,7 +97,7 @@ Amm.Table.Section.prototype = {
     },
     
     constructDefaultViews: function() {
-        var res = Amm.html({
+        var res = Amm.dom({
             $: Amm.Table.Section.TAG[this._type],
             data_amm_v: [
                 {

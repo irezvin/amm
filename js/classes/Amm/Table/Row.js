@@ -41,7 +41,7 @@ Amm.Table.Row.prototype = {
     },
     
     constructDefaultViews: function() {
-        var res = Amm.html({
+        var res = Amm.dom({
             $: 'tr',
             data_amm_v: [
                 {

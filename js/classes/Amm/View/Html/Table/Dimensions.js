@@ -1,7 +1,8 @@
 /* global Amm */
 
 Amm.View.Html.Table.Dimensions = function(options) {
-    Amm.View.Html.SingleDimension.call(this, options);
+    Amm.View.Abstract.call(this, options);
+    Amm.View.Html.call(this, options);
 };
 
 

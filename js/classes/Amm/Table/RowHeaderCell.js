@@ -14,6 +14,12 @@ Amm.Table.RowHeaderCell.prototype = {
 
     _rowResizableClassName: 'resizableRow',
     
+    _sourceDefaultToColumnId: false,
+    
+    _doOnColumnChange: function(column, oldColumn) {
+        return Amm.Table.ObservingCell.prototype._doOnColumnChange.call(this, column, oldColumn);
+    },
+    
     _setComponent_rowHeaderCell: function(row, oldRow) {
         Amm.subUnsub(row, oldRow, this, ['indexChange'], '_handleRowIndexChange');
         if (row) this._handleRowIndexChange(row.getIndex(), null);
@@ -69,3 +75,4 @@ Amm.Table.RowHeaderCell.prototype = {
 
 Amm.extend(Amm.Table.RowHeaderCell, Amm.Table.HeaderCell);
 Amm.extend(Amm.Table.RowHeaderCell, Amm.Table.ObservingCell);
+

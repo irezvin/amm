@@ -45,7 +45,7 @@ Amm.Table.Cell.prototype = {
     },
 
     constructDefaultViews: function () {
-        var res = Amm.html({
+        var res = Amm.dom({
             $: 'td',
             tabindex: 0,
             data_amm_v: [
@@ -315,19 +315,34 @@ Amm.Table.Cell.prototype = {
         if (Amm.is(oldDp, 'Amm.Table.Cell')) {
             oldDp.setEditing(false);
         }
-        this._setActiveEditor(editor);
+        this.outBeginEdit();
         editor.setDisplayParent(this);
+        this._setActiveEditor(editor);
         editor.setValue(this.getValue());
     },
     
     _endEdit: function(dontChangeActive) {
         var editor = this._activeEditor;
         if (editor && editor.getDisplayParent() === this) {
+            if (editor['Focusable'] === '__INTERFACE__') {
+                editor.setFocused(false);
+            }
             var ex = null;
-            if (!this._cancelEdit) this.updateValue(editor.getValue());
+            if (!this._cancelEdit) {
+                this.updateValue(editor.getValue());
+            }
             editor.setDisplayParent(null);
+            this.outEndEdit();
         }
         if (!dontChangeActive) this._setActiveEditor(null);
+    },
+    
+    outBeginEdit: function() {
+        return this._out('beginEdit');
+    },
+    
+    outEndEdit: function() {
+        return this._out('endEdit');
     },
     
     setActiveEditor: function(activeEditor) {
@@ -489,7 +504,12 @@ Amm.Table.Cell.prototype = {
     },
     
     focusEditor: function() {
-        if (this._activeEditor) this._activeEditor.focus(); // TODO: fix 
+        if (this._activeEditor) {
+            var t = this;
+            window.setTimeout(function() {
+                t._activeEditor.focus();
+            }, 100);
+        }
     },
     
     _calcCanActivate: function(get) {

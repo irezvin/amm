@@ -22,7 +22,7 @@ Amm.Table.ColGroup.prototype = {
     },
     
     constructDefaultViews: function() {
-        var res = Amm.html({
+        var res = Amm.dom({
             $: 'colgroup',
             data_amm_v: [
                 {
