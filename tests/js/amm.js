@@ -781,5 +781,35 @@
         
     });
     
+    QUnit.test("Amm.Util: className manipulation", function(assert) {
+        
+        assert.deepEqual(Amm.Util.alterClassName('foo', true, 'bar'), 'foo bar',
+            'className added');
+        
+        assert.deepEqual(Amm.Util.alterClassName('foo bar', true, 'foo baz quux'), 'foo bar baz quux',
+            'multiple classNames added');
+        
+        assert.deepEqual(Amm.Util.alterClassName('foo bar', false, 'foo'), 'bar',
+            'className removed');
+        
+        assert.deepEqual(Amm.Util.alterClassName('foo bar baz quux', false, 'bar quux'), 'foo baz',
+            'multiple classNames removed');
+        
+        assert.deepEqual(Amm.Util.getClassNameOrPart('foo bar', 'foo'), true,
+            'getClassNameOrPart: single part');
+        
+        assert.deepEqual(Amm.Util.getClassNameOrPart('foo bar', 'baz'), false,
+            'getClassNameOrPart: single part (2)');
+            
+        assert.deepEqual(Amm.Util.getClassNameOrPart('foo bar baz quux', 'quux foo'), true,
+            'getClassNameOrPart: mutliple parts');
+            
+        assert.deepEqual(Amm.Util.getClassNameOrPart('foo bar baz quux', 'quux qwerty'), false,
+            'getClassNameOrPart: mutliple parts (2)');
+            
+            
+        
+    });
+    
 }) ();
 

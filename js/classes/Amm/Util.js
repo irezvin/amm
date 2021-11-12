@@ -191,6 +191,14 @@ Amm.Util = {
         
         var res = className;
         
+        var parts = ('' + part).split(/ +/);
+        if (parts.length > 1) {
+            for (var i = 0, l = parts.length; i < l; i++) {
+                res = this.alterClassName(res, classNameOrToggle, parts[i]);
+            }
+            return res;
+        }
+        
         var rx = new RegExp('\\s*\\b' + Amm.Util.regexEscape(part) + '\\b\\s*', 'g');
         if (!classNameOrToggle) {
             res = res.replace(rx, ' ').replace(/ {2,}/g, ' ');
@@ -210,7 +218,12 @@ Amm.Util = {
     getClassNameOrPart: function(className, part) {
         if (!part) 
             return className; 
-        return (' ' + className + ' ').indexOf(' ' + part + ' ') >= 0;
+        if (!part) return false;
+        part = part.split(/ +/);
+        for (var i = 0, l = part.length; i < l; i++) {
+            if ((' ' + className + ' ').indexOf(' ' + part[i] + ' ') < 0) return false;
+        }
+        return true;
     }
     
 };
