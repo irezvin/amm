@@ -33,17 +33,17 @@ Amm.ArrayMapper._SRC_INDEX = 1;
 
 Amm.ArrayMapper._SRC_REF_TO_DEST = 2;
 
+Amm.ArrayMapper._SRC_FILTER_RESULT = 3;
+
 // Indexes in _destEntries' items
 
 Amm.ArrayMapper._DEST_REF_TO_SRC = 0;
 
-Amm.ArrayMapper._FILTER_RESULT = 1;
+Amm.ArrayMapper._DEST_SORT_VALUE = 1;
 
-Amm.ArrayMapper._DEST_SORT_VALUE = 2;
+Amm.ArrayMapper._DEST_IN_SLICE = 2;
 
-Amm.ArrayMapper._DEST_IN_SLICE = 3;
-
-Amm.ArrayMapper._DEST_ITEM = 4;
+Amm.ArrayMapper._DEST_ITEM = 3;
 
 Amm.ArrayMapper.prototype = {
     
@@ -329,14 +329,14 @@ Amm.ArrayMapper.prototype = {
         if (!this._filter) return;
         var idx = 0;
         while ((idx = Amm.Array.indexOf(item, this._src, idx)) >= 0) {
-            var dest = this._srcEntries[idx][Amm.ArrayMapper._SRC_REF_TO_DEST];
-            var old = dest[Amm.ArrayMapper._FILTER_RESULT];
-            var n = filterResult === undefined? this._getFilterValue(dest[Amm.ArrayMapper._DEST_ITEM]) : filterResult;
+            var src = this._srcEntries[idx];
+            var old = src[Amm.ArrayMapper._SRC_FILTER_RESULT];
+            var n = filterResult === undefined? this._getFilterValue(item) : filterResult;
             if (old != n && this._instantiator && this._instantiator['Amm.Instantiator.Variants'] && !this._instantiator.getFilter()) {
                 this._instantiator.setMatches([item], [n]);
             }
             if (!!old !== !!n) {
-                dest[Amm.ArrayMapper._FILTER_RESULT] = n;
+                src[Amm.ArrayMapper._SRC_FILTER_RESULT] = n;
                 // TODO: optimize for possible change of one item
                 if (!this._updateLevel) this._remap(); 
             }
@@ -426,12 +426,12 @@ Amm.ArrayMapper.prototype = {
                     srcEntry[Amm.ArrayMapper._SRC_ITEM]
                 );
             }
-            changed = this._destEntries[i][Amm.ArrayMapper._FILTER_RESULT] !== newValue;
+            changed = srcEntry[Amm.ArrayMapper._SRC_FILTER_RESULT] !== newValue;
             if (changed && needNotifyInstantiator) {
                 affectedObjects.push(srcEntry[Amm.ArrayMapper._SRC_ITEM]);
                 newMatches.push(newValue);
             }
-            this._destEntries[i][Amm.ArrayMapper._FILTER_RESULT] = newValue;
+            srcEntry[Amm.ArrayMapper._SRC_FILTER_RESULT] = newValue;
         }
         this._applyFilter = false;
         if (affectedObjects.length) this._instantiator.setMatches(affectedObjects, newMatches);
@@ -615,7 +615,8 @@ Amm.ArrayMapper.prototype = {
         for (var i = 0, l = this._destEntries.length; i < l; i++) {
             var item = this._destEntries[i][Amm.ArrayMapper._DEST_ITEM];
             if (!item) continue;
-            if (this._instantiator) this._destruct(item, this._destEntries[i][Amm.ArrayMapper._FILTER_RESULT]);
+            var srcEntry = this._destEntries[i][Amm.ArrayMapper._DEST_REF_TO_SRC];
+            if (this._instantiator) this._destruct(item, srcEntry[Amm.ArrayMapper._SRC_FILTER_RESULT]);
             entries[i][Amm.ArrayMapper._DEST_ITEM] = null;
         }
     },
@@ -627,7 +628,7 @@ Amm.ArrayMapper.prototype = {
             if (entries[i][Amm.ArrayMapper._DEST_ITEM]) continue;
             if (!entries[i][Amm.ArrayMapper._DEST_IN_SLICE]) continue;
             var srcItem = entries[i][Amm.ArrayMapper._DEST_REF_TO_SRC][Amm.ArrayMapper._SRC_ITEM];
-            var filterResult = entries[i][Amm.ArrayMapper._FILTER_RESULT];
+            var filterResult = entries[i][Amm.ArrayMapper._DEST_REF_TO_SRC][Amm.ArrayMapper._SRC_FILTER_RESULT];
             var item = this._instantiator? this._construct(srcItem, filterResult) : srcItem;
             entries[i][Amm.ArrayMapper._DEST_ITEM] = item;
         }
@@ -704,7 +705,12 @@ Amm.ArrayMapper.prototype = {
             // code to create new item
             srcItem = changes.added[i][0];
             srcIndex = changes.added[i][1];
-            srcEntry = [ srcItem, srcIndex, null ];
+            srcEntry = [ 
+                srcItem, 
+                srcIndex, 
+                null, 
+                (filterResult = this._filter? this._getFilterValue(srcItem) : true) 
+            ];
             
             // we register item in filter or sort objects' first, then retrieve filter or sort value
             if (srcItem && (typeof srcItem === 'object')) {
@@ -716,7 +722,6 @@ Amm.ArrayMapper.prototype = {
             
             destEntry = [ 
                 srcEntry, 
-                (filterResult = this._filter? this._getFilterValue(srcItem) : true), 
                 this._getSortValue(srcItem, srcIndex), 
                 (inSlice = this._hasSlice? undefined: true),
                 null
@@ -740,7 +745,7 @@ Amm.ArrayMapper.prototype = {
             destItem = destEntry[Amm.ArrayMapper._DEST_ITEM];
             if (destItem !== undefined) {
                 if (destItem !== srcItem && this._instantiator)
-                    this._destruct(destItem, destEntry[Amm.ArrayMapper._FILTER_RESULT]);
+                    this._destruct(destItem, srcEntry[Amm.ArrayMapper._SRC_FILTER_RESULT]);
             }
             destEntry.splice(0, destEntry.length); // delete everything from destEntry
             destEntryIdx = Amm.Array.indexOf(destEntry, this._destEntries);
@@ -850,7 +855,7 @@ Amm.ArrayMapper.prototype = {
         // now recalc everything and replace dest items
         
         var destItems = [], i, filterResult, l, e,
-            FILTER_RESULT = Amm.ArrayMapper._FILTER_RESULT,
+            SRC_FILTER_RESULT = Amm.ArrayMapper._SRC_FILTER_RESULT,
             IN_SLICE = Amm.ArrayMapper._DEST_IN_SLICE,
             DEST_ITEM = Amm.ArrayMapper._DEST_ITEM,
             REF_TO_SRC = Amm.ArrayMapper._DEST_REF_TO_SRC,
@@ -876,7 +881,7 @@ Amm.ArrayMapper.prototype = {
         
         for (i = 0, l = this._destEntries.length; i < l; i++) { // find passed items
             e = this._destEntries[i];
-            filterResult = !this._filter || e[FILTER_RESULT];
+            filterResult = !this._filter || e[REF_TO_SRC][SRC_FILTER_RESULT];
             if (!filterResult) { // surely not in slice
                 e[IN_SLICE] = false;
                 if (e[DEST_ITEM]) {
@@ -913,7 +918,7 @@ Amm.ArrayMapper.prototype = {
             e = sliced[i];
             e[IN_SLICE] = true;
             if (!e[DEST_ITEM]) {
-                e[DEST_ITEM] = this._instantiator? this._construct(e[REF_TO_SRC][SRC_ITEM], e[FILTER_RESULT]) : e[REF_TO_SRC][SRC_ITEM];
+                e[DEST_ITEM] = this._instantiator? this._construct(e[REF_TO_SRC][SRC_ITEM], e[REF_TO_SRC][SRC_FILTER_RESULT]) : e[REF_TO_SRC][SRC_ITEM];
             }
             destItems.push(e[DEST_ITEM]);
         }
