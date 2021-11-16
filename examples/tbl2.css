@@ -1,6 +1,5 @@
 html {
     font-family: sans-serif;
-
 }
 
 html {
@@ -8,13 +7,13 @@ html {
     color: lightgray;
 }
 
-input {
+table.data input {
     color: white;
 }
 
-* {
+table.data, table.data * {
     box-sizing: border-box;
-}
+}   
 
 table.data {
     font-size: 0.9em;
@@ -52,7 +51,7 @@ tr.hl, tr.hl input {
     background-color: greenyellow;
     color: black;
 }
-td.hl0 div.cellContent {
+td.hl0 div.value {
     background-color: darkred;
     color: pink;
     padding: 0 2px;
@@ -66,29 +65,36 @@ td.hl2 {
     color: darkgreen;
 }
 
-.data .cellItems {
-    height: 100%;
-}
-
 .data input[type=text] {
     background: none;
     margin: -0.5em;
     padding: 0.5em;
+    border: none;
     width: calc(100% + 1em);
-}
-.data input[type=text]:focus {
-    /*outline: none;*/
-}
-tbody .activeRow > *:first-child {
-    border-left: 3px solid orangered;
+    height: calc(100% + 1em);
 }
 
-.data td.active, .data th.active {
-    border: 2px solid orangered;
+.activeRow > *:first-child {
+    border-left-color: orangered;
+}
+
+.activeRow > *:first-child .cellContent {
+    border-left: 2px solid orangered;
+    padding-left: calc(.5em - 2px);
 }
 
 .data thead th.activeColumn {
-    border-top: 3px solid orangered;
+    border-top-color: orangered;
+}
+
+.data thead th.activeColumn .cellContent {
+    border-top: 2px solid orangered;
+    padding-top: calc(.5em - 2px);
+}
+
+.data td.active .cellContent, .data th.active .cellContent {
+    border: 2px solid orangered;
+    padding: calc(.5em - 2px);
 }
 
 th {
@@ -167,4 +173,15 @@ th.draggableRow.active, th.draggableColumn.active > div:first-child {
 .data tr.dragDestAfter td, .data tr.dragDestAfter th {
     border-bottom: 2px solid lightskyblue;
 }
+
+    table.data
+,   table.data th
+,   table.data td
+,   table.data .cellContent
+,   table.data .cellContent .cellItems 
+{
+    height: 100%;
+} 
+
+
 

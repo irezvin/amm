@@ -13,7 +13,6 @@
             replyTime: 10,
             on__request: function(runningRequest, success, failure) {
                 var u = runningRequest.getConstRequest().getUri();
-                var tmp = new Amm.Remote.Uri(u);
                 requestsLog.push(u);
                 var xtra = { 
                     statusCode: httpCode,
@@ -1992,6 +1991,32 @@
         
         Amm.cleanup(groupModel, people.getItems(), people, reject);
         
+    });
+    
+    QUnit.test("Data: fake storage (testing purposes)", function(assert) {
+        var people = new MemStor({
+            autoInc: true,
+            primaryKey: 'id',
+            uniqueIndexes: ['email'],
+            metaProps: {
+                id: {},
+                firstName: {required: true},
+                lastName: {required: true},
+                email: {required: true},
+                phone: {def: ''},
+                notes: {def: ''}
+            }
+        });
+        var response;
+        response = people.create({firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '+321 123 456 7890'});
+        response = people.create({firstName: 'Jane', lastName: 'Doe', email: 'jane.doe@example.com', phone: '+321 123 456 7891'});
+        response = people.create({firstName: 'Mick', lastName: 'Douglas', email: 'mick.douglas@example.com', phone: '+321 456 012 0123'});
+        assert.deepEqual(people.getDataOf(people.find({lastName: 'Doe'})), 
+        [
+            {id: 1, firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '+321 123 456 7890', notes: ''},
+            {id: 2, firstName: 'Jane', lastName: 'Doe', email: 'jane.doe@example.com', phone: '+321 123 456 7891', notes: ''}
+        ]
+        );
     });
     
 }) ();

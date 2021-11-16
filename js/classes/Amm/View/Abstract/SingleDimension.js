@@ -144,7 +144,7 @@ Amm.View.Abstract.SingleDimension.prototype = {
     reportDimension: function() {
         var dim;
         if (!this._element || !this._property) return;
-        val = this.getDimensionValue();
+        var val = this.getDimensionValue();
         this._lockDimension++;
         try {
             Amm.setProperty(this._element, this._property, val);

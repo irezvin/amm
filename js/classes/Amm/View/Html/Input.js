@@ -42,6 +42,8 @@ Amm.View.Html.Input.prototype = {
             if (!this._blurTimeoutHandler) this._blurTimeoutHandler = function() { 
                 t._blurTimeoutId = null;
                 if (jQuery(t._htmlElement).is(':focus')) return;
+                // may happen when element got cleaned up while waiting for deferred event
+                if (!t._element) return; 
                 if (t._element.getFocusedView() === t)
                     t._element.setFocusedView(null);
             };

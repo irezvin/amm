@@ -119,7 +119,6 @@ $.extend( $.simulate.prototype, {
 				options.screenX, options.screenY, options.clientX, options.clientY,
 				options.ctrlKey, options.altKey, options.shiftKey, options.metaKey,
 				options.button, options.relatedTarget || document.body.parentNode );
-
 			// IE 9+ creates events with pageX and pageY set to 0.
 			// Trying to modify the properties throws an error,
 			// so we define getters to return the correct values.
@@ -178,6 +177,7 @@ $.extend( $.simulate.prototype, {
 				event.initKeyEvent( type, options.bubbles, options.cancelable, options.view,
 					options.ctrlKey, options.altKey, options.shiftKey, options.metaKey,
 					options.keyCode, options.charCode );
+                    
 			// initKeyEvent throws an exception in WebKit
 			// see: http://stackoverflow.com/questions/6406784/initkeyevent-keypress-only-works-in-firefox-need-a-cross-browser-solution
 			// and also https://bugs.webkit.org/show_bug.cgi?id=13368
@@ -200,6 +200,8 @@ $.extend( $.simulate.prototype, {
 			$.extend( event, options );
 		}
 
+        if (options.key) event.key = options.key;
+        
 		if ( !!/msie [\w.]+/.exec( navigator.userAgent.toLowerCase() ) || (({}).toString.call( window.opera ) === "[object Opera]") ) {
 			event.keyCode = (options.charCode > 0) ? options.charCode : options.keyCode;
 			event.charCode = undefined;

@@ -2271,7 +2271,306 @@
             
         }
         
+    });
+    
+    QUnit.test("Amm.View.Html.Table.SimpleKeyboardControl", function(assert) {
+    
+        var fx = jQuery('<div data-note="Amm.Table: Drag and Drop trait" style="position: fixed; left: 0px; top: 0px; height: 1000px; width: 1000px; z-index: 9999;"></div>');
+        fx.appendTo(document.body);
         
+        try {
+            // we need to have visible element inside the viewport 
+            // to have elementsFromPoint work properly
+            
+            var t = new Amm.Table.Table({
+                extraViews: ['Amm.View.Html.Table.SimpleKeyboardControl'],
+                extraTraits: ['Amm.Trait.Table.SimpleKeyboardControl'],
+                columns: {
+                    recordId: {caption: 'ID'},
+                    name: {},
+                    surname: {},
+                    age: {},
+                    fullName: {caption: 'Full Name', source: "this.name + ' ' + this.surname"}
+                },
+                header: {
+                    rows: ['Amm.Table.HeaderRow']
+                },
+            });
+            
+            window.d.t = t;
+            
+            var tableEd = new Amm.Element('<input data-amm-id="tableEd" type="text" data-amm-v="[v.Input, v.Visual]" />');
+
+            t.setEditor(tableEd);
+            
+            var evLog = [];
+            var handled = undefined;
+            
+            Amm.subUnsub(t, null, evLog, [
+               'navBeforeFirstRow',
+               'navPastLastRow',
+               'deleteItem',
+               'addBlankItem',
+               //'checkIsItemBlank',
+               'leaveBlankItem',
+               'pageDown',
+               'pageUp'
+            ], function() {
+                evLog.push(Amm.event.name);
+                if (handled !== undefined) {
+                    var l = arguments[arguments.length - 1];
+                    if (l && typeof l === 'object' && 'handled' in l) {
+                        l.handled = handled;
+                    };
+                }
+            });
+            
+            var items = new Amm.Collection({
+                instantiateOnAccept: true,
+                instantiator: new Amm.Instantiator.Proto({
+                    proto: {
+                        class: 'Amm.Data.Model',
+                        mm: {
+                            meta: {
+                                recordId: {},
+                                name: {},
+                                surname: {},
+                                age: {}
+                            }
+                        }
+                    },
+                    overrideProto: true
+                }),                
+                items: [
+                    {recordId: 1, name: 'John', surname: 'James', age: 20},
+                    {recordId: 2, name: 'Jane', surname: 'James', age: 25},
+                    {recordId: 3, name: 'Mike', surname: 'Doe', age: 52},
+                    {recordId: 4, name: 'Kate', surname: 'Doe', age: 48},
+                ],
+            });
+            
+            var key = TestUtils.key;
+            
+            t.setItems(items);
+            
+            fx.html('<div id="tbl"></div>');
+            
+            var v = new Amm.View.Html.Default({element: t, htmlElement: fx.find('#tbl')});
+            
+            var lastCellIdx = t.rows[0].cells.length - 1;
+            var lastRowIdx = t.rows.length - 1;
+            
+            t.rows[1].cells[2].setActive(true);
+                assert.ok(t.rows[1].cells[2].getActive(), "Initial cell placement");
+            
+            var node = fx.find('table')[0];
+            
+            key(node, "ArrowRight");
+                assert.ok(t.rows[1].cells[3].getActive(), 
+                    "ArrowRight - go to cell to the right");
+            
+            key(node, "ArrowLeft");
+                assert.ok(t.rows[1].cells[2].getActive(), 
+                    "ArrowLeft - go to cell to the left");
+            
+            key(node, "ArrowDown");
+                assert.ok(t.rows[2].cells[2].getActive(), 
+                    "ArrowDown - go to cell below");
+            
+            key(node, "ArrowUp");
+                assert.ok(t.rows[1].cells[2].getActive(), 
+                    "ArrowUp - go to cell above");
+            
+            key(node, "C-ArrowRight");
+                assert.ok(t.rows[1].cells[lastCellIdx].getActive(), 
+                    "C-ArrowRight - go to last cell in the row");
+            
+            key(node, "C-ArrowLeft");
+                assert.ok(t.rows[1].cells[0].getActive(), 
+                    "C-ArrowLeft - go to first cell in the row");
+            
+            key(node, "C-ArrowDown");
+                assert.ok(t.rows[lastRowIdx].cells[0].getActive(), 
+                    "C-ArrowDown - go to last row");
+            
+            key(node, "C-ArrowUp");
+                assert.ok(t.header.rows[0].cells[0].getActive(), 
+                    "C-ArrowUp - go to first row in first section");
+            
+            key(node, "End");
+                assert.ok(t.header.rows[0].cells[lastCellIdx].getActive(), 
+                    "End - go to last cell in the row");
+            
+            key(node, "Home");
+                assert.ok(t.header.rows[0].cells[0].getActive(), 
+                    "Home - go to first cell in the row");
+                    
+            key(node, "C-End");
+                assert.ok(t.rows[lastRowIdx].cells[lastCellIdx].getActive(),
+                    "C-End - go to last cell in last row");
+            
+            key(node, "C-Home");
+                assert.ok(t.header.rows[0].cells[0].getActive(),
+                    "C-Home - go to first cell in first row");
+                    
+            t.rows[1].cells[3].setActive(true);
+            key(node, "F2");
+                assert.ok(t.getActiveCell().getEditing(),
+                    "F2 begins editing of the active cell");
+                    
+            tableEd.setValue("Foobar");
+            key(node, "Enter");
+                assert.notOk(t.getActiveCell().getEditing(),
+                    "Enter finishes edit");
+                assert.deepEqual(t.getActiveCell().getValue(), "Foobar",
+                    "Enter confirms edit");
+            
+            key(node, "Enter");
+                assert.ok(t.getActiveCell().getEditing(),
+                    "Enter begins editing of the active cell");
+                    
+            tableEd.setValue("BazQuux");
+            key(node, "Escape");
+                assert.notOk(t.getActiveCell().getEditing(),
+                    "Escape finishes edit");
+                assert.deepEqual(t.getActiveCell().getValue(), "Foobar",
+                    "Escape cancels edit");
+                    
+            key(node, "a");
+                assert.ok(t.getActiveCell().getEditing(),
+                    "Start typing begins edit");
+                assert.deepEqual(tableEd.getValue(), "a",
+                    "Typed text is in the editor");
+                    
+            key(node, "F2");
+                assert.notOk(t.getActiveCell().getEditing(),
+                    "F2 ends edit");
+                assert.deepEqual(t.getActiveCell().getValue(), "a",
+                    "F2 confirms edit");
+                    
+            var oldLength = items.length;
+            evLog = [];
+                    
+            handled = true;
+            key(node, "C-Delete");
+                assert.ok(evLog[0] === "deleteItem", "deleteItem event");
+                assert.ok(items.length === oldLength, "deletion prevented: items unchanged");
+                
+            handled = false;
+            key(node, "C-Delete");
+                assert.ok(evLog[0] === "deleteItem", "deleteItem event");
+                assert.ok(items.length === oldLength - 1, "deletion not prevented: item deleted");
+            
+            key(node, "C-End");
+            oldLength = items.length;
+            handled = true;
+            evLog = [];
+            key(node, "ArrowDown");
+                assert.ok(evLog[0] === "navPastLastRow", "navPastLastRow event");
+                assert.ok(items.length === oldLength, "adding blank items prevented");
+                
+            handled = false;
+            evLog = [];
+            key(node, "ArrowDown");
+                assert.ok(evLog[0] === "navPastLastRow", "navPastLastRow event");
+                assert.ok(evLog[1] === "addBlankItem", "addBlankItem event");
+                assert.ok(items.length === oldLength + 1, "blank item added");
+            
+            handled = false;
+            evLog = [];
+            key(node, "ArrowUp");
+                assert.ok(evLog[0] === "deleteItem", "deleteItem event");
+                assert.ok(items.length === oldLength, "blank item deleted");
+                
+            handled = false;
+            evLog = [];
+            key(node, "ArrowDown");
+                assert.ok(evLog[0] === "navPastLastRow", "navPastLastRow event (2)");
+                assert.ok(evLog[1] === "addBlankItem", "addBlankItem event (2)");
+                assert.ok(items.length === oldLength + 1, "blank item added (2)");
+                
+            key(node, "ArrowLeft");
+            key(node, "F2");
+            tableEd.setValue(99);
+            key(node, "Enter");
+                assert.ok(items[items.length - 1].age == 99, 'Changes got to new item');
+            key(node, "ArrowUp");
+                assert.ok(items.length === oldLength + 1, "blank item (edited) remained");
+                
+            handled = true;
+            evLog = [];
+            key(node, "PageDown");
+                assert.deepEqual(evLog[0], "pageDown");
+            evLog = [];
+            key(node, "PageUp");
+                assert.deepEqual(evLog[0], "pageUp");
+            handled = true;
+                
+            var editorInput = jQuery(Amm.View.Html.findOuterHtmlElement(tableEd)).find('input').addBack('input')[0];
+                    
+            t.rows[1].cells[3].setActive(true);
+            key(node, "F2");
+                assert.ok(t.getActiveCell().getEditing(), "Cell is editing");
+            
+            editorInput.setSelectionRange(0, 0);
+            key(node, "ArrowLeft");
+                assert.ok(t.rows[1].cells[2].getActive(), 
+                    "ArrowLeft while editing: beginning of editor selection: go to prev cell");
+                assert.ok(t.rows[1].cells[2].getEditing(), 
+                    "Still editing");
+                
+            editorInput.setSelectionRange(0, 0);
+            key(node, "ArrowRight");
+                assert.ok(t.rows[1].cells[2].getActive(), 
+                    "ArrowRight while editing: beginning of editor selection: no navigation");
+                assert.ok(t.rows[1].cells[2].getEditing(),
+                    "Still editing");
+            
+            editorInput.setSelectionRange(editorInput.value.length, editorInput.value.length);
+            key(node, "ArrowRight");
+                assert.ok(t.rows[1].cells[3].getActive(), 
+                    "ArrowRight while editing: end of editor selection: go to next cell");
+                assert.ok(t.rows[1].cells[3].getEditing(),
+                    "Still editing");
+            
+            editorInput.setSelectionRange(0, 0);
+            key(node, "ArrowDown");
+                assert.ok(t.rows[1].cells[3].getActive(), 
+                    "ArrowDown while editing: beginning of editor selection: no navigation");
+                    
+            key(node, "ArrowUp");
+                assert.ok(t.rows[0].cells[3].getActive(),
+                    "ArrowUp while editing: beginning of editor selection: go to prev row");
+            
+            editorInput.setSelectionRange(editorInput.value.length, editorInput.value.length);
+            key(node, "ArrowDown");
+                assert.ok(t.rows[1].cells[3].getActive(), 
+                    "ArrowDown while editing: end of editor selection: go to next row");
+                
+            // this led to exception before - added tests
+            handled = false;
+            key(node, "Escape");
+            key(node, "C-ArrowRight");
+                assert.ok(t.rows[1].cells[lastCellIdx].getActive(), 
+                    "C-ArrowRight: last col of the row");
+                
+            key(node, "C-ArrowRight");
+            oldLength = items.length;
+            
+                assert.ok(t.rows[1].cells[lastCellIdx].getActive(),  
+                    "Double C-ArrowRight: still on last column of same row");
+                assert.ok(oldLength == items.length,
+                    "Double C-ArrowRight: no new items added");
+            
+                    
+            Amm.cleanup(t, tableEd);
+            
+        } finally {
+            
+            fx.remove();
+        
+        }
+       
     });
     
 }) ();
