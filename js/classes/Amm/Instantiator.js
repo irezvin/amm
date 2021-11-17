@@ -18,6 +18,8 @@ Amm.Instantiator.prototype = {
     
     _reuseInstances: false,    
     
+    _numReused: 0,
+    
     beginUpdate: function() {
         if (!this._toDispose) this._toDispose = {};
         this._updateLevel++;
@@ -40,6 +42,7 @@ Amm.Instantiator.prototype = {
     
     _reuse: function(match) {
         if (this._toDispose && this._toDispose[match] && this._toDispose[match].length) {
+            this._numReused++;
             return this._toDispose[match].shift();
         }
     },

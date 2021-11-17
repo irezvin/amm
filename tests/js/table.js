@@ -2573,4 +2573,85 @@
        
     });
     
+    QUnit.test("Table - reuse{Row,Cell}Instances", function(assert) {
+        
+        var t = new Amm.Table.Table({
+            columns: {
+                a: {},
+                b: {},
+            },
+            header: {
+                rows: ['Amm.Table.HeaderRow']
+            },
+            footer: {
+                rows: ['Amm.Table.HeaderRow']
+            },
+        });
+        
+        window.d.t = t;
+        
+        var set1 = Amm.constructMany([
+            {props: {a: 'a1', b: 'b1', c: 'c1', d: 'd1', e: 'e1'}},
+            {props: {a: 'a2', b: 'b2', c: 'c2', d: 'd2', e: 'e2'}},
+            {props: {a: 'a3', b: 'b3', c: 'c3', d: 'd3', e: 'e3'}},
+            {props: {a: 'a4', b: 'b4', c: 'c4', d: 'd4', e: 'e4'}},
+        ], 'Amm.Element');
+        
+        var set2 = Amm.constructMany([
+            {props: {a: 'a5', b: 'b5', c: 'c5', d: 'd5', e: 'e5'}},
+            {props: {a: 'a6', b: 'b6', c: 'c6', d: 'd6', e: 'e6'}},
+            {props: {a: 'a7', b: 'b7', c: 'c7', d: 'd7', e: 'e7'}},
+            {props: {a: 'a8', b: 'b8', c: 'c8', d: 'd8', e: 'e8'}},
+        ], 'Amm.Element');
+        
+        var colSet1 = {a: {}, b: {}};
+        var colSet2 = {c: {}, d: {}};
+        
+        var items = new Amm.Collection(set1);
+        
+        t.setItems(items);
+            
+        t._rowMapper.getInstantiator()._numReused = 0;
+        
+        t.setReuseRowInstances(false);
+        
+        t.items.setItems(set2);
+            assert.equal(t._rowMapper.getInstantiator()._numReused, 0, 
+                'Re-usage of row instances disabled (1)');
+            
+        t.items.setItems(set1);
+            assert.equal(t._rowMapper.getInstantiator()._numReused, 0, 
+                'Re-usage of row instances disabled (2)');
+        
+        t.setReuseRowInstances(true);
+        
+        t.items.setItems(set2);
+            assert.equal(t._rowMapper.getInstantiator()._numReused, 4, 
+                'Re-usage of row instances works (1)');
+            
+        t.items.setItems(set1);
+            assert.equal(t._rowMapper.getInstantiator()._numReused, 8, 
+                'Re-usage of row instances works (2)');
+        
+        t.setReuseCellInstances(false);
+            assert.equal(t.rows[0]._cellMapper.getInstantiator().getReuseInstances(), false, 
+                'Re-usage of cell instances propagates (1)');
+            
+        t.rows[0]._cellMapper.getInstantiator()._numReused = 0;
+        t.setColumns(colSet2);
+            assert.equal(t.rows[0]._cellMapper.getInstantiator()._numReused, 0, 
+                'Re-usage of row instances disabled');
+
+        t.setReuseCellInstances(true);
+            assert.equal(t.rows[0]._cellMapper.getInstantiator().getReuseInstances(), true, 
+                'Re-usage of cell instances propagates (2)');
+            
+        t.setColumns(colSet1);
+            assert.equal(t.rows[0]._cellMapper.getInstantiator()._numReused, 2, 
+                'Re-usage of cell instances works');
+                
+        Amm.cleanup(t, set1, set2);
+
+    });
+    
 }) ();

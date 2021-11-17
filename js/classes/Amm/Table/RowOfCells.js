@@ -8,7 +8,8 @@ Amm.Table.RowOfCells = function(options) {
             
             proto: this._cellProto,
             
-            reuseInstances: true,
+            reuseInstances: this._table? 
+                this._table.getReuseCellInstances() : false,
             
             requiredClass: 'Amm.Table.Cell',
             
@@ -62,10 +63,21 @@ Amm.Table.RowOfCells.prototype = {
         }
     },
     
+    _updateReuseCellInstances: function(reuseCellInstances) {
+        if (!this._cellMapper) return;
+        this._cellMapper.getInstantiator().setReuseInstances(reuseCellInstances);
+    },
+    
     _setTable: function(table, oldTable) {
         if (!Amm.Table.Row.prototype._setTable.call(this, table, oldTable)) return;
+        Amm.subUnsub(table, oldTable, this, 'reuseCellInstancesChange', this._updateReuseCellInstances);
         if (!table) this._cellMapper.setSrc(null);
-        else this._cellMapper.setSrc(table.getEnabledColumns());
+        else {
+            this._cellMapper.setSrc(table.getEnabledColumns());
+            this._cellMapper.getInstantiator().setReuseInstances(
+                this._table.getReuseCellInstances()
+            );
+        }
     },
     
     setCells: function(cells) {
@@ -107,7 +119,13 @@ Amm.Table.RowOfCells.prototype = {
     },
     
     rebuildCells: function(cells) {
-        if (this._cellMapper) this._cellMapper.rebuildObjects(Amm.getProperty(cells, 'column'));
+        if (!this._cellMapper) return;
+        if (this._table) {
+            this._cellMapper.getInstantiator().setReuseInstances(
+                this._table.getReuseCellInstances()
+            );
+        }
+        this._cellMapper.rebuildObjects(Amm.getProperty(cells, 'column'));
     },
     
 };

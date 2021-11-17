@@ -57,7 +57,7 @@ Amm.Table.Table = function(options) {
             proto: {
                 class: 'Amm.Table.RowOfCells'
             },
-            reuseInstances: true,
+            reuseInstances: this._reuseRowInstances,
             protoCallback: this._rowProtoCallback,
             protoCallbackScope: this,
             instanceCallback: this.outRowInstanceCallback,
@@ -228,6 +228,10 @@ Amm.Table.Table.prototype = {
     _preserveActiveCellAddress: true,
     
     _lastActiveCellAddress: null,
+
+    _reuseRowInstances: true,
+
+    _reuseCellInstances: true,
     
     extraViews: null,
 
@@ -901,7 +905,38 @@ Amm.Table.Table.prototype = {
             }
         }
         return res;
-    }
+    },
+    
+    setReuseRowInstances: function(reuseRowInstances) {
+        reuseRowInstances = !!reuseRowInstances;
+        var oldReuseRowInstances = this._reuseRowInstances;
+        if (oldReuseRowInstances === reuseRowInstances) return;
+        this._reuseRowInstances = reuseRowInstances;
+        if (this._rowMapper) this._rowMapper.getInstantiator().setReuseInstances(reuseRowInstances);
+        this.outReuseRowInstancesChange(reuseRowInstances, oldReuseRowInstances);
+        return true;
+    },
+
+    getReuseRowInstances: function() { return this._reuseRowInstances; },
+
+    outReuseRowInstancesChange: function(reuseRowInstances, oldReuseRowInstances) {
+        this._out('reuseRowInstancesChange', reuseRowInstances, oldReuseRowInstances);
+    },
+
+    setReuseCellInstances: function(reuseCellInstances) {
+        reuseCellInstances = !!reuseCellInstances;
+        var oldReuseCellInstances = this._reuseCellInstances;
+        if (oldReuseCellInstances === reuseCellInstances) return;
+        this._reuseCellInstances = reuseCellInstances;
+        this.outReuseCellInstancesChange(reuseCellInstances, oldReuseCellInstances);
+        return true;
+    },
+
+    getReuseCellInstances: function() { return this._reuseCellInstances; },
+
+    outReuseCellInstancesChange: function(reuseCellInstances, oldReuseCellInstances) {
+        this._out('reuseCellInstancesChange', reuseCellInstances, oldReuseCellInstances);
+    },
 
 };
 
