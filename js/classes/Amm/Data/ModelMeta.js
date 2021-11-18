@@ -9,6 +9,7 @@ Amm.Data.ModelMeta = function(model, options) {
     this._m = model;
     model._mm = this;
     Object.defineProperty(this, 'm', {value: model, writable: false});
+    Amm.Data.MetaProvider.call(this);
     Amm.WithEvents.call(this, options);
 };
 
@@ -538,20 +539,20 @@ Amm.Data.ModelMeta.prototype = {
         var modelValidators = this.getModelValidators(true);
         if (!modelValidators) return;
         for (var key in modelValidators) if (modelValidators.hasOwnProperty(key)) {
-            var vals = modelValidators[key];
+            var validators = modelValidators[key];
             var error;
-            for (var j = 0, l = vals.length; j < l; j++) {
-                var val = vals[j];
-                if (val['Amm.Expression']) { // check for cached function
-                    if (!val.__func) val.__func = val.toFunction();
-                    val.__func.env.expressionThis = this._m;
-                    error = val.__func();
+            for (var j = 0, l = validators.length; j < l; j++) {
+                var validator = validators[j];
+                if (validator['Amm.Expression']) { // check for cached function
+                    if (!validator.__func) validator.__func = validator.toFunction();
+                    validator.__func.env.expressionThis = this._m;
+                    error = validator.__func();
                 }
-                else if (val['Amm.Validator']) {
-                    error = val.getError(this);
+                else if (validator['Amm.Validator']) {
+                    error = validator.getError(this);
                 }
-                else if (typeof val === 'function') { // check it is an expression
-                    error = val.call(this._m);
+                else if (typeof validator === 'function') { // check it is an expression
+                    error = validator.call(this._m);
                 } else {
                     throw Error("modelValidators['" + key + "'] must be either a function, an Amm.Expression or an Amm.Validator; provided: " 
                         + Amm.describeType(modelValidators[key]));
@@ -1004,13 +1005,7 @@ Amm.Data.ModelMeta.prototype = {
     _out: function() {
         if (this._m._init) return;
         Amm.WithEvents.prototype._out.apply(this, Array.prototype.slice.call(arguments));
-    },
-    
-//    outMetaChange: function(meta, oldMeta, field, property, value, oldValue) {
-//        Amm.Data.MetaProvider.prototype.outMetaChange.apply(this, Array.prototype.slice.apply(arguments));
-//        this.outAnyChange('metaChange');
-//    }
-    
+    },    
     
 };
 

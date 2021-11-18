@@ -26,7 +26,7 @@ Amm.Data.Mapper.prototype = {
      */
     _key: 'id',
     
-    _recordPrototype: null,
+    _recordOptions: null,
     
     /**
      * Name or constructor of objects that are created by this mapper or associated with it.
@@ -67,16 +67,16 @@ Amm.Data.Mapper.prototype = {
 
     getId: function() { return this._id; },
 
-    setRecordPrototype: function(recordPrototype) {
-        if (!recordPrototype) recordPrototype = {};
-        var oldRecordPrototype = this._recordPrototype;
-        if (oldRecordPrototype === recordPrototype) return;
-        if (oldRecordPrototype !== null) throw Error("can setRecordPrototype() only once");
-        this._recordPrototype = recordPrototype;
+    setRecordOptions: function(recordOptions) {
+        if (!recordOptions) recordOptions = {};
+        var oldRecordOptions = this._recordOptions;
+        if (oldRecordOptions === recordOptions) return;
+        if (oldRecordOptions !== null) throw Error("can setRecordOptions() only once");
+        this._recordOptions = recordOptions;
         return true;
     },
 
-    getRecordPrototype: function() { return this._recordPrototype? Amm.override({}, this._recordPrototype) : {}; },
+    getRecordOptions: function() { return this._recordOptions? Amm.override({}, this._recordOptions) : {}; },
     
     setKey: function(key) {
         var oldKey = this._key;
@@ -97,24 +97,22 @@ Amm.Data.Mapper.prototype = {
 
     getRecordClass: function() { return this._recordClass; },
     
-    construct: function(objectOrArray) {
-        if (!objectOrArray || typeof objectOrArray !== 'object')
-            throw Error("`objectOrArray` must be an object");
-        
-        if (objectOrArray instanceof Array || objectOrArray['Amm.Array']) {
-            var res = [];
-            for (var i = 0, l = objectOrArray.length; i < l; i++) {
-                res.push(this.construct(objectOrArray[i]));
-            }
-            return res;
+    construct: function(object, match) {
+        if (!object || typeof object !== 'object' || Amm.getClass('object')) {
+            throw Error("`object` must be a non-null javascript hash");
         }
-        if (Amm.getClass(objectOrArray)) throw Error("`objectOrArray` must have no class");
-        var cl = this.getRecordClass() || Amm.Data.Record, constructor = Amm.getFunction(cl);
-        var proto = Amm.override({}, objectOrArray);
-        proto._mapper = this;
-        return new constructor (proto);
+        var options = {};
+        options.__mapper = this;
+        if (!options.mm) options.mm = {};
+        options.mm.metaProvider = this;
+        Amm.override(options, object);
+        return Amm.constructInstance(options, this._recordClass || 'Amm.Data.Record');
     },
-
+    
+    destruct: function(object, match) {
+        object.cleanup();
+    },
+    
     setUri: function(uri) {
         var oldUri = this._uri;
         if (oldUri === uri) return;
@@ -195,5 +193,6 @@ Amm.Data.Mapper.prototype = {
 };
 
 Amm.extend(Amm.Data.Mapper, Amm.WithEvents);
+Amm.extend(Amm.Data.Mapper, Amm.Instantiator);
 Amm.extend(Amm.Data.Mapper, Amm.Data.MetaProvider);
 

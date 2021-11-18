@@ -72,6 +72,4 @@ Amm.Instantiator.prototype = {
 
     getReuseInstances: function() { return this._reuseInstances; },
     
-
-
 };

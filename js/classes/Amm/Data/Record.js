@@ -31,7 +31,7 @@ Amm.Data.Record.prototype = {
                 + "; required class is " + requiredClass
             );
         }
-        options = Amm.override(this._mapper.getRecordPrototype(), options);
+        options = Amm.override(this._mapper.getRecordOptions(), options);
         delete options.__mapper;
         return options;
         

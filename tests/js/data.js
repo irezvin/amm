@@ -1067,7 +1067,7 @@
         });
        
         var m = new Amm.Data.Mapper({
-            recordPrototype: ovr,
+            recordOptions: ovr,
             uri: 'dummy.php',
             transactionPrototypes: {
                 'default': {
@@ -2017,6 +2017,45 @@
             {id: 2, firstName: 'Jane', lastName: 'Doe', email: 'jane.doe@example.com', phone: '+321 123 456 7891', notes: ''}
         ]
         );
+    });
+    
+    QUnit.test('Mapper: instantiator features & meta-properties sharing', function(assert) {
+        
+        var m = new Amm.Data.Mapper({
+            meta: {
+                name:    { label: 'name' },
+                surname: { label: 'surname' },
+                notes:   { label: 'notes' },
+            }
+        });
+        
+        var c = new Amm.Collection({instantiator: m, instantiateOnAccept: true});
+        
+        var r1 = c.accept({name: 'John', surname: 'Doe', notes: 'The Chosen One'});
+        var r2 = c.accept({name: 'Jane', surname: 'Doe', notes: 'The Spouse'});
+        var r3 = c.accept({name: 'Susan', surname: 'Moo', notes: 'The Other'});
+        
+        assert.deepEqual(r1.mm.getData(), {
+            name: 'John', surname: 'Doe', notes: 'The Chosen One'
+        }, 'Data fields were set during instantiation');
+        
+        assert.ok(r1.mm.getMeta('name') === r2.mm.getMeta('name'),
+            'Same meta instances shared by two record instances');
+        
+        assert.ok(r2.mm.getMeta('name') === r3.mm.getMeta('name'),
+            'Same meta instances shared by two record instances (2)');
+        
+        r1.mm.setMeta('The Name', 'name', 'label');
+        
+        assert.ok(r1.mm.getMeta('name') !== r2.mm.getMeta('name'),
+            'Field meta changed for single instance');
+        
+        assert.ok(r1.mm.getMeta('name', 'label') === 'The Name',
+            'Meta property of field meta changed');
+        
+        assert.ok(r2.mm.getMeta('name') === r3.mm.getMeta('name'),
+            'Same meta instances still shared by other instances (2)');
+        
     });
     
 }) ();
