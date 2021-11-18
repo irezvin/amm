@@ -807,8 +807,102 @@
         assert.deepEqual(Amm.Util.getClassNameOrPart('foo bar baz quux', 'quux qwerty'), false,
             'getClassNameOrPart: mutliple parts (2)');
             
-            
+    });
+    
+    QUnit.test("Amm.dom", function(assert) {
+
+        var h = Amm.dom( 
+            {$: 'div', id: 'foo', class: 'bar', 'data-amm-e': {'xx': 'yy'}, zz: false, yy: true, $$: [ 
+                'baz', 
+                {$: 'div', 'class': 'zz', $$: [ 
+                    'aa', 
+                    {$: 'img', 'style': {
+                            background: 'none', 
+                            border: {
+                                left: {
+                                    style: 'dashed', 
+                                    color: 'blue'
+                                }
+                            }
+                    }, $$: null}, 
+                    {$: 'textarea', $noIndent: true, $$: 'some pretty text here'} 
+                ]}
+        ]}, false, null, true);
+
+            assert.equal(h.outerHTML, ""
+                +   '<div id="foo" class="bar" data-amm-e="{&quot;xx&quot;:&quot;yy&quot;}" yy="yy">'
+                +   'baz'
+                +   '<div class="zz">'
+                +   'aa'
+                +   '<img style="background: none; border-left-style: dashed; border-left-color: blue; ">'
+                +   '<textarea>some pretty text here</textarea>'
+                +   '</div>'
+                +   '</div>'
+
+                ,  "Basic Amm.dom test (like Amm.html)"
+            );
+    
+        var json = {content: 'notSerialized'};
+        var serialized = {content: 'serialized'};
+    
+        var clicked = null;
+    
+        var outNodes = {};
         
+        var overrides = {
+            inner: {
+                style: {
+                    border: {
+                        right: '1px solid green'
+                    }
+                },
+                $$: [
+                    '<h1>Some content inside</h1>'
+                ]
+            }
+        };
+        
+        var dataDom = Amm.dom({
+            $: 'div',
+            _id: 'outer',
+            data_amm_json: json, 
+            data_foo: serialized,
+            onclick: function() {
+                clicked = this;
+            },
+            $$: [
+                { $: 'div', _id: 'inner', 
+                    style: {
+                        font_weight: 'bold', 
+                        border: {
+                            left: '1px solid red', 
+                            right: '1px solid orange',
+                        }
+                    }
+                }
+            ]
+        }, false, outNodes, overrides);
+        
+        assert.equal(dataDom.getAttribute('data-foo'), JSON.stringify(serialized),
+            "regular data attributes are serialized");
+        assert.equal(dataDom.getAttribute('data-amm-json'), '',
+            "data-amm-## attributes are empty");
+        assert.ok(jQuery(dataDom).data('x-data-amm-json') === json,
+            "x-data-amm-## fields are added via jQuery data() API and contain links to objects");
+        
+        jQuery(dataDom).simulate('click');
+            assert.ok(clicked === dataDom, 'onclick handler was assigned');
+            
+        assert.ok(outNodes.outer === dataDom, 
+            'retRefs work (1)');
+        assert.ok(outNodes.inner === dataDom.firstChild,
+            'retRefs work (2)');
+        assert.equal(dataDom.firstChild.style.borderRightColor, 'green',
+            'overrides work (1)');
+            
+        assert.equal(dataDom.firstChild.innerHTML, overrides['inner']['$$'][0],
+            'overrides work (2)');
+
     });
     
 }) ();

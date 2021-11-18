@@ -222,12 +222,25 @@ Amm = {
     },
     
     overrideRecursive: function(modifiedObject, overrider, noOverwrite, deduplicate, detectInstances) {
+        var spec = Amm.overrideRecursive.special;
         if (detectInstances === undefined) detectInstances = true;
         if (typeof modifiedObject !== 'object' || typeof overrider !== 'object')
             throw Error('Both modifiedObject and overrider must be objects');
 
         for (var i in overrider) if (overrider.hasOwnProperty(i)) {
-            var recurse = (typeof modifiedObject[i] === 'object' && typeof overrider[i] === 'object');
+            var to = typeof overrider[i] === 'object';
+            if (to && overrider[i] instanceof spec) {
+                if (overrider[i].remove) {
+                    delete modifiedObject[i];
+                } else if (overrider[i].replace) {
+                    modifiedObject[i] = overrider[i].with;
+                } else if (overrider[i].func) {
+                    var scope = overrider[i].scope || window;
+                    overrider[i].func.call(scope, i, modifiedObject, overrider);
+                }
+                continue;
+            }
+            var recurse = (typeof modifiedObject[i] === 'object' && to);
             if (recurse && detectInstances) {
                 if (typeof detectInstances === 'function') {
                     var ret = detectInstances(modifiedObject[i], overrider[i], noOverwrite, deduplicate, detectInstances);
@@ -1065,6 +1078,7 @@ Amm = {
                     var mkStyle;
                     mkStyle = function (h, v) {
                         var res = '';
+                        h = h.replace(/_/g, '-');
                         if (!v || typeof v !== 'object') return h + ': ' + v + '; ';
                         if (v instanceof Array) return v.join(' ');
                         if (h.length) h += '-';
@@ -1099,16 +1113,17 @@ Amm = {
     },
 
     /**
-     * Same as Amm.html, but directly produces DOM nodes, so they don't need to be parsed by Jquery
-     * 
-     * TODO: 
-     * -    directly store JSON (retrievable by Builder), 
-     * -    assign functions to event handlers, 
-     * -    feature to save references to tagged elements in external hash, 
-     * -    feature to provide overrides of tagged element prototypes in external hash
+     * Same as Amm.html, but directly produces DOM nodes, so they don't need to be parsed by Jquery.
+     * References to created items with _id key will be put into `outNodes`.
+     * Definitions of the elements with matched _id key will be overridden by respective value
+     * in `overrides` object by Amm.overrideRecursive.
      */
-    dom: function(definition, dontReplaceUnderscores, outNodes, stringifyJson) {
+    dom: function(definition, dontReplaceUnderscores, outNodes, stringifyJson, overrides) {
         var res, i, l;
+        if (stringifyJson && typeof stringifyJson === 'object' && overrides === undefined) {
+            overrides = stringifyJson;
+            stringifyJson = false;
+        }
         if (!definition || typeof definition !== 'object') {
             definition = '' + definition;
             if (definition[0] === '<' && definition[definition.length - 1] === '>') return jQuery(definition).get();
@@ -1117,11 +1132,15 @@ Amm = {
         if (definition instanceof Array) {
             res = [];
             for (i = 0, l = definition.length; i < l; i++) {
-                res.push(Amm.dom(definition[i], dontReplaceUnderscores, outNodes));
+                res.push(Amm.dom(definition[i], dontReplaceUnderscores, outNodes, stringifyJson, overrides));
             }
             return res;
         }
         if (!definition.$) throw Error ("`$` (tag name) must be present in attribute definition");
+        if (overrides && ('_id' in definition) && definition._id in overrides && overrides[definition._id] !== definition) {
+            definition = Amm.overrideRecursive({}, definition, false, false, true);
+            definition = Amm.overrideRecursive(definition, overrides[definition._id], false, true, true);
+        }
         res = document.createElement(definition.$);
         for (i in definition) if (definition.hasOwnProperty(i)) {
             var nativeJson = false;
@@ -1134,6 +1153,7 @@ Amm = {
                     var mkStyle;
                     mkStyle = function (h, v) {
                         var res = '';
+                        h = h.replace(/_/g, '-');
                         if (!v || typeof v !== 'object') return h + ': ' + v + '; ';
                         if (v instanceof Array) return v.join(' ');
                         if (h.length) h += '-';
@@ -1172,9 +1192,25 @@ Amm = {
         if (!definition.$$) {
             return res;
         }
-        var children = Amm.dom(definition.$$ instanceof Array? definition.$$ : [definition.$$], dontReplaceUnderscores, outNodes, stringifyJson);
-        for (i = 0, l = children.length; i < l; i++) res.appendChild(children[i]);
+        var children = Amm.dom(definition.$$ instanceof Array? definition.$$ : [definition.$$],
+            dontReplaceUnderscores, outNodes, stringifyJson, overrides);   
+        for (i = 0, l = children.length; i < l; i++) {
+            if ((children[i] instanceof Array)) {
+                for (var j = 0, ll = children[i].length; j < ll; j++) {
+                    res.appendChild(children[i][j]);
+                }
+            } else {
+                 res.appendChild(children[i]);
+            }
+        }
         return res;
+    },
+    
+    stringifyDomJson: function(dom) {
+        jQuery(dom).find('*').addBack().each(function(idx, element) {
+            var a = jQuery(element).data();
+            //for (var i in data)
+        });
     },
     
     getHtmlElements: function(elementOrHTMLElement) {
@@ -1279,6 +1315,22 @@ Amm = {
             && ('parentNode' in object);
     }
     
+};
+
+Amm.overrideRecursive.special 
+    = function(what, scope) 
+{
+        
+    if (!arguments.length) {
+        this.remove = true;
+        return this;
+    }
+    if (typeof what === 'function') {
+        this.func = what;
+        this.scope = scope;
+        return this;
+    }
+    this.replace = what;
 };
 
 Amm.event = null;
