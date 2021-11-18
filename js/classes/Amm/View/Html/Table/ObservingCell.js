@@ -9,8 +9,12 @@ Amm.View.Html.Table.ObservingCell.prototype = {
 
     'Amm.View.Html.Table.ObservingCell': '__CLASS__',
 
-    setVValue: function(value) {
-        this._htmlElement.firstChild.firstChild.innerHTML = value;
+    setVDecoratedValue: function(decoratedValue) {
+        if (decoratedValue && decoratedValue instanceof Object && (decoratedValue.jquery || 'nodeType' in decoratedValue && 'parentNode' in decoratedValue)) {
+            jQuery(this._htmlElement.firstChild.firstChild).empty().append(decoratedValue);
+        } else {
+            this._htmlElement.firstChild.firstChild.innerHTML = decoratedValue;
+        }
     },
 
     setVValueVisible: function(visible) {

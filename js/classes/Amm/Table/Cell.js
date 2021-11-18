@@ -10,6 +10,12 @@ Amm.Table.Cell.prototype = {
 
     _value: null,
 
+    _decoratedValue: null,
+    
+    _decorator: null,
+    
+    _decoratorIsOwn: false,
+
     _table: null,
 
     _column: null,
@@ -93,17 +99,29 @@ Amm.Table.Cell.prototype = {
         Amm.subUnsub(column, oldColumn, this, {
             'displayOrderChange': 'handleColumnDisplayOrderChange',
             'visibleChange': 'handleColumnVisibleChange',
+            'decoratorChange': 'handleColumnDecoratorChange',
             'idChange': 'setId',
         });
         if (column) {
             this.setDisplayOrder(column.getDisplayOrder());
             this.setId(column.getId());
         }
+        if (!this._decoratorIsOwn) {
+            this.handleColumnDecoratorChange(column? column.getDecorator() : null);
+        }
         this.handleColumnVisibleChange();
     },
 
     handleColumnDisplayOrderChange: function (v) {
         this.setDisplayOrder(v);
+    },
+    
+    handleColumnDecoratorChange: function(dec) {
+        if (dec === this._decorator || this._decoratorIsOwn) return;
+        var old = this._decorator;
+        this._decorator = dec;
+        this.outDecoratorChange(dec, old);
+        this._updateDecoratedValue();
     },
     
     setOwnClassName: function(ownClassNameOrToggle, part) {
@@ -150,6 +168,7 @@ Amm.Table.Cell.prototype = {
             return;
         this._value = value;
         this.outValueChange(value, oldValue);
+        this._updateDecoratedValue();
         return true;
     },
 
@@ -161,6 +180,51 @@ Amm.Table.Cell.prototype = {
         this._out('valueChange', value, oldValue);
     },
     
+    setDecoratedValue: function(decoratedValue) {
+        console.warn("setDecoratedValue() has no effect");
+    },
+
+    getDecoratedValue: function() { return this._decoratedValue; },
+    
+    _updateDecoratedValue: function() {
+        var oldVal = this._decoratedValue;
+        var newVal = this._decorator? this._decorator.decorate(this._value) : this._value;
+        if (newVal === oldVal) return;
+        this._decoratedValue = newVal;
+        this.outDecoratedValueChange(newVal, oldVal);
+    },
+
+    outDecoratedValueChange: function(decoratedValue, oldDecoratedValue) {
+        this._out('decoratedValueChange', decoratedValue, oldDecoratedValue);
+    },
+
+    setDecorator: function(decorator) {
+        var oldDecorator = this._decorator;
+        if (oldDecorator === decorator) return;
+        if (typeof decorator === 'function') {
+            if (this._decorator && this._decorator.decorate === decorator) return; // Same fn
+            decorator = new Amm.Decorator(decorator);
+        } else {
+            decorator = Amm.constructInstance(decorator, 'Amm.Decorator');
+        }
+        if (decorator === undefined || decorator && this._column && this._column.getDecorator() === decorator) {
+            this._decoratorIsOwn = false;
+            if (decorator === undefined && this._column) decorator = this._column.getDecorator();
+        } else {
+            this._decoratorIsOwn = true;
+        }
+        this._decorator = decorator;
+        this.outDecoratorChange(decorator, oldDecorator);
+        this._updateDecoratedValue();
+        return true;
+    },
+
+    getDecorator: function() { return this._decorator; },
+
+    outDecoratorChange: function(decorator, oldDecorator) {
+        this._out('decoratorChange', decorator, oldDecorator);
+    },
+
     setItem: function (item) {
         var oldItem = this._item;
         if (oldItem === item)

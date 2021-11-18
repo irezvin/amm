@@ -1177,6 +1177,10 @@ Amm = {
                 if (outNodes) outNodes[attrValue] = res;
                 continue;
             }
+            if (i === '_text') {
+                res.textContent = attrValue;
+                continue;
+            }
             if (i === '_html') {
                 res.innerHTML = attrValue;
                 continue;

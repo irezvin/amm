@@ -35,6 +35,8 @@ Amm.Table.Column.prototype = {
 
     _draggable: null,
     
+    _decorator: null,
+
     _getDefaultTraits: function(options) {
         return [Amm.Trait.Visual];
     },
@@ -305,7 +307,27 @@ Amm.Table.Column.prototype = {
         res = get.prop('table').prop('columnsResizable').val();
         return !!res;
     },
+    
+    setDecorator: function(decorator) {
+        var oldDecorator = this._decorator;
+        if (oldDecorator === decorator) return;
+        if (typeof decorator === 'function') {
+            if (this._decorator && this._decorator.decorate === decorator) return; // Same fn
+            decorator = new Amm.Decorator(decorator);
+        } else {
+            decorator = Amm.constructInstance(decorator, 'Amm.Decorator');
+        }
+        this._decorator = decorator;
+        this.outDecoratorChange(decorator, oldDecorator);
+        return true;
+    },
 
+    getDecorator: function() { return this._decorator; },
+
+    outDecoratorChange: function(decorator, oldDecorator) {
+        this._out('decoratorChange', decorator, oldDecorator);
+    },
+    
 };
 
 Amm.extend(Amm.Table.Column, Amm.Element);

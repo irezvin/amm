@@ -133,20 +133,6 @@ Amm.Table.ObservingCell.prototype = {
         this.setValue(value);
     },
     
-    setValue: function(value) {
-        var oldValue = this._value;
-        if (oldValue === value) return;
-        this._value = value;
-        this.outValueChange(value, oldValue);
-        return true;
-    },
-
-    getValue: function() { return this._value; },
-
-    outValueChange: function(value, oldValue) {
-        this._out('valueChange', value, oldValue);
-    },
-
     _clenup_ObservingCell: function() {
         this._unobserve();
         this.setItem(null);

@@ -2583,9 +2583,6 @@
             header: {
                 rows: ['Amm.Table.HeaderRow']
             },
-            footer: {
-                rows: ['Amm.Table.HeaderRow']
-            },
         });
         
         window.d.t = t;
@@ -2652,6 +2649,80 @@
                 
         Amm.cleanup(t, set1, set2);
 
+    });
+    
+    QUnit.test("Table.Cell: decorator, decoratedValue", function(assert) {
+       
+        var decSimple = function(v) { return '*' + v + '*'};
+       
+        // decorator function
+        var decAddress = function(addr) {
+            return Amm.dom({$: 'a', href: '//' + addr, _text: addr});
+        };
+        
+        // decorator instance
+        var decEmail = new Amm.Decorator(function(value) {
+            return Amm.dom({$: 'a', href: 'mailto:' + value, _text: value});
+        });
+        
+        var t = new Amm.Table.Table({
+            columns: {
+                name: {
+                    
+                },
+                link: {
+                    decorator: decAddress
+                },
+                email: {
+                    decorator: decEmail
+                },
+                employed: {
+                    decorator: 'Amm.Translator.Bool'
+                }
+            },
+            header: {
+                rows: ['Amm.Table.HeaderRow']
+            }
+        });
+        
+        window.d.t = t;
+        
+        var items = new Amm.Collection(Amm.constructMany([
+            {props: {name: 'John Doe', link: 'example.com', email: 'jdoe@example.com', employed: true}},
+            {props: {name: 'Jane James', link: 'james.example.com', email: 'jane@james.example.com', employed: false}},
+            {props: {name: 'Sarah Moo', link: 'moo.example.com', email: 'sarah@moo.example.com', employed: true}},
+        ], 'Amm.Element'));
+        
+        t.setItems(items);
+        
+        assert.deepEqual(t.rows[0].cells[0].getDecoratedValue(), 
+            t.rows[0].cells[0].getValue(),
+            'No decorator: `decoratedValue` is the same as `value`');
+            
+        assert.deepEqual(t.rows[0].cells[1].getDecoratedValue().outerHTML, 
+             decAddress(t.rows[0].cells[1].getValue()).outerHTML,
+            'Decorator fn: `decoratedValue` is decorated');
+            
+        assert.deepEqual(t.rows[0].cells[2].getDecoratedValue().outerHTML, 
+             decEmail.decorate(t.rows[0].cells[2].getValue()).outerHTML,
+            'Decorator object: `decoratedValue` is decorated');
+        
+        t.rows[1].cells[1].setDecorator(decSimple);
+            
+        assert.deepEqual(t.rows[1].cells[1].getDecoratedValue(), 
+             decSimple(t.rows[1].cells[1].getValue()),
+            'Decorator object: cell own decorator used');
+            
+        t.columns[1].setDecorator(null);
+            
+        assert.deepEqual(t.rows[0].cells[1].getDecoratedValue(), 
+             t.rows[0].cells[1].getValue(),
+            'Decorator set to null: `decoratedValue` is the same as `value`');
+            
+        assert.deepEqual(t.rows[1].cells[1].getDecoratedValue(), 
+             decSimple(t.rows[1].cells[1].getValue()),
+            'Decorator set to null object: cell with own decorator not affected');
+            
     });
     
 }) ();

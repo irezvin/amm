@@ -20,8 +20,9 @@
         #tbl:focus-within {
             border: 1px solid orangered;
             padding: calc(.25em - 1px);
-
         }    
+        
+        a {color: lightblue}
         
     </style>
     
@@ -143,8 +144,25 @@
                     age: {
                     },
                     company: {
+                        decorator: function(value) {
+                            if (!value) return value;
+                            return Amm.dom({
+                                $: 'a',
+                                href: '//' + value.toLowerCase() + '.com',
+                                target: '_blank',
+                                _text: value
+                            });
+                        }
                     },
                     email: {
+                        decorator: function(value) {
+                            if (!value) return value;
+                            return Amm.dom({
+                                $: 'a',
+                                href: 'mailto:' + value,
+                                _text: value
+                            });
+                        }
                     },
                     phone: {
                     },

@@ -1,6 +1,10 @@
 /* global Amm */
 
 Amm.Decorator = function(options) {
+    if (typeof options === 'function') {
+        this.decorate = options;
+        return this;
+    }
     if (options && this['Amm.Decorator'] === '__CLASS__' && options.decorate && typeof options.decorate === 'function') {
         this.decorate = options.decorate;
         delete options.decorate;
