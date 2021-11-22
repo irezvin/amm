@@ -24,6 +24,38 @@
         
         a {color: lightblue}
         
+        nav.paginator {
+            text-align: center;
+            margin-bottom: 1.2em;
+        }
+        
+        ul.pagination, ul.pagination li {
+            display: inline-block;
+            text-align: center;
+        }
+        
+        ul.pagination {
+            padding: 0;
+        }
+        
+        ul.pagination a {
+            text-decoration: none;
+            display: inline-block;
+            padding: .5em .75em;
+        }
+        
+        ul.pagination a.page-link-kind-regular, ul.pagination a.page-link-kind-active {
+            border: 1px solid silver;
+        }
+        
+        ul.pagination a.page-link-kind-active {
+            background-color: #333;
+        }
+        
+        ul.pagination a.page-link-kind-ellipsis {
+            border: none;
+        }
+        
     </style>
     
     <script type='text/javascript' src='../tests/mockData.js'></script>
@@ -246,7 +278,7 @@
         
     </script>
     </head>
-    <body>
+    <body data-amm-build="">
         <h1>Data table example</h1>
         <div id="lib" style="display: none" data-amm-dont-build="">
             <input
@@ -256,10 +288,21 @@
                 data-amm-v="[v.Input, v.Visual]" 
             />
         </div>
-        <div style="text-align: center; margin: 1em; font-size: 1.2em">
+        <!--div style="text-align: center; margin: 1em; font-size: 1.2em">
             <button accesskey="p" onclick="asyncNextPage(1); return false;">&larr; <u>P</u>rev</button>
             <button accesskey="n" onclick="asyncNextPage(); return false;"><u>N</u>ext &rarr;</button>
-        </div>
+        </div-->
+        <nav class="paginator" data-amm-e="{
+             class: ui.Paginator,
+             id: paginator,
+             prop__foo: null,
+             in__numRecords: 'tbl.fetcher.response.lastFoundRows || 0',
+             in__recordsPerPage: 'tbl.fetcher.requestProducer.uri::limit || 10',
+             offset: null,
+             sync__offset: 'tbl.fetcher.requestProducer.uri::offset',
+        }" data-amm-v="{class: v.Paginator}">
+        </nav>
+            
         <div class="w"> 
             <div id="tbl"></div>
         </div>

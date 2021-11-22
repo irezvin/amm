@@ -826,6 +826,7 @@ Amm = {
         }
         this.registerNamespace('v', this.View.Html);
         this.registerNamespace('t', this.Trait);
+        this.registerNamespace('ui', this.Ui);
         if (this.autoBuildSelector) {
             var sel = this.autoBuildSelector;
             this._autoBuilder = new this.Builder(sel, this.defaultBuilderOptions);
@@ -1120,6 +1121,7 @@ Amm = {
      */
     dom: function(definition, dontReplaceUnderscores, outNodes, stringifyJson, overrides) {
         var res, i, l;
+        if (typeof definition === 'object' && (definition.nodeType || 'nodeType' in definition)) return definition;
         if (stringifyJson && typeof stringifyJson === 'object' && overrides === undefined) {
             overrides = stringifyJson;
             stringifyJson = false;
@@ -1136,7 +1138,10 @@ Amm = {
             }
             return res;
         }
-        if (!definition.$) throw Error ("`$` (tag name) must be present in attribute definition");
+        if (!definition.$) {
+            console.log(definition);
+            throw Error ("`$` (tag name) must be present in attribute definition");
+        }
         if (overrides && ('_id' in definition) && definition._id in overrides && overrides[definition._id] !== definition) {
             definition = Amm.overrideRecursive({}, definition, false, false, true);
             definition = Amm.overrideRecursive(definition, overrides[definition._id], false, true, true);
