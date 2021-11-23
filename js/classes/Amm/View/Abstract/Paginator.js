@@ -9,6 +9,8 @@ Amm.View.Abstract.Paginator.prototype = {
     'Amm.View.Abstract.Paginator': '__CLASS__', 
 
     _maxLinks: 5,
+    
+    _ensureSameNumberOfLinks: true,
 
     _showFirst: false,
 
@@ -21,6 +23,8 @@ Amm.View.Abstract.Paginator.prototype = {
     _showPrev: true,
 
     _showNext: true,
+    
+    _nextAlwaysActive: false,
     
     _useIcons: false,
 
@@ -91,6 +95,16 @@ Amm.View.Abstract.Paginator.prototype = {
     },
 
     getMaxLinks: function() { return this._maxLinks; },
+    
+    setEnsureSameNumberOfLinks: function(ensureSameNumberOfLinks) {
+        var oldEnsureSameNumberOfLinks = this._ensureSameNumberOfLinks;
+        if (oldEnsureSameNumberOfLinks === ensureSameNumberOfLinks) return;
+        this._ensureSameNumberOfLinks = ensureSameNumberOfLinks;
+        this.update();
+        return true;
+    },
+
+    getEnsureSameNumberOfLinks: function() { return this._ensureSameNumberOfLinks; },
 
     setShowFirst: function(showFirst) {
         showFirst = !!showFirst;
@@ -169,28 +183,50 @@ Amm.View.Abstract.Paginator.prototype = {
 
     getUseIcons: function() { return this._useIcons; },
     
+    setNextAlwaysActive: function(nextAlwaysActive) {
+        nextAlwaysActive = !!nextAlwaysActive;
+        var oldNextAlwaysActive = this._nextAlwaysActive;
+        if (oldNextAlwaysActive === nextAlwaysActive) return;
+        this._nextAlwaysActive = nextAlwaysActive;
+        this.update();
+        return true;
+    },
+
+    getNextAlwaysActive: function() { return this._nextAlwaysActive; },
+    
     genLinks: function() {
         
         var extraLinks = {};
-        if (this._numPages < 2) return [];
         var links = {};
         var maxLinks = this._maxLinks;
+        if (this._showFirstNum && this._ensureSameNumberOfLinks) {
+            maxLinks--;
+        }
+        if (this._showLastNum && this._ensureSameNumberOfLinks) {
+            maxLinks--;
+        }
+        if (maxLinks <= 0) maxLinks = 1;
         var wndLeft = this._page - Math.floor(maxLinks/2);
         var wndRight = this._page + Math.ceil(maxLinks/2);
         if (wndLeft < 0) {
             wndLeft = 0;
             wndRight = Math.min(maxLinks, this._numPages - 1);
         } else if (wndRight > (this._numPages - 1)) {
-            wndRight = this._numPages - 1;
-            wndLeft = Math.max(0, wndRight - maxLinks);
+            if (this._showLastNum) {
+                wndRight = this._numPages - 1;
+                wndLeft = Math.max(0, wndRight - maxLinks);
+            } else {
+                wndRight = this._numPages;
+                wndLeft = Math.max(0, wndRight - maxLinks);
+            }
         }
         
         if (this._showPrev) {
-            links['prev'] = this.genLink(this._page - 1, 'prev', this._page > 0);
+            links['prev'] = this.genLink(this._page - 1, 'prev', this._page <= 0);
         }
         
         if (this._showNext) {
-            links['next'] = this.genLink(this._page + 1, 'next', this._page < this._numPages - 1);
+            links['next'] = this.genLink(this._page + 1, 'next', !this._nextAlwaysActive && this._page >= this._numPages - 1);
         }
         
         if (this._showFirst) {
@@ -201,12 +237,24 @@ Amm.View.Abstract.Paginator.prototype = {
             extraLinks['last'] = this.genLink(this._numPages - 1, 'last');
         }
         
-        if (wndLeft === 1) wndLeft = 0;
+        if (wndLeft === 1 && this._showFirstNum) wndLeft = 0;
         
-        if (wndRight === this._numPages - 2) {
+        if (wndRight === this._numPages - 2 && this._showLastNum) {
             wndRight = this._numPages - 1;
         }
+        
+        if (this._ensureSameNumberOfLinks) {
+            if (this._showFirstNum && wndLeft < 2) {
+                wndLeft = 0;
+                wndRight = Math.min(maxLinks + 2, this._numPages);
+            }
+            if (this._showLastNum && wndRight > this._numPages - 2) {
+                wndRight = this._numPages;
+                wndLeft = Math.max(0, wndRight - maxLinks - 2);
+            }
+        }
 
+        if (!this._numPages) wndRight = 1;
         for (var i = wndLeft; i < wndRight; i++) {
             links[i] = this.genLink(i);
         }
@@ -221,7 +269,7 @@ Amm.View.Abstract.Paginator.prototype = {
         
         if (this._showFirstNum) extraLinks[0] = this.genLink(0);
         
-        if (this._showLastNum) {
+        if (this._showLastNum && this._numPages) {
             extraLinks[this._numPages - 1] = this.genLink(this._numPages - 1);
 
             if (wndRight < this._numPages - 2) {

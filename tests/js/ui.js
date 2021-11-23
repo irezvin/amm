@@ -77,47 +77,48 @@
         assert.ok(v.getObserving(), 'View is observing');
             assert.deepEqual(v.getNumPages(), p.getNumPages(), 'View correctly updates numPages');
             assert.deepEqual(v.getPage(), p.getPage(), 'View correctly updates page');
+            
             assert.deepEqual(txt(), 'F P 1 2 [3] 4 5 ... 15 N L',
                 'Paginator properly rendered (basic)');
         
         p.setPage(6);
-            assert.deepEqual(txt(), 'F P 1 ... 5 6 [7] 8 9 ... 15 N L',
+            assert.deepEqual(txt(), 'F P 1 ... 6 [7] 8 ... 15 N L',
                 'Page # updated - paginator properly re-rendered');
         
         v.setShowLastNum(false);
-            assert.deepEqual(txt(), 'F P 1 ... 5 6 [7] 8 9 N L',
+            assert.deepEqual(txt(), 'F P 1 ... 5 6 [7] 8 N L',
                 'showLastNum disabled - paginator properly re-rendered');
         
         v.setShowLast(false);
-            assert.deepEqual(txt(), 'F P 1 ... 5 6 [7] 8 9 N',
+            assert.deepEqual(txt(), 'F P 1 ... 5 6 [7] 8 N',
                 'showLast disabled - paginator properly re-rendered');
         
         v.setShowFirst(false);
-            assert.deepEqual(txt(), 'P 1 ... 5 6 [7] 8 9 N',
+            assert.deepEqual(txt(), 'P 1 ... 5 6 [7] 8 N',
                 'showFirst disabled - paginator properly re-rendered');
-        
+
         p.setPage(3);
             assert.deepEqual(txt(), 'P 1 2 3 [4] 5 6 N',
                 "One page instead of leading ellipsis: num is shown (1)");
         
         p.setPage(4);
-            assert.deepEqual(txt(), 'P 1 2 3 4 [5] 6 7 N',
+            assert.deepEqual(txt(), 'P 1 2 3 4 [5] 6 N',
                 "One page instead of leading ellipsis: num is shown (2)");
 
         v.setShowLastNum(true);
-        p.setPage(11);
-            assert.deepEqual(txt(), 'P 1 ... 10 11 [12] 13 14 15 N',
+        p.setPage(12);
+            assert.deepEqual(txt(), 'P 1 ... 11 12 [13] 14 15 N',
                 "One page instead of trailing ellipsis: num is shown (1)");
         
-        p.setPage(10);
-            assert.deepEqual(txt(), 'P 1 ... 9 10 [11] 12 13 14 15 N',
+        p.setPage(11);
+            assert.deepEqual(txt(), 'P 1 ... 11 [12] 13 14 15 N',
                 "One page instead of trailing ellipsis: num is shown (2)");
         
         v.setUseIcons(true);
-            assert.deepEqual(txt(), 'p 1 _ 9 10 (11) 12 13 14 15 n',
+            assert.deepEqual(txt(), 'p 1 _ 11 (12) 13 14 15 n',
                 "setUseIcons(true) works");
                 
-        p.setOffset(p.getOffset() - 7);
+        p.setOffset(9*7);
             assert.deepEqual(p.getPage(), 9, 
             'setOffset: `page` changed');
         
@@ -135,6 +136,56 @@
                 'Old link no more active');
             assert.ok(node.find('a[data-page=2]').is('.page-link-kind-active'),
                 'New link became active');
+                
+            assert.equal(node.find('ul').attr('class'), ('pagination pagination-many'), 
+                'Many pages: paginator HTML element has proper class');
+                
+        p.setNumRecords(0);
+        v.setShowFirst(true);
+        v.setShowLast(true);
+        v.setShowFirstNum(false);
+        v.setShowLastNum(false);
+        v.setShowPrev(true);
+        v.setShowNext(true);
+        v.setUseIcons(false);
+        
+            assert.deepEqual(txt(), 'F P 1 N L', 
+                'First & Last links are shown even when there is no records');
+                
+            assert.equal(node.find('ul').attr('class'), ('pagination pagination-empty'), 
+                'Empty: paginator HTML element has proper class');
+            
+        p.setNumRecords(1);
+            assert.equal(node.find('ul').attr('class'), ('pagination pagination-one'), 
+                'One page: paginator HTML element has proper class');
+                
+        p.setRecordsPerPage(10);
+        p.setNumPages(20);
+        v.setShowFirstNum(false);
+        v.setShowLastNum(false);
+        v.setShowFirst(false);
+        v.setShowLast(false);
+        
+        p.setPage(0);
+            assert.deepEqual(txt(), 'P [1] 2 3 4 5 N', "no firstnum/lastnum: page 0");
+                
+        p.setPage(1);
+            assert.deepEqual(txt(), 'P 1 [2] 3 4 5 N', "no firstnum/lastnum: page 1");
+                
+        p.setPage(2);
+            assert.deepEqual(txt(), 'P 1 2 [3] 4 5 N', "no firstnum/lastnum: page 2");
+                
+        p.setPage(3);
+            assert.deepEqual(txt(), 'P 2 3 [4] 5 6 N', "no firstnum/lastnum: page 3");
+                
+        p.setPage(17);
+            assert.deepEqual(txt(), 'P 16 17 [18] 19 20 N', "no firstnum/lastnum: page L - 2");
+                
+        p.setPage(18);
+            assert.deepEqual(txt(), 'P 16 17 18 [19] 20 N', "no firstnum/lastnum: page L - 1");
+                
+        p.setPage(19);
+            assert.deepEqual(txt(), 'P 16 17 18 19 [20] N', "no firstnum/lastnum: L");
                 
         Amm.cleanup(p);
         

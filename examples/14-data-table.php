@@ -41,11 +41,17 @@
         ul.pagination a {
             text-decoration: none;
             display: inline-block;
+            margin: 0 .125em;
             padding: .5em .75em;
         }
         
         ul.pagination a.page-link-kind-regular, ul.pagination a.page-link-kind-active {
             border: 1px solid silver;
+        }
+        
+        ul.pagination a.page-link-kind-regular, ul.pagination a.page-link-kind-active, 
+        ul.pagination.page-link-kind-ellipsis {
+            width: 1.5em;
         }
         
         ul.pagination a.page-link-kind-active {
@@ -54,6 +60,10 @@
         
         ul.pagination a.page-link-kind-ellipsis {
             border: none;
+        }
+        
+        ul.pagination a.page-link-disabled {
+            color: darkgray;
         }
         
     </style>
