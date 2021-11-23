@@ -50,7 +50,7 @@
         }
         
         ul.pagination a.page-link-kind-regular, ul.pagination a.page-link-kind-active, 
-        ul.pagination.page-link-kind-ellipsis {
+        ul.pagination a.page-link-kind-ellipsis {
             width: 1.5em;
         }
         
@@ -59,7 +59,7 @@
         }
         
         ul.pagination a.page-link-kind-ellipsis {
-            border: none;
+            margin: 0 calc(.125em + 2px);
         }
         
         ul.pagination a.page-link-disabled {

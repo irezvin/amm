@@ -121,6 +121,7 @@ Amm.Table.ObservingCell.prototype = {
         this._contextId = this._source.createContext({expressionThis: this.item, vars: {cell: this}});
         this._source.subscribe('valueChange', 'reportValue', this);
         this._observing = true;
+        this._propertyObserving = false;
     },
 
     getSource: function() { return this._source; },
@@ -133,7 +134,7 @@ Amm.Table.ObservingCell.prototype = {
         this.setValue(value);
     },
     
-    _clenup_ObservingCell: function() {
+    _cleanup_ObservingCell: function() {
         this._unobserve();
         this.setItem(null);
         this.setSource(null); 

@@ -11,7 +11,7 @@ Amm.Table.ObservingColumn.prototype = {
     _source: null,
     
     _sourceIsOwn: false,
-
+    
     setSource: function(source) {
         if (!source) source = null;
         else if (typeof source === 'object') {
