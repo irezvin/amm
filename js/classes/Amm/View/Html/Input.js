@@ -6,11 +6,8 @@
  * Element to JQuery: value, focus, readOnly, enabled
  */
 Amm.View.Html.Input = function(options) {
-    var t = this;
-    this._handler = function(event) { return t._receiveEvent(event, this); };
+    Amm.View.Html.JQueryListener.call(this, {});
     Amm.View.Abstract.Input.call(this, options);
-    Amm.View.Html.call(this);
-    Amm.JQueryListener.call(this, {});
 };
 
 Amm.View.Html.Input.prototype = {
@@ -134,10 +131,6 @@ Amm.View.Html.Input.prototype = {
             return jQuery(this._htmlElement).val();
     },
     
-    _doSetHtmlElement: function(htmlElement) {
-        this.setSelector(htmlElement);
-    },
-    
     cleanup: function() {
         Amm.View.Abstract.Input.prototype.cleanup.call(this);
         Amm.JQueryListener.prototype.cleanup.call(this);
@@ -168,6 +161,5 @@ Amm.View.Html.Input.prototype = {
 
 };
 
-Amm.extend(Amm.View.Html.Input, Amm.View.Html);
-Amm.extend(Amm.View.Html.Input, Amm.JQueryListener);
+Amm.extend(Amm.View.Html.Input, Amm.View.Html.JQueryListener);
 Amm.extend(Amm.View.Html.Input, Amm.View.Abstract.Input);

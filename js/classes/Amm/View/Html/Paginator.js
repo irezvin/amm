@@ -1,11 +1,8 @@
 /* global Amm */
 
 Amm.View.Html.Paginator = function(options) {
-    var t = this;
-    this._handler = function(event) { return t._receiveEvent(event, this); };    
+    Amm.View.Html.JQueryListener.call(this);
     Amm.View.Abstract.Paginator.call(this, options);
-    Amm.View.Html.call(this);
-    Amm.JQueryListener.call(this, {});
 };
 
 Amm.View.Html.Paginator.prototype = {
@@ -35,10 +32,6 @@ Amm.View.Html.Paginator.prototype = {
     update: function() {
         if (!this._htmlElement) return;
         jQuery(this._htmlElement).empty().append(this._dom());
-    },
-    
-    _doSetHtmlElement: function(htmlElement) {
-        this.setSelector(htmlElement);
     },
     
     _receiveEvent: function(event) {
@@ -107,6 +100,5 @@ Amm.View.Html.Paginator.prototype = {
 
 };
 
-Amm.extend(Amm.View.Html.Paginator, Amm.View.Html);
+Amm.extend(Amm.View.Html.Paginator, Amm.View.Html.JQueryListener);
 Amm.extend(Amm.View.Html.Paginator, Amm.View.Abstract.Paginator);
-Amm.extend(Amm.View.Html.Paginator, Amm.JQueryListener);
