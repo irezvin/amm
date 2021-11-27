@@ -261,7 +261,7 @@ Amm.View.Abstract.Paginator.prototype = {
         
         if (this._showFirstNum) {
             if (wndLeft > 2) {
-                extraLinks[wndLeft - 1] = this.genLink(wndLeft - 1, 'ellipsis');
+                extraLinks[wndLeft - 1] = this.genLink(Math.round((wndLeft - 1) / 2), 'ellipsis');
             } else if (wndLeft === 2) {
                 extraLinks[wndLeft - 1] = this.genLink(wndLeft - 1);
             }
@@ -273,7 +273,7 @@ Amm.View.Abstract.Paginator.prototype = {
             extraLinks[this._numPages - 1] = this.genLink(this._numPages - 1);
 
             if (wndRight < this._numPages - 2) {
-                extraLinks[wndRight + 1] = this.genLink(wndRight + 1, 'ellipsis');
+                extraLinks[wndRight + 1] = this.genLink(Math.round((wndRight + 1 + this._numPages) / 2), 'ellipsis');
             } else if (wndRight === this._numPages - 2) {
                 extraLinks[wndRight + 1] = this.genLink(wndRight + 1);
             }
