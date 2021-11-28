@@ -45,6 +45,8 @@ Amm.Table.Cell.prototype = {
     _oldActiveEditor: null,
     
     _tableActiveProp: 'activeCell',
+    
+    cancelEditOnUpdateValue: true,
 
     _getDefaultTraits: function (options) {
         return [Amm.Trait.Visual, Amm.Trait.Component, Amm.Trait.DisplayParent];
@@ -168,6 +170,9 @@ Amm.Table.Cell.prototype = {
             return;
         this._value = value;
         this.outValueChange(value, oldValue);
+        if (this._editing && this.cancelEditOnUpdateValue) {
+            this.cancelEdit();
+        }
         this._updateDecoratedValue();
         return true;
     },

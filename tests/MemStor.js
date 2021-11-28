@@ -306,10 +306,9 @@ MemStor.prototype = {
     },
 
     
-    createDebugTransport: function() {
+    createDebugTransport: function(logRequests) {
         var t = this;
         var res = new Amm.Remote.Transport.Debug({
-            
             on__request: [
                 function(runningRequest, success, failure) {
                     var httpCode = 200;
@@ -346,7 +345,9 @@ MemStor.prototype = {
     },
     
     _throw: function(description, httpCode) {
-        throw this.createError(description, httpCode);
+        var e = this.createError(description, httpCode);
+        console.error(description, e);
+        throw e;
     },
     
     handleRequest: function(method, uri, data, headers) {
@@ -394,7 +395,9 @@ MemStor.prototype = {
         if (this._method === 'GET') throw "Cannot use GET method to update record";
         if (!this.primaryKey) throw "Cannot update w/o primaryKey";
         var keyVals = {};
-        keyVals[this.primaryKey] = this._param('key');
+        var key = this._param(this.primaryKey, false);
+        if (key) keyVals[this.primaryKey] = key;
+        else keyVals[this.primaryKey] = this._param('key');
         return this.update(keyVals, data);
     },
     
@@ -402,7 +405,9 @@ MemStor.prototype = {
         if (this._method === 'GET') throw "Cannot use GET method to delete record";
         if (!this.primaryKey) throw "Cannot delete w/o primaryKey";
         var keyVals = {};
-        keyVals[this.primaryKey] = this._param('key');
+        var key = this._param(this.primaryKey, false);
+        if (key) keyVals[this.primaryKey] = key;
+        else keyVals[this.primaryKey] = this._param('key');
         return this.remove(keyVals);
     },
     

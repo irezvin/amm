@@ -156,7 +156,7 @@ Amm.createProperty(Amm.Data.FieldMeta.prototype, 'set', null, {
     before: function(value) {
         if (!value) value = null;
         else if (typeof value !== 'function') {
-            throw Error("'set' meta-property value must be a function or null");
+            throw Error("'set' meta-property value be a function or null");
         }
         return value;
     }
@@ -166,7 +166,7 @@ Amm.createProperty(Amm.Data.FieldMeta.prototype, 'compute', null, {
     before: function(value) {
         if (!value) value = null;
         else if (typeof value !== 'function') {
-            throw Error("'compute' meta-property value must be a function or null");
+            throw Error("'compute' meta-property  must be a function or null");
         }
         return value;
     }
@@ -176,8 +176,8 @@ Amm.createProperty(Amm.Data.FieldMeta.prototype, 'change', null, {
     before: function(value) {
         if (!value) value = null;
         else if (typeof value !== 'function') {
-            throw Error("'change' meta-property value must be a function or null");
-        }
+            throw Error("'change' meta-property must be a function or null");
+                }
         return value;
     }
 }, true);

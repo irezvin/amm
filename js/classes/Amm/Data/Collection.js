@@ -13,6 +13,8 @@ Amm.Data.Collection.prototype = {
     'Amm.Data.Collection': '__CLASS__',
     
     _anyChange: false,
+    
+    _preserveUncommitted: false,
 
     _subscribe: function(item) {
         
@@ -61,6 +63,48 @@ Amm.Data.Collection.prototype = {
         }
         this._anyChange = false;
         this._out('anyChange');
+    },
+    
+    setPreserveUncommitted: function(preserveUncommitted) {
+        preserveUncommitted = !!preserveUncommitted;
+        var oldPreserveUncommitted = this._preserveUncommitted;
+        if (oldPreserveUncommitted === preserveUncommitted) return;
+        this._preserveUncommitted = preserveUncommitted;
+        this.outPreserveUncommittedChange(preserveUncommitted, oldPreserveUncommitted);
+        return true;
+    },
+
+    getPreserveUncommitted: function() { return this._preserveUncommitted; },
+
+    outPreserveUncommittedChange: function(preserveUncommitted, oldPreserveUncommitted) {
+        this._out('preserveUncommittedChange', preserveUncommitted, oldPreserveUncommitted);
+    },
+    
+    /**
+     * @param {boolean} smartUpdate Updates matching items while leaving their instances,
+     *      removes other items
+     */
+    setItems: function(items, smartUpdate) {
+        if (this._preserveUncommitted) {
+            var uncom = Amm.Array.diff(this.findUncommitted(), items);
+            items = [].concat(uncom, items);
+        }
+        return Amm.Collection.prototype.setItems.call(this, items, smartUpdate);
+    },
+    
+    findUncommitted: function() {
+        var res = [];
+        for (var i = 0, l = this.length; i < l; i++) {
+            if (this[i].mm.getModified()) {
+                res.push(this[i]);
+                continue;
+            }
+            if (this[i].mm.getTransaction && this[i].mm.getTransaction()) {
+                res.push(this[i]);
+                continue;
+            }
+        }
+        return res;
     }
     
 };

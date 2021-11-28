@@ -2058,4 +2058,51 @@
         
     });
     
+    
+    QUnit.test("Data Collection", function(assert) {
+        
+        var mapper = new Amm.Data.Mapper({
+            meta: {
+                id: {},
+                firstName: {},
+                lastName: {}
+            },
+            key: 'id',
+        });
+        
+        var c = new Amm.Data.Collection({
+            instantiateOnAccept: true,
+            instantiator: mapper,
+            preserveUncommitted: true
+        });
+        
+        c.setItems([
+            {id: 1, firstName: 'John', lastName: 'Doe'},
+            {id: 2, firstName: 'Jane', lastName: 'Do'},
+            {id: 3, firstName: 'Qu', lastName: 'Ux'}
+        ]);
+        
+        var item0 = c[0];
+        item0.firstName = 'Johny';
+        
+            assert.ok(item0.mm.getModified(), 'Item is modified...');
+        
+        c.setItems([
+            {id: 4, firstName: 'Aaa', lastName: 'Bb'},
+            {id: 5, firstName: 'Ccc', lastName: 'Dd'},
+        ]);
+                
+            assert.equal(c.length, 3, 'Uncommitted item remainted');
+            assert.ok(c[0] === item0, 'It is at first position');        
+            
+        item0.mm.revert();
+        
+            assert.notOk(item0.mm.getModified(), 'Item is not modified anymore...');
+            
+        c.setItems([]);
+        
+            assert.equal(c.length, 0, 'Committed item no more in collection after setItems()');
+            
+    });
+    
 }) ();

@@ -1408,8 +1408,15 @@
             assert.deepEqual(t.rows[1].cells[2].getValue(), tableEd.getValue(),
                 'Editor contains cell value');
                 
-        tableEd.setValue('Janette');
+            items[1].name = 'Foobar';
+            
+            assert.notOk(t.rows[1].cells[1].getEditing(),
+                'When editing cell value changed, it stopped being editing');
         
+        t.rows[1].cells[2].setEditing(true);
+                
+        tableEd.setValue('Janette');
+            
         t.rows[1].cells[2].confirmEdit();
             
             assert.deepEqual(items[1].name, 'Janette',
@@ -2286,6 +2293,10 @@
                 extraViews: ['Amm.View.Html.Table.SimpleKeyboardControl'],
                 extraTraits: ['Amm.Trait.Table.SimpleKeyboardControl'],
                 columns: {
+                    index: {
+                        caption: 'item #', source: "$cell.row.index + 1",
+                        'class': 'Amm.Table.RowHeaderColumn', // required to have resizable rows
+                    },
                     recordId: {caption: 'ID'},
                     name: {},
                     surname: {},
@@ -2561,8 +2572,58 @@
                     "Double C-ArrowRight: still on last column of same row");
                 assert.ok(oldLength == items.length,
                     "Double C-ArrowRight: no new items added");
+
+            var skc = t.getUniqueSubscribers('Amm.View.Html.Table.SimpleKeyboardControl')[0];
+            skc.whenEditingTabThroughEditableCellsOnly = false;
             
+            t.rows[1].cells[2].setActive(true);
+            t.rows[1].cells[2].setEditing(true);
+            
+            key(node, "Tab");
+            
+                assert.ok(t.rows[1].cells[3].getActive(),
+                    'Tab: goto next cell');
+
+                assert.ok(t.rows[1].cells[3].getEditing(),
+                    'Tab: next cell is still editing');
+            
+            key(node, "S-Tab");
+            
+                assert.ok(t.rows[1].cells[2].getActive(),
+                    'S-Tab: goto prev cell');
+
+                assert.ok(t.rows[1].cells[2].getEditing(),
+                    'S-Tab: prev cell still editing');
+            
+            key(node, "S-Tab");
+            key(node, "S-Tab");
+
+                assert.ok(t.rows[1].cells[0].getActive(),
+                    'S-Tab: goto prev non-editable cell w/o whenEditingTabThroughEditableCellsOnly');
+
+                assert.notOk(t.rows[1].cells[0].getEditing(),
+                    'S-Tab: goto prev non-editable cell w/o whenEditingTabThroughEditableCellsOnly');
+
+            skc.whenEditingTabThroughEditableCellsOnly = true;            
+            
+            t.rows[1].cells[1].setActive(true);
+            t.rows[1].cells[1].setEditing(true);
+            key(node, "S-Tab");
+            
+                assert.ok(t.rows[0].cells[4].getActive(),
+                    'S-Tab: goto prev editable cell w/ whenEditingTabThroughEditableCellsOnly');
+
+                assert.ok(t.rows[0].cells[4].getEditing(),
+                    'S-Tab: prev editable cell which remains editing');
                     
+            key(node, "Tab");
+            
+                assert.ok(t.rows[1].cells[1].getActive(),
+                    'S-Tab: goto next editable cell w/ whenEditingTabThroughEditableCellsOnly');
+
+                assert.ok(t.rows[1].cells[1].getEditing(),
+                    'S-Tab: next cell remains editing');
+            
             Amm.cleanup(t, tableEd);
             
         } finally {

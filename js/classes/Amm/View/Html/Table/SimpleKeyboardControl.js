@@ -24,7 +24,7 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
     
     requiredElementClass: 'Amm.Table.Table',
 
-    
+
     
     escapeCancels: true,
     
@@ -35,8 +35,10 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
     stopEditingOnFocusLost: false,
     
     navigateBetweenSections: true,
-
     
+    whenEditingTabThroughEditableCellsOnly: true,
+
+
     
     _observesHtmlElement: false,
     
@@ -116,7 +118,13 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
         var char = event.key;
         var handled = false;
         
-        var rowNav = false, reverse = false, toTheLast = false, add = false, del = false, table = this._element;
+        var rowNav = false,
+            reverse = false,
+            toTheLast = false,
+            add = false,
+            del = false,
+            table = this._element,
+            editableOnly = false;
         
         var cell = table.activeCell;
         
@@ -187,6 +195,11 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
         if (char === "Delete" && event.ctrlKey) { // ctrl-del
             del = true;
             rowNav = true;
+        } else if (char === "Tab") {
+            // shift-tab works as "left", but only if cell is being edited
+            if (!editing) return;
+            if (event.shiftKey) reverse = true;
+            if (this.whenEditingTabThroughEditableCellsOnly) editableOnly = true;
         } else if (char === "ArrowLeft") {
             // left
             reverse = true;
@@ -247,7 +260,9 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
             }
         } else {
             if (toTheLast && toTheLast !== "AllCells") adjacentMode = Amm.Table.ADJACENT_SAME_ROW;
-            nextCell = this._findAdjacent(cell, reverse, null, adjacentMode, toTheLast);
+            var cb = null;
+            if (editableOnly) cb = function(cell) { return cell.isEditable(); };
+            nextCell = this._findAdjacent(cell, reverse, cb, adjacentMode, toTheLast);
         }
         var item = cell.getItem();
         var nextItem = nextCell? nextCell.getItem() : null;

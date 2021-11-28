@@ -57,7 +57,7 @@
                                 in__label: '(this.selected? \'✓ \' : \'\') + this.value', 
                                 in__visible: '(this.selected || !search.value.length || this.value.indexOf(search.value) >= 0)'}, 
                                 options: {$ext: cities}
-                            }" data-amm-v="[v.Visual, v.Select]" data-amm-e="{}" data-amm-id="items">
+                            }" data-amm-v="[v.Visual, v.Select]" data-amm-id="items">
                     </select>
                 </div>
                 <div style="max-width: 350px; float: left; margin-left: 10px">
@@ -77,7 +77,7 @@
                                 'writeProperty': 'this.fetcher.requestProducer.uri::v'
                             },
                             in__options: 'this.fetcher.response!!'
-                        }" data-amm-v="[v.Visual, v.Select]" data-amm-e={} data-amm-id="items2">
+                        }" data-amm-v="[v.Visual, v.Select]" data-amm-id="items2">
                     </select>
                 </div>
             </div>

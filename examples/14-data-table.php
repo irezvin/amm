@@ -8,6 +8,23 @@
     <style type="text/css">
         button { padding: .25em 1em; margin: .25em; font-size: 1.1em }
         
+        tr.new td {
+            border-color: lightgreen;
+        }
+        
+        tr.deleted td {
+            text-decoration: line-through;
+        }
+        
+        tr.modified td, tr.modified th {
+            color: gold;
+        }
+        
+        tr.errors td, tr.errors th {
+            border-color: red;
+            background-color: #300;
+        }
+        
         .w {
             text-align: center;
         }
@@ -42,7 +59,7 @@
             text-decoration: none;
             display: inline-block;
             margin: 0 .125em;
-            padding: .5em .75em;
+            padding: .5em .5em;
         }
         
         ul.pagination a.page-link-kind-regular, ul.pagination a.page-link-kind-active {
@@ -51,7 +68,8 @@
         
         ul.pagination a.page-link-kind-regular, ul.pagination a.page-link-kind-active, 
         ul.pagination a.page-link-kind-ellipsis {
-            width: 1.5em;
+            width: 3em;
+            padding: .5em 0;
         }
         
         ul.pagination a.page-link-kind-active {
@@ -74,6 +92,14 @@
     <script type='text/javascript'>
         
         window.t0 = (new Date()).getTime()/1000;
+        
+        window.save = function() {
+            var unc = tbl.items.findUncommitted();
+            for (var i = 0, l = unc.length; i < l; i++) {
+                unc[i].mm.save();
+            }
+            jQuery('#tbl table').focus();
+        };
         
         window.asyncNextPage = function(prev) {
             tbl.fetcher.getRequestProducer().setUri(
@@ -108,32 +134,68 @@
             window.updateUri();
         });
         
+        window.nullify = function(ret) { if (ret.value === '') ret.value = null; };
+        
         window.addressMeta = {
             id: {},
             guid: {},
             isActive: {
+                def: false,
                 required: true
             },
-            balance: {},
-            age: {},
-            eyeColor: {},
+            balance: {
+                set: function(ret) { 
+                    if (ret.value === '') {
+                        ret.value = null; 
+                        return;
+                    }
+                    var value = parseFloat(ret.value);
+                    if (!isNaN(value)) ret.value = value;
+                },
+            },
+            age: {
+                set: nullify,
+            },
+            eyeColor: {
+                set: nullify,
+            },
             name: {
-                required: true
+                required: true,
+                set: nullify,
             },
-            gender: {},
-            company: {},
+            gender: {
+                set: nullify,
+            },
+            company: {
+                set: nullify,
+            },
             email: {
                 validators: [
                     'Amm.Validator.Email'
                 ],
+                set: nullify,
             },
-            phone: {},
-            address: {},
-            about: {},
-            registered: {},
-            latitude: {},
-            longtitude: {},
-            favoriteFruit: {},
+            phone: {
+                set: nullify,
+            },
+            address: {
+                set: nullify,
+            },
+            about: {
+                set: nullify,
+            },
+            registered: {
+                set: nullify,
+            },
+            latitude: {
+                set: nullify,
+            },
+            longtitude: {
+                set: nullify,
+            },
+            favoriteFruit: {
+                set: nullify,
+            },
         };
         
         window.addressStor = new MemStor({
@@ -171,9 +233,6 @@
                         class: 'Amm.Table.RowHeaderColumn',
                         source: '$cell.row.index + $cell.table.fetcher.requestProducer.uri::offset*1 + 1',
                     },
-//                    status: {
-//                        source: 'this.mm.state + " " + this.mm.modified + " " + !!this.mm.transaction'
-//                    },
                     id: {
                         source: 'id'
                     },
@@ -215,25 +274,40 @@
                         head: 'Amm.Table.HeaderRow'
                     }
                 },
+                
+                rowProto: {
+                    in__className: 'this.item.mm.state + (this.item.mm.modified? " modified" : "") + (this.item.mm.errors? " errors" : "")',
+                },
 
                 items: new Amm.Data.Collection({
+                    preserveUncommitted: true,
                     instantiateOnAccept: true,
-                    instantiator: new Amm.Instantiator.Proto({
-                        proto: {
-                            class: 'Amm.Data.Model',
-                            mm: {
-                                meta: Amm.override({}, window.addressMeta, {
-//                                    status: {
-//                                        compute: function() {
-//                                            return this.mm.getState() + ' ' + (this.mm.getModified()? ' mod' : '');
-//                                        }
-//                                    }
-                                })
-                            }
+                    instantiator: new Amm.Data.Mapper({
+                        transactionPrototypes: {
+                            default: {
+                                'class': 'Amm.Data.HttpTransaction',
+                                uri: '/',
+                                typePath: '',
+                                keyPath: 'key',
+                                transport: addressStor.createDebugTransport(),
+                                responseDataPath: 'record',
+                            },
                         },
-                        overrideProto: true
+                        meta: Amm.override({}, window.addressMeta),
                     }),
                 }),
+                
+                on__checkIsItemBlank: function(item, ret) {
+                    if (!item['Amm.Data.Record']) return;
+                    ret.result = item.mm.getState() === "new" && !item.mm.getModified();
+                },
+                
+                on__deleteItem: function(item, wasBlank, ret) {
+                    if (item.mm.getState() === "exists") {
+                        item.mm.delete();
+                        ret.handled = true;
+                    }
+                },
 
                 prop__fetcher: new Amm.Remote.Fetcher({
                     requestProducer: new Amm.Remote.RequestProducer({
@@ -298,10 +372,9 @@
                 data-amm-v="[v.Input, v.Visual]" 
             />
         </div>
-        <!--div style="text-align: center; margin: 1em; font-size: 1.2em">
-            <button accesskey="p" onclick="asyncNextPage(1); return false;">&larr; <u>P</u>rev</button>
-            <button accesskey="n" onclick="asyncNextPage(); return false;"><u>N</u>ext &rarr;</button>
-        </div-->
+        <div style="text-align: center">
+            <button accesskey="S" onclick="save();"><u>S</u>ave</button>
+        </div>
         <nav class="paginator" data-amm-e="{
              class: ui.Paginator,
              id: paginator,

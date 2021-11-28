@@ -195,4 +195,3 @@ Amm.Data.Mapper.prototype = {
 Amm.extend(Amm.Data.Mapper, Amm.WithEvents);
 Amm.extend(Amm.Data.Mapper, Amm.Instantiator);
 Amm.extend(Amm.Data.Mapper, Amm.Data.MetaProvider);
-
