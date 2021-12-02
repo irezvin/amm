@@ -26,11 +26,15 @@ Amm.Data.ModelMeta.prototype = {
     
     _modified: null,
     
+    _committed: false,
+    
     _transaction: null,
 
     _lastTransaction: null,
     
     _oldState: null,
+    
+    _oldCommitted: null,
     
     _checked: false,
     
@@ -83,11 +87,24 @@ Amm.Data.ModelMeta.prototype = {
     
     getO: function() { return this._m; },
     
-    hydrate: function(data, partial, noTrigger) {
+    hydrate: function(data, mode, noTrigger) {
+        if (!mode) mode = Amm.Data.HYDRATE_FULL;
+        else if (mode === true) mode = Amm.Data.HYDRATE_PARTIAL;
         this.beginUpdate();
-        if (!partial) {
+        if (mode === Amm.Data.HYDRATE_FULL) {
             this._m._old = {};
             this._m._data = {};
+        }
+        else if (mode === Amm.Data.HYDRATE_MERGE) {
+            var mod = this.listModifiedFields();
+            if (mod.length) {
+                var newData = Amm.override({}, data);
+                for (var j = 0, l = mod.length; j < l; j++) {
+                    if (mod[j] in newData) this._m._old[mod[j]] = newData[mod[j]];
+                    delete newData[mod[j]];
+                }
+                data = newData;
+            }
         }
         for (var i in data) if (data.hasOwnProperty(i)) {
             this._m._old[i] = data[i];
@@ -95,12 +112,14 @@ Amm.Data.ModelMeta.prototype = {
             if (!this._m._propNames[i]) this._createProperty(i);
         }
         if (this.getKey()) {
-            this.setState(Amm.Data.STATE_EXISTS);
-            if (!noTrigger) this._m._doOnActual(false);
+            if (this.getState() !== Amm.Data.STATE_DELETE_INTENT) {
+                this.setState(Amm.Data.STATE_EXISTS);
+            }
+            if (!noTrigger) this._m._doOnActual(false, mode);
         } else {
             this.setState(Amm.Data.STATE_NEW);
         }
-        this.outHydrate();
+        this.outHydrate(mode);
         this.outOldValueChanged();
         this.endUpdate();
     },
@@ -117,8 +136,8 @@ Amm.Data.ModelMeta.prototype = {
         return null;
     },
     
-    outHydrate: function() {
-        return this._out('hydrate');
+    outHydrate: function(mode) {
+        return this._out('hydrate', mode);
     },
     
     outOldValueChanged: function() {
@@ -136,6 +155,7 @@ Amm.Data.ModelMeta.prototype = {
     beginUpdate: function() {
         this._updateLevel++;
         if (this._updateLevel > 1) return;
+        this._oldCommitted = null;
         if (!this._m._preUpdateValues) this._m._preUpdateValues = {};
         for (var i in this._m._data) if (this._m._data.hasOwnProperty(i)) {
             if (i in this._m._preUpdateValues) continue;
@@ -181,6 +201,13 @@ Amm.Data.ModelMeta.prototype = {
         if (this._propertiesChanged) {
             this._propertiesChanged = false;
             this.outPropertiesChanged();
+        }
+        if (this._oldCommitted !== null) {
+            if (this._committed !== this._oldCommitted) {
+                var oldCommitted = this._oldCommitted;
+                this._oldCommitted = null;
+                this.outCommittedChange(this._committed, oldCommitted);
+            }
         }
         if (this._m._oldErrors !== null) {
             this._endUpdateErrors();
@@ -264,6 +291,7 @@ Amm.Data.ModelMeta.prototype = {
         this._modified = modified;
         this.outModifiedChange(modified, oldModified);
         if (!this._modified) this._checkHydratedAndValid(true);
+        this._updateCommitted();
         return true;
     },
 
@@ -273,8 +301,45 @@ Amm.Data.ModelMeta.prototype = {
         }
         return this._modified;
     },
+
+    _updateCommitted: function() {
+        var comm = false, state = this.getState();
+        if (state === Amm.Data.STATE_EXISTS) {
+            comm = !this.getModified();
+        } else if (state === Amm.Data.STATE_DELETED) {
+            comm = true;
+        }
+        if (this._committed === comm) return;
+        this._setCommitted(comm);
+    },
+    
+    setCommitted: function() {
+        console.warn('setCommitted() has no effect: committed property is read-only');
+    },
+
+    _setCommitted: function(committed) {
+        committed = !!committed;
+        var oldCommitted = this._committed;
+        if (oldCommitted === committed) return;
+        this._committed = committed;
+        if (!this._updateLevel) {
+            this.outCommittedChange(committed, oldCommitted);
+            return true;
+        }
+        if (this._oldCommitted === null) {
+            this._oldCommitted = oldCommitted;
+        }
+        return true;
+    },
+
+    getCommitted: function() { return this._committed; },
+
+    outCommittedChange: function(committed, oldCommitted) {
+        this._out('committedChange', committed, oldCommitted);
+    },
     
     getOldValue: function(field) {
+        if (!field) return Amm.override({}, this._m._old);
         return this._m._old[field];
     },
 
@@ -435,6 +500,7 @@ Amm.Data.ModelMeta.prototype = {
         if (!Amm.Data.StateEnum[state]) 
             throw Error("`state` must be one of Amm.Data.STATE_ values; given: '" + state + "'");
         this._m._state = state;
+        this._updateCommitted();
         if (!this._updateLevel) {
             this.outStateChange(state, oldState);
             return;

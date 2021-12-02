@@ -43,6 +43,8 @@ Amm.Data.STATE_NEW = 'new';
 
 Amm.Data.STATE_EXISTS = 'exists';
 
+Amm.Data.STATE_DELETE_INTENT = 'deleteIntent';
+
 Amm.Data.STATE_DELETED = 'deleted';
 
 Amm.Data.StateEnum = {};
@@ -50,6 +52,7 @@ Amm.Data.StateEnum = {};
 Amm.Data.StateEnum[Amm.Data.STATE_NEW] = Amm.Data.STATE_NEW;
 Amm.Data.StateEnum[Amm.Data.STATE_EXISTS] = Amm.Data.STATE_EXISTS;
 Amm.Data.StateEnum[Amm.Data.STATE_DELETED] = Amm.Data.STATE_DELETED;
+Amm.Data.StateEnum[Amm.Data.STATE_DELETE_INTENT] = Amm.Data.STATE_DELETE_INTENT;
 
 Amm.Data.ERROR_OTHER = 'ERROR_OTHER'; // special value to get errors that are not bound to the fields
 Amm.Data.ERROR_GENERIC = 'ERROR_GENERIC'; // default key for errors without proper key
@@ -91,3 +94,19 @@ Amm.Data.LOCAL_ERRORS_CHECK_FIELDS_ONLY = 1;
  * getLocalErrors() will never check object
  */
 Amm.Data.LOCAL_ERRORS_AS_IS = 2;
+
+
+/**
+ * How to hydrate Models: Fully update values, delete fields with missing keys
+ */
+Amm.Data.HYDRATE_FULL = 0;
+
+/**
+ * How to hydrate Models: Overwrite matching values
+ */
+Amm.Data.HYDRATE_PARTIAL = 1;
+
+/**
+ * How to hydrate Models: Update old data, don't overwrite modified fields
+ */
+Amm.Data.HYDRATE_MERGE = 2;

@@ -53,6 +53,18 @@ Amm.Trait.Table.SimpleKeyboardControl.prototype = {
         return retHandled.handled;
     },
     
+    notifyHome: function(toTheLast) {
+        var retHandled = {handled: false};
+        this.outHome(toTheLast, retHandled);
+        return retHandled.handled;
+    },
+    
+    notifyEnd: function(toTheLast) {
+        var retHandled = {handled: false};
+        this.outEnd(toTheLast, retHandled);
+        return retHandled.handled;
+    },
+    
     notifyPageUp: function() {
         var retHandled = {handled: false};
         this.outPageUp(retHandled);
@@ -93,6 +105,14 @@ Amm.Trait.Table.SimpleKeyboardControl.prototype = {
     outLeaveBlankItem: function(retHandled) {
         if (!retHandled) retHandled = {handled: false};
         return this._out('leaveBlankItem', retHandled);
+    },
+    
+    outHome: function(toTheLast, retHandled) {
+        return this._out('home', retHandled);
+    },
+    
+    outEnd: function(retHandled) {
+        return this._out('end', retHandled);
     },
     
     outPageUp: function(retHandled) {

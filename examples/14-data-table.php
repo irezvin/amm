@@ -6,15 +6,22 @@
     <link rel="stylesheet" type="text/css" href="tbl2.css" />
     
     <style type="text/css">
+        
         button { padding: .25em 1em; margin: .25em; font-size: 1.1em }
         
         tr.new td {
             border-color: lightgreen;
         }
         
-        tr.deleted td {
+        tr.deleteIntent td {
             text-decoration: line-through;
         }
+        
+        tr.deleted td {
+            text-decoration: line-through;
+            text-decoration-style: double; 
+            text-decoration-color: red; 
+       }
         
         tr.modified td, tr.modified th {
             color: gold;
@@ -94,10 +101,12 @@
         window.t0 = (new Date()).getTime()/1000;
         
         window.save = function() {
-            var unc = tbl.items.findUncommitted();
-            for (var i = 0, l = unc.length; i < l; i++) {
-                unc[i].mm.save();
-            }
+            tbl.items.save();
+            jQuery('#tbl table').focus();
+        };
+        
+        window.revert = function() {
+            tbl.items.revert(true);
             jQuery('#tbl table').focus();
         };
         
@@ -280,8 +289,11 @@
                 },
 
                 items: new Amm.Data.Collection({
+                    rejectOnDelete: true,
                     preserveUncommitted: true,
+                    hydrateMode: Amm.Data.HYDRATE_MERGE,
                     instantiateOnAccept: true,
+                    keyProperty: 'id',
                     instantiator: new Amm.Data.Mapper({
                         transactionPrototypes: {
                             default: {
@@ -304,11 +316,11 @@
                 
                 on__deleteItem: function(item, wasBlank, ret) {
                     if (item.mm.getState() === "exists") {
-                        item.mm.delete();
+                        item.mm.intentDelete();
                         ret.handled = true;
                     }
                 },
-
+                
                 prop__fetcher: new Amm.Remote.Fetcher({
                     requestProducer: new Amm.Remote.RequestProducer({
                         on__uriChange: function(uri) {
@@ -374,6 +386,7 @@
         </div>
         <div style="text-align: center">
             <button accesskey="S" onclick="save();"><u>S</u>ave</button>
+            <button accesskey="R" onclick="revert();"><u>R</u>evert</button>
         </div>
         <nav class="paginator" data-amm-e="{
              class: ui.Paginator,

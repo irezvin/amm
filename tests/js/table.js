@@ -2325,7 +2325,9 @@
                //'checkIsItemBlank',
                'leaveBlankItem',
                'pageDown',
-               'pageUp'
+               'pageUp',
+               'home',
+               'end',
             ], function() {
                 evLog.push(Amm.event.name);
                 if (handled !== undefined) {
@@ -2407,12 +2409,18 @@
             key(node, "C-ArrowUp");
                 assert.ok(t.header.rows[0].cells[0].getActive(), 
                     "C-ArrowUp - go to first row in first section");
+
+            evLog = [];
             
             key(node, "End");
+                assert.ok(evLog[0] === "end", "end event");
                 assert.ok(t.header.rows[0].cells[lastCellIdx].getActive(), 
                     "End - go to last cell in the row");
             
+            evLog = [];
+                    
             key(node, "Home");
+                assert.ok(evLog[0] === "home", "home event");
                 assert.ok(t.header.rows[0].cells[0].getActive(), 
                     "Home - go to first cell in the row");
                     

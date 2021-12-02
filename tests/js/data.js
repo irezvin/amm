@@ -60,11 +60,17 @@
         //assert.deepEqual(r.mm.getState(), Amm.Data.STATE_NEW, 'Intiial state is STATE_NEW');
         
         assert.deepEqual(r.mm.getModified(), false, 'Created object is not modified yet');
+        assert.equal(r.mm.getCommitted(), true,
+            'getCommitted() is true because record exists and not modified');
         r.name = 'Jane';
         assert.deepEqual(modified, true, 'Object becomes modified');
         assert.deepEqual(name, 'Jane', 'Field change event triggered');
+        assert.equal(r.mm.getCommitted(), false,
+            'getCommitted() is false because record is modified');
         r.name = 'John';
         assert.deepEqual(modified, false, 'Object no more modified');
+        assert.equal(r.mm.getCommitted(), true,
+            'getCommitted() is true because record no more modified');
         
         name = null;
         surname = null;
@@ -453,6 +459,9 @@
         });
         
         assert.deepEqual(r.mm.getState(), Amm.Data.STATE_NEW);
+        
+        assert.equal(r.mm.getCommitted(), false,
+            'getCommitted() is false because record is new');
         
         r.mm.setAutoCheck(Amm.Data.AUTO_CHECK_SMART);
         
@@ -1029,6 +1038,118 @@
         
     });
     
+    
+    QUnit.test("Data.ModelMeta.intentDelete()", function(assert) {
+
+        var currentRequest = null;
+        
+        var tfLog = [];
+        
+        var t = new Amm.Remote.Transport.Debug({
+            replyTime: 10,
+            on__request: function(request) {
+                currentRequest = request;
+            }
+        });
+       
+        var m = new Amm.Data.Mapper({
+            uri: 'dummy.php',
+            transactionPrototypes: {
+                'default': {
+                    transport: t,
+                    typePath: 'action'
+                }
+            }
+        });
+        
+        var r = new Amm.Data.Record({
+            __mapper: m,
+            id: 10,
+            name: 'John',
+            surname: 'Doe',
+            mm: {
+                on__transactionFailure: function(transaction) {
+                    tfLog.push([transaction.getResult().getError(), '' + transaction.getResult().getException()]);
+                }
+            }
+        });
+        
+        var opRes;
+        
+        TestUtils.runStory(assert, [
+            {
+                time: 0, 
+                fn: function() {
+                    
+                        assert.ok(r.mm.getState() === Amm.Data.STATE_EXISTS, 'Initial state is exsts');
+                        
+                    t.success({
+                        error: 'Cannot delete object'
+                    });
+                    
+                    r.mm.intentDelete();
+                    
+                        assert.ok(r.mm.getState() === Amm.Data.STATE_DELETE_INTENT,
+                            'intentDelete() -> STATE_DELETE_INTENT');
+                        assert.notOk(r.mm.getCommitted(),
+                            'STATE_DELETE_INTENT: getCommitted() is false');
+                    
+                    r.mm.cancelDeleteIntent();
+                        assert.ok(r.mm.getState() === Amm.Data.STATE_EXISTS, 
+                            'cancelDeleteIntent() -> STATE_EXISTS');
+                        assert.ok(r.mm.getCommitted(),
+                            'STATE_EXISTS: getCommitted() is true');
+                    
+                    r.mm.intentDelete();
+                    opRes = r.mm.save();
+                    
+                        assert.ok(opRes, 'save() returned true');
+                        assert.ok(!!r.mm.getTransaction(), 'Transaction is running');
+                        assert.ok(currentRequest, 'request was issued');
+                        assert.ok(currentRequest.getConstRequest().getMethod(), 'POST', 'method is post');
+                        assert.deepEqual(currentRequest.getConstRequest().getUri(), 'dummy.php?action=delete&id=10' ,
+                            'Transaction type is "delete", proper key provided');
+                }
+            },
+            {
+                time: 11, 
+                fn: function() {
+                        assert.notOk(!!r.mm.getTransaction(), 'Transaction is not running');
+                        assert.deepEqual(r.mm.getState(), Amm.Data.STATE_DELETE_INTENT, 'State is still DELETE_INTENT');
+                        assert.deepEqual(r.mm.getRemoteErrors(), {
+                            'ERROR_GENERIC': ['Cannot delete object']
+                        }, 'returned error data was passed to remoteErrors');
+                    
+                    tfLog = [];
+                    
+                    t.success({
+                    });
+                    
+                    r.mm.save();
+                    
+                    assert.ok(!!r.mm.getTransaction(), 'Transaction is running again');
+                    
+                },
+            },
+            {
+                time: 11,
+                fn: function() {
+
+                        assert.notOk(!!r.mm.getTransaction(), 'transaction is finished');
+                        assert.deepEqual(tfLog.length, 0, 'Transaction was not failed');
+                        assert.deepEqual(r.mm.getRemoteErrors(), null, 'no remote errors');
+                        assert.deepEqual(r.mm.getState(), Amm.Data.STATE_DELETED, 'State is now STATE_DELETED');
+                        assert.ok(r.mm.getCommitted(),
+                            'STATE_DELETED: getCommitted() is true');
+                        
+                }
+
+            }
+        ]);
+        
+    });
+    
+    
     QUnit.test("Data.Record: lifecycle template methods", function(assert) {
         
         var log = [];
@@ -1084,7 +1205,7 @@
         
         r.mm.hydrate({id: 10, name: 'john'});
         
-            assert.deepEqual(log, [['_doOnActual', false], ['_doOnCompute']], '_doOnActual(false) called on hydrate');
+            assert.deepEqual(log, [['_doOnActual', false, Amm.Data.HYDRATE_FULL], ['_doOnCompute']], '_doOnActual(false, Amm.Data.HYDRATE_FULL) called on hydrate');
             
         log = [];
         
@@ -1112,7 +1233,7 @@
         log = [];
             
             t.success({data: {surname: 'Doe'}}, "ok", 0);
-            assert.deepEqual(log, [['_doAfterSave', false], ['_doOnActual', true], ['_doOnCompute']], 
+            assert.deepEqual(log, [['_doAfterSave', false], ['_doOnActual', true, Amm.Data.HYDRATE_PARTIAL], ['_doOnCompute']], 
                 'both _doBeforeSave and _doOnActual called on save()');
                 
         log = [];
@@ -1136,7 +1257,7 @@
         log = [];
         t.success({data: {id: 23, name: 'Jane', surname: 'Doe'}}, "ok", 0);
             
-            assert.deepEqual(log, [['_doAfterLoad'], ['_doOnActual', false], ['_doOnCompute']],
+            assert.deepEqual(log, [['_doAfterLoad'], ['_doOnActual', false, Amm.Data.HYDRATE_FULL], ['_doOnCompute']],
                 '_doAfterLoad and _doOnActual called after load');
 
         
@@ -2063,18 +2184,24 @@
         
         var mapper = new Amm.Data.Mapper({
             meta: {
-                id: {},
+                id: {required: true},
                 firstName: {},
                 lastName: {}
             },
             key: 'id',
         });
         
+        var numUncommitted, numWithErrors;
+        
         var c = new Amm.Data.Collection({
             instantiateOnAccept: true,
             instantiator: mapper,
-            preserveUncommitted: true
+            preserveUncommitted: true,
+            on__numUncommittedChange: function(v) { numUncommitted = v; },
+            on__numWithErrorsChange: function(v) { numWithErrors = v; },
         });
+        
+        d.c = c;
         
         c.setItems([
             {id: 1, firstName: 'John', lastName: 'Doe'},
@@ -2083,26 +2210,191 @@
         ]);
         
         var item0 = c[0];
-        item0.firstName = 'Johny';
+        var item1 = c[1];
         
+        item0.firstName = 'Johny';
             assert.ok(item0.mm.getModified(), 'Item is modified...');
+            assert.equal(numUncommitted, 1, 'modify: numUncommitted increased');
+        item0.id = null;
+            assert.equal(numWithErrors, 1, 'required field missing: numErrors increased');
+            
+        item1.mm.intentDelete();
+            assert.equal(numUncommitted, 2, 'intentDelete(): numUncommitted increased');
+        item1.id = null;
+            assert.equal(numWithErrors, 2, 'required field missing: numErrors increased');
+            
+        item0.id = 1;
+        
+            assert.equal(numWithErrors, 1, 'less errors: numWithErrors decreased');
+            
+        item1.id = 2;
+            
+            assert.equal(numWithErrors, 0, 'less errors: numWithErrors decreased (2)');
         
         c.setItems([
             {id: 4, firstName: 'Aaa', lastName: 'Bb'},
             {id: 5, firstName: 'Ccc', lastName: 'Dd'},
         ]);
                 
-            assert.equal(c.length, 3, 'Uncommitted item remainted');
-            assert.ok(c[0] === item0, 'It is at first position');        
+            assert.equal(c.length, 4, 'Committed items remainted');
+            assert.ok(c[0] === item0, 'Item 1 (modified) is at first position');        
+            assert.ok(c[1] === item1, 'Item 2 (intended for deletion) is at second position');
+        
+        var buggyItem = mapper.construct({id: 10, firstName: 'Boo', lastName: 'Gee'});
+            buggyItem.setId(null);
             
+            assert.ok(!buggyItem.mm.getCommitted(), 'Record uncommitted;');
+            assert.ok(!!buggyItem.mm.getErrors(), 'record has errors;');
+            
+        c.accept(buggyItem);
+            
+            assert.equal(numUncommitted, 3, 'uncommmitted record added: numUncommitted increased;');
+            assert.equal(numWithErrors, 1, 'invalid record added: numWithErrors increased;');
+            
+        c.setRejectOnDelete(true);
+        
+            buggyItem.mm.setState(Amm.Data.STATE_DELETED);
+            assert.notOk(c.hasItem(buggyItem), 'reject-on-delete works: item was rejected;');
+            
+            assert.equal(numUncommitted, 2, 'uncommmitted record rejected: numUncommitted decreased;');
+            assert.equal(numWithErrors, 0, 'invalid record rejected: numWithErrors decreased');
+        
         item0.mm.revert();
         
-            assert.notOk(item0.mm.getModified(), 'Item is not modified anymore...');
+            assert.notOk(item0.mm.getModified(), 'revert: Item 1 is not modified anymore...');
+            assert.equal(numUncommitted, 1, 'revert(): numUncommitted decreased (1)');
+            
+        item1.mm.revert();
+            assert.notOk(item1.mm.getState() === Amm.Data.STATE_DELETE_INTENT,
+                'Item 2 is not intended for deletion anymore...');
+            assert.equal(numUncommitted, 0, 'revert(): numUncommitted decreased (2)');
             
         c.setItems([]);
         
             assert.equal(c.length, 0, 'Committed item no more in collection after setItems()');
             
+    });
+    
+    QUnit.test("Model: hydrate with merge", function(assert) {
+        
+        var log = [];
+        var mod = new Amm.Data.Model({
+            mm: {
+                on__oldValueChanged: function() {
+                    log.push('oldValueChanged');
+                }
+            }
+        });
+        
+        mod.mm.hydrate({
+            firstName: 'John',
+            lastName: 'Doe',
+            salary: 1000,
+            gender: 'male'
+        });
+        
+        log = [];
+        
+        mod.firstName = 'Johny';
+        mod.lastName = 'Doh';
+        
+        mod.mm.hydrate({
+            firstName: 'John',
+            lastName: 'Dope',       // changed
+            salary: 1500,           // changed
+            gender: 'male'
+        }, Amm.Data.HYDRATE_MERGE);
+        
+        assert.equal(log.length, 1, 
+            'HYDRATE_MERGE: oldValueChanged event was logged');
+        
+        assert.ok(mod.mm.getModified(),
+            'HYDRATE_MERGE: record still modified');
+        
+        assert.deepEqual(mod.mm.listModifiedFields(), ['firstName', 'lastName'], 
+            'HYDRATE_MERGE: modified fields remain modified');
+        
+        assert.deepEqual(mod.mm.getData(), 
+            {
+                firstName: 'Johny',     // modified - not overwritten
+                lastName: 'Doh',        // modified - not overwritten
+                salary: 1500,           // incoming
+                gender: 'male'
+            },
+            'HYDRATE_MERGE: changed fields remain same, others updated');
+            
+        assert.deepEqual(mod.mm.getOldValue('lastName'), 'Dope', 
+            'oldValue changed during merge update');
+        
+    });
+    
+    QUnit.test("Data.Collection: intelligent merge of records", function(assert) {
+        
+        var mapper = new Amm.Data.Mapper({
+            
+            key: 'id',
+            
+            meta: {
+                id: {},
+                firstName: {},
+                lastName: {},
+                salary: {}
+            }
+            
+        });
+        
+        var coll = new Amm.Data.Collection({
+            
+            keyProperty: 'id',
+            instantiateOnAccept: true,
+            instantiator: mapper,
+            preserveUncommitted: true,
+            
+        });
+        
+        var data = [
+            { id: 1, firstName: 'John',     lastName: 'Doe',        salary: 1000,   },
+            { id: 2, firstName: 'Jane',     lastName: 'Dooh',       salary: 1500,   },
+            { id: 3, firstName: 'Susan',    lastName: 'Moore',      salary: 900,    },
+            { id: 4, firstName: 'Dale',     lastName: 'Coningale',  salary: 100,    },
+            { id: 5, firstName: 'Guy',      lastName: 'Richie',     salary: 1800,   },
+            { id: 6, firstName: 'Dennis',   lastName: 'Ritchie',    salary: 1700,   },
+            { id: 7, firstName: 'Jason',    lastName: 'Stoner',     salary: 530,    },
+        ];
+        
+        coll.setItems(data);
+        
+        assert.equal(coll.length, 7, 'Initial items are set');
+        
+        var tmp = coll[0];
+        
+        d.coll = coll;
+        
+        coll[0].firstName = 'Johny';
+        
+        var updatedData = Amm.overrideRecursive([], data);
+        
+        updatedData[0].firstName = 'Johhhnnnn';
+        updatedData[0].lastName = 'Doooeeee';
+        
+        updatedData[1].firstName = 'Janette';
+        
+        coll.setItems(updatedData);
+        
+        assert.equal(coll.length, 7, 'Data update: same length of items');
+        assert.equal(coll[0].firstName, 'Johny', 'Modified field unchanged');
+        assert.equal(coll[0].mm.getOldValue('firstName'), 'Johhhnnnn', 'Modified field old value changed');
+        assert.equal(coll[0].lastName, 'Doooeeee', 'Modified record original field updated');
+        assert.equal(coll[1].firstName, 'Janette', 'Other record updated');
+        
+        coll.accept({});
+        assert.equal(coll.length, 8, 'Accept empty record (null key) worked');
+        
+        coll.accept({});
+        assert.equal(coll.length, 9, 'Accept another empty record (null key) worked');
+        
+        Amm.cleanup(coll.getItems(), coll);
+        
     });
     
 }) ();

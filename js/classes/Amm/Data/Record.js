@@ -37,7 +37,7 @@ Amm.Data.Record.prototype = {
         
     },
     
-    _doOnActual: function(forSave) {
+    _doOnActual: function(forSave, mode) {
     },
     
     /**

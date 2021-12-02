@@ -219,10 +219,12 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
             toTheLast = true;
             reverse = true;
             if (event.ctrlKey) toTheLast = "AllCells";
+            if (this._element.notifyHome(toTheLast)) return;
         } else if (char === "End") {
             rowNav = false; // down
             toTheLast = true;
             if (event.ctrlKey) toTheLast = "AllCells";
+            if (this._element.notifyEnd(toTheLast)) return;            
         } else if (char === "PageDown") {
             if (this._element.notifyPageDown()) return;
             rowNav = true;

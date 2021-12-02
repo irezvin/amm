@@ -91,20 +91,22 @@ Amm.Data.RecordMeta.prototype = {
         
     },
     
-    _hydrateFromTransactionDataAndTrigger: function(forSave, newState, partial) {
+    _hydrateFromTransactionDataAndTrigger: function(forSave, newState, mode) {
         var result = this._transaction.getResult();
         var wasCreated = (this._m._state === Amm.Data.STATE_NEW);
         this.beginUpdate();
         this.setRemoteErrors({});
         var data = result.getData();
-        if (data) this.hydrate(data, partial, true);
+        if (data) this.hydrate(data, mode, true);
         if (newState) this.setState(newState);
         if (forSave) {
             this._m._doAfterSave(wasCreated);
         } else {
             this._m._doAfterLoad();
         }
-        this._m._doOnActual(forSave);
+        if (!mode) mode = Amm.Data.HYDRATE_FULL;
+        else if (mode === true) mode = Amm.Data.HYDRATE_PARTIAL;
+        this._m._doOnActual(forSave, mode);
         this.endUpdate();
     },
     
@@ -197,6 +199,9 @@ Amm.Data.RecordMeta.prototype = {
     save: function(noCheck) {
         if (!noCheck && !this.check()) return;
         if (this._m._doBeforeSave() === false) return;
+        if (this.getState() === Amm.Data.STATE_DELETE_INTENT) {
+            return this.delete();
+        }
         var data = this._getTransactionData(), tr, state = this.getState();
         if (state === Amm.Data.STATE_NEW) {
             tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_CREATE, null, data);
@@ -209,9 +214,32 @@ Amm.Data.RecordMeta.prototype = {
         return true;
     },
     
+    intentDelete: function() {
+        if (this.getState() !== Amm.Data.STATE_EXISTS) {
+            throw Error("can intentDelete() only record with getState() == Amm.Data.STATE_EXISTS");
+        }
+        this.setState(Amm.Data.STATE_DELETE_INTENT);
+    },
+    
+    cancelDeleteIntent: function() {
+        if (this.getState() !== Amm.Data.STATE_DELETE_INTENT) return;
+        this.setState(Amm.Data.STATE_EXISTS);
+    },
+    
+    revert: function() {
+        this.beginUpdate();
+        if (this.getState() === Amm.Data.STATE_DELETE_INTENT) {
+            this.cancelDeleteIntent();
+        }
+        Amm.Data.ModelMeta.prototype.revert.call(this);
+        this.endUpdate();
+    },
+    
     delete: function() {
         var tr, state = this.getState(), key;
-        if (state !== Amm.Data.STATE_EXISTS) {
+        if (state !== Amm.Data.STATE_EXISTS 
+            && state !== Amm.Data.STATE_DELETE_INTENT) 
+        {
             this.setState(Amm.Data.STATE_DELETED);
             return true;
         }

@@ -334,6 +334,7 @@ Amm.Collection.prototype = {
             }
         }
         if (!checkRequirementsOnly && !this._allowUpdate) {
+            console.log('zzz');
             var index = this.indexOf(item);
             if (index >= 0) {
                 problem.error = Amm.Collection.ERR_DUPLICATE_UPDATE_NOT_ALLOWED;
@@ -365,7 +366,7 @@ Amm.Collection.prototype = {
     },
     
     /**
-     * Checks if can accept items; returns SIX arrays:
+     * Checks if can accept items; returns 7 arrays:
      * 0. Items that are not added yet - excluding ones that have matches
      * 1. Subset of `items` that have matches
      * 2. Subset of `this` that is matches of those items (including exact duplicates)
@@ -899,7 +900,7 @@ Amm.Collection.prototype = {
             // setItems() also won't replace already existing and contained instances too,
             // but will delete every other item
             this.beginUpdate();
-            this.setItems(this.acceptMany(items));
+            this.setItems(this.acceptMany(items), false);
             this.endUpdate();
             return this.length;
         }
@@ -1113,21 +1114,7 @@ Amm.Collection.prototype = {
         
         if (this._assocEvents) this._associateEvents([item], true);
         
-        if (this._indexPropertyIsWatched) {
-            if (this._indexPropertyIsWatched) {
-                var event = this._indexProperty + 'Change';
-                item.unsubscribe(event, this._reportItemIndexPropertyChange, this);
-            }
-        }
-        
-        if (this._keyProperty) {
-            var key = Amm.getProperty(item, this._keyProperty);
-            if (key !== false && key !== undefined && this.k[key] === item) {
-                delete this.k[key];
-                this.outByKeyChange();
-            }
-            item.unsubscribe(this._keyProperty + 'Change', this._handleKeyChange, this);
-        }
+        this._unsubscribe(item);
         
         if (this._undefaults) {
             Amm.setProperty(item, this._undefaults);
@@ -1149,6 +1136,25 @@ Amm.Collection.prototype = {
         return this._out('onDissociate', item);
     },
     
+    _unsubscribe: function(item) {
+        
+        if (this._indexPropertyIsWatched) {
+            if (this._indexPropertyIsWatched) {
+                var event = this._indexProperty + 'Change';
+                item.unsubscribe(event, this._reportItemIndexPropertyChange, this);
+            }
+        }
+        
+        if (this._keyProperty) {
+            var key = Amm.getProperty(item, this._keyProperty);
+            if (key !== false && key !== undefined && this.k[key] === item) {
+                delete this.k[key];
+                this.outByKeyChange();
+            }
+            item.unsubscribe(this._keyProperty + 'Change', this._handleKeyChange, this);
+        }
+        
+    },
     
     /**
      * Error handlers should fill problem.error if item cannot be accepted.
@@ -1460,13 +1466,16 @@ Amm.Collection.prototype = {
         if (this._keyProperty) {
             propA = Amm.getProperty(a, this._keyProperty);
             if (propA && typeof propA === 'object') throw this._keyPropertyError(a, propA);
+            propB = Amm.getProperty(b, this._keyProperty);
             if (propA !== undefined && propA !== null) {
-                propB = Amm.getProperty(b, this._keyProperty);
                 if (propB !== undefined && propB !== null) {
                     if (typeof propB === 'object') throw this._keyPropertyError(b, propB);
                     if (('' + propA) !== ('' + propB)) return -1;
                 }
             }
+            // one or more of keys are null or undefined: return -1
+            if (propA === undefined || propB === undefined) return -1;
+            if (propA === null || propB === null) return -1;
         }
         if (this._custComparison) return this._custComparison(a, b);
         return 0;

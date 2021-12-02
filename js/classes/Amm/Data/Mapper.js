@@ -1,8 +1,11 @@
 /* global Amm */
 
 Amm.Data.Mapper = function(options) {
-    Amm.Data.MetaProvider.call(this, options);
+    var options = Amm.override({}, options);
     Amm.WithEvents.call(this, options);
+    Amm.Instantiator.call(this);
+    Amm.Data.MetaProvider.call(this);
+    Amm.init(this, options);
 };
 
 Amm.Data.Mapper.instances = {};
