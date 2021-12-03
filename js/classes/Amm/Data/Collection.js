@@ -298,7 +298,7 @@ Amm.Data.Collection.prototype = {
             res.push(items[i]);
             if (rejectNew && items[i].mm.getState() === Amm.Data.STATE_NEW)
                 this.reject(items[i]);
-            items[i].mm.revert();
+            else items[i].mm.revert();
         }
         this.endUpdate();
         return res;

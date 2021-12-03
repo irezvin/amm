@@ -487,7 +487,6 @@
         
     });
     
-    
     QUnit.test("Data.ModelMeta.check() - AUTO_CHECK_ALWAYS", function(assert) {
         
         var r = createObjectForChecks();
@@ -615,7 +614,6 @@
         
 
     });
-    
     
     QUnit.test("Data.Record: change fields on hydrate", function(assert) {
         
@@ -943,7 +941,6 @@
         
     });
         
-    
     QUnit.test("Data.ModelMeta.delete()", function(assert) {
 
         var currentRequest = null;
@@ -1037,7 +1034,6 @@
         ]);
         
     });
-    
     
     QUnit.test("Data.ModelMeta.intentDelete()", function(assert) {
 
@@ -1148,7 +1144,6 @@
         ]);
         
     });
-    
     
     QUnit.test("Data.Record: lifecycle template methods", function(assert) {
         
@@ -1767,7 +1762,6 @@
         
     });
     
-    
     QUnit.test("Data.ModelMeta: create properties; 'set' meta-property", function(assert) {
        
         var m = new Amm.Data.Model({
@@ -2179,8 +2173,7 @@
         
     });
     
-    
-    QUnit.test("Data Collection", function(assert) {
+    QUnit.test("Data.Collection", function(assert) {
         
         var mapper = new Amm.Data.Mapper({
             meta: {
@@ -2265,6 +2258,7 @@
             assert.equal(numUncommitted, 1, 'revert(): numUncommitted decreased (1)');
             
         item1.mm.revert();
+        
             assert.notOk(item1.mm.getState() === Amm.Data.STATE_DELETE_INTENT,
                 'Item 2 is not intended for deletion anymore...');
             assert.equal(numUncommitted, 0, 'revert(): numUncommitted decreased (2)');
@@ -2275,7 +2269,92 @@
             
     });
     
-    QUnit.test("Model: hydrate with merge", function(assert) {
+    QUnit.test("Data.Collection: save() and revert()", function(assert) {
+
+        var meta = {
+            id: {required: true},
+            firstName: {required: true},
+            lastName: {},
+            salary: {}
+        };
+        
+        var storage = new MemStor({
+            primaryKey: 'id',
+            autoInc: true,
+            def: [
+                { id: 1, firstName: 'John',     lastName: 'Doe',        salary: 1000,   },
+                { id: 2, firstName: 'Jane',     lastName: 'Dooh',       salary: 1500,   },
+                { id: 3, firstName: 'Susan',    lastName: 'Moore',      salary: 900,    },
+                { id: 4, firstName: 'Dale',     lastName: 'Coningale',  salary: 100,    },
+                { id: 5, firstName: 'Guy',      lastName: 'Richie',     salary: 1800,   },
+                { id: 6, firstName: 'Dennis',   lastName: 'Ritchie',    salary: 1700,   },
+                { id: 7, firstName: 'Jason',    lastName: 'Stoner',     salary: 530,    },
+            ],
+            load: true
+        });
+        
+        var mapper = new Amm.Data.Mapper(storage.getMapperPrototype());
+        
+        var c = new Amm.Data.Collection({
+            instantiateOnAccept: true,
+            instantiator: mapper,
+            preserveUncommitted: true,
+            items: storage.find().getData(),
+        });
+        
+        assert.equal(c.length, 7, 'Items are in the collection');
+        
+        var newItem = c.accept({firstName: 'Another', lastName: 'One', salary: 810}); // create new item
+        
+        c[0].firstName = 'Joo';
+        c[0].lastName = 'Droo';
+        c[1].mm.intentDelete();
+        
+        var sr = c.save();
+            assert.deepEqual(Amm.getProperty(sr, 'firstName'), ['Joo', 'Jane', 'Another'],
+                '.save() returned modified records');
+            
+        var tr;
+            
+        tr = sr[0].mm.getTransaction();
+            assert.ok(tr && tr.getType() === Amm.Data.Transaction.TYPE_UPDATE,
+                'Modified record is being updated');
+            
+        tr = sr[1].mm.getTransaction();
+            assert.ok(tr && tr.getType() === Amm.Data.Transaction.TYPE_DELETE,
+                'Delete-intended record is being deleted');
+            
+        tr = sr[2].mm.getTransaction();
+            assert.ok(tr && tr.getType() === Amm.Data.Transaction.TYPE_CREATE,
+                'New record is being created');
+            
+        c[2].firstName = 'Su3aN';
+        c[3].mm.intentDelete();
+        
+        sr = c.save();
+            assert.deepEqual(Amm.getProperty(sr, 'firstName'), ['Su3aN', 'Dale'],
+                '.save() returned recently-touched records');
+                
+        c[4].firstName = 'Guywille';
+        c[5].mm.intentDelete();
+        
+        var newItem2 = c.accept({firstName: 'XxYy'});
+            assert.ok(c.hasItem(newItem2), 'New item is in the collection');
+            
+        sr = c.revert(true);
+            assert.notOk(c.hasItem(newItem2), '.revert(true): new item is not in the collection anymore');
+            assert.notOk(c[4].mm.getModified(), '.revert(): modified item reverted');
+            assert.equal(c[5].mm.getState(), Amm.Data.STATE_EXISTS, 
+                '.revert(): modified item reverted');
+            assert.deepEqual(Amm.getProperty(sr, 'firstName'), ['Guy', 'Dennis', 'XxYy'],
+                'Reverted record were returned (and ones with running transactions not reverted)'
+            );
+        
+        Amm.cleanup(c.getItems());
+        
+    });
+    
+    QUnit.test("Data.ModelMeta: hydrate with merge", function(assert) {
         
         var log = [];
         var mod = new Amm.Data.Model({

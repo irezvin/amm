@@ -10,6 +10,8 @@ var MemStor = function(options) {
 };
 
 MemStor.prototype = {
+    
+    'MemStor': '__CLASS__',
 
     /**
      * @type {object}
@@ -430,6 +432,24 @@ MemStor.prototype = {
             lastFoundRows: this.lastFoundRows.length,
             records: items.getData(fields)
         };
-    }
+    },
+    
+    getMapperPrototype: function() {
+        return {
+            meta: this.metaProps,
+            key: this.primaryKey,
+            transactionPrototypes: {
+                default: {
+                    'class': 'Amm.Data.HttpTransaction',
+                    uri: '/',
+                    typePath: '',
+                    keyPath: 'key',
+                    transport: this.createDebugTransport(),
+                    responseDataPath: 'record',
+                },
+            },
+
+        };
+    },
     
 };
