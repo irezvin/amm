@@ -538,7 +538,10 @@ Amm.Builder.calcPrototypeFromSource = function(builderSource, dontClone, views) 
     }
     else throw Error ("Unsupported builderSource type: " + Amm.describeType(builderSource));
     var jq = jQuery(source);
-    if (!jq.length) throw Error("Cannot resolve builderSource reference");
+    if (!jq.length) {
+        console.log(source, builderSource);
+        throw Error("Cannot resolve builderSource reference");
+    }
     if (dontClone === undefined) dontClone = jq.attr('data-amm-dont-build') === undefined;
     var old;
     if (!dontClone) {

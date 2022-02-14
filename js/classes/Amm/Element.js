@@ -132,6 +132,20 @@ Amm.Element._checkAndApplyOptionsBuilderSource = function(options) {
     }
     if (!options.builderSource) return options;
     var extraOptions = Amm.Builder.calcPrototypeFromSource(options.builderSource);
+    
+    if (options.views && extraOptions.views) {
+        
+        // Combine views to allow elements defined by BuilderSource' $ref be put into Default view.
+        
+        // Code below is hacky: extraOptions.views go before options.views, which usually has Default view,
+        // because we need to have "real" views to be created and bound to element *before* Default view,
+        // which tries to find them immediately during observing.
+        // *probably* views shouldn't start observing before element finishes init
+        
+        options.views = Amm.Array.unique(extraOptions.views.concat(options.views));
+        delete extraOptions.views;
+    }
+    
     var newOptions = options.builderPriority? 
         Amm.override({}, options, extraOptions) : Amm.override(extraOptions, options);
     delete newOptions.builderSource;

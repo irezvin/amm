@@ -2,10 +2,11 @@
 
 var MemStor = function(options) {
     this._records = [];
+    this.uniqueIndexes = [];
     this.log = [];
     var load = !!options.load;
     delete options.load;
-    Amm.init(this, options);
+    Amm.WithEvents.call(this, options);
     if (load) this.load();
 };
 
@@ -45,6 +46,8 @@ MemStor.prototype = {
     
     autoSave: false,
     
+    defaultReplyTime: 10,
+    
     /**
      * Httpis requests log
      * @type Array
@@ -66,7 +69,7 @@ MemStor.prototype = {
         var kv = {};
         kv[this.primaryKey] = pk;
         var r = this.find(kv, null, 0, 1);
-        if (r.length) return r[0];
+        if (r.length) return r.getData()[0];
         return null;
     },
 
@@ -102,6 +105,22 @@ MemStor.prototype = {
         var t = this;
         found.getData = this._getData;
         return found;
+    },
+    
+    offset: function(key, keyVals, sort) {
+        if (!key) key = this._param('key');
+        
+        // the implementation is very lame
+        var keys = this.find(keyVals, sort).getData(this.primaryKey);
+        
+        var offset = -1;
+        for (var i = 0, l = keys.length; i < l; i++) {
+            if (keys[i] == key) {
+                offset = i;
+                break;
+            }
+        }
+        return offset;
     },
 
     create: function(data) {
@@ -311,13 +330,13 @@ MemStor.prototype = {
     createDebugTransport: function(logRequests) {
         var t = this;
         var res = new Amm.Remote.Transport.Debug({
+            replyTime: this.defaultReplyTime,
             on__request: [
                 function(runningRequest, success, failure) {
                     var httpCode = 200;
                     var errorMessage;
                     var constRequest = runningRequest.getConstRequest();
                     try {
-                        
                         var response = this.handleRequest(
                             constRequest.getMethod(),
                             constRequest.getUri(),
@@ -360,12 +379,26 @@ MemStor.prototype = {
         var args = this._uri.getUri('QUERY');
         var path = this._uri.getUri('PATH');
         path = path.replace(/(^\/+|\/+$)/g, '').split('/');
-        var action = path[0] || args['action'] || '';
-        var fn = 'action' + Amm.ucFirst(action);
-        if (!this[fn]) this._throw("No such method: '" + action + "'", 400);
         var decodedData = this._decodeData(data || null);
-        console.log('MemStor.handleRequest', action, ':', method, uri, decodedData, headers);
-        return this[fn](decodedData);
+        var action = path[0] || args['action'] || '';
+        var retResult = {
+            result: undefined,
+        };
+        this.outRequest(action, method, uri, decodedData, headers, retResult);
+        var res;
+        if (retResult.result !== undefined) res = retResult.result;
+        else {
+            var fn = 'action' + Amm.ucFirst(action);
+            if (!this[fn]) this._throw("No such method: '" + action + "'", 400);
+            res = this[fn](decodedData);
+        }
+        console.log('MemStor.handleRequest', action, ':', method, uri, decodedData, headers, res);
+        return res;
+    },
+    
+    outRequest: function(action, method, uri, decodedData, headers, retResult) {
+        retResult = retResult || { result: undefined };
+        return this._out('request', action, method, uri, decodedData, headers, retResult);
     },
     
     _param: function(name, def) {
@@ -413,6 +446,15 @@ MemStor.prototype = {
         return this.remove(keyVals);
     },
     
+    actionLoad: function(data) {
+        if (!this.primaryKey) throw "Cannot load w/o primaryKey";
+        var keyVals = {};
+        var keyVals = {};
+        var key = this._param(this.primaryKey, false);
+        if (!key) key = this._param('key');
+        return this.get(key);
+    },
+    
     actionList: function(data) {
         var offset = this._param('offset', null);
         if (offset) {
@@ -434,22 +476,56 @@ MemStor.prototype = {
         };
     },
     
-    getMapperPrototype: function() {
+    actionOffset: function(data) {
+        var filter = this._param('filter', null);
+        var sort = this._param('sort', null);
+        var key = this._param(this.primaryKey, false);
+        if (!key) key = this._param('key');
+        var offset = this.offset(key, filter, sort);
+        return {
+            offset: offset
+        };
+    },
+    
+    getMapperPrototype: function(retTransport) {
+        if (!retTransport || typeof retTransport !== 'object') {
+            retTransport = {transport: null};
+        }
+        retTransport.transport = this.createDebugTransport();
         return {
             meta: this.metaProps,
             key: this.primaryKey,
             transactionPrototypes: {
+                list: {
+                    runner: {
+                        responseDataPath: null,
+                    },
+                },
+                offset: {
+                    runner: {
+                        responseDataPath: null,
+                    },
+                },
+                delete: {
+                    runner: {
+                        responseDataPath: null,
+                    },
+                },
                 default: {
-                    'class': 'Amm.Data.HttpTransaction',
-                    uri: '/',
-                    typePath: '',
-                    keyPath: 'key',
-                    transport: this.createDebugTransport(),
-                    responseDataPath: 'record',
+                    runner: {
+                        'class': 'Amm.Data.TransactionRunner.Http',
+                        uri: '/',
+                        typePath: '',
+                        keyPath: 'key',
+                        transport: retTransport.transport,
+                        responseDataPath: 'record',
+                    },
                 },
             },
-
         };
     },
     
 };
+
+
+Amm.extend(MemStor, Amm.WithEvents);

@@ -321,8 +321,10 @@ Amm.Trait.Field.prototype = {
                 empty = false;
             }
         } else {
-            if (empty && this._fieldRequired) {
-                errors.push(Amm.translate(this.fieldRequiredMessage, '%field', label));
+            if (empty && this._fieldRequired) { 
+                if (!this['Data']) { // when editing Data fields, required validation is done by model
+                    errors.push(Amm.translate(this.fieldRequiredMessage, '%field', label));
+                }
             }
         }
         if (!empty) {
@@ -542,7 +544,7 @@ Amm.Trait.Field.prototype = {
                     fieldRequiredValidator, 'Amm.Validator'
                 );
             }
-            Amm.setField(fieldRequiredValidator, 'element', this);
+            Amm.setProperty(fieldRequiredValidator, 'element', this);
         }
         this._fieldRequiredValidator = fieldRequiredValidator;
         this.setNeedValidate(true);

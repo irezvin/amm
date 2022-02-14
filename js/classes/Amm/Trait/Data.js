@@ -239,8 +239,13 @@ Amm.Trait.Data.prototype = {
         var _syncField = this._dataSyncWithField;
         if (_syncField) {
             this.setFieldLabel(meta.label);
-            this.setFieldRequired(meta.required);
-        } else if (this['Annotated'] === '__INTERFACE__') {
+            if (false && this['Annotated'] === '__INTERFACE__') {
+                this.setRequired(meta.required);
+            } else {
+                this.setFieldRequired(meta.required);
+            }
+        }
+        if (this['Annotated'] === '__INTERFACE__') {
             if (!_syncField) {
                 this.setLabel(meta.label);
                 this.setRequired(meta.required);
@@ -489,12 +494,12 @@ Amm.Trait.Data.prototype = {
     
     _dataUpdateModified: function() {
         var modified = false;
-        if (this._dataHasProperty) {
+        if (this._dataObject && this._dataHasProperty) {
             modified = this._dataObject.mm.getModified(this._dataProperty);
         } else if (this._dataObject && !this._dataProperty) {
             modified = this._dataObject.mm.getModified();
         }
         this.setDataModified(modified, true);
-    }
+    },
     
 };

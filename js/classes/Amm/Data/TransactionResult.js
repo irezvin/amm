@@ -8,6 +8,12 @@ Amm.Data.TransactionResult = function(options) {
 
 Amm.Data.TransactionResult.ERROR_TYPE_NONE = null;
 
+
+/**
+ * One of associated transactions failed, so current one failed too
+ */
+Amm.Data.TransactionResult.ERROR_TYPE_CHAIN = 'chain';
+
 /**
  * We weren't able to produce request or parse response
  */ 
@@ -24,6 +30,7 @@ Amm.Data.TransactionResult.ERROR_TYPE_HTTP = 'http';
 Amm.Data.TransactionResult.ERROR_TYPE_SERVER = 'server';
 
 Amm.Data.TransactionResult._revErrorType = {
+    chain: 'CHAIN',
     client: 'CLIENT',
     http: 'HTTP',
     server: 'SERVER'

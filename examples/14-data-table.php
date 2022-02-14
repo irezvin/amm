@@ -294,19 +294,7 @@
                     hydrateMode: Amm.Data.HYDRATE_MERGE,
                     instantiateOnAccept: true,
                     keyProperty: 'id',
-                    instantiator: new Amm.Data.Mapper({
-                        transactionPrototypes: {
-                            default: {
-                                'class': 'Amm.Data.HttpTransaction',
-                                uri: '/',
-                                typePath: '',
-                                keyPath: 'key',
-                                transport: addressStor.createDebugTransport(),
-                                responseDataPath: 'record',
-                            },
-                        },
-                        meta: Amm.override({}, window.addressMeta),
-                    }),
+                    instantiator: new Amm.Data.Mapper(addressStor.getMapperPrototype()),
                 }),
                 
                 on__checkIsItemBlank: function(item, ret) {

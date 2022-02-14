@@ -118,7 +118,7 @@ Amm.ArrayMapper.prototype = {
      */
     setSrc: function(src) {
         if (src instanceof Array) {
-            if (this._src & this._srcIsOwn) {
+            if (this._src && this._srcIsOwn) {
                 return this._src.setItems(src);
             } else {
                src = this._createSrc(src); 

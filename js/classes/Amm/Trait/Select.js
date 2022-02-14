@@ -83,13 +83,13 @@ Amm.Trait.Select.prototype = {
         var instances = [];
         for (var i = 0; i < items.length; i++) {
             var item;
-            var proto = this._optionPrototype? Amm.overrideRecursive({}, this._optionPrototype) : {};
+            var proto = this._optionPrototype? Amm.override({}, this._optionPrototype) : {};
             if (typeof items[i] !== 'object') {
                 proto.label = items[i];
                 proto.value = items[i];
             } else {
                 var c = Amm.getClass(items[i]);
-                if (!c) proto = Amm.overrideRecursive(proto, items[i]);
+                if (!c) proto = Amm.override(proto, items[i]);
                 else item = items[i];
             }
             proto.component = this.getClosestComponent();

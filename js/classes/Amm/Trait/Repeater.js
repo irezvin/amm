@@ -9,6 +9,8 @@ Amm.Trait.Repeater.prototype = {
     
     InstantiatorOrRepeater: '__INTERFACE__',
     
+    reuseInstances: false,
+    
     _useFilter: true,
     
     _arrayMapperOptions: null,
@@ -121,6 +123,7 @@ Amm.Trait.Repeater.prototype = {
                 defaultPrototype: defaultPrototype || null
             };
         }
+        instantiatorPrototype.reuseInstances = this.reuseInstances;
         var res = {
             dest: this.displayChildren,
             filter: {

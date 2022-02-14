@@ -6,6 +6,7 @@ Amm.Remote.Transport.Debug = function(options) {
     var t = this;
     this._successClosure = function(data, textStatus) { return t.success.apply(t, Array.prototype.slice.call(arguments)); };
     this._failureClosure = function(textStatus, errorThrown, httpCode) { return t.failure.apply(t, Array.prototype.slice.call(arguments)) };
+    this._pendingAsync = [];
 };
 
 Amm.Remote.Transport.Debug.prototype = {
@@ -26,22 +27,55 @@ Amm.Remote.Transport.Debug.prototype = {
     
     _failureClosure: null,
     
+    _asyncCounter: 0,
+    
+    _pendingAsync: null,
+    
     reply: function(runningRequest, isSuccess, timeout, args_) {
         this._pendingSuccess = null;
         this._pendingFailure = null;
         if (runningRequest.getAborted()) return;
         if (timeout === undefined || timeout === null) timeout = this.replyTime;
         var args = Array.prototype.slice.call(arguments, 3);
+        var id = null;
+        var t = this;
+        if (timeout > 0) {
+            id = ++this._asyncCounter;
+        }
         var f = function() {
             var fn = isSuccess? runningRequest.success : runningRequest.failure;
+            if (id) t.clearAsync(id);
             fn.apply(runningRequest, args);
         };
         if (timeout > 0) {
             runningRequest._timeout = window.setTimeout(f, this.replyTime);
+            this._pendingAsync.push({
+                id: id, fn: f, timeout: runningRequest._timeout, rq: runningRequest, type: 'response'
+            });
         } else {
             f();
         }
         this._request = null;
+    },
+    
+    hasAsync: function() {
+        return !!this._pendingAsync.length;
+    },
+    
+    replyAsync: function(all) {
+        for (var i = this._pendingAsync.length - 1; i >= 0; i--) {
+            this._pendingAsync[i].fn();
+            if (!all) break;
+        }
+    },
+    
+    clearAsync: function(id) {
+        for (var i = 0, l = this._pendingAsync.length; i < l; i++) {
+            if (this._pendingAsync[i].id !== id) continue;
+            window.clearTimeout(this._pendingAsync[i].timeout);
+            this._pendingAsync.splice(i, 1);
+            break;
+        }
     },
     
     success: function(data, textStatus, timeout) {
@@ -69,7 +103,8 @@ Amm.Remote.Transport.Debug.prototype = {
         this.reply.apply(this, args);
     },
     
-    outRequest: function(runningRequest, success, failure) {
+    outRequest: function(runningRequest, success, failure, asyncId) {
+        if (asyncId) this.clearAsync(asyncId);
         this._request = runningRequest;
         var res = this._out('request', runningRequest, success, failure);
         if (this._pendingSuccess) {
@@ -89,14 +124,16 @@ Amm.Remote.Transport.Debug.prototype = {
     },
 
     _doPrepareRunningRequest: function(runningRequest, constRequest, success, failure, scope) {
-        var t = this, f = function() {
-            t.outRequest(runningRequest, t._successClosure, t._failureClosure);
-        };
+        var t = this;
         if (this.eventTime <= 0) {
-            f();
-        }
-        else {
+            this.outRequest(runningRequest, this._successClosure, this._failureClosure);
+        } else {
+            var id = this._asyncCounter++;
+            var f = function() {
+                t.outRequest(runningRequest, t._successClosure, t._failureClosure, id);
+            };
             runningRequest._timeout = window.setTimeout(f, this.eventTime);
+            this._pendingAsync.push({id: id, fn: f, rq: runningRequest, timeout: runningRequest._timeout, type: 'event'});
         }
     },
     

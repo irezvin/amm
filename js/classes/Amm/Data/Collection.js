@@ -39,11 +39,31 @@ Amm.Data.Collection.prototype = {
     
     _ignoreExactMatches: true,
 
+    _numNew: 0,
+
     _numUncommitted: 0,
 
     _numWithErrors: 0,
+
+    _oldNumNew: null,
+
+    _oldNumUncommitted: null,
+
+    _oldNumWithErrors: null,
     
     _rejectOnDelete: false,
+    
+    /**
+     * @type Amm.Data.Transaction
+     */
+    _transaction: null,
+
+    /**
+     * @type Amm.Data.Transaction
+     */
+    _lastTransaction: null,
+    
+    _multiTransactionOptions: null,
     
     _subscribe: function(item) {
         
@@ -56,6 +76,7 @@ Amm.Data.Collection.prototype = {
     _associate: function(item, index, alsoSubscribe) {
         Amm.Collection.prototype._associate.call(this, item, index, alsoSubscribe);
         if (!item.mm.getCommitted()) this.setNumUncommitted(this._numUncommitted + 1);
+        if (item.mm.getState() === Amm.Data.STATE_NEW) this.setNumNew(this._numNew + 1);
         if (item.mm.getErrors(null, true)) this.setNumWithErrors(this._numWithErrors + 1);
         item.mm.subscribe('committedChange', this._handleItemCommittedChange, this);
         item.mm.subscribe('errorsChange', this._handleItemErrorsChange, this);
@@ -65,6 +86,7 @@ Amm.Data.Collection.prototype = {
         item.mm.unsubscribe('committedChange', this._handleItemCommittedChange, this);
         item.mm.unsubscribe('errorsChange', this._handleItemErrorsChange, this);
         if (!item.mm.getCommitted()) this.setNumUncommitted(this._numUncommitted - 1);
+        if (item.mm.getState() === Amm.Data.STATE_NEW) this.setNumNew(this._numNew - 1);
         if (item.mm.getErrors(null, true)) this.setNumWithErrors(this._numWithErrors - 1);
         Amm.Collection.prototype._dissociate.call(this, item);
 },
@@ -79,9 +101,12 @@ Amm.Data.Collection.prototype = {
         else this.setNumWithErrors(this._numWithErrors - 1);
     },
     
-    _handleItemStateChange: function(state) {
+    _handleItemStateChange: function(state, oldState) {
         if (this._rejectOnDelete && state === Amm.Data.STATE_DELETED) {
             this.reject(Amm.event.origin.m);
+        }
+        if (oldState === Amm.Data.STATE_NEW) {
+            this.setNumNew(this._numNew - 1);
         }
     },
     
@@ -105,6 +130,13 @@ Amm.Data.Collection.prototype = {
         var old;
         Amm.Collection.prototype._doEndUpdate.call(this);
         if (this._anyChange) this.outAnyChange();
+        if (this._oldNumNew !== null) {
+            old = this._oldNumNew;
+            this._oldNumNew = null;
+            if (this._numNew !== old) {
+                this.outNumNewChange(this._numNew, old);
+            }
+        }
         if (this._oldNumWithErrors !== null) {
             old = this._oldNumWithErrors;
             this._oldNumWithErrors = null;
@@ -203,7 +235,7 @@ Amm.Data.Collection.prototype = {
     },
 
     getHydrateMode: function() { return this._hydrateMode; },
-
+    
     setNumUncommitted: function(numUncommitted) {
         var oldNumUncommitted = this._numUncommitted;
         if (oldNumUncommitted === numUncommitted) return;
@@ -220,6 +252,24 @@ Amm.Data.Collection.prototype = {
 
     outNumUncommittedChange: function(numUncommitted, oldNumUncommitted) {
         this._out('numUncommittedChange', numUncommitted, oldNumUncommitted);
+    },
+
+    setNumNew: function(numNew) {
+        var oldNumNew = this._numNew;
+        if (oldNumNew === numNew) return;
+        this._numNew = numNew;
+        if (!this._updateLevel) {
+            this.outNumNewChange(numNew, oldNumNew);
+        } else {
+            if (this._oldNumNew === null) this._oldNumNew = oldNumNew;
+        }
+        return true;
+    },
+
+    getNumNew: function() { return this._numNew; },
+
+    outNumNewChange: function(numNew, oldNumNew) {
+        this._out('numNewChange', numNew, oldNumNew);
     },
 
     setNumWithErrors: function(numWithErrors) {
@@ -255,29 +305,77 @@ Amm.Data.Collection.prototype = {
     },
     
     /**
+     * May be used to handle 'save' method externally. 
+     * 
+     * To cancel built-in save() implementation, set 
+     * `retHandled.handled` to TRUE, or truncate `items` array.
+     * 
+     * `items` records' are initially populated by `findUncommitted()`,
+     * but may be changed - rest will be saved by built-in routine (only
+     * if they have .mm.save() method).
+     * 
+     * @param {object} retHandled Hash with 'handled' key
+     * @param {boolean} noCheck Argument to save()
+     * @param {boolean} dontRun Argument to save()
+     * @param {Array} items 'Uncommitted' items that will be save'd
+     */
+    outSave: function(retHandled, noCheck, dontRun, items) {
+        if (!retHandled) retHandled = {handled: false};
+        return this._out('save', retHandled, noCheck, dontRun, items);
+    },
+    
+    /**
      * Saves uncommitted records which are not currently in transaction.
      * 
      * Locates all uncommitted records without active transaction and calls save() on them
-     * (does not check if recordsa are valid prior to calling save()).
+     * (does not check if records are valid prior to calling save()).
      * 
      * Returns array of records save()-d.
      * 
      * @param {boolean} noCheck Argument to pass to records' mm.save() - will try to save with errors
      * @returns {Array}
      */
-    save: function(noCheck) {
-        var res = [];
-        if (!this._numUncommitted) return res;
-        var items = this.findUncommitted(true);
+    save: function(noCheck, dontRun) {
+        
+        var res = [], transactions = [];
+        
+        if (!this._numUncommitted && !this._subscribers['save']) return res;
+        
+        var items = this.findUncommitted(true), 
+            retHandled = {handled: false};
+
+        if (this._subscribers['save']) {
+            this.outSave(retHandled, noCheck, dontRun, items);
+            if (retHandled.handled || !items.length) return items;
+        }
+        
+        var useMultiTransaction = !!this._multiTransactionOptions || this._transaction,
+            multiTransaction;
+        
+        if (useMultiTransaction) {
+            if (this._transaction) multiTransaction = this._transaction;
+            else multiTransaction = Amm.constructInstance(this._multiTransactionOptions, 'Amm.Data.Transaction.Multi');
+        }
+        
         if (!items.length) return res;
         this.beginUpdate();
         for (var i = 0, l = items.length; i < l; i++) {
             if (!items[i].mm.save) continue;
+            var tr = items[i].mm.save(noCheck, useMultiTransaction || dontRun);
+            if (!tr) continue;
             res.push(items[i]);
-            items[i].mm.save(noCheck);
+            transactions.push(tr);
+        }
+        if (multiTransaction && transactions.length) {
+            multiTransaction.add(transactions);
+            this._setTransaction(multiTransaction);
+            if (!dontRun && multiTransaction.getState() !== Amm.Data.Transaction.STATE_RUNNING) {
+                multiTransaction.run();
+            }
         }
         this.endUpdate();
         return res;
+        
     },
     
     
@@ -302,7 +400,84 @@ Amm.Data.Collection.prototype = {
         }
         this.endUpdate();
         return res;
-    }
+    },
+    
+    setTransaction: function() {
+        console.warn("Amm.Data.Collection: setTransaction() has no effect");
+    },
+    
+    _setTransaction: function(transaction) {
+        if (!transaction) transaction = null;
+        else Amm.is(transaction, 'Amm.Data.Transaction', 'transaction');
+        var oldTransaction = this._transaction;
+        if (oldTransaction === transaction) return;
+        if (this._transaction) {
+            if (this._transaction.getState() === Amm.Data.Transaction.STATE_RUNNING) {
+                throw Error("Cannot start new transaction when old transaction still running");
+            }
+            this._transaction.unsubscribe(undefined, undefined, this);
+            if (this._transaction.getState() === Amm.Data.Transaction.STATE_INIT) {
+                this._transaction.cancel();
+            }
+        }
+        this.setLastTransaction(this._transaction);
+        this._transaction = transaction;
+        if (transaction) {
+            transaction.subscribe('stateChange', this._handleTransactionStateChange, this);
+        }
+        this.outTransactionChange(transaction, oldTransaction);
+        return true;
+    },
+    
+    _handleTransactionStateChange: function(state, oldState) {
+        var removeTrans = false;
+        // TODO: probably we should take action in either case
+        if (state === Amm.Data.Transaction.STATE_SUCCESS) {
+            removeTrans = true;
+        } else if (state === Amm.Data.Transaction.STATE_CANCELLED) {
+            removeTrans = true;
+        } else if (state === Amm.Data.Transaction.STATE_FAILURE) {
+            removeTrans = true;
+        }
+        if (removeTrans) {
+            this._setTransaction(null);
+        }
+    },
+
+    getTransaction: function() { return this._transaction; },
+
+    outTransactionChange: function(transaction, oldTransaction) {
+        this._out('transactionChange', transaction, oldTransaction);
+    },
+
+    setLastTransaction: function(lastTransaction) {
+        if (!lastTransaction) lastTransaction = null;
+        else Amm.is(lastTransaction, 'Amm.Data.Transaction', 'lastTransaction');
+        var oldLastTransaction = this._lastTransaction;
+        if (oldLastTransaction === lastTransaction) return;
+        this._lastTransaction = lastTransaction;
+        this.outLastTransactionChange(lastTransaction, oldLastTransaction);
+        return true;
+    },
+
+    getLastTransaction: function() { return this._lastTransaction; },
+
+    outLastTransactionChange: function(lastTransaction, oldLastTransaction) {
+        this._out('lastTransactionChange', lastTransaction, oldLastTransaction);
+    },
+
+    setMultiTransactionOptions: function(multiTransactionOptions) {
+        if (!multiTransactionOptions) multiTransactionOptions = null;
+        else if (typeof multiTransactionOptions !== 'object') {
+            throw Error("`multiTransactionOptions` must be an object");
+        }
+        var oldMultiTransactionOptions = this._multiTransactionOptions;
+        if (oldMultiTransactionOptions === multiTransactionOptions) return;
+        this._multiTransactionOptions = multiTransactionOptions;
+        return true;
+    },
+
+    getMultiTransactionOptions: function() { return this._multiTransactionOptions; },
     
 };
 

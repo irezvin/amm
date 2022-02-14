@@ -1,30 +1,19 @@
 /* global Amm */
 
-/**
- * 
- * HttpTransaction is configure-than-shoot object.
- * It doesn't react to changes to its' configuration properties like
- * uri, uriOverrides, keyPath, keyToUri and like (those don't have any
- * setters, getters or events). Properties are applied and validated 
- * on transaction start and end.
- * 
- * @param {type} options
- * @returns {Amm.Data.HttpTransaction}
- */
-
-
-Amm.Data.HttpTransaction = function(options) {
+Amm.Data.TransactionRunner.Http = function(options) {
     Amm.Data.Transaction.call(this, options);
 };
 
-Amm.Data.HttpTransaction.DEFAULT_METHOD_MAP = {
+Amm.Data.TransactionRunner.Http.DEFAULT_METHOD_MAP = {
     'load': 'GET',
+    'list': 'GET',
+    'offset': 'GET',
     '': 'POST' // default method
 };
 
-Amm.Data.HttpTransaction.prototype = {
+Amm.Data.TransactionRunner.Http.prototype = {
 
-    'Amm.Data.HttpTransaction': '__CLASS__',
+    'Amm.Data.TransactionRunner.Http': '__CLASS__',
     
     /**
      * @type {Amm.Remote.RequestProducer}
@@ -155,24 +144,41 @@ Amm.Data.HttpTransaction.prototype = {
         return Amm.constructInstance(proto, 'Amm.Remote.RequestProducer');        
     },
     
+    calcPayload: function() {
+        return this._transaction.calcPayload();
+    },
+    
     createDefaultRequestProducer: function() {
+        var payload = this.calcPayload();
         var res = new Amm.Remote.RequestProducer({
             uri: this.uri,
             uriOverrides: this.uriOverrides,
             dataOverrides: this.dataOverrides
         });
-        if (this.data) {
-            var d = Amm.overrideRecursive({}, this.data);
-            if (!this.dataPath) res.setDataOverrides(this.data);
+        var method = this.getAppliedMethod();
+        if (payload.data) {
+            var d = Amm.overrideRecursive({}, payload.data);
+            if (!this.dataPath) res.setDataOverrides(payload.data);
             else {
                 res.setData(d, this.dataPath);
             }
         }
-        var type = Amm.Decorator.d(this._type, this, 'typeDecorator');
+        var other = {}, hasOther = false;
+        for (var i in payload) if (payload.hasOwnProperty(i)) {
+            if (i === 'key' || i === 'data') continue;
+            if (payload[i] === null) continue;
+            other[i] = payload[i];
+            hasOther = true;
+        }
+        if (hasOther) {
+            res.setUriOverrides(other);
+        }
+        var type = Amm.Decorator.d(this._transaction.getType(), this, 'typeDecorator');
+        res.setMethod(method);
         if (type) {
             if (this.typeToUri)  {
                 if (this.typePath === '') {
-                    res.setUri(res.getUri().replace(/\/$/g, '') + '/' + type);
+                    res.setUri(res.getUri(Amm.Remote.Uri.PART_PATH).replace(/\/$/g, '') + '/' + type, Amm.Remote.Uri.PART_PATH);
                 } else if (this.typePath) {
                     res.setUri(type, this.typePath);
                 }
@@ -180,18 +186,17 @@ Amm.Data.HttpTransaction.prototype = {
                 res.setData(type, this.typePath);
             }
         }
-        if (this.key !== null) {
+        if (payload.key !== null) {
             if (this.keyToUri) {
                 // no key path => append key
-                if (!this.keyPath) res.setUri(res.getUri().replace(/\/$/g, '') + '/' + this.key);
+                if (!this.keyPath) res.setUri(res.getUri().replace(/\/$/g, '') + '/' + payload.key);
                 else {
-                    res.setUri(this.key, this.keyPath);
+                    res.setUri(payload.key, this.keyPath);
                 }
             } else {
-                res.setData(this.key, this.keyPath);
+                res.setData(payload.key, this.keyPath);
             }
         }
-        res.setMethod(this.getAppliedMethod());
         // TODO: action path
         return res;
     },
@@ -200,19 +205,19 @@ Amm.Data.HttpTransaction.prototype = {
      * @returns HTTP method based on this._type value
      */
     getAppliedMethod: function() {
-        var map = this.methodMap || Amm.Data.HttpTransaction.DEFAULT_METHOD_MAP;
-        var res = map[this._type] || map[''];
+        var map = this.methodMap || Amm.Data.TransactionRunner.Http.DEFAULT_METHOD_MAP;
+        var res = map[this._transaction.getType()] || map[''];
         return res;
     },
     
-    _runDefault: function() {
+    run: function() {
         var producer = this.createRequestProducer();
         var constRequest = producer.produceRequest();
         this._runningRequest = this.getTransport().makeRequest(constRequest, this._handleSuccess, this._handleFailure, this);
     },
     
     _handleSuccess: function(data, textStatus, jqXhr) {
-        if (this._state !== Amm.Data.Transaction.STATE_RUNNING) return;
+        if (this._transaction.getState() !== Amm.Data.Transaction.STATE_RUNNING) return;
         var headers = {}, statusCode = 200, responseText = "";
         if (typeof jqXhr === "object") {
             if (typeof (jqXhr.getAllResponseHeaders) === "function") {
@@ -222,16 +227,17 @@ Amm.Data.HttpTransaction.prototype = {
             if ('responseText' in jqXhr) responseText = jqXhr.responseText;
             else if (typeof data === "string") responseText = data;
         }
-        this.setUnparsedResponse(new Amm.Data.HttpResponse({
+        var resp = new Amm.Data.HttpResponse({
             rawContent: responseText,
             parsedContent: data,
             httpHeaders: headers,
             httpCode: statusCode
-        }));
+        });
+        this._transaction.setUnparsedResponse(resp);
     },
     
     _handleFailure: function(textStatus, errorThrown, httpCode, jqXhr) {
-        if (this._state !== Amm.Data.Transaction.STATE_RUNNING) return;
+        if (this._transaction.getState() !== Amm.Data.Transaction.STATE_RUNNING) return;
         var headers = {}, statusCode = httpCode, responseText = "";
         if (typeof jqXhr === "object") {
             if (typeof (jqXhr.getAllResponseHeaders) === "function") {
@@ -240,7 +246,7 @@ Amm.Data.HttpTransaction.prototype = {
             if ('statusCode' in jqXhr) statusCode = jqXhr.statusCode;
             if ('responseText' in jqXhr) responseText = jqXhr.responseText;
         }
-        this.setUnparsedResponse(new Amm.Data.HttpResponse({
+        this._transaction.setUnparsedResponse(new Amm.Data.HttpResponse({
             isError: true,
             errorText: errorThrown,
             rawContent: responseText,
@@ -253,7 +259,7 @@ Amm.Data.HttpTransaction.prototype = {
     /**
      * Event handlers must set requestProducer.proto to consider result successful
      * 
-     * @param {Amm.Data.HttpTransaction} transaction This transaction
+     * @param {Amm.Data.TransactionRunner.Http} transaction This transaction
      * @param {object} requestProducerPrototype {res: null} - change prototype to return
      */
     outRequestProducerPrototype: function(outRequestProducer, transaction) {
@@ -261,7 +267,7 @@ Amm.Data.HttpTransaction.prototype = {
     },
     
     // @TODO: support other parsedContent than JSON (XML?)
-    _parseDefault: function(httpResponse) {
+    parse: function(httpResponse) {
         var res;
         
         if (this._responseDecorator) {
@@ -388,8 +394,5 @@ Amm.Data.HttpTransaction.prototype = {
     
 };
 
-Amm.extend(Amm.Data.HttpTransaction, Amm.Data.Transaction);
-
-// We need to specify dependency to Amm.Remote.Transport.JqXhr because it is part of prototype
-// Amm.extend(Amm.Data.HttpTransaction, Amm.Remote.Transport.JqXhr);
+Amm.extend(Amm.Data.TransactionRunner.Http, Amm.Data.TransactionRunner);
 

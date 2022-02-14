@@ -30,7 +30,14 @@ Amm.Data.RecordMeta.prototype = {
         var oldTransaction = this._transaction;
         if (oldTransaction === transaction) return;
         
-        if (oldTransaction) oldTransaction.unsubscribe(undefined, undefined, this);
+        if (oldTransaction) {
+            oldTransaction.unsubscribe(undefined, undefined, this);
+            if (oldTransaction.getState() === Amm.Data.Transaction.STATE_INIT
+                || oldTransaction.getState() === Amm.Data.Transaction.STATE_RUNNING) {
+                oldTransaction.cancel();
+                
+            }
+        }
         if (transaction) transaction.subscribe('stateChange', this._notifyTransactionStateChange, this);
         
         this._transaction = transaction;
@@ -196,7 +203,10 @@ Amm.Data.RecordMeta.prototype = {
         }
     },
     
-    save: function(noCheck) {
+    save: function(noCheck, dontRun) {
+        if (this._transaction && this._transaction.getState() === Amm.Data.Transaction.STATE_RUNNING) {
+            throw Error("Cannot save() with current transaction still running");
+        }
         if (!noCheck && !this.check()) return;
         if (this._m._doBeforeSave() === false) return;
         if (this.getState() === Amm.Data.STATE_DELETE_INTENT) {
@@ -210,8 +220,9 @@ Amm.Data.RecordMeta.prototype = {
         } else {
             throw Error("Cannot save an object with state '" + state + "'");
         }
-        this._runTransaction(tr);
-        return true;
+        if (dontRun) this._setTransaction(tr);
+        else this._runTransaction(tr);
+        return tr;
     },
     
     intentDelete: function() {
@@ -235,7 +246,10 @@ Amm.Data.RecordMeta.prototype = {
         this.endUpdate();
     },
     
-    delete: function() {
+    delete: function(dontRun) {
+        if (this._transaction && this._transaction.getState() === Amm.Data.Transaction.STATE_RUNNING) {
+            throw Error("Cannot delete() with current transaction still running");
+        }
         var tr, state = this.getState(), key;
         if (state !== Amm.Data.STATE_EXISTS 
             && state !== Amm.Data.STATE_DELETE_INTENT) 
@@ -246,20 +260,27 @@ Amm.Data.RecordMeta.prototype = {
         if (this._m._doBeforeDelete() === false) return false;
         key = this.getKey();
         tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_DELETE, this.getKey());
-        this._runTransaction(tr);
-        return true;
+        if (dontRun) this._setTransaction(tr);
+        else this._runTransaction(tr);
+        return tr;
     },
     
-    load: function(key) {
+    load: function(key, dontRun) {
+        if (this._transaction && this._transaction.getState() === Amm.Data.Transaction.STATE_RUNNING) {
+            throw Error("Cannot load() with current transaction still running");
+        }
         var newKey = this._m._doBeforeLoad(key);
         if (newKey === false) return false;
         if (newKey !== undefined) key = newKey;
-        if (key === undefined) key = this.getKey();
+        if (key === undefined || key === null) key = this.getKey();
         if (!key) throw new Error ("Cannot load(): key not provided");
         var tr;
         tr = this._mapper.createTransaction(Amm.Data.Transaction.TYPE_LOAD, key);
-        this._runTransaction(tr);
-        return true;
+        if (dontRun) {
+            this._setTransaction(tr);
+        }
+        else this._runTransaction(tr);
+        return tr;
     },
     
     cleanup: function() {

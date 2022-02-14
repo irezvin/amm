@@ -334,7 +334,6 @@ Amm.Collection.prototype = {
             }
         }
         if (!checkRequirementsOnly && !this._allowUpdate) {
-            console.log('zzz');
             var index = this.indexOf(item);
             if (index >= 0) {
                 problem.error = Amm.Collection.ERR_DUPLICATE_UPDATE_NOT_ALLOWED;

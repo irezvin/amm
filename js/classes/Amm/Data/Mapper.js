@@ -1,6 +1,9 @@
 /* global Amm */
 
 Amm.Data.Mapper = function(options) {
+    if (options && options.id && Amm.Data.Mapper.instances[options.id]) {
+        return Amm.Data.Mapper.instances[options.id];
+    };
     var options = Amm.override({}, options);
     Amm.WithEvents.call(this, options);
     Amm.Instantiator.call(this);
@@ -64,6 +67,7 @@ Amm.Data.Mapper.prototype = {
         if (oldId === id) return;
         if (oldId !== null) throw Error("Can setId() only once");
         if (Amm.Data.Mapper.instances[id]) throw Error("Mapper with id '" + id + "' already registered");
+        Amm.Data.Mapper.instances[id] = this;
         this._id = id;
         return true;
     },
@@ -139,15 +143,37 @@ Amm.Data.Mapper.prototype = {
     
     createTransaction: function(type, key, data) {
         var prototypes = this._transactionPrototypes || {};
-        var globalDefault = Amm.Data.Mapper.transactionDefault? Amm.override({}, Amm.Data.Mapper.transactionDefault) : {};
+        var globalDefault = Amm.Data.Mapper.transactionDefault? Amm.overrideRecursive({}, Amm.Data.Mapper.transactionDefault) : {};
         var proto = prototypes.default? Amm.overrideRecursive(globalDefault, prototypes.default) : {};
         if (prototypes[type]) {
-            if (prototypes[type].noDefault) proto = Amm.override({}, prototypes[type]);
-            else proto = Amm.overrideRecursive(prototypes[type], proto);
+            if (prototypes[type].noDefault) {
+                proto = Amm.overrideRecursive({}, prototypes[type]);
+                delete proto.noDefault;
+            }
+            else proto = Amm.overrideRecursive(proto, prototypes[type]);
         }
-        if (!proto.class) proto.class = 'Amm.Data.HttpTransaction';
-        if (!proto.uri && this._uri) proto.uri = this._uri;
-        var res = Amm.constructInstance(proto, 'Amm.Data.Transaction', {type: type, key: key || null, data: data || null});
+        var defs = {};
+        if (key && typeof key === 'object' && data === undefined) {
+            defs = key;
+        } else {
+            defs = {type: type, key: key || null, data: data || null};
+        }
+        var res = Amm.constructInstance(proto, 'Amm.Data.Transaction', defs, true);
+        var runner = res.getRunner(), created = false;
+        if (!runner) {
+            runner = new Amm.Data.TransactionRunner.Http({
+                uri: this._uri
+            });
+            res.setRunner(runner);
+        } else {
+            if (runner.getUri && runner.setUri) {
+                if (runner.getUri() === null) runner.setUri(this._uri);
+            } else {
+                if ('uri' in runner && runner.uri === null) {
+                    runner.uri = this._uri;
+                }
+            }
+        }
         res.subscribe('validateResult', this._validateTransactionResult, this);
         return res;
     },

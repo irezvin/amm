@@ -224,6 +224,38 @@ Amm.Util = {
             if ((' ' + className + ' ').indexOf(' ' + part[i] + ' ') < 0) return false;
         }
         return true;
+    },
+    
+    /**
+     * Recursively compares two objects.
+     * Comparison of scalar values is strict.
+     * Different instances of Amm-style classes are considered different.
+     * Returns "0" is items are same, -1 if they are different (so this method can be used as comparison callback).
+     */
+    compareRecursive: function(a, b) {
+        if (a === b) return true;
+        if (typeof a !== typeof b) return -1;
+        if (!(typeof a === 'object' && typeof b === 'object')) return -1;
+        if (!a || !b) return -1;
+        if (Amm.getClass(a) || Amm.getClass(b)) return -1; // different instances
+        if (a instanceof Array && b instanceof Array) {
+            return !Amm.Array.equal(a, b, 0, 0, undefined, function(a, b) {
+                if (a === b) return 0;
+                return Amm.Util.compareRecursive(a, b);
+            });
+        }
+        var i, keys;
+        for (i in a) if (a.hasOwnProperty(i) && !(i in b)) return -1;
+        keys = [];
+        for (i in b) if (b.hasOwnProperty(i)) {
+            if (!(i in a)) return -1;
+            keys.push(i);
+        }
+        for (var j = 0, l = keys.length; j < l; j++) {
+            var itemRes = Amm.Util.compareRecursive(a[keys[j]], b[keys[j]]);
+            if (itemRes) return itemRes;
+        }
+        return 0;
     }
     
 };

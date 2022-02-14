@@ -25,6 +25,8 @@ Amm.View.Html.Default.prototype = {
     
     _replaceOwnHtmlElement: true,
     
+    useAnyViewIfNoDefault: true,
+    
     reportMode: Amm.Builder.PROBLEM_CONSOLE | Amm.Builder.PROBLEM_HTML,
 
     setReplaceOwnHtmlElement: function(replaceOwnHtmlElement) {
@@ -58,7 +60,13 @@ Amm.View.Html.Default.prototype = {
         var defaultViews;
         if (this._defaultViews) defaultViews = this._defaultViews; 
         else defaultViews = this._element.constructDefaultViews();
-        if (!defaultViews || typeof defaultViews === 'Array' && !defaultViews.length) {
+        if (this.useAnyViewIfNoDefault && (!defaultViews || defaultViews instanceof Array && !defaultViews.length)) {
+            defaultViews = this._element.getUniqueSubscribers('Amm.View.Abstract');
+            for (var i = defaultViews.length - 1; i >= 0; i--) {
+                if (defaultViews[i]['Amm.View.Html.Default']) defaultViews.splice(i, 1);
+            }
+        }
+        if (!defaultViews || defaultViews instanceof Array && !defaultViews.length) {
             if (this.reportMode & Amm.Builder.PROBLEM_HTML) {
                 this._htmlElement.setAttribute('data-amm-warning', "Element has no default view(s)");
             }
@@ -68,7 +76,7 @@ Amm.View.Html.Default.prototype = {
             return;
         }
         this._defaultViews = [];
-        if (typeof defaultViews !== 'Array') defaultViews = [defaultViews];
+        if (!(defaultViews instanceof Array)) defaultViews = [defaultViews];
         var viewHtmlElements = [];
         for (var i = 0, l = defaultViews.length; i < l; i++) {
             var v = defaultViews[i], inst;

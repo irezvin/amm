@@ -240,7 +240,10 @@ Amm = {
                 }
                 continue;
             }
-            var recurse = (typeof modifiedObject[i] === 'object' && to);
+            var recurse = false, hasDest = i in modifiedObject;
+            if (to) {   
+                recurse = overrider[i] && !hasDest || (typeof modifiedObject[i] === 'object');
+            }
             if (recurse && detectInstances) {
                 if (typeof detectInstances === 'function') {
                     var ret = detectInstances(modifiedObject[i], overrider[i], noOverwrite, deduplicate, detectInstances);
@@ -250,6 +253,10 @@ Amm = {
                     recurse = false;
                 }
             }
+            if (recurse && !hasDest && overrider[i]) {
+                modifiedObject[i] = overrider[i] instanceof Array? [] : {};
+            }
+            
             if (recurse && modifiedObject[i] instanceof Array && overrider[i] instanceof Array) {
                 if (!deduplicate || !modifiedObject[i].length) {
                     modifiedObject[i] = modifiedObject[i].concat(overrider[i]);
@@ -1270,6 +1277,8 @@ Amm = {
      */
     subUnsub: function(assoc, oldAssoc, scope, event, handler, reverse) {
         
+        var i, l;
+        
         if (scope && typeof scope === 'object' && event && typeof event === 'string' && !handler) {
             // prefix-type call
             
@@ -1291,7 +1300,7 @@ Amm = {
         
         if (event && typeof event === 'object') {
             if (event instanceof Array) {
-                for (var i = 0, l = event.length; i < l; i++) {
+                for (i = 0, l = event.length; i < l; i++) {
                     this.subUnsub(assoc, oldAssoc, scope, event[i], handler, reverse);
                 }
             } else {
@@ -1312,9 +1321,33 @@ Amm = {
             extra = handler[1];
             handler = handler[0];
         }
-        if (reverse && assoc) assoc.subscribe(event, handler, scope, extra);
-        if (oldAssoc) oldAssoc.unsubscribe(event, handler, scope, extra);
-        if (!reverse && assoc) assoc.subscribe(event, handler, scope, extra);
+        if (reverse && assoc) {
+            if (assoc instanceof Array) {
+                for (i = 0, l = assoc.length; i < l; i++) {
+                    assoc[i].subscribe(event, handler, scope, extra);
+                }
+            } else {
+                assoc.subscribe(event, handler, scope, extra);
+            }
+        }
+        if (oldAssoc) {
+            if (oldAssoc instanceof Array) {
+                for (i = 0, l = oldAssoc.length; i < l; i++) {
+                    oldAssoc[i].unsubscribe(event, handler, scope, extra);
+                }
+            } else {
+                oldAssoc.unsubscribe(event, handler, scope, extra);
+            }
+        }
+        if (!reverse && assoc) {
+            if (assoc instanceof Array) {
+                for (i = 0, l = assoc.length; i < l; i++) {
+                    assoc[i].subscribe(event, handler, scope, extra);
+                }
+            } else {
+                assoc.subscribe(event, handler, scope, extra);
+            }
+        }
     },
     
     isDomNode: function(object) {

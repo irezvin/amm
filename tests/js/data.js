@@ -29,6 +29,61 @@
         return res;
         
     };
+    
+    var createObjectForChecks = function() {
+        
+        var m = new Amm.Data.Mapper({
+            key: 'id',
+        });
+        
+        var r = new Amm.Data.Record({
+            __mapper: m,
+            id: 10,
+            name: 'John',
+            surname: 'Doe',
+            age: 21,
+            email: 'john@example.com',
+            job: null,
+            employeed: false,
+            
+            mm: {
+                autoCheck: Amm.Data.AUTO_CHECK_NEVER
+            },
+            
+            _checkField: function(field, value) {
+                if (field === 'id' && value == 13) return 'id must not be 13';
+            },
+            
+            _doOnCheck: function() {
+                if (/^\d+$/.exec(this.surname)) {
+                    this.mm.addError("surname must not be a number", "surname");
+                }
+            }
+        });
+        
+        m.setMeta({
+            name: { validators: 'Amm.Validator.Required' },
+            surname: { validators: 'Amm.Validator.Required' },
+            age: { validators: {class: 'Amm.Validator.Number', ge: 0, lt: 130} },
+            email: { validators: [
+                'Amm.Validator.Required',
+                function(v) {
+                    if (v && !v.match(/^.+@.+\.[^\.]+$/)) return "Please enter valid email";
+                }
+            ] },
+        });
+        
+        m.setModelValidators({
+            ifEmployeedMustHaveJob: function() {
+                if (this.employeed && !this.job) return "'job' field must be filled-in for employeed persons";
+                if (!this.employeed && this.job) return "'job' field must be empty for unemployeed persons";
+            },
+            noEmploymentUnder18: 'this.employeed && this.age < 18? "age must be above 18 if person is employeed" : ""'
+        });
+        
+        return r;
+        
+    };
 
     QUnit.test("Data.Record", function(assert) {
         
@@ -119,34 +174,40 @@
         
     });
     
-    QUnit.test("Data.HttpTransaction", function(assert) {
+    QUnit.test("Data.TransactionRunner.Http", function(assert) {
        
-        var t = new Amm.Data.HttpTransaction({
-            uri: 'data.php',
+        var t = new Amm.Data.Transaction({
+            runner: {
+                'class': 'Amm.Data.TransactionRunner.Http',
+                uri: 'data.php',
+                typePath: '',
+                dataPath: 'record',
+            },
             type: 'create',
-            typePath: '',
-            dataPath: 'record',
             data: {
                 name: 'John',
                 surname: 'Doe',
                 birthDate: '1981-01-01'
             }
         });
-        var p = t.createDefaultRequestProducer();
+        var p = t.getRunner(true).createDefaultRequestProducer();
         window.d.t = t;
         
         assert.deepEqual(p.getMethod(), 'POST');
         assert.deepEqual(p.getUri(), 'data.php/create');
         assert.deepEqual(p.getData(), { record: t.data });
         
-        t = new Amm.Data.HttpTransaction({
-            uri: 'data.php',
+        t = new Amm.Data.Transaction({
+            runner: {
+                'class': 'Amm.Data.TransactionRunner.Http',
+                uri: 'data.php',
+                typePath: '',
+                keyPath: ''
+            },
             type: 'load',
-            typePath: '',
             key: 10,
-            keyPath: ''
         });
-        var p = t.createDefaultRequestProducer();
+        var p = t.getRunner(true).createDefaultRequestProducer();
         window.d.t = t;
         
         assert.deepEqual(p.getMethod(), 'GET');
@@ -158,17 +219,20 @@
             
             {time: 0, fn: function() {
                     
-                t = new Amm.Data.HttpTransaction({
-                    uri: 'data.php',
+                t = new Amm.Data.Transaction({
+                    runner: {
+                        'class': 'Amm.Data.TransactionRunner.Http',
+                        uri: 'data.php',
+                        typePath: '',
+                        keyPath: '',
+                        responseDataPath: '',
+                        transport: getDebugTransport(log, 
+                            {id: 10, name: 'John', surname: 'Doe', birthDate: '1981-01-01'}, 
+                            false, "ok", 200 
+                        ),
+                    },
                     type: 'load',
-                    typePath: '',
                     key: 10,
-                    keyPath: '',
-                    responseDataPath: '',
-                    transport: getDebugTransport(log, 
-                        {id: 10, name: 'John', surname: 'Doe', birthDate: '1981-01-01'}, 
-                        false, "ok", 200 
-                    ),
                     run: true
                 });
                 
@@ -178,7 +242,6 @@
             }},
         
             {time: 11, fn: function() {
-                    
                 assert.equal(t.getState(), Amm.Data.Transaction.STATE_SUCCESS,
                     'Response received: transaction is in success state');
                 assert.ok(t.getResult(), 'Response received: transaction result property is populated');
@@ -312,61 +375,6 @@
             assert.deepEqual(r_log.length, 1, 'endUpdate: remoteErrorsChange event triggered');
             
     });
-    
-    var createObjectForChecks = function() {
-        
-        var m = new Amm.Data.Mapper({
-            key: 'id',
-        });
-        
-        var r = new Amm.Data.Record({
-            __mapper: m,
-            id: 10,
-            name: 'John',
-            surname: 'Doe',
-            age: 21,
-            email: 'john@example.com',
-            job: null,
-            employeed: false,
-            
-            mm: {
-                autoCheck: Amm.Data.AUTO_CHECK_NEVER
-            },
-            
-            _checkField: function(field, value) {
-                if (field === 'id' && value == 13) return 'id must not be 13';
-            },
-            
-            _doOnCheck: function() {
-                if (/^\d+$/.exec(this.surname)) {
-                    this.mm.addError("surname must not be a number", "surname");
-                }
-            }
-        });
-        
-        m.setMeta({
-            name: { validators: 'Amm.Validator.Required' },
-            surname: { validators: 'Amm.Validator.Required' },
-            age: { validators: {class: 'Amm.Validator.Number', ge: 0, lt: 130} },
-            email: { validators: [
-                'Amm.Validator.Required',
-                function(v) {
-                    if (v && !v.match(/^.+@.+\.[^\.]+$/)) return "Please enter valid email";
-                }
-            ] },
-        });
-        
-        m.setModelValidators({
-            ifEmployeedMustHaveJob: function() {
-                if (this.employeed && !this.job) return "'job' field must be filled-in for employeed persons";
-                if (!this.employeed && this.job) return "'job' field must be empty for unemployeed persons";
-            },
-            noEmploymentUnder18: 'this.employeed && this.age < 18? "age must be above 18 if person is employeed" : ""'
-        });
-        
-        return r;
-        
-    };
     
     QUnit.test("Data.ModelMeta.check() - AUTO_CHECK_NEVER", function(assert) {
         
@@ -688,7 +696,10 @@
             uri: 'dummy.php',
             transactionPrototypes: {
                 'default': {
-                    transport: t
+                    runner: {
+                        'class': 'Amm.Data.TransactionRunner.Http',
+                        transport: t
+                    }
                 }
             }
         });
@@ -710,8 +721,14 @@
             {
                 time: 0, 
                 fn: function() {        
-                    r.mm.load(10);
-                    assert.ok(!!r.mm.getTransaction(), 'Transaction is running');
+                    var tr = r.mm.load(10);
+                    assert.ok(Amm.is(tr, 'Amm.Data.Transaction'),
+                        'load() returned Transaction');
+                    assert.equal(tr.getState(), Amm.Data.Transaction.STATE_RUNNING,
+                        'load(): returned Transaction is running');
+                    assert.ok(tr === r.mm.getTransaction(), 
+                        'load(): returned Transaction is current');
+                    
                 }
             },
             {
@@ -804,8 +821,11 @@
             uri: 'dummy.php',
             transactionPrototypes: {
                 'default': {
-                    transport: t,
-                    typePath: 'action'
+                    runner: {
+                        class: 'Amm.Data.TransactionRunner.Http',
+                        transport: t,
+                        typePath: 'action'
+                    },
                 }
             }
         });
@@ -842,10 +862,16 @@
                     
                     
                     opRes = r.mm.save();
+                        
+                    assert.ok(r.mm.getChecked(), 'object became checked on save');
                     
-                        assert.ok(opRes, 'save() returned true');
-                        assert.ok(r.mm.getChecked(), 'object became checked on save');
-                        assert.ok(!!r.mm.getTransaction(), 'Transaction is running');
+                        assert.ok(Amm.is(opRes, 'Amm.Data.Transaction'),
+                            'save() returned Transaction');
+                        assert.equal(opRes.getState(), Amm.Data.Transaction.STATE_RUNNING,
+                            'save(): returned Transaction is running');
+                        assert.ok(opRes === r.mm.getTransaction(), 
+                            'save(): returned Transaction is current');
+                            
                         assert.ok(currentRequest, 'request was issued');
                         assert.ok(currentRequest.getConstRequest().getMethod(), 'POST', 'method is post');
                         assert.deepEqual(currentRequest.getConstRequest().getUri(), 'dummy.php?action=create' ,
@@ -958,8 +984,11 @@
             uri: 'dummy.php',
             transactionPrototypes: {
                 'default': {
-                    transport: t,
-                    typePath: 'action'
+                    runner: {
+                        'class': 'Amm.Data.TransactionRunner.Http',
+                        transport: t,
+                        typePath: 'action'
+                    }
                 }
             }
         });
@@ -1052,8 +1081,11 @@
             uri: 'dummy.php',
             transactionPrototypes: {
                 'default': {
-                    transport: t,
-                    typePath: 'action'
+                    runner: {
+                        'class': 'Amm.Data.TransactionRunner.Http',
+                        transport: t,
+                        typePath: 'action'
+                    }
                 }
             }
         });
@@ -1099,8 +1131,9 @@
                     r.mm.intentDelete();
                     opRes = r.mm.save();
                     
-                        assert.ok(opRes, 'save() returned true');
-                        assert.ok(!!r.mm.getTransaction(), 'Transaction is running');
+                        assert.ok(Amm.is(opRes, 'Amm.Data.Transaction'), 'save() returned transaction instance');
+                        assert.ok(r.mm.getTransaction() === opRes, 'Transaction is current');
+                        assert.ok(opRes.getState() === Amm.Data.Transaction.STATE_RUNNING, 'Amm.Data.Transaction', 'transaction is running');
                         assert.ok(currentRequest, 'request was issued');
                         assert.ok(currentRequest.getConstRequest().getMethod(), 'POST', 'method is post');
                         assert.deepEqual(currentRequest.getConstRequest().getUri(), 'dummy.php?action=delete&id=10' ,
@@ -1145,6 +1178,76 @@
         
     });
     
+    QUnit.test("Data.Record: load/save/delete w/dontRun method", function(assert) {
+        
+        
+        var log = [];
+        var m = new Amm.Data.Mapper({
+            uri: 'dummy.php',
+            key: 'id',
+            transactionPrototypes: {
+                'default': {
+                    runner: {
+                        'class': 'Amm.Data.TransactionRunner.Http',
+                        transport: getDebugTransport(log),
+                        typePath: 'action'
+                    }
+                }
+            },
+            meta: {
+                id: {},
+                firstName: {},
+                lastName: {}
+            }
+        });
+        
+        var rec = m.construct({id: 10});
+        var tr = rec.mm.load();
+        
+        assert.deepEqual(tr.getState(), Amm.Data.Transaction.STATE_RUNNING,
+            'Current TR is running');
+            
+        assert.throws(function() {
+            rec.mm.load();
+        }, /cannot.*load.*running/i, 'load() throws exception while transaction running');
+        assert.throws(function() {
+            rec.mm.save();
+        }, /cannot.*save.*running/i, 'save() throws exception while transaction running');
+        assert.throws(function() {
+            rec.mm.delete();
+        }, /cannot.*delete.*running/i, 'delete() throws exception while transaction running');
+        
+        tr.cancel();
+        assert.equal(rec.mm.getTransaction(), null,
+            'After current transaction cancelled, getTransaction() is null');
+            
+        tr = rec.mm.load(null, true);
+        
+        assert.deepEqual(tr.getState(), Amm.Data.Transaction.STATE_INIT,
+            'load(dontRun := false): current TR is NOT running (still "init")');
+
+        assert.ok(rec.mm.getTransaction() === tr, 
+            'load(dontRun := false): TR, while not running yet, became current');
+            
+        var tr2 = rec.mm.load(null, true);
+        
+        assert.deepEqual(tr2.getState(), Amm.Data.Transaction.STATE_INIT,
+            'load(dontRun := false): new TR is NOT running too (still "init")');
+
+        assert.ok(rec.mm.getTransaction() === tr2, 
+            'load(dontRun := false): new TR, while not running yet, became current');
+        
+        assert.deepEqual(tr.getState(), Amm.Data.Transaction.STATE_CANCELLED,
+            'load(dontRun := false): previous non-running TR bacame cancelled');
+
+        tr2.cancel();
+        
+        assert.equal(rec.mm.getTransaction(), null,
+            'After second pending transaction got cancelled, current transaction was null-ed'
+        );
+            
+    });
+    
     QUnit.test("Data.Record: lifecycle template methods", function(assert) {
         
         var log = [];
@@ -1187,10 +1290,13 @@
             uri: 'dummy.php',
             transactionPrototypes: {
                 'default': {
-                    transport: t,
-                    typePath: 'action'
+                    runner: {
+                        'class': 'Amm.Data.TransactionRunner.Http',
+                        transport: t,
+                        typePath: 'action'
+                    }
                 }
-            }
+            },
         });
         var r = new Amm.Data.Record({
             __mapper: m,
@@ -2354,6 +2460,138 @@
         
     });
     
+    QUnit.test("Data.Collection: save() with multi transaction", function(assert) {
+
+        var meta = {
+            id: {required: true},
+            firstName: {required: true},
+            lastName: {},
+            salary: {}
+        };
+        
+        var storage = new MemStor({
+            primaryKey: 'id',
+            autoInc: true,
+            def: [
+                { id: 1, firstName: 'John',     lastName: 'Doe',        salary: 1000,   },
+                { id: 2, firstName: 'Jane',     lastName: 'Dooh',       salary: 1500,   },
+                { id: 3, firstName: 'Susan',    lastName: 'Moore',      salary: 900,    },
+                { id: 4, firstName: 'Dale',     lastName: 'Coningale',  salary: 100,    },
+                { id: 5, firstName: 'Guy',      lastName: 'Richie',     salary: 1800,   },
+                { id: 6, firstName: 'Dennis',   lastName: 'Ritchie',    salary: 1700,   },
+                { id: 7, firstName: 'Jason',    lastName: 'Stoner',     salary: 530,    },
+            ],
+            load: true
+        });
+        
+        var mapper = new Amm.Data.Mapper(storage.getMapperPrototype());
+        
+        var c = new Amm.Data.Collection({
+            instantiateOnAccept: true,
+            instantiator: mapper,
+            preserveUncommitted: true,
+            items: storage.find().getData(),
+            multiTransactionOptions: {
+                maxRunning: 2
+            }
+        });
+        
+        assert.equal(c.length, 7, 'Items are in the collection');
+
+        c[0].firstName += ' 0';
+        c[1].firstName += ' 1';
+        c[2].firstName += ' 2';
+        c[3].firstName += ' 3';
+        c[4].firstName += ' 4';
+        
+        d.c = c;
+        
+        var recs = c.save();
+        
+            assert.ok(recs instanceof Array, 'save() returned Array');
+            assert.equal(recs.length, 5, 'save() returned Array with number of changed records');
+        
+        var tr = c.getTransaction();
+        
+            assert.ok(Amm.is(tr, 'Amm.Data.Transaction.Multi'),
+                'After multiTransaction-enabled collection save(), getTransaction() returns instance of Multi transaction');
+
+            assert.equal(tr.getState(), Amm.Data.Transaction.STATE_RUNNING,
+                'collection multi-transaction is in running state');
+            
+        c[0].mm.getTransaction().setResult(new Amm.Data.TransactionResult({
+            data: c[0].mm.getData()
+        }));
+        
+            assert.equal(tr.getNumDone(), 1, 
+                'transaction complete: multi.numDone++');
+                
+            assert.equal(tr.getNumSuccess(), 1, 
+                'transaction complete: multi.numSuccess++');
+
+            assert.equal(c.getNumUncommitted(), 4, 
+                'transaction complete: coll.numUncommitted--');
+
+            assert.equal(c[2].mm.getTransaction().getState(), Amm.Data.Transaction.STATE_RUNNING,
+                'transaction complete: advance queue');
+        
+        c[1].mm.getTransaction().setResult(new Amm.Data.TransactionResult({
+            data: c[1].mm.getData()
+        }));
+        
+            assert.equal(tr.getNumDone(), 2, 
+                '(2) transaction complete: multi.numDone++');
+
+            assert.equal(tr.getNumSuccess(), 2, 
+                '(2) transaction complete: multi.numSuccess++');
+
+            assert.equal(c.getNumUncommitted(), 3, 
+                '(2) transaction complete: coll.numUncommitted--');
+
+            assert.equal(c[3].mm.getTransaction().getState(), Amm.Data.Transaction.STATE_RUNNING,
+                '(2) transaction complete: advance queue');
+                
+        tr.cancel();
+        
+            assert.equal(tr.getState(), Amm.Data.Transaction.STATE_CANCELLED,
+                'Multi-transaction is cancelled with cancel() metod');
+                
+            assert.equal(c.getTransaction(), null,
+                'Cancelled transaction is no more returned by collection.getTransaction()');
+                
+            assert.ok(c.getLastTransaction() === tr,
+                'Cancelled multi-transaction is now returned by collection\' getLastTransaction()');
+                
+            assert.ok(c[3].mm.getTransaction() === null,
+                'Remaining records\' transactions are cancelled too (1)');
+                
+            assert.ok(c[4].mm.getTransaction() === null,
+                'Remaining records\' transactions are cancelled too (2)');
+                
+        var argItems;
+        var triggered = false;
+                
+        c.subscribe('save', function(retHandled, noCheck, dontRun, items) {
+            triggered = true;
+            argItems = items;
+            retHandled.handled = true;
+        });
+        
+        c.save();
+        
+            assert.ok(triggered,
+                'save(): outSave event was triggered');
+            
+            assert.ok(argItems[0] === c[2] && argItems[1] === c[3],
+                'outSave: uncommitted items were provided');
+                
+            assert.notOk(c.getTransaction(),
+                'outSave: since retHandled.handled is true, transaction wasn\'t created');
+            
+        Amm.cleanup(c.getItems());
+        
+    });
+    
     QUnit.test("Data.ModelMeta: hydrate with merge", function(assert) {
         
         var log = [];
@@ -2475,5 +2713,1092 @@
         Amm.cleanup(coll.getItems(), coll);
         
     });
+    
+    QUnit.test("Data.Transaction.Multi", function(assert) {
+        
+        var tr = function(descr) {
+            return new Amm.Data.Transaction({
+                data: descr,
+                ok: function(data) {
+                    this.setResult(new Amm.Data.TransactionResult({
+                        data: data || this.data
+                    }));
+                },
+                err: function(tr, data) {
+                    this.setResult(new Amm.Data.TransactionResult({
+                        errorType: Amm.Data.TransactionResult.ERROR_TYPE_SERVER,
+                        errorData: data || this.data
+                    }));
+                },
+                on__run: function(handled) {
+                    handled.handled = true;
+                }
+            });
+        };
+        
+        var stats = function(tr) {
+            return Amm.getProperty(tr, [
+                'numTotal', 
+                'numDone', 
+                'numRunning', 
+                'numSuccess', 
+                'numFailed', 
+                'numCancelled'
+            ]);
+        };
+        
+        var mul;
+        
+        // basic: add trs, run, ensure maxRunning, check stats, etc end
+        
+        mul = new Amm.Data.Transaction.Multi({maxRunning: 3});
+        
+        mul.add(tr('1'));
+        mul.add(tr('2'));
+        mul.add(tr('3'));
+        mul.add(tr('4'));
+        mul.add(tr('5'));
+        mul.add(tr('6'));
+        
+            assert.deepEqual(stats(mul), {
+                numTotal: 6,
+                numDone: 0,
+                numRunning: 0,
+                numSuccess: 0,
+                numFailed: 0,
+                numCancelled: 0
+            }, 'Initial state');
+        
+        mul.run();
+        
+            assert.deepEqual(stats(mul), {
+                numTotal: 6,
+                numDone: 0,
+                numRunning: 3,
+                numSuccess: 0,
+                numFailed: 0,
+                numCancelled: 0
+            }, 'Run: 3/6 running (stats)');
+            
+            assert.deepEqual(Amm.getProperty(mul.transactions, 'state'), [
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_INIT,
+                Amm.Data.Transaction.STATE_INIT,
+                Amm.Data.Transaction.STATE_INIT,
+            ], 'Run: 3/6 running');
+            
+        mul.transactions[0].ok();
+        
+            assert.deepEqual(stats(mul), {
+                numTotal: 6,
+                numDone: 1,
+                numRunning: 3,
+                numSuccess: 1,
+                numFailed: 0,
+                numCancelled: 0
+            }, '1 done: 3/6 running (stats)');
+            
+            assert.deepEqual(Amm.getProperty(mul.transactions, 'state'), [
+                Amm.Data.Transaction.STATE_SUCCESS,
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_INIT,
+                Amm.Data.Transaction.STATE_INIT,
+            ], '1 done; 3/6 running');
+            
+        mul.transactions[1].ok();
+        
+            assert.deepEqual(stats(mul), {
+                numTotal: 6,
+                numDone: 2,
+                numRunning: 3,
+                numSuccess: 2,
+                numFailed: 0,
+                numCancelled: 0
+            }, '2 done: 3/6 running (stats)');
+            
+            assert.deepEqual(Amm.getProperty(mul.transactions, 'state'), [
+                Amm.Data.Transaction.STATE_SUCCESS,
+                Amm.Data.Transaction.STATE_SUCCESS,
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_INIT,
+            ], '2 done; 3/6 running');
+            
+        mul.transactions[2].cancel();
+        mul.transactions[3].cancel();
+        mul.transactions[4].ok();
+        mul.transactions[5].ok();
+        
+            assert.deepEqual(stats(mul), {
+                numTotal: 6,
+                numDone: 6,
+                numRunning: 0,
+                numSuccess: 4,
+                numFailed: 0,
+                numCancelled: 2
+            }, '4 ok, 2 cancelled (stats)');
+            
+            assert.deepEqual(mul.getState(), Amm.Data.Transaction.STATE_SUCCESS,
+                '4 ok, 2 cancelled: transaction succeeded');
+        
+        Amm.cleanup(mul.transactions, mul);
+            
+        // fail one: finish others, but status is failed
+        
+        mul = new Amm.Data.Transaction.Multi({maxRunning: 3, cleanupTransactions: true});
+        
+        mul.add(tr('1'));
+        mul.add(tr('2'));
+        mul.add(tr('3'));
+        mul.add(tr('4'));
+        
+        mul.transactions[0].run();
+        
+            assert.deepEqual(mul.getState(), Amm.Data.Transaction.STATE_RUNNING,
+                'Inner transaction run: Multi switched to RUNNING state');
+            
+        mul.transactions[1].err();
+        
+            assert.deepEqual(mul.transactions[3].getState(), Amm.Data.Transaction.STATE_RUNNING,
+                'Tr #1 failed: last tr ran');
+        
+        mul.transactions[0].ok();
+        mul.transactions[2].ok();
+        mul.transactions[3].ok();
+        
+            assert.deepEqual(mul.getState(), Amm.Data.Transaction.STATE_FAILURE,
+                'Tr #1 failed: Multi state is FAILURE, although others finished');
+        
+        Amm.cleanup(mul);
+        
+        // stopOnFirstFail: first fail cancels others
+        
+        mul = new Amm.Data.Transaction.Multi({
+            stopOnFirstFail: true,
+            maxRunning: 0,
+            cleanupTransactions: true
+        });
+        
+        mul.add(tr('1'));
+        mul.add(tr('2'));
+        mul.add(tr('3'));
+        
+        var runningTr = tr('4');
+        
+        runningTr.run();
+        mul.add(runningTr);
+        
+            assert.deepEqual(Amm.getProperty(mul.transactions, 'state'), [
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_RUNNING,
+                Amm.Data.Transaction.STATE_RUNNING,
+            ], 'maxRunning is 0, Tr that already running added => all running');
+            
+            mul.transactions[0].ok();
+            
+            mul.transactions[1].err();
+            
+            assert.deepEqual(Amm.getProperty(mul.transactions, 'state'), [
+                Amm.Data.Transaction.STATE_SUCCESS,
+                Amm.Data.Transaction.STATE_FAILURE,
+                Amm.Data.Transaction.STATE_CANCELLED,
+                Amm.Data.Transaction.STATE_CANCELLED,
+            ], 'maxRunning is 0, Tr that already running added => all running');
+        
+            assert.deepEqual(mul.getState(), Amm.Data.Transaction.STATE_FAILURE,
+                'Mul.stopOnFirstFail - Tr failed => Multi state is FAILURE, running are cancelled');
+        
+        Amm.cleanup(mul);
+        
+        // cleanup running trs: state is done
+        
+        mul = new Amm.Data.Transaction.Multi({
+            maxRunning: 3,
+        });
+        
+        mul.add(tr('1'));
+        mul.add(tr('2'));
+        mul.add(tr('3'));
+        mul.add(tr('4'));
+        mul.add(tr('5'));
+        
+        mul.run();
+        
+        mul.transactions[0].ok();
+        mul.transactions[4].cleanup();
+        
+            assert.deepEqual(stats(mul), {
+                numTotal: 4,
+                numDone: 1,
+                numRunning: 3,
+                numSuccess: 1,
+                numFailed: 0,
+                numCancelled: 0
+            }, 'One tr cleanup()ed: stats adjusted');
+        
+            assert.deepEqual(mul.transactions.length, 4,
+                'One tr cleanup()ed: not in Multi.transactions array anymore');
+        
+        mul.transactions[1].ok();
+        mul.transactions[2].ok();
+        mul.transactions[3].cleanup();
+        
+            assert.deepEqual(mul.transactions.length, 3,
+                'Second tr cleanup()ed: not in Multi.transactions array anymore');
+            
+            assert.deepEqual(mul.getState(), Amm.Data.Transaction.STATE_SUCCESS,
+                'Second tr cleanup()ed: Multi tr finished');
+                
+        
+        Amm.cleanup(mul.transactions, mul);
+        
+    });
+    
+    QUnit.test("Data.Transaction.requiredTransactions", function(assert) {
+        
+        var tr = new Amm.Data.Transaction({runner: 'Amm.Data.TransactionRunner'});
+        var req1 = new Amm.Data.Transaction({runner: 'Amm.Data.TransactionRunner'});
+        var req2 = new Amm.Data.Transaction({runner: 'Amm.Data.TransactionRunner'});
+        
+        tr.setRequiredTransactions([req1, req2]);
+        
+        tr.run();
+            assert.equal(tr.getState(), Amm.Data.Transaction.STATE_WAITING, 
+                'Dependent transaction run: state is WAITING');
+            
+        req1.run();
+        req2.run();
+        req1.setResult(new Amm.Data.TransactionResult({data: 'foo'}));
+        req2.setResult(new Amm.Data.TransactionResult({data: 'bar'}));
+        
+            assert.equal(tr.getState(), Amm.Data.Transaction.STATE_RUNNING,
+                'All required transactions finished successfully: state is RUNNING');
+        
+        Amm.cleanup(req1, req2);
+        
+            assert.equal(tr.getRequiredTransactions().length, 0,
+                'All required trs cleanup: removed from req list');
+            
+        Amm.cleanup(tr);
+        
+        var tr2 = new Amm.Data.Transaction({runner: 'Amm.Data.TransactionRunner'});
+        var req3 = new Amm.Data.Transaction({runner: 'Amm.Data.TransactionRunner'});
+        var req4 = new Amm.Data.Transaction({runner: 'Amm.Data.TransactionRunner'});
+        
+        tr2.setRequiredTransactions([req3, req4]);
+        
+        tr2.run();
+            assert.equal(tr2.getState(), Amm.Data.Transaction.STATE_WAITING, 
+                'Dependent transaction run: state is WAITING');
+            
+        req3.cancel();
+        
+            assert.equal(tr2.getState(), Amm.Data.Transaction.STATE_CANCELLED,
+                'One required trs cancelled: state is CANCELLED');
+        
+        Amm.cleanup(tr2, req3, req4);
+        
+        var tr3 = new Amm.Data.Transaction({runner: 'Amm.Data.TransactionRunner'});
+        var req5 = new Amm.Data.Transaction({runner: 'Amm.Data.TransactionRunner'});
+        var req6 = new Amm.Data.Transaction({runner: 'Amm.Data.TransactionRunner'});
+        
+        tr3.setRequiredTransactions([req5, req6]);
+        
+        tr3.run();
+            assert.equal(tr3.getState(), Amm.Data.Transaction.STATE_WAITING, 
+                'Dependent transaction run: state is WAITING');
+            
+        req5.setResult(new Amm.Data.TransactionResult({
+                errorType: Amm.Data.TransactionResult.ERROR_TYPE_SERVER, 
+                errorData: 'err msg'
+            }));
+            assert.equal(req5.getState(), Amm.Data.Transaction.STATE_FAILURE,
+                'One required trs failed');
+        
+            assert.equal(tr3.getState(), Amm.Data.Transaction.STATE_FAILURE,
+                'One required trs failed: state is FAILURE');
+        
+        Amm.cleanup(tr3, req5, req6);
+        
+    });
+    
+    QUnit.test("Data.RecordSet", function(assert) {
+        
+        var log = [];
+        
+        var storage = new MemStor({
+            primaryKey: 'id',
+            autoInc: true,
+            def: [
+                { id:  1, firstName: 'John',     lastName: 'Doe',        salary:  10, gender: 'M', tags: ['A'] },
+                { id:  2, firstName: 'Jane',     lastName: 'Dooh',       salary:  20, gender: 'F', tags: ['A'] },
+                { id:  3, firstName: 'Susan',    lastName: 'Moore',      salary:  30, gender: 'F', tags: ['A'] },
+                { id:  4, firstName: 'Dale',     lastName: 'Coningale',  salary:  40, gender: 'M', tags: ['A', 'B'] },
+                { id:  5, firstName: 'Guy',      lastName: 'Richie',     salary:  50, gender: 'M', tags: ['A'] },
+                { id:  6, firstName: 'Denise',   lastName: 'James',      salary:  60, gender: 'F', tags: ['A'] },
+                { id:  7, firstName: 'Jason',    lastName: 'Stoner',     salary:  70, gender: 'M', tags: ['B'] },
+                { id:  8, firstName: 'Jason',    lastName: 'Stoner',     salary:  80, gender: 'M', tags: ['B']  },
+                { id:  9, firstName: 'Qu',       lastName: 'Mu',         salary:  90, gender: 'F', tags: ['A', 'B']  },
+                { id: 10, firstName: 'Stroxx',   lastName: 'Throxxx',    salary: 100, gender: 'M', tags: ['A', 'B']  },
+                { id: 11, firstName: 'Captain',  lastName: 'Zog',        salary: 110, gender: 'M', tags: ['B']  },
+                { id: 12, firstName: 'Master',   lastName: 'Buster',     salary: 120, gender: 'M', tags: ['A', 'B']  },
+            ],
+            metaProps: {
+                id: {},
+                firstName: {required: true},
+                lastName: {},
+                salary: {},
+                gender: {},
+                tags: {}
+            },
+            load: true,
+            on__request: function(action, method, uri, decodedData, headers, retResult) {
+                var s = method + ' ' + uri;
+                log.push(s);
+            }
+        });
+        
+        var mapper = new Amm.Data.Mapper(storage.getMapperPrototype());
+
+        var proto = mapper.getTransactionPrototypes();
+        
+        // do not bother with async
+        proto.default.runner.transport.replyTime = 0;
+        
+        mapper.setTransactionPrototypes(proto);
+        
+        var rs = new Amm.Data.RecordSet({
+            mapper: mapper,
+            limit: 3,
+        });
+        
+            assert.equal(log.length, 1, 'Initially there was 1 request');
+            assert.deepEqual(log, ['GET /list?limit=3&offset=0'], 'Proper request was issued');
+            
+        
+            assert.equal(rs.getTotalRecords(), 12,
+                'Total number of records is correct');
+
+            assert.ok(Amm.is(rs.getRecordsCollection(), 'Amm.Data.Collection'),
+                'RecordSet exposes Amm.Data.Collection');
+
+            assert.equal(rs.records.length, 3,
+                "records.length same as recordset's limit");
+
+            assert.equal(rs.getOffset(), 0, 
+                'initial getOffset() is 0');
+
+            assert.equal(rs.getCurrentIndex(), 0, 
+                'initial getCurrentIndex() is 0');
+
+            assert.equal(rs.getAbsoluteIndex(), 0, 
+                'initial getAbsoluteIndex() is 0');
+
+            assert.ok(rs.getCurrentRecord() === rs.getRecordsCollection()[0],
+                'current record set to first item');
+
+            assert.ok(!rs.getCanBack(),
+                'first item: getCanBack() is FALSE');
+
+            assert.ok(rs.getCanForward(),
+                'first item: getCanForward() is TRUE');
+            
+        rs.setAbsoluteIndex(1);
+        
+            assert.ok(rs.getCurrentRecord().id === 2, 'setAbsoluteIndex (same page)');
+            assert.ok(rs.getCurrentIndex() === 1, 'setAbsoluteIndex => setCurrentIndex (same page)');
+            
+        rs.setAbsoluteIndex(4);
+        
+            assert.ok(rs.getCurrentRecord().id === 5, 'setAbsoluteIndex (page flip)');
+            assert.ok(rs.getOffset() === 3, 'setAbsoluteIndex (page flip) => offset changed');
+            assert.ok(rs.getCurrentIndex() === 1, 'setAbsoluteIndex (page flip) => setCurrentIndex');
+            
+        rs.setCurrentIndex(-1);
+        
+            assert.ok(rs.getCurrentRecord().id === 3, 'setCurrentIndex(-1) => page flip back');
+            assert.ok(rs.getCurrentIndex() === 2,
+                'setCurrentIndex(-1) => page flip back => set to last record of prev page');
+                
+            assert.ok(rs.getOffset() === 0,
+                'setCurrentIndex(-1) => page flip back => flipped to first page');
+        
+        log = [];
+        rs.gotoKey(2);
+            
+            assert.equal(log.length, 0,
+                'gotoKey (loaded record) => no requests issued');
+        
+            assert.equal(rs.getCurrentIndex(), 1,
+                'gotoKey (loaded record) => proper index');
+                
+            assert.ok(rs.getCurrentRecord().id === 2,
+                'gotoKey (loaded record) => proper record');
+        
+        log = [];
+        rs.gotoKey(11);
+        
+            assert.equal(log.length, 2,
+                'gotoKey (non-loaded record) => 2 requests issued');
+                
+            assert.equal(rs.getAbsoluteIndex(), 10,
+                'gotoKey (loaded record) => proper index');
+                
+            assert.ok(rs.getCurrentRecord().id === 11,
+                'gotoKey (loaded record) => proper record');
+                
+        rs.gotoKey(9); // Qu Mu, 'F', ['A', 'B']
+            assert.equal(rs.getCurrentRecord().mm.getKey(), 9,
+                "Got to the proper key");
+        
+        log = [];
+        rs.setFilter('F', 'gender');
+        
+            assert.equal(rs.getRecords().length, 1, 
+                "1 record on last page");
+                
+            assert.equal(rs.getTotalRecords(), 4, 
+                "Set filter: reload");
+            
+            assert.equal(rs.getCurrentRecord().mm.getKey(), 9, 
+                "Set filter: FILTER_KEEP_KEY works");
+                
+            assert.equal(rs.getOffset(), 3,
+                "Set filter: FILTER_KEEP_KEY: we're on the proper page");
+                
+        rs.filterOffsetAction = Amm.Data.RecordSet.FILTER_GOTO_FIRST;
+        
+        rs.setFilter(undefined, 'gender');
+        
+            assert.equal(rs.getRecords().length, 3, 
+                "setFilter() with FILTER_GOTO_FIRST: we've 3 records...");
+        
+            assert.equal(rs.getTotalRecords(), 12, 
+                "setFilter() with FILTER_GOTO_FIRST: all records are found");
+        
+            assert.equal(rs.getOffset(), 0,
+                "setFilter() with FILTER_GOTO_FIRST: new offset is 0");
+        
+            assert.equal(rs.getCurrentIndex(), 0,
+                "setFilter() with FILTER_GOTO_FIRST: new index is also 0");
+        
+            assert.ok(rs.getCurrentRecord() === rs.getRecords()[0],
+                "...first record is current");
+                
+        rs.setAbsoluteIndex(rs.getTotalRecords() - 1);
+        
+            assert.equal(rs.getCurrentRecord().mm.getKey(), 12, 
+                "Went to last record");
+        
+        rs.filterOffsetAction = Amm.Data.RecordSet.FILTER_OFFSET_SAME;
+        rs.pastOffsetAction = Amm.Data.RecordSet.PAST_OFFSET_GOTO_FIRST;
+        
+        rs.setFilter('M', 'gender');
+        
+            assert.equal(rs.getAbsoluteIndex(), 0, 'Went to first record');
+            assert.equal(rs.getOffset(), 0, 'Went to first record');
+            assert.ok(rs.getCurrentRecord(), 'Current record is set');
+            assert.ok(rs.getCurrentRecord() === rs.getRecords()[0], 'Current record is first');
+        
+        rs.filterOffsetAction = Amm.Data.RecordSet.FILTER_OFFSET_KEEP_KEY;
+        rs.pastOffsetAction = Amm.Data.RecordSet.PAST_OFFSET_GOTO_LAST;
+        
+        var coll = rs.getRecordsCollection();
+        
+        rs.setFilter({gender: 'M'});
+        assert.deepEqual(Amm.Array.unique(Amm.getProperty(coll.getItems(), 'gender')), ['M'],
+            'filter is applied');
+                
+        rs.setBaseFilter({gender: 'F'});
+        assert.deepEqual(Amm.Array.unique(Amm.getProperty(coll.getItems(), 'gender')), ['F'],
+            'setBaseFilter: base filter overrides filter values');
+            
+        rs.setBaseFilter(null);
+        assert.deepEqual(Amm.Array.unique(Amm.getProperty(coll.getItems(), 'gender')), ['M'],
+            'nulled baseFilter: filter became effective');
+        
+        rs.setFilter(null);
+        
+        // combine filters feature and event
+        
+        rs.beginUpdate();
+        rs.setBaseFilter({id: [3, 5]});
+        rs.setFilter({id: [7]});
+        rs.endUpdate();
+        
+            assert.deepEqual(Amm.getProperty(coll.getItems(), 'id'), [3, 5, 7],
+                'Naive combination of baseFilter + filter');
+                
+        var combine = function(baseFilter, filter, retCombinedHandled) {
+            if (filter.id && !(filter.id instanceof Array)) {
+                filter.id = [filter.id];
+            }
+            if (baseFilter.id && !(baseFilter.id instanceof Array)) {
+                baseFilter.id = [baseFilter.id];
+            }
+            retCombinedHandled.combined = Amm.override({}, filter);
+            retCombinedHandled.combined = Amm.override(retCombinedHandled.combined, baseFilter);
+            if (filter.id && baseFilter.id) {
+                retCombinedHandled.combined.id = Amm.Array.intersect(baseFilter.id, filter.id);
+                if (!retCombinedHandled.combined.id.length) retCombinedHandled.combined.id = '';
+            }
+            retCombinedHandled.handled = true;
+        };
+        rs.subscribe('combineFilters', combine);
+        rs.setFilter({id: [7, 9]});
+        
+            assert.deepEqual(Amm.getProperty(coll.getItems(), 'id'), [],
+                'Proper combination of baseFilter + filter using combineFilters event');
+
+        rs.setFilter({id: [3]});
+        
+        
+            assert.deepEqual(Amm.getProperty(coll.getItems(), 'id'), [3],
+                'Proper combination of baseFilter + filter using combineFilters event');
+        
+        rs.beginUpdate();
+        rs.setBaseFilter(null);
+        rs.setFilter(null);
+        rs.endUpdate();
+        
+        // set defaults and create new record
+        
+        rs.setDefaults({
+            firstName: 'FIRST',
+            lastName: 'LAST',
+            salary: 999,
+        });
+        
+        var newRecord = rs.add({lastName: 'THE LAST'});
+        
+            assert.deepEqual(
+                Amm.getProperty(newRecord, ['firstName', 'lastName', 'salary']),
+                {
+                    firstName: 'FIRST',
+                    lastName: 'THE LAST',
+                    salary: 999
+                },
+                'defaults were applied and combined with add() argument'
+            );
+    
+            assert.ok(newRecord === rs.getCurrentRecord(), "add(): new record became current");
+        
+        // deleteCurrent
+        
+        rs.setFilter(null);
+        rs.gotoKey(1);
+        
+            assert.equal(rs.getCurrentRecord().mm.getKey(), 1, 'gotoKey worked');
+            
+        rs.deleteCurrent();
+        
+            assert.equal(rs.getCurrentRecord().mm.getState(), Amm.Data.STATE_DELETE_INTENT,
+                'deleteCurrent: state is deleteIntent');
+                
+        rs.forward();
+        rs.getCurrentRecord().firstName += 'XXX xxx';
+        
+            assert.equal(rs.getRecordsCollection().getNumUncommitted(), 3,
+                'Three records are uncommitted');
+                
+        rs.revert();
+        
+            assert.equal(rs.getRecordsCollection().getNumUncommitted(), 0,
+                'Revert: none records are uncommitted');
+            assert.notOk(rs.getRecordsCollection().hasItem(newRecord),
+                'Revert: new item was rejected');
+                
+        rs.deleteImmediately = true;
+        var rec = rs.getCurrentRecord();
+        rs.deleteCurrent();
+        
+            assert.equal(rec.mm.getState(), Amm.Data.STATE_DELETED,
+                'deleteImmediately: deleteCurrent() deletes record instantly');
+        
+        rs.setCurrentIndex(0);
+        var invalidRec = rs.getCurrentRecord();
+        invalidRec.setFirstName('');
+        rs.forward();
+        
+        var validRec = rs.getCurrentRecord();
+        validRec.setFirstName('FooBar');
+        
+        var savedRecs = rs.save();
+        
+            assert.equal(savedRecs.length, 1, 'Only valid record is saved');
+            assert.ok(savedRecs[0] === validRec, 'Only valid record is saved');
+            assert.equal(rs.getRecordsCollection().getNumWithErrors(), 1, 'Other (invalid) record has errors');
+            
+        rs.revert();
+        rs.refresh();
+        
+        coll[0].firstName += ' 0';
+        coll[1].firstName += ' 1';
+        coll[2].firstName += ' 2';
+        
+            assert.equal(rs.getRecordsCollection().getNumUncommitted(), 3, '3 records modified');
+            
+        rs.setMultiTransactionOptions({maxRunning: 1});
+        rs.save(false, true);
+        
+            assert.ok(Amm.is(coll.getTransaction(), 'Amm.Data.Transaction.Multi'), 
+                'Recordset save() => Collection save() => created multi-transaction');
+            assert.equal(coll.getTransaction().getState(), Amm.Data.Transaction.STATE_INIT,
+                'Since dontRun arg is TRUE, multi-transaction isn\'t running');
+                
+        // test mapper swapping
+        
+        var log2 = [];
+        
+        var storage2 = new MemStor({
+            primaryKey: 'idx',
+            autoInc: true,
+            def: [
+                { idx:  1, foo: 'John',     bar: 'Doe',        baz:  10},
+                { idx:  2, foo: 'Jane',     bar: 'Dooh',       baz:  20},
+                { idx:  3, foo: 'Susan',    bar: 'Moore',      baz:  30},
+                { idx:  4, foo: 'Dale',     bar: 'Coningale',  baz:  40},
+                { idx:  5, foo: 'Guy',      bar: 'Richie',     baz:  50},
+                { idx:  6, foo: 'Denise',   bar: 'James',      baz:  60},
+            ],
+            metaProps: {
+                idx: {},
+                foo: {required: true},
+                bar: {},
+                baz: {},
+            },
+            load: true,
+            on__request: function(action, method, uri, decodedData, headers, retResult) {
+                var s = method + ' ' + uri;
+                log2.push(s);
+            }
+        });
+        
+        var mapper2 = new Amm.Data.Mapper(storage2.getMapperPrototype());
+
+        var proto2 = mapper2.getTransactionPrototypes();
+        
+        // do not bother with async - again
+        proto2.default.runner.transport.replyTime = 0;
+        
+        d.rs = rs;
+        
+        mapper2.setTransactionPrototypes(proto2);
+        
+        rs.setMapper(mapper2);
+        
+            assert.ok(rs.getMapper(), mapper2, 'Mapper was set');
+        
+            assert.ok(rs.getCurrentRecord(),
+                'Recordset was populated from second mapper');
+                
+            rs.setCurrentIndex(0);
+            assert.equal(rs.getCurrentRecord().idx, 1, 
+                'First record successfully loaded');
+        
+        Amm.cleanup(rs, storage, storage2, mapper, mapper2);
+                
+    });
+    
+    
+    QUnit.test("Data.RecordSet: preventing navigation/fetch behaviour", function(assert) {
+        
+        var log = [];
+        var storage = new MemStor({
+            primaryKey: 'id',
+            autoInc: true,
+            def: [
+                { id:  1, firstName: 'John',     lastName: 'Doe',        salary:  10, gender: 'M', tags: ['A'] },
+                { id:  2, firstName: 'Jane',     lastName: 'Dooh',       salary:  20, gender: 'F', tags: ['A'] },
+                { id:  3, firstName: 'Susan',    lastName: 'Moore',      salary:  30, gender: 'F', tags: ['A'] },
+                { id:  4, firstName: 'Dale',     lastName: 'Coningale',  salary:  40, gender: 'M', tags: ['A', 'B'] },
+                { id:  5, firstName: 'Guy',      lastName: 'Richie',     salary:  50, gender: 'M', tags: ['A'] },
+                { id:  6, firstName: 'Denise',   lastName: 'James',      salary:  60, gender: 'F', tags: ['A'] },
+                { id:  7, firstName: 'Jason',    lastName: 'Stoner',     salary:  70, gender: 'M', tags: ['B'] },
+                { id:  8, firstName: 'Jason',    lastName: 'Stoner',     salary:  80, gender: 'M', tags: ['B']  },
+                { id:  9, firstName: 'Qu',       lastName: 'Mu',         salary:  90, gender: 'F', tags: ['A', 'B']  },
+                { id: 10, firstName: 'Stroxx',   lastName: 'Throxxx',    salary: 100, gender: 'M', tags: ['A', 'B']  },
+                { id: 11, firstName: 'Captain',  lastName: 'Zog',        salary: 110, gender: 'M', tags: ['B']  },
+                { id: 12, firstName: 'Master',   lastName: 'Buster',     salary: 120, gender: 'M', tags: ['A', 'B']  },
+            ],
+            metaProps: {
+                id: {},
+                firstName: {required: true},
+                lastName: {},
+                salary: {},
+                gender: {},
+                tags: {}
+            },
+            load: true,
+            on__request: function(action, method, uri, decodedData, headers, retResult) {
+                var s = method + ' ' + uri;
+                log.push(s);
+            }
+        });
+        var retTransport = {transport: null};
+        var mapper = new Amm.Data.Mapper(storage.getMapperPrototype(retTransport));
+        var proto = mapper.getTransactionPrototypes();
+        // do bother with async
+        proto.default.runner.transport.replyTime = 1;
+        mapper.setTransactionPrototypes(proto);
+        var rs = new Amm.Data.RecordSet({
+            mapper: mapper,
+            limit: 3,
+        });
+        
+        var methods = [
+            ['beginUpdate'],
+            ['setFilter', 'M', 'gender'],
+            ['setBaseFilter', 'M', 'gender'],
+            ['setSort', false, 'salary'],
+            ['setOffset', 6],
+            ['setLimit', 4],
+            ['setCurrentIndex', 4],
+            ['setAbsoluteIndex', 7],
+            ['gotoKey', 3],
+            ['refresh']
+        ];
+        
+        // check prevention of navigation/fetch during lockNavigation
+        
+            assert.ok(rs.getTransaction(), 'Transaction is initially running');
+            assert.equal(rs.getTransaction().getState(), Amm.Data.Transaction.STATE_RUNNING,
+                'Transaction is initially running (state)');
+            assert.notOk(rs.getCanNavigate(),
+                'canNavigate is FALSE while TR running');
+            assert.notOk(rs.getCanFetch(), 
+                'canFetch is FALSE while TR running');
+            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_NAVIGATION,
+                'navigationLocked property during fetch');
+                
+        // check prevention of navigation/fetch methods during "navigationLocked" calc'd event
+        
+        for (var i = 0, l = methods.length; i < l; i++) {
+            assert.throws(function() {
+                rs[methods[i][0]].apply(rs, Array.prototype.slice.apply(methods[i], 1));
+            }, 'Attempt to use navigational/fetch-issuing method ' 
+                + methods[i] + '() when getNavigationLocked() throws exception'
+            );
+        }
+        
+        retTransport.transport.replyAsync();
+            
+            assert.notOk(rs.getTransaction(),
+                'Transaction is not running anymore');
+            assert.ok(rs.getCanNavigate(),
+                'canNavigate is TRUE after TR complete');
+            assert.ok(rs.getCanFetch(),
+                'canFetch is TRUE while TR complete');
+            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_NONE,
+                'navigationLocked property after fetch complete');
+        
+        // check prevention of navigation with dontNavigateUntilCommitted
+        
+        rs.setDontNavigateUntilCommitted(true);
+        rs.getCurrentRecord().firstName += 'Foo';
+            
+            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_NAVIGATION,
+                'navigationLocked property when modified + dontNavigateUntilCommitted');
+        
+        rs.revert();
+        
+            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_NONE,
+                'navigation not locked after revert + dontNavigateUntilCommitted');
+        
+        // check prevention of fetching with dontFetchUntilCommitted
+        
+        rs.setDontNavigateUntilCommitted(false);
+        rs.setDontFetchUntilCommitted(true);
+        rs.getCurrentRecord().firstName += 'Foo';
+            
+            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_FETCH,
+                'fetch locked when modified + dontFetchUntilCommitted');
+        
+        rs.revert();
+        
+            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_NONE,
+                'fetch not locked after revert + dontFetchUntilCommitted');
+                
+        rs.setLimit(10);
+        retTransport.transport.replyAsync();
+        
+        rs.setCurrentIndex(7);
+        var coll = rs.getRecordsCollection();
+        
+            assert.equal(coll.length, 10, 
+                'Whole page of records loaded');
+                
+        coll.reject(rs.getCurrentRecord());
+        
+            assert.equal(rs.getCurrentIndex(), 7, 
+                'Current record rejected: keep current index');
+                
+        coll.reject(rs.getCurrentRecord());
+        
+            assert.equal(rs.getCurrentIndex(), 7, 
+                'Current record rejected: keep current index (2)');
+                
+        coll.reject(rs.getCurrentRecord());
+        
+            assert.equal(rs.getCurrentIndex(), 6, 
+                'Last record rejected: keep last index');
+            
+        Amm.cleanup(rs, storage, mapper);
+        
+    });
+    
+    
+    QUnit.test("Data.RecordSet: commitOnNavigate/Fetch + dontFetch/NavigateUntilCommitted", function(assert) {
+        
+        var log = [];
+        
+        var storage = new MemStor({
+            primaryKey: 'id',
+            autoInc: true,
+            def: [
+                { id:  1, firstName: 'John',     lastName: 'Doe',        salary:  10, gender: 'M', tags: ['A'] },
+                { id:  2, firstName: 'Jane',     lastName: 'Dooh',       salary:  20, gender: 'F', tags: ['A'] },
+                { id:  3, firstName: 'Susan',    lastName: 'Moore',      salary:  30, gender: 'F', tags: ['A'] },
+                { id:  4, firstName: 'Dale',     lastName: 'Coningale',  salary:  40, gender: 'M', tags: ['A', 'B'] },
+                { id:  5, firstName: 'Guy',      lastName: 'Richie',     salary:  50, gender: 'M', tags: ['A'] },
+                { id:  6, firstName: 'Denise',   lastName: 'James',      salary:  60, gender: 'F', tags: ['A'] },
+                { id:  7, firstName: 'Jason',    lastName: 'Stoner',     salary:  70, gender: 'M', tags: ['B'] },
+                { id:  8, firstName: 'Jason',    lastName: 'Stoner',     salary:  80, gender: 'M', tags: ['B']  },
+                { id:  9, firstName: 'Qu',       lastName: 'Mu',         salary:  90, gender: 'F', tags: ['A', 'B']  },
+                { id: 10, firstName: 'Stroxx',   lastName: 'Throxxx',    salary: 100, gender: 'M', tags: ['A', 'B']  },
+                { id: 11, firstName: 'Captain',  lastName: 'Zog',        salary: 110, gender: 'M', tags: ['B']  },
+                { id: 12, firstName: 'Master',   lastName: 'Buster',     salary: 120, gender: 'M', tags: ['A', 'B']  },
+            ],
+            metaProps: {
+                id: {},
+                firstName: {required: true},
+                lastName: {},
+                salary: {},
+                gender: {},
+                tags: {}
+            },
+            load: true,
+            on__request: function(action, method, uri, decodedData, headers, retResult) {
+                var s = method + ' ' + uri;
+                log.push(s);
+            }
+        });
+        var retTransport = {transport: null};
+        var mapper = new Amm.Data.Mapper(storage.getMapperPrototype(retTransport));
+        var proto = mapper.getTransactionPrototypes();
+        // do bother with async
+        proto.default.runner.transport.replyTime = 1;
+        mapper.setTransactionPrototypes(proto);
+        var rs = new Amm.Data.RecordSet({
+            mapper: mapper,
+            limit: 3,
+        });
+        
+        retTransport.transport.replyAsync(); // we should fill-in records
+        
+        // simple commit-on-navigate
+        rs.setCommitOnNavigate(true);
+        
+        rs.setCurrentIndex(0);
+        rs.getCurrentRecord().firstName += " Foo";
+        rs.forward();
+        
+            assert.ok(rs.getRecords()[0].mm.getTransaction(), 
+                'commitOnNavigate: navigation causes commit');
+                
+        retTransport.transport.replyAsync();
+        
+        rs.setDontNavigateUntilCommitted(true);
+        
+            assert.equal(rs.getRecordsCollection().getNumUncommitted(), 0,
+                'Record was committed');
+
+        rs.setDontNavigateUntilCommitted(true);
+        
+        var rec = rs.getCurrentRecord();
+        rec.firstName += " Bar";
+        
+        var idx = rs.getCurrentIndex();
+        
+        rs.forward();
+            
+            assert.ok(rec.mm.getTransaction(), 
+                'commitOnNavigate + dontNavigateUntilCommitted: navigation causes commit');
+            
+        var tr = rs.getTransaction();
+        
+            assert.ok(tr, 
+                'commitOnNavigate + dontNavigateUntilCommitted: '
+                + 'navigation creates RecordSet dummy fetch transaction');
+            assert.equal(tr.getState(), Amm.Data.Transaction.STATE_WAITING,
+                'dummy fetch transaction state is WAITING');
+            assert.equal(rs.getCurrentIndex(), idx,
+                'index stays the same until all records are saved');
+            assert.notOk(rs.getCanNavigate(),
+                'navigation not possible until dummy fetch in progress');
+                
+        retTransport.transport.replyAsync();
+        
+            assert.notOk(rs.getTransaction(),
+                'save complete: dummy fetch complete');
+            assert.equal(rs.getCurrentIndex(), idx + 1,
+                'save complete: dummy fetch complete: navigation done');
+                
+        // Test: can't navigate since record has errors
+        rs.revert();
+        rs.setCurrentIndex(0);
+        
+        rec = rs.getCurrentRecord();
+        
+        rec.firstName = "";
+        
+        var err = rec.mm.getErrors();
+        
+            assert.ok(err, 'Record has errors');
+            assert.ok(rs.getCanNavigate(), 'commitOnNavigate + dontNavigateUntilCommitted: can navigate');
+            assert.throws(function() {
+                rs.forward();
+            }, 'Attempt to navigate with invalid record throws an error');
+            
+        rec.firstName += "Foo";
+        rs.forward();
+        
+            assert.ok(rec.mm.getTransaction(), 'Record w/o errors began to save');
+            
+        rec.mm.getTransaction().setResult(
+            new Amm.Data.TransactionResult({
+                errorType: Amm.Data.TransactionResult.ERROR_TYPE_SERVER,
+                errorData: 'Cannot save record'
+            })
+        );
+        
+            assert.notOk(rec.mm.getTransaction(),  'Transaction ended bc of error');
+            assert.notOk(rec.mm.getCommitted(), 'Record still uncommitted');
+            assert.equal(rs.getCurrentIndex(), 0, 'Index not changed');
+            assert.ok(rs.getFetchError(), 'Fetch error was set');
+        
+        // Test: commit on fetch
+        
+        rs.setCommitOnNavigate(false);
+        rs.setDontNavigateUntilCommitted(false);
+        rs.setCommitOnFetch(true);
+        
+        rs.revert();
+        rs.setCurrentIndex(0);
+        rec = rs.getCurrentRecord();
+        rec.firstName += " Changed";
+        
+        var rec2;
+        rs.forward();
+        rec2 = rs.getCurrentRecord();
+        rec2.firstName += " Changed Too";
+        
+        rs.forward(true);
+        
+            assert.ok(rs.getOffset(), 3, 'forward(true) worked');
+            assert.ok(rs.getTransaction(), 'fetch transaction was issued');
+            
+            assert.ok(rec.mm.getTransaction(), 'record 1 being saved');
+            assert.ok(rec2.mm.getTransaction(), 'record 2 being saved');
+        
+        retTransport.transport.replyAsync(true);
+            
+            assert.equal(rs.getRecordsCollection().getNumUncommitted(), 0, 'All records were committed');
+            assert.notOk(rs.getTransaction(), 'Fetch transaction complete');
+            assert.ok(rs.getCanFetch(), 'Still can fetch');
+            
+        // Test: commit on fetch + dont fetch until committed
+        
+        rs.setCurrentIndex(0);
+            
+        rec = rs.getCurrentRecord();
+        rec.firstName += " Changed";
+        rs.forward();
+        rec2 = rs.getCurrentRecord();
+        rec2.firstName += " Changed Too";
+        
+        rs.setCommitOnNavigate(false);
+        rs.setDontNavigateUntilCommitted(false);
+        rs.setCommitOnFetch(true);
+        rs.setDontFetchUntilCommitted(true);
+        
+            assert.ok(rs.getCanFetch(), 'getCanFetch() returns TRUE');
+        
+        rs.forward(true);
+            assert.ok(rs.getOffset(), 3, 'forward(true) worked');
+            assert.ok(rs.getTransaction(), 'fetch transaction was issued');
+            assert.equal(rs.getTransaction().getState(), Amm.Data.Transaction.STATE_WAITING,
+                'fetch transaction is waiting');
+            
+            assert.ok(rec.mm.getTransaction(), 'record 1 being saved');
+            assert.ok(rec2.mm.getTransaction(), 'record 2 being saved');
+        
+            retTransport.transport.replyAsync(true);
+            assert.equal(rs.getRecordsCollection().getNumUncommitted(), 0, 'All records were committed');
+            
+            assert.equal(rs.getTransaction().getState(), Amm.Data.Transaction.STATE_RUNNING,
+                'fetch done: fetch transaction is running');
+            
+            assert.notOk(rs.getCanFetch(), 'Can\'t fetch while fetch is running');
+            retTransport.transport.replyAsync();
+            
+            assert.notOk(rs.getTransaction(), 'Fetch complete');
+            assert.ok(rs.getCanFetch(), 'Can fetch again');
+                
+        // Test: commit on fetch + one of trs is failed
+        
+        rs.revert();
+        rs.setOffset(0);
+        retTransport.transport.replyAsync(true);
+        
+        rs.setCurrentIndex(0);
+            
+        rec = rs.getCurrentRecord();
+        rec.firstName += " Changed Again";
+        
+        rs.forward();
+        rec2 = rs.getCurrentRecord();
+        rec2.firstName += " Changed Again Too";
+        
+        rs.setCommitOnNavigate(false);
+        rs.setDontNavigateUntilCommitted(false);
+        rs.setCommitOnFetch(true);
+        rs.setDontFetchUntilCommitted(true);
+        
+            assert.ok(rs.getCanFetch(), 'getCanFetch() returns TRUE');
+            assert.notOk(rs.getFetchError(), 'No fetch error at the moment');
+        
+        rs.forward(true);
+        
+            assert.ok(rs.getOffset(), 3, 'forward(true) worked');
+            assert.ok(rs.getTransaction(), 'fetch transaction was issued');
+            assert.equal(rs.getTransaction().getState(), Amm.Data.Transaction.STATE_WAITING,
+                'fetch transaction is waiting');
+            
+            assert.ok(rec.mm.getTransaction(), 'record 1 being saved');
+            assert.ok(rec2.mm.getTransaction(), 'record 2 being saved');
+        
+        retTransport.transport.replyAsync(); // reply to last async call
+            
+            assert.notOk(rec2.mm.getTransaction(), 'record 2 is done saving...');
+            assert.ok(rec.mm.getTransaction(), 'while record 1 isn\'t finished yet');
+        
+        rec.mm.getTransaction().setResult(new Amm.Data.TransactionResult({
+            errorType: Amm.Data.TransactionResult.ERROR_TYPE_SERVER,
+            errorData: 'Cannot save record'
+        }));
+        
+            assert.ok(rs.getFetchError(), 'Fetch error issued');
+            
+        Amm.cleanup(rs, storage, mapper);
+        
+    });
+    
     
 }) ();
