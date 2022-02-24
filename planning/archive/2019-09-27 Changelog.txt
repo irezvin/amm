@@ -1,0 +1,51 @@
+Changelog 2019-08-01 - 2019-09-31
+
++   Amm.setProperty: set property of each item in provided Array 
++   Amm.values - return values of all own properties of a hash (related to Amm.Keys)
+*   Amm.Array.slice(start, end): when end === undefined slice towards the end of array
++   Amm.ArrayMapper: `destExtra` property: additional items that are always added
+    BEFORE result items in the target collection
++   Amm.Builder: support 'external' values using $ext key in prototypes.
+    Values are set globally and than retrieved by comma-separated paths 
+    (foo.bar.baz will be retrieved as window.foo.bar.baz; no getters etc are supported).
+    This allows to simplify HTML markup by moving clunky declarations 
+    into global objects.
++   Amm.Builder: 'builder extensions' support. Extensions are defined using
+    data-amm-x= that contains a) extension path; b) array of extension paths;
+    c) hash of extensionPath: extensionArgs.
+    Extensions are retrieved using Amm.getFunction(), except last segment is prepended
+    with 'builderExtension_' to avoid arbitrary calls.
+    builderExtension_<ext> function (htmlElement, elementPrototype, extensionArg)
+    where htmlElement is node that contains data-amm-x attribute. 
+    Builder extensions allow to define and apply custom HTML markup for specific cases.
++   Amm.Expression: if `writeProperty` is string that contains non-word characters,
+    will treat it as expression definition
++   Amm.Expression: setDest() - alias of setWriteProperty()
++   Amm.Expression: `writeToExpressionThis` (one of THIS_WRITE_{NEVER|ALWAYS|ONCE|AUTO}).
+    If write property is Amm.Expression, expressionThis of this expression will be assigned
+    to expressionThis of write-expression. This was needed to allow writing of object-bound
+    expressions (expr__<foo>) in declarative way.
++   Amm.Instantiator is now base abstract class for Amm.Instaniator.Proto 
+    and Amm.Instantiator.Variants, for type-checks.
++   Amm.Instantiator.Proto.isElement: force creation of elements (when `proto` is builder
+    source, such as jQuery result or HTML element, it may not have `class` property)
++   Amm.Instantiator.Variants: `allowNullInstance` := TRUE means, when no matching
+    condition is matched and no default prototype provided, NULL will be returned instead
+    of triggering an Error
++   Amm.Instantiator.Variants: assocProperty, revAssocProperty (instead of setting
+    __assocProperty, __revAssocProperty in each prototype) 
++   Amm.Instantiator.Variants: non-hash builder sources may be provided as prototypes
+*   Amm.Selection: obey beginUpdate/endUpdate and trigger no valueChange
+*   Amm.Trait.Select: fixed (undiscovered previously) bug when two Selection objects
+    were created
++   Amm.Trait.Select.Option: added `visible` property; support for showing/hiding options
+    (in standard HTML select view, this is done by placing <option> into surrounding <div>)
+*   Amm.Trait.Select: call Amm.Selection begin/endUpdate() to avoid serial events
++   Amm.Trait.Select: setOptions() preserves value of select, if possible
++   Amm.View.Html.Collection: updateItemHtml() now can return either replacement node 
+    or current one; if current node was returned, it won't be replaced.
++   Amm.View.Html.Input: `updateOnKeyUp` property means the change is recorded
+    on every key press (keyup event). Useful for filters, autocompletes etc.
++   TODO: explain in-depth Amm.Trait.Instantiator and Amm.Trait.Repeater. 
+    Both traits may initialize their embedded Instantiators using special kind of markup.
+

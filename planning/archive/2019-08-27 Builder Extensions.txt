@@ -1,0 +1,17 @@
+2019-08-27
+
+Расширения builder-а
+    
+    data-amm-x="Amm.Class.extName"
+    data-amm-x="{Amm.Class.extName: arg1, Amm.Class2.extName2: arg2}"
+    
+
+    Amm.Class.builderExtension_extName = function(htmlNode, elementPrototype, arg) {
+    
+        // either do something to elementPrototype
+        // or return { object } that will overrideRecursive(elementPrototype)
+        
+    }
+    
+    Last segment of path will be always automatically prefixed with "builderExtension_"
+    

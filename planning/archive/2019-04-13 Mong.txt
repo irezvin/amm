@@ -1,0 +1,277 @@
+2019-04-13
+
+Работа над Amm/Mong (Tagging for Semantic Fasi + первое пробное решение)
+
++   Amm.View.Html.Select: // done @09.05
+    +   когда у нас список высотой в 1 элемент, и заполняются options, нужно передать 
+        элементу value в первый пункт списка
+        +   база
+        +   тест
+    +   _Очень сильно_ нужно сделать, чтобы в Select Options можно было использовать любые объекты.
+        +   можно использовать для этого arrayMapper
+            +   бочина в Amm.Collection
+                var c = new Amm.Collection(items);
+                c.setItems(c.getItems()); <- приводит к тому, что у items через один 
+                вызывается unsubscribe, а затем не вызывается subscribe
+
+/// !!! - это я не доделал? проверить -- 2019-07-16
+
+            -   сделать, что если мы ставим setItems() аналогичные getItems(), то нет 
+                никаких действий
+                -   если тот же порядок
+                -   если есть сортировка - то пофиг на порядок
+            -   preAccept - должен сдвигать старт по мере совпадения объектов
+            -   сделать, что если splice по итогу устанавливает те же объекты, 
+                тоже нет побочного эффекта
+            -   сделать, что при reinsert'е объектов они не unsubscribe            
+            
+        +   get/set values работает с исходными объектами 
+            (если не указано valueProperty / valueExpression)
+        +   labelProperty/labelExpression
+        +   disabledProperty/disabledExpression
+        
++   Amm.Collection: возможность находить объекты по значению assocProperty 
+    // это keyProperty (getByKey, byKeyChange) -- done@10.05
+    
+    Amm.Collection.getAssoc(value), outAssocChange()
+    Amm.Collection.a[assocValue] <- все время в актуальном состоянии
+    
+?   поддержка select2
+
++   простота выбора компонентов
+    X   component.n('component name') - getNamedElement()
+    X   component.n('component name.subcomponent name') - чтобы было быстрее (а надо?)
+    +   component.e.componentName
+    
+    
+2019-05-19
+
+    Заход первый: с моделью данных, определенной вручную
+
+    Ruleset
+        -   name
+        -   collection name
+        -   filters
+
+    Collection
+        -   name
+        -   fields (collection)
+        
+    Field
+        -   name
+        -   metadata?
+
+    Filter
+        -   field name
+        
+        Simple Filter
+            -   field name
+            -   field value
+        
+        Values Filter
+            -   field name
+            -   field value (one or more values) - Select2 w/ autocomplete
+            
+        Range Filter
+            -   field name
+            -   min
+            -   max
+            
+        Regex Filter
+            -   field name
+            -   regex
+            
+
+    По умолчанию мы редактируем Ruleset.
+    Выводится просмотр записей.
+    
+    Мои действия
+    
+    +   создаем классы 
+        -   Ruleset
+        -   Collection
+        -   Field
+        -   Filter
+        -   Simple Filter
+        -   Values Filter
+        -   Range Filter
+        -   Regex Filter
+        
+    -   без всякого аякса делаем пробную модель данных
+    
+    +   !!! - Ошибка в collection.correctValueForSingleSelect
+        у нас есть первое значение и второе; 
+        когда второе становится selected, у первого selected становится false,
+        а затем снова true (из-за correctValueForSingleSelect) и так рекурсивно ((
+            
+    X   Ошибка! Два связанных object view (Collection и Field), несколько раз переключаем 
+        - и лезут бочины - исправил
+
+    -   currentRuleset - если нет, то createDefaultRuleset
+    -   saveRuleset
+
+    +   Amm.View.Html.Default // done @19.06
+    
+        !!! Сразу же возникает необходимость повторного использования компонентов.
+        Например, компонент для редактирования коллекции фильтров мне нужен как в 
+        Ruleset'е, так и в составном фильтре.
+        
+        Хотелось бы иметь возможность определить разметку-со-структурой прямо в классе,
+        например, сделать метод createDefaultView()
+        
+        Проблемы:
+        
+        ?   когда идет инстанцирование Builder'ом, то у нас уже есть views, и они могут
+            добавлять getSuggestedTraits(), 
+            
+            ?   но в целом пофиг, наверное, потому что в views нет информации 
+                о прототипе элемента
+                
+        +   defaultView может build'ить внутренности        
+            +   builder.calcPrototypes() должен принимать параметр "outerElement"; 
+                в этом случае он возвращает прототипы views, а не элемента (правда?)
+                    
+        +   проверить, когда создается несколько Views
+                    
+        +   тесты:
+            +   Amm.View.Html.Default
+                +   1 view - replace node
+                +   1 view - inside node
+                +   2 views - replace node
+                +   2 views - inside node
+                +   unobserve: delete views
+        
+    +   проверить, cleanup'ятся ли потомки при cleanup'е компонента-предка
+        
+    +   сделать, чтобы options в вызове Amm.constructInstance() или new Amm.Element(options)
+        могли принимать то же, что принимает options.builderSource у Amm.Element:
+        строка c html; jquery; Amm.Builder.Ref; DomNode
+        X   у Amm.ConstructInstance() этого нет
+        +   тесты
+        
+    +   проблемы
+        +   почему-то внутренние элементы попали к внешнему компоненту, а не тому, который 
+            создал их вместе с Default View
+        +   Amm.View.Html.Default: Visual оказывается у внутреннего элемента, из-за этого 
+            внешний DisplayParent не принимает внутренний элемент
+            -   а когда мы НЕ acquire resources, элемент build'ится два раза!!! (((
+                да что ж такое
+
++   посмотреть мусор в тестах Amm // done@25.06
+    +   кто подписывается на события root?
+    
+    +   Amm.beginDebugTag(), endDebugTag() <- элементам прописывается свойство _debugTag
+        при создании (Если их активно несколько, то через точку) <- это у всех withEvents?
+        i   сделал аналог (Amm.itemDebugInfo, Amm.itemDebugTag) // 24.06 
+        
+    +   сделать, чтобы была чистка за тестами? а то много мусора (((
+        i   убрал основные источники утечек // 24.06
+    
+Идеи 
+
+// 11.06.2019
+
++   Amm.Element.sync__<prop>: возможность задавать прототип translator'а
+    //  было сделано еще 09.2018, но надо было передавать экземпляр (или __construct)
+    //  есть. нужно указать прототип expression { src: выражение, translator: прототип }
+    //  -- 10.11
+
+?   Amm.Builder:
+    <div data-amm-e="instance::SOME_UNIQUE_ID" data-amm-v="[xx.yy]">...</div>
+    
+    var e = new Amm.Element({builderInstanceId: 'SOME_UNIQUE_ID', ...})
+    
+    <-- в этот момент Builder назначит ему views, которые были определены в ссылающемся 
+        html-элементе, и создаст внутренности этого элемента
+        
+    <-- если он уже был создан на тот момент, то все происходит сразу
+
+// 12.06.2019
+
+?   Annotated:: как связывать label и обозначаемый control?!!!!  нужно ставить for/id, 
+    при этом если такой атрибут не заполнен?!
+?   Annotated: как автоматом создавать labels?
+
+    //  самое простое - это сделать label наружным элементом и не мучаться -- 10.11
+
+-   Переделки Builder'а:
+
+    -   Amm.Builder.Node.connectTo (otherNode) <- перенести Amm.Builder._connect
+    -   Amm.Builder.Group (element)
+    -   _detectConnectedChildren: спускаться в группу, 
+    -   change term 'connecting' to 'adding to group';
+        node.connected -> node.group instanceof Amm.Builder.Group
+
+    +   <div data-amm-id="__parent">...</div> <- означает, что мы связываем данный view  
+        с предком
+        
+// 19.06
+
+>   сделать контейнер с instantiator'ом (создает один или несколько элементов в зависимости 
+    от источника, но этот источник - одно значение, а не коллекция, поэтому ArrayMapper 
+    не используется)
+    
+    ?   instantiator: создание нескольких элементов?...
+    -   использовать в Mong для более понятной иерархии
+    
+-   сделать ВСЕ-ТАКИ, чтобы Amm.Option мог обходиться без Expressions для Label property, 
+    value property?
+
+>   попробовать сделать filterable select list (см.поля у итальяшки в анализаторе данных)
+    
+    // 2019-09-05:
+    
+    -   Option.setComponent(Select или ближайший к нему?) 
+    -   как минимум Option.$select
+
+-   четко задокументировать правила работы builder'а
+-   !!! синтаксис Expressions !!! а то забуду
+-   у нас есть иерархия Display Parent / Display Child, но у каждого элемента может
+    теоретически быть любое количество Views. Получается, что элемент теоретически может 
+    быть в нескольких иерархиях. Что делать? оставить основную, сделать дополнительные?
+
++   выкинуть parent/child/path, оставить component/element: // done@20.11
+
+    -   у нас есть две иерархии: Component и Composite (плюс для Composite у нас есть 
+        еще "Amm.Operator.ChildElement: ->>")
+    -   я предлагаю Composite вообще выкинуть нахер, вместе с Path, deferredParentPath,
+        parentPath и прочим мусором в стиле "сверху вниз" (так как любой "путь" предполагает
+        подход "сверху вниз")
+    -   им пользуется только Annotated, написанный "давным-давно, в далекой галактике", 
+        т.е. в 2016 г.
+    -   правда, у Composite есть плюс: он cleanup'ит потомков
+    
+// 20.06.2019
+
+?   Amm.ArrayMapper:
+    
+    ?   по умолчанию создавать коллекции
+    ?   если у нас установлен instantiator, а коллекция создана "собственная", 
+        и destPrototype не задан, ставить ей cleanupOnDissociate
+        
+>   Amm.Select + Amm.ArrayMapper: нужен аналог "dummy caption", т.е. "ничего не выбрано". 
+    ?   Нужна возможность для Array Mapper игнонировать объекты в dest, 
+        которые не были им созданы.
+    //  16.07.2019
+    >   пока пошел через Amm.ArrayMapper::destExtra, т.к. другие варианты очень сложны
+
+//  24.06:
+
+-   подумать насчет data-amm-id: не вести глобальный реестр элементов, а делать ссылки 
+    на них из dom nodes с соотв. атрибутом
+
+// 25.06.2019
+
++   TODO: get rid of decorators in event calls -- not used //done@18.11
+    (note: indexes in getSubscribers() are changed: 5 => 4, 6 => 5
+    
+-   подумать: сделать Amm.Trait.Toggle::findToggleGroupItems через WeakMap,
+    Amm.Root interval event через WeakMap (может, сделать глобальную поддержку "weak" events?)
+    
+//  2019-04-13 
+
+?   поддержка select2 ???
+
+
+    
+    

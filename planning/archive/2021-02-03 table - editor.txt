@@ -1,0 +1,97 @@
+2021-02-03
+==========
+
+// big and boring objects' pile made to serve both good and vile
+
+Работа над редактором (Этап 2)
+
+X   для хитро выделанных: возможность определять html где-то вне json'а, а то
+    builderSource это мрак (нужны ссылки на глобальные элементы... блин...)
+    {builderSource: {copyHtml: 'jquerySelector'}}
+    
+    i   Ха-ха-ха - уже сделал раньше: {builderSource: {$ref: 'selector', global: true}}
+
++   возможность устанавливать значение
+    +   cell.editable
+    X   setValue() устанавливает значение свойства item'а или expression
+    X   попытка setValue() для cell с source, которое не editable, выводит warning
+        в консоль
+    +   updateValue() // d@04.02   
+
++   table.defaultEditor, потому что заёб прописывать для каждой ячейки // table.editor
+
+?   возможно, есть смысл сделать специальный виджет Amm.Table.Editor, куда может вставляться 
+    "конкретный" редактор (текстовое поле), и в котором, например, будут 
+    -   кнопки confirm/cancel,
+    -   возможность позиционировать редактор не в ячейке, а "над" ней (например, если он не влазит)
+    X   код для обработки клавиатурных событий (см. ниже) <- он должен быть в Table        
+    
+-   Amm.Table.Cell: reportedWidth (начинаем мониторить свой размер, только если есть subscriber)
+    -   Amm.Trait.DimensionsReporter
+    
+-   у нас есть две модели редактора:
+    -   общий (таскаем туда-сюда),
+    -   фабрика (создаем/уничтожаем)
+    
+-   общий подразумевает, что не может быть одновременно бесконечного кол-ва редакторов
+    (плюс два редактора по умолчанию одновременно)
+    
+-   есть две модели процесса редактирования: modal и instant. Modal: нам нужно 
+    confirm/cancel, и только тогда применяется значение.
+
+-   реакции на кнопки (в самом редакторе): 
+    -   Enter => confirm, but Ctrl-Enter для textarea или сложных; 
+    -   Escape => cancel если мод. (или Confirm если instant)
+    -   Tab, Shift-Tab: edit next/prev editable cell?
+    -   Left when in first pos, Right when in last pos, 
+        Up (textarea: when on first line), Down (textarea: when on last line)
+        to edit adjacent cells
+                
+    -   в самой таблице: activeCell лево/право/вверх/вниз
+    -   с shift: выделяем?
+    -   режимы выделения: navigationCancelsSelection?
+        
+-   режимы
+    -   autoEdit: none, row, table
+        -   when editor is active and user clicks on different editable cell, 
+            editor is opened automatically
+            
+-   navPastTable (begin/end) - если пытается сделать переход до первой/после последней строки
+
+-   все функции по реакции на "навигацию" пользователя можно выносить в Amm.Table.Navigator,
+    поскольку там много кода, а некоторым таблицам такое вообще не нужно (а у некоторых
+    навигация по-другому работает)
+
+-   Amm.Table.Navigator
+    -   реагирует на кнопки (см. выше)
+    -   разные режимы в случае с редактированием активной ячейки и нет
+        -   актив: выделение ячеек    
+    
+2021-02-04
+==========
+
+Рабочие моменты:
+
++   баг: column disabled/enabled - остается лишняя фигулина в таблице
+    (при добавлении новых строк заметно)
++   посмотреть, почему, когда у row меняю displayOrder, не меняется порядок (что-то с коллекцией?!)
+        i   при setDisplayOrder := null (диссоциация rows) moveItem некорректно срабатывал
+            (это становилось заметно при cleanup, но глючило еще до)
++   сделать: cell с подпиской на updateValue становится editable
+X   сделать: column.updateValue: то же самое: cells становятся editable
+    i   column.cellProto.updateValue
++   table.rowProto, row.cellProto, column.cellProto: сделать, когда меняются,
+    коллекция перестраивается (сделать arrayMapper.rebuild) -- а сильно надо?
++   посмотреть, почему выражение с displayOrder не writable //d@08.02
+    +   TODO: во всех _doSetValue() в Expressions сделать this._propagateContext
+        (см. Amm.Operator.VarsProvider)
++   cell.editor // d@09.02
++   table.editingCells - коллекция со всеми ячейками, которые сейчас редактируются
+?   table.focusedEditor ??? а надо ???
+
++   cell.findAjdacentCell, row.findAdjacentRow (direction, callback, ...) // d@11.02
+    X   cell.findNextCell(pattern)
+    X   cell.findPrevCell(pattern)
+    X   cell.findNextEditableCell()
+    X   cell.findPrevEditableCell()
+    

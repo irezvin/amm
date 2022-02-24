@@ -1,0 +1,32 @@
+2020-03-21 Assorted Ideas
+
+Improvements of Amm.Data.Object/lm: 
+
++   support per-object metadata;
+-   meta-properties:
+    -   default <- if provided, new objects will have these properties filled-in
+    -   applicable?
+    -   readOnly
+        a   -   "soft" - just return metadata
+        b   -   enforced - value changes only during hydration
+-   if setter triggers an exception (outside of event handler), 
+    its' message is set to localErrors($field)    
+-   Amm.Trait.Data:
+    -   if lockable, ability to lock during transaction
+    -   dataDisableWithoutProperty
+    -   dataValueWithoutProperty
+    
+-   Amm.Trait.ClassNameToggle - different properties or expressions 
+    toggle different css classes; require 'ClassName' trait
+    
+2020-03-23
+
+Thoughts on metadata
+
++   beforeChange - function(newValue, oldValue) - if doesn't return undefined,
+    that will be different newValue   
++   afterChange - function(newValue, oldValue)
+-   both functions can throw Exceptions (will be set in "error")
+
+When we use "default" + beforeChange + afterChange methods in metadata, it is possible
+to define properties using the metadata completely.

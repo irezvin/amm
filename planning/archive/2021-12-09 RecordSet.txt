@@ -1,0 +1,47 @@
+2021-12-09 RecordSet works
+
+'Navigation' => any change of record
+'Fetch' => loading data from server
+
+Amm.Data.Recordset.LOCK_NOTHING = 0;        // both navigation and fetch allowed
+Amm.Data.Recordset.LOCK_FETCH = 1;          // fetching disallowed
+Amm.Data.Recordset.LOCK_NAVIGATION = 2;     // changing current record disallowed
+
++   offsetWhenFilterChange: SAME | KEEP_KEY | FIRST
++   offsetPastLast: IGNORE | LAST | FIRST
+
+-   deleteCurrent()
+-   add() - will navigate
+-   save() (for all records) -- probably Amm.Data.Collection should have multi-transaction
+-   revert() (for all records)
+
+settings:
+    -   dontFetchUntilCommitted
+    -   dontNavigateUntilCommitted
+    -   commitOnNavigate
+    -   commitOnFetch
+    +   deleteImmediately
+    
+-   gotoKey()
+    -   soft "gotoKey" support (fetch keys only)
+    
+-   hasKey() - returns if record present // indexOfKey() >= 0
+
+-   setCurrentRecord(null):
+    getCurrentIndex() === null;
+    forward() ведет на первую запись (если она есть)
+    
+    
+-   setLockNavigation() => 0 | LOCK_FETCH | LOCK_NAVIGATION
+    (lock enforced by application)
+-   getNavigationLocked() => 0 | LOCK_FETCH = 1 | LOCK_NAVIGATION = 3
+    (lock enforced by state)
+-   willFetch() - returns TRUE if endUpdate will result in fetch
+-   cancelFetch() - cancels current or active fetch
+-   cancel() - cancels active and pending fetch and all active transactions
+
+
+tests:
+    -   dont/commit.. options with differtent variants
+    -   deleteImmediately
+    

@@ -1,0 +1,36 @@
+2021-05-18 Table Features Bush
+
++   SKCV: Simple keyboard control view // started Oct 21, done @Nov 21
+
+-   EMM: Extractor & Multi Mapper
+    -   provides: arbitrary nested tables
+    -   provides: better features for records editing
+    
+>   PFBC: properly fixed border cells
+    -   MDP: Multiple Display Parents
+    -   VC: View Cloning
+    >   TEDPC: Table Element Dimensions & Position Calculation // started @2021-08
+
+-   PM: Pop-up Menu
+    -   Action lists?
+    -   Poppler dependency?
+
++   DCD: Drag to Change Dimensions of Rows & Columns, done@2021-09
+    +   need some work for dragging // 2021-06..2021-07
+    +   view for drag-to-resize? // started 2021-08 - same as drag-to-reorder view
+
++   DRC: Drag to Reorder // started 2021-08, done @2021-09
+
+-   OCE: Overlay control elements
+    -   provides: visual state doesn't shift element dimensions
+    -   requires: TEDPC    
+
+-   FC: Filter controls & filter control stack
+    -   workaround: editable header cell with arbitrary input
+    
+-   SC: Sorter controls & sorter control stack
+    -   workaround: add clickable sorting button to the column header
+
+-   SIR: Selectable Item Ranges (Cells, Rows, Columns, Items)
+
+-   ACIV: Advanced configurable interactions view

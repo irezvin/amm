@@ -1,0 +1,39 @@
+2019-12-21
+
+Amm.Decorator.Data // done @2019-12-25
+
+-   maps transaction data to request data
+-   maps response data to transaction response data
+
+X   Amm.MultiObserver.FilterSorter::evaluateOnly -- will apply criteria only on demand;
+    doesn't subscribe to the objects; uses evaluators to do that (when expressions
+    are used) // no need - evaluateMatch() already does that without subscribing -- 22.12 
+    
+-   Amm.Decorator.Data uses rules:
+    
+    -   criterion (in form of Filter condition)
+    -   action (like key R from source, optionally apply decorator D, 
+        write result to key W of destination, with option of partial overwrite)
+    
+Used by the transaction:
+    
+    -   when building request:
+
+        source is Amm.Data.Transaction object, complete with transaction type and data,
+        and destination is request prototype (method, uri, data)
+        
+    -   when processing response:
+    
+        source is hash
+        
+        {
+            httpCode: code,
+            httpHeaders: $headersHash,
+            rawResponse: string,
+            response: $responseHash   
+        }
+        
+        and destination is Amm.Data.TransactionResponse prototype
+        
+Amm.Decorator.Data may be used by Amm.Remote.Fetcher to parse results or to transform requests
+before they are sent.

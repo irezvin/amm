@@ -1,0 +1,60 @@
+2020-09-28
+
+-   Сделать Amm.init, Amm.WithEvents() не разрушающим
+    -   чтобы не клонировать options каждый раз, мы можем сделать, чтобы функции вызывались в виде
+        options = potentiallyDestructiveMethod(options),
+        и клонировались только перед тем, как быть разрушенными (как бонус, можно добавлять в клон
+        какое-то свойство, обозначающее, что разрушение безопасно - это обеспечит клонирование только
+        один раз)
+
++   Сделать Amm.createClass // done @13.10
+    -   constructor
+    -   className (should be in registered namespace)
+    -   parent
+    -   properties: will automatically create getters and setters if not overridden yet
+        
+-   протестировать работу Expression.FunctionHandler
+
+-   ?? Replace "prototype" with "options" term everywhere to avoid confusion ??
+    alt: Replace "prototype" with "proto" 
+
+
+2020-10-05
+
+//  Done @12.2021 - сейчас эту роль играет Amm.Data.Mapper, который является также
+    Instantiator'ом, и он становится MetadataProvider для всех экземпляров.
+    Теоретически, можно сделать ConcreteMetaProvider, унаследованный от Amm.WithEvents,
+    инстанцировать его напрямую и передавать зависимость в Instantiator'е, если нам
+    нужно то же самое для Model
+
++   Важно!! Amm.Data.Model.mm: если прототип одинаковый у множества моделей (или Records),
+    то они создают *общий* экземпляр поставщика метаданных FieldMeta (это поведение может 
+    отключаться каким-то ключом в options). Это нужно для подобных случаев:
+    
+        var people = new Amm.Data.Collection({
+            keyProperty: 'name',
+            instantiateOnAccept: true,
+            instantiator: new Amm.Instantiator.Proto({
+                overrideProto: true,
+                proto: {
+                    'class': 'Amm.Data.Model',
+                    mm: {
+                        meta: {
+                            name: {
+                                label: 
+                                required: true
+                            }
+                        },
+                    }
+                },
+            })
+        });
+        
+    сейчас у *всех* экземпляров в коллекции будут заново создаваться FieldMeta (в отличие
+    от случая с Mapper'ом). Но по логике вещей они должны быть одинаковые.
+    
+    -   лучшая альтернатива: сделать FieldMeta либо MetaProvider в Amm.Data.Collection,
+        он будет создан один раз (явно) и передаваться объектам при ассоциации либо 
+        при создании
+        
+    -   Amm.Data.Collection.modelPrototype, Amm.Data.Collection.fieldMetaProvider

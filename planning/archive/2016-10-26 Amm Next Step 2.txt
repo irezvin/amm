@@ -1,0 +1,99 @@
+2016-10-26=1 Amm Next Stop 2
+
+Мысли по поводу дальнейших действий:
+
+1.  не пытаться сделать автоматическое определение компонентов _до_ того,
+    как у меня получатся первые работающие entities и traits.
+    
+2.  попробовать софрмировать несколько объектных структур в памяти "руками", а уже
+    потом думать над тем, как автоматиизировать это при помощи Locator'а
+
+Всё остальное будет зависеть от результатов этого этапа.
+
+Итак.
+
+-   Basic
+
+    -   Field (value, focus, readOnly, enabled)
+        -   адаптеры
+            -   text field, password, text area
+            -   select list
+    
+    -   Container (visible, visualParent)
+
+    -   Annotations
+            -   label
+            -   description
+            -   required
+            -   errors
+        
+    -   Visual group
+
+-   Advanced
+
+    -   свойство isVisible <- с учетом иерархии
+    -   свойство isOnScreen
+
+    -   сложные адаптеры для Field                
+        -   checkbox - у нас несколько элементов
+        -   radio - у нас несколько элементов
+
+-   More advanced
+    
+    -   mutable basic visual parent - у нас все потомки в одном контейнере
+    
+        -   изменение visualParent
+        -   изменение displayOrder
+    
+    -   observable array
+    
+2016-10-31
+==========
+
+    Универсальный подход к адаптерам
+    
+    Адаптер имеет тот же набор свойств, что и элемент, который им наблюдается
+    Но эти свойства не генерируют события, и у них нет _protected члена.
+    Вместо этого адаптер обменивается инофрмацией с нижележащей моделью.
+    -   Подписка осуществляется автоматически: fooChange -> setFoo;
+    -   two-way binding также осуществляется автоматически.
+                
+    
+2016-11-02
+==========
+
+    .   Универсальный подход к адаптерам-2    
+        .   Адаптер - базовый класс: автоматическая привязка, two-way binding.
+        .   Абстрактный адаптер элемента: ограничение на класс элемента;
+            набор методов, все они абстрактные; привязка к событиям модели.
+        .   Конкретный адаптер: getter'ы и setter'ы переопределены.
+    >   TODO: 
+        +   Amm.Adapter.Abstract
+        +   Amm.Adapter.Abstract.Field
+        +   Amm.Trait.Field.locked property
+        +   Amm.Adapter.Html.Field - extend Abstract.Field, support locked
+        >   Amm.Visual, 
+        -   Amm.Adapter.Abstract.Visual,
+        -   Amm.Adapter.Html.Visual
+        
+        -   Should add some relation between Trait and Treated (???) element
+            (mixin?) 
+                -   each Trait provides one or more interfaces (we have
+                    names of those interfaces)
+                -   Mixin.hasInterface(name);
+                -   Mixin.getInterface(name) -- returns Trait;
+                -   Mixin.listInterfaces
+                
+        
+        -   Amm.Adapter.Html <- binds to HTML element, adds link to the
+            Treated element to the HTML element -- can have only one link
+            at once
+             
+        -   Amm.
+
+    Вопросы и идеи        
+    -   как traits будут взаимодействовать друг с другом?
+    -   аннотации можно привязывать к classes?
+    -   свойства можно привязывать к classes?
+    
+    

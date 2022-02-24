@@ -1,0 +1,254 @@
+2016-10-01
+
+-   две иехархии: parent и visual parent
+    
+    foo/bar <- bar is descendant of foo
+    foo//bar <- bar is anywhere within foo
+    foo bar <- bar is visual child of foo (anywhere within)
+    foo > bar <- bar is anywhere within foo
+    [a='val' and ../x.a='val2'] - tests - difficult
+    
+    
+'traits'
+    hasValue - has 'value' and 'change' properties
+    visual - something that occupies space; can be 'visible' and can have a visual parent            
+        -   may have expand-collapse and other animations        
+    visGroup - has visual children
+    composite - has 'physical' children (and requirements to them)
+    contained - something that has a container element (and, thus, can be easily relocated)
+    described - something that has annotations, errors and caption
+    focusable - something that can be 'focused' - basically all
+    builder - will rebuild (children?) on events
+        conditional - my have different 'templates' for different conditions
+        repeater - displays list of items, may have different 'templates' for different conditions,
+             - something that can be 'locked' and 'released'
+    editor - requires focusable - has 'enabled' and 'readOnly' properties
+    withHistory - has 'undo' and 'redo' commands
+    
+Most of traits can be arbitrarily mixed.
+
+types
+    composite - has children
+    field - basic input for all needs (input, password, checkbox). has 'value'
+    action - anything that triggers something
+    group - non-composite, has visual children
+    
+    list - something that displays descendants
+    
+2016-10-03
+
+    Особенностью builder'ов в других решениях является то, что они в той или иной степени "активные".
+    В моем случае, если я делаю "шаблон" элемента в builder'е (в "if" или в "for"), у меня нет информации 
+    о его внутренней структуре, т.е. объектах представления, которые динамически генерируются, 
+    и к которым подключается адаптер.
+    
+    И, получается, мне нужно
+    
+        а)  анализировать каждый созданный экземпляр (кстати, если у нас создаются динамически какие-то 
+            яваскриптовые виджеты, их еще нужно по очереди генерировать), и потом создавать элементы
+            модели представления для него
+            
+        б)  задать прототип "элемента представления с привязками и разметкой" и клонировать его 
+            (что может оказаться нереальным в случае, если у нас те же пресловутые сложные javascript widgets)
+            
+    Вопрос: клонирование и динамическая генерация javascript widgets
+    
+    Вариант: шаблон разметки ПЛЮС функция, которая на входе принимает какие-то параметры 
+        и инстанцирует (при уже имеющейся разметке)
+
+Array observing
+
+    интерфейс используется в степени его поддержки
+    
+    -   самый простой вариант: всегда rebuild.    
+        Rebuild'ом можно закрыть всегда все возможные случаи.
+        
+    -   дальше:
+        -   item change (обновляется только item)
+        -   append (элементы добавляются в конец)
+        -   insertBefore (элементы в середину)
+        -   delete (удаление элементов)
+        -   moveItem (перемещается один элемент); fallback to reorder
+        -   reorder (перемещается более одного элемента)
+    
+    если подписчик не подписан на любое из вышеуказанных событий, он
+    получает rebuild
+        
+Простая привязка
+    как в knockout'е: style, attr, html, class, text, 
+        а также for, if,
+        а также js (но приоритет этого очень низкий. Наверное. Если только мне не 
+        понадобится клепать это всё для создания привязок)
+        
+Порядок реализации
+
+    Meta: определяемся с целями чернового решения (прототипа)
+    
+        
+2016-10-04
+
+    Концепция: адаптер диктует модель представления
+
+        Мысль: в "упрощенном режиме", т.е. по умолчанию, модель представления создает
+        адаптер. (а в усложненном?)
+    
+        Т.е. для каждого совместимого элемента управления создается компонет модели
+        представления.
+    
+        После чего форма предстает перед нами обеспеченной простейшей моделью 
+        с универсальным,не зависящем от последующих деталей, API.
+    
+        Мы можем присоединить к этому API свои обработчики. Либо не присоединять, тогда,
+        поскольку у нас всё lazy, будет создано минимум объектов.
+    
+        Мы, при желании, можем вообще не создавать вторую модель (данных).
+    
+        Критика:
+            -   как быть, если в обработчиках мы ссылаемся на свойства, получить
+                доступ к которым адаптер не позволяет?    
+                
+            -   как-нибудь разберемся.
+            
+    Определяемся с целями чернового решения (прототипа)
+    
+        Этап 1
+    
+        -   есть адаптер "простая html-разметка"
+        -   ??? по-моему, придется реализовать вообще все интерфейсы!
+        -   есть элементы
+            -   control с wrapper'ом (input, checkbox, radio; пока без select): caption,
+                description, error
+            -   визуальная группа (пока менять порядок нельзя)
+            -   форма с простым api
+        -   адаптер ОТЛОЖЕННО создает API формы
+        -   мы можем привязать VISIBLE либо ENABLED каких-то control'ов к значениям других
+        -   мы можем выполнить проверку данных формы и вывести ошибки
+        
+        Этап 2
+        
+        -   мы можем уничтожить или заменить элементы формы без вреда для памяти
+        
+        Этап 3
+        
+        -   repeater'ы
+        
+    Прототип считается удачным, если?...
+        
+        -   он работает
+        -   соответствует нашим задачам
+    
+    Затем расширяем
+        -   ...
+        
+        Замечания по прототипу
+        
+        -   Используем jquery.
+    
+2016-10-05    
+    
+    Очень хочется сделать типа-css-запросы:
+        
+        .form .repeater[count(@items) > 10] - выбирает все repeater'ы с кол-вом
+            элементов больше 10
+            
+        .editor[@error] - выбирает все editor'ы с ошибками
+        
+        .visGroup[/editor[@error]] - выбирает всех parent'ов, у которых есть
+            editor'ы с ошибками
+            
+    при этом такие запросы должны превращаться в функции, которые возвращают
+        true/false, и мы будем их применять ко всему дереву элементов
+        (а не сильно ли это медленно будет? нет, если у нас будет храниться
+        где-то полный список всех элементов)
+        
+            Вариант: использовать готовую библиотеку для js/node, которая реализует 
+                xpath либо css на чистом javascript, а вместо dom-элементов
+                подставлять ей "элементы модели".
+                
+            https://www.npmjs.com/package/CSSselect 
+            
+            *   css, довольно свежая, генерирует функции, можно подставить свой 
+                интерфейс для прохода элементов (т.к. не зависит от браузерных средств, 
+                т.к. расчитана на работу с node.js)
+            
+    Порядок реализации работающего прототипа
+    
+        ViewModel
+    
+        -   property extends element
+        
+        -   instance extends element, has properties
+        
+        -   trait extends instance, has adapterLink to lazy-instantiate properties
+        
+        -   mixin extends instance, has traits
+         
+        Adapter
+            
+        -   adapterLink
+            -   various stuff that is used by adapter 
+                for housekeeping when discovering and 
+                lazy-instancing properties of instances
+        
+        -   viewAdapter discovers components and creates and calls componentAdapters
+            for them
+            
+        -   componentAdapter
+        
+        -   traitAdapter
+        
+        Handler
+        
+        -   html
+        -   attribute
+        -   visible
+        -   value
+        
+        Emitter (used to convert events of HTML elements to signals of Amm Elements)
+        
+        -   controlChange
+        -   click
+        -   focus
+        
+        When instance is asked for a property/signal, it usually delegates it to one of
+        its' traits.
+        
+        If property or interface isn't found, adapterLink is called to check if the
+        item really doesn't support such interface (or property).
+        
+    Идея: реализация на DOM (Сумасшедшая)
+    
+        Почему бы не построить мою модель на DOM'е? У меня элементы, "атрибуты"
+        и события, и в DOM есть то же самое. "Laziness" можно добавить, достраивая
+        dom-дерево и т.п. Получаем css + xpath за счет браузера, плюс всё становится
+        просто и красиво )))
+        
+        Недостаток: это может сильно отличаться от браузера к браузеру.        
+        
+    Идея: "initial state"
+        
+        ViewModel получает изначальные значения из html-элементов.
+        Если мы ajax-ом обновили html, то там могу оказаться другие значения.
+        Можно было бы сделать, чтобы эти другие значения также попали в модель
+        (вызывав change?)
+    
+2016-10-13
+
+    Несколько идей
+
+    -   мы можем использовать адаптер для извлечения даннных из асинхронных HTML-ответов
+    
+    -   можно использовать таймер или MutationObserver для наблюдения за DOM и преобразования 
+        каких-либо его изменений в наблюдаемые properties (которые, кстати, могут существовать
+        вне control'ов). Это позволит нам дешевым и универсальным способом подключать модель
+        к говновиджетам (не надо вчитываться в api, достаточно прописать пути к элементам
+        и сделать наблюдение, когда виджет открылся/закрылся)
+        
+    -   адаптер для ленивых, не требующий спецразметки вообще: 
+            -   элемент формы это control
+            -   label - это его caption (туда мы автоматом вставим span'ы для аннотаций)
+            -   container - это ближайший общий block или inline-block предок для control и label,
+                не содержащий других элементов
+           ?    с группами уже сложнее... может fieldset?
+
+    

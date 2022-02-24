@@ -1,0 +1,197 @@
+2022-01-19 Размышления по поводу RecordSet'а (example-15.php)
+    
+-   почему-то не работает reuse instances с Amm.Trait.Repeater + RecordSet
+
+-   не хватает специальных control'ов, таких как 
+    -   "статус записи" 
+        -   new
+        -   verbatim
+        -   persistent
+        -   deleteIntent
+        -   deleted
+        -   transaction in progress
+        -   errors
+    -   "статус рекордсета"
+        -   numUncommitted
+        -   numWithErrors
+        -   activeMultiTransaction - это есть у коллекции? как и defaults?
+    -   data navigator 
+        -   nav buttons: first/prevPage/prev/next/nextPage/last
+        -   tr buttons: new/revert/delete/commit
+        -   absoluteIndex
+            
+-   Amm.Trait.Repeater: пока вспомнил, как им пользоваться, потратил, наверное,
+    час. Нужно сделать нормальный пример в zim'е, или в коде!
+    
+?   Builder Extension, которое бы позволяло создавать ad-hoc прототипы control'ов
+    (возможно, в ограниченной области видимости). А может, у меня такое есть?
+        -   options.builderSource
+        -   принимается Amm.Builder.Ref
+        -   TODO: задокументировать, как пользоваться ref
+        !   сейчас, когда я пытаюсь объединить ref с default view, 
+            прототип вроде как расчитывается, но узел, упомянутый в ref 
+            из builderSource, куда-то пропадает
+            -   builder корректно расчитывает прототип, но у него почему-то
+                нет views!
+            -   в САМОМ идеальном варианте Amm.View.Html.Default мог бы позволять
+                override'ить уже существующие представления дополнительными 
+                внутренними html-элементами (data-amm-override="css selector"?),
+                или это должен делать сам Builder между клонированием и расчетом
+                прототипа
+                
+2022-01-20
+
+Recordset:
+
++   Доделать
+    +   add
+    +   save - предполагалось, что будет для всех dirty 
+    +   revert - предполагалось, что будет для всех dirty
+    +   deleteCurrent
+    X   saveAll
+    X   revertAll
+    X   canSaveAll
+    X   canRevertAll
+    X   _calcCanSaveAll + property
+    X   _calcCanDeleteAll + property
++   Внимание! Сейчас после сохранения статус записей не обновляется,
+    Recordset продолжает считать их uncommitted - нужно проверить
++   Баг: при переходе на следующую страницу (когда на последней записи страницы)
+    forward() выставляет сначала absoluteIndex() на размер страницы больше,
+    потом возвращается к первой записи следующей страницы.
+    (Например, для 5 зап/стр мы на 4й, сначала будет 9, потом записи загрузятся, 
+    станет обратно 5 - это первая запись второй страницы) // D@24.01
+    
+2022-01-24
+
+План на ближайшее будущее
+
+X   доделать MultiTransaction // уже доделал
+?   тесты MultiTransaction
++   record.save, delete, load: 
+    1) dontRun param (still will set current transaction)
+    2) return transaction on success, null or undefined otherwise
++   record.Collection:
+    X   defaults -- added to the Recordset
+    +   multiTransactionPrototype / onCreateMultiTransaction...
+    +   currentTransaction, lastTransaction
+
+-   компонент вывода ошибок записи (включая интеллигентный режим, в котором
+    выведенные другими элементами ошибки не выводятся - как улучше сделать?)
+
+-   компонент статуса записи (текстового и/или классов)
+
+-   FieldMeta, Trait.Data: подумать над мета-свойством applied?
+    -   синхронизация с Field.fieldApplied
+    -   делать control'ы, которые не applied, скрытыми?
+    -   простые критерии на значения других полей?
+    
+-   Trait.Table.Data (Table + Recordset)    
+
+2022-02-01
+
+    План на 5 участков по .5 часа // на практике получилось 10 участков по .5 часа
+
+    +   тесты для Amm.Data.RecordMeta.save/load (.., dontRun)
+        +   check for errors when tr running
+        +   behaviour when set, but not started yet
+    
+    +   Collection.save:
+        +   multi-transaction is used when default is set
+        +   event
+        +   test
+    
+    X   Recordset should use collection' save -- already does
+
+    +   Recordset tests:
+        +   defaults
+        +   CRUD methods
+        +   baseFilter
+            +   solo
+            +   plus filter
+        +   deleteImmediately
+    
+    +   Take a good look at diff, re-read & think on recordset interface
+    
+2022-02-03    
+        
+    +   complete recordset:
+        +   autoNew: we can always forward(); if past last, add new record
+            +   fix pagination when we have number of new & uncommitted records 
+        +   bug: navigating past last 
+            +   if page is full, flips to first record of current page
+            +   if page isn't full, "too much recursion"
+        +   check for navigationLocked value during forward/back/refresh
+            (fetch or not)
+        +   bug: when current item is rejected (i.e. because it was deleted), 
+            we should either select item with current index, or last item
+            (if there are any items)
+                +   test
+        +   setMapper - ? - we should destroy and re-create coll., and fetch
+            // reconfigured the collection
+        +   commitOnNavigate + commitOnFetch (combo with dontNav|Fetch 
+            until committed)
+            /   errors: fetch / save
+            +   transaction.setRequiredTransactions
+                +   run: if we have 'em, then Amm.Transaction.STATE_WAITING
+                +   observes "required transactions"
+                +   when any of required transactions start, is WAITING
+                +   when all required transactions finished, is RUNNING
+                +   any rq FAILURE: FAILURE
+                +   any of rq tr CANCELLED: CANCELLED
+            >   single place "beforeNavigate" / "beforeFetch"
+                i   what is "_navigation_" anyway? 
+                    changing of currentRecord or currentIndex                    
+            +   commitOnNavigate: just causes save(), always naviagates
+            +   commitOnNavigate + dontNavigateUntilCommitted:
+                -   navigation is possible with uncommitted records (upd calc'd prop)
+                -   navigation attempts creates combo of save + navigate actions
+                    -   when we have local errors, navigation not possible
+                -   while save TR in place, navigation is prohibited
+                -   save error is reflected in "errors" property, and currentIndex
+                    is reset back
+                -   save success: currentRecord is set to records[currentIndex]
+            +   commitOnFetch + dontFetchUntilCommitted:
+                -   fetch is possible with uncommitted records (upd calc'd prop)
+                -   fetch attempt creates combo of save + fetch actions
+                    -   when we have local errors, fetch not possible
+                -   while save TR in place, fetch is prohibited
+                -   save error is reflected in "errors" property, and fetch is failed
+                -   save success: fetch is triggered
+                
+    ?   inconsistencies?
+        -   "commit" vs "save" (recordset has numUncommitted too)
+        -   "navigate" is more browser-ish term (maybe use it in place of "fetch"),
+            but what is changing of current record then?
+        -   "forward" vs "back" (next / prev)
+        
+    +   events
+        +   combineFilters(filter, baseFilter, retResult)
+        +   beforeFetch (listOptions)
+        +   afterFetch
+        +   beforeAdd
+        +   afterAdd
+        +   beforeDeleteCurrent (outCancel)
+        +   beforeSave
+
+    +   complete tests:
+        +   dontFetchUntilCommitted
+        +   dontNavigateUntilCommitted
+        +   commitOnNavigate
+        +   commitOnFetch
+        +   outCombineFilters(filter, baseFilter, retResult)
+
+    +   check and fix instance reuse
+        +   15-recordset: "records" cards are re-built every time, reuse is zero
+            +   check if this issue is related to Amm.Trait.Repeater,
+                or specific to Recordset
+                
+    +   commit
+
+    ?   readOnly support
+        -   ModelMeta.readOnly => every field meta will become readOnly?
+        -   RecordSet.readOnly => same?            
+    
+    ?   Collection, record
+        -   behavior of revert() during the transaction (init or running)
+

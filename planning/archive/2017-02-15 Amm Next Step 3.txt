@@ -1,0 +1,174 @@
+2017-02-15: куда двигаться?
+
++   Visual Parent (потому что я начал)
+    (пока без шаблона, repeater'ов всяких и т.п.)
+    
+    >   DisplayParent
+        >   has children collection
+            >   Collection: must have "associated parent" instance
+        -   accepts DisplayChild (a requirement)
+        -   when adds several Children w/o pre-set DisplayIndexes,
+            their order corresponds to order of their containers
+    -   Visual
+        -   has displayOrder which is index in the collection
+            x   todo: allow sorting by display order?
+
+>   Тесты для того, что есть сейчас
+    
+    // 2017-04-05
+    
+    X   Element and Composite Element
+    X   Amm.element appear/disappear and Amm.getRoot()
+    +   ElementBound
+    
+        +   required class
+        +   required interface
+        +   element path -? - may change in the future
+        +   cleanup on element cleanup
+    -   JQueryListener
+    -   Emitter.JQuery
+    -   Traits
+        -   Visual + View
+        -   Field + View
+        -   Content + View
+        -   Annotated + View
+
+~   Псевдо-свойства (foo.toggleClass:x, bar.toggleClass:y := true/false 
+    - будет очень удобно; но нужны события тоже (foo.toggleClassChange:x)
+    
+    // 2018-02-10 - сделал в рамках expression (у свойств могут быть параметры)
+
+~   Спец-пути в декларативных правилах - foo[x.bar].baz - будет пересчитываться
+    в случае, если свойство x.bar меняется; foo.bar.baz - 
+        будет пересчитываться, если foo.bar меняется
+        
+    // 2018-02-10 - сделал весь механизм парсинга и Expressions
+        
+~   Декларативные правила 
+
+    // 2018-02-10 - для этого есть встроенные Expressions и Expression objects
+    
+-   Кейс: возможность скрыть/показать A в зависимости от B // 2018-02-10 - должно получиться
+-   Детектор - первое приближение
+-   Форма: дистанционное управление - json туда и обратно
+    (значения полей, параметры, ошибки)
+-   Кейс: проверка валидности формы, вывод сообщений об ошибках
+-   "Горячая замена" представления
+-   Кейс: получение с сервера варианта формы, замена
+-   Кейс: извлечение данных из полученного html-а, передача их модели
+-   Repeater с шаблоном
+-   Кейс: 
+    -   связанные select'ы
+    -   списки radio
+    -   списки checkbox
+-   Кейс:
+    -   редактор записей
+-   Компонент обмена данными с сервером
+
+-   Таблица?
+
+-   Псевдо-CSS?
+
+    //  2018-02-10 
+    // Псевдо-CSS как возможность менять поведение элементов в зависимости от их характеристик
+    // и положения в структуре - способ сильно всё запутать. 
+    // Как возможность выбирать группы элементов - для этого есть Condition Ranges.
+
+2017-02-23
+
+>   DisplayParent view:
+    -   when element is added/removed/moved, 
+        does do respective things with its' container
+    -   detects display children and their order when element is set
+        -   if they're not in the collection, adds them
+        (unless option "detectChildren" is disabled; if one is, clears the
+        element instead)
+    -   when element is unset, containers are dissociated (to be associated later)
+    -   when element is changed, containers move to different element
+-   How DisplayOrder works
+    -   if children are sorted, change doesn't yield any results
+    -   if children are NOT sorted, displayOrder has change() event that the
+        collection is subscribed to and, respectively, changes the actual
+        order of HTML elements
+
+-   View supports these events:
+    -   splice
+    -   move
+    -   reorder
+    -   rebuild
+
+
+i   Адекватное псевдо-di а-ля avancore: везде, где принимаются экземпляры, 
+    принимаются также их прототипы (а проверку можно совместить)
+    
+i   Сейчас нельзя указать views в прототипе элемента (а вообще хотелось бы 
+    сделать в прототипе этакий ящик к observer'ами, которые бы создавались,
+    и которым передавалась бы ссылка на элемент)
+    
+i   В принципие, для каждого Trait'а можно перечислить доступные конкретные views
+
+scanForChildren:
+    -   у нас есть свои дети
+    -   мы смотрим, какие есть еще дети
+    -   
+    
+2017-03-01
+
++   доделать обработку событий в View.Html.DisplayParent
++   баг: delete + splice:
+    Collection.clearItems() производит череду событий deleteItem, а затем 
+        всё равно событие clearItems - проверить
+        Точно так же splice: производит череду deleteItem, а потом производит splice,
+        что приводит к тому, что удаляется в 2 раза больше элементов, чем нужно!!! 
+i   сейчас view коллекции заточен под работу с Html.Visual views
++   Collecion: sort (arr. props or single prop-name)
+    +   impl.
+    +   тест
++   collection: observeIndexProperty: bool - если мы у элемента меняем indexProperty,
+    то он перемещается "физически"
+        +   TODO: предотвращать зацикливание
++   бочины при перемещении элементов из одной коллекции в другую
+    +   (push into empty sorted collection? << yes)        
+    +   (sortedCollection.clearItems? << yes)
++   ТЕСТЫ!!!
+    +   создание
+        +   детектим порядок и состав
+        X   детектим только порядок
+        X   детектим только состав
+    +   добавление элементов
+    +   перемещение элементов через displayOrder
+    +   удаление элементов
+    +   сортировка
+    +   очистка
+X   баг: Collection 
+    X   добавить тест insertItem
+    X   добавить тесты shift/unshift
++   Lightweight visual parent view:
+    +   elements don't have the containers
+    +   Amm.addProps(object)
+    +   create container, actualize container (with option to replace container)
+        upon element change
+    +   как привязать значение к контейнеру???!!
+        +   хранить прямо в DOM
+    +   фигня выходит. У нас View заточен под DisplayParent, а тут есть view
+            для абстрактных коллекций
+    +   ТЕСТЫ
+        +   View.Abstract.Collection
+        
+    +   BUG!!! Collection' update with matching comparisonProperty doesn't 
+        trigger itemChange event
+        +   fix
+        X   test
+        
+~   Selection-like trait (singular, multiple) // done on 2017-05-01
+    -   это коллекция, которая является подмножеством
+        -   parentCollection
+    -   valueProperty - в selection будут не сами объекты, а их свойства
+    -   multipleValues: bool
+    -   sameOrder: bool - если multiple, то значения в коллекции будут идти
+        всегда строго в том же порядке, что и объекты в оригинале
+    -   selectedProperty: string - имя свойства, которое selected
+        -   будет true у объектов, которые выбраны
+        -   изменение делает объект выбранным / не выбранным
+
+

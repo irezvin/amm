@@ -1,0 +1,103 @@
+2021-09-21 The masterplan
+
++   Finish dnd support for table
+
+    +   props, classes
+
+        table
+        -   rowsResizable
+        -   rowsDraggable
+        -   columnsDraggable
+        -   columnsResizable    
+        table.section
+        -   rowsResizable
+        -   rowsDraggable
+        table.row
+        -   draggable (if not, cannot be dragged over)
+        -   resizable
+        table.column
+        -   draggable  (if not, cannot be dragged over)
+        -   resizable
+        headerCell
+            -   draggable
+            -   resizable
+            -   view: draggableClass
+            -   view: resizableClass
+
+    +   behaviour
+    
+        +   resize of non-resizable item cannot be started
+        +   drag of non-draggable item cannot be started
+        +   we cannot drag over non-draggable item
+            +   set cursor to not-allowed
+            
+    +   events for rows & columns reorder
+
++   Fix regressions
+                
++   Tests for Amm.View.Html.SingleDimension, commit
+
+    -   width
+        -   get
+        -   observe
+    -   height
+        -   get
+        -   observe
+    -   left
+        -   get
+        -   observe
+    -   top
+        -   get
+        -   observe
+
+
++   Tests for table dnd, commit // done @2021-09-28
+
+    +   Columns
+        +   draggable/resizable -> classes
+            +   table
+            +   column
+        +   drag
+            +   cannot drag non-draggable
+            +   cannot drag over itself
+            +   cannot drag over non-draggable column
+            +   target class changes 
+                +   when hovered over
+                +   depending on wether before or after, different classes            
+            +   drop
+                +   simple drop
+                +   event triggered
+        +   resize
+            +   simple
+            +   dblclick to reset width
+            +   cannot resize not-resizable
+            
+    +   Apply initial drag vector during resize
+                
+    +   Rows
+        +   draggable/resizable -> classes
+            +   table
+            +   section
+            +   row
+        +   drag
+            +   target class changes
+                +   when hovered over
+                +   depending on wether before or after, different classes            
+            +   cannot drag between sections
+            +   cannot drag non-draggable
+            +   cannot drag over itself
+            +   cannot drag over non-draggable column
+            +   drop
+                +   simple drop
+                +   event triggered
+        +   resize
+            +   simple
+            +   dblclick to reset size
+            +   cannot resize not-resizable
+    +   Commit
+
+?   Tests for Amm.Trait.SingleDimension, commit
+
+-   Test API (js-only, client-side w/ local storage, 10k records)
+    -   load/save, validate, errors
+

@@ -1,0 +1,234 @@
+2021-11-21 Nov-Dec ToDo
+=======================
+
+Globally:
+
+1.  Paginator, add to example.
+2.  Amm.Data.Collection with dataset features (dataset possibly a separate entity);
+    Mapper is responsible for creating transaction and provide it back to Record.
+3.  Amm.Table.Data trait & view
+4.  Filters & Sorting UI (if there's still time)
+
+Paginator // d@22.11
+=========
+
++   Two variants: "first"/"last" buttons OR page numbers (in that case prev/next,
+    if shown, start/end the list)
+    
+    +   When first/last are numbers, but always shown, ellipsis are used
+        (if ellipsis match one link, it will be shown)
+    
+?   Possibility to NOT to show last # at all (if we don't know total # of pages),
+    always show next (if possible to implement using standard means, don't bother;
+    also we can add feature "rolling" where last page no is always more than
+    current page no by XX pages)
+
+?   Simplify logic, make it more obvious
+
+Dataset features
+================
+
+>   Amm.Data.Record:
+
+    +   status: shouldDelete (calling "save" will call "delete"),
+        revert clears status to either existing or new; // d@01.12
+        
+    -   all transaction-creating methods receive transaction override that
+        *may* have callbacks on transaction status changes (error, success, always)
+        OR they may return promises?
+            -   how to create promise?
+            
+    ?   Amm.WithEvents.createPromise(object, event)? - срабатывает один раз, 
+        когда событие произошло, потом само отписывается? 
+        promise может или сработать, или нет, а как определить, 
+        что событие не сработало?
+        
++   Amm.Data.ModelMeta:
+    +   committed OP t/f -  true если запись exists + не изменена или deleted; 
+        false в остальных // d@01.12
+    
++   Amm.Data.Collection: // d@03.12
+
+    +   `hasUncommitted` observable property (OP) // numUncommitted
+    +   `hasErrors` observable property // numWithErrors
+    +   rejectOnDelete t/f
+    +   commit() - will call save() on all records // save()
+        +   test
+    +   revert() - will revert all records, delete new ones
+        +   test
+    +   autoSmartUpdate: // done with hydrateMode & hydrateMatchingFn @01.12
+        X   null (never) - не использовать
+        X   dont_update_uncommitted - совпавшие uncommitted записи 
+            не обновлять
+        X   update_uncommitted - обновлять совпавшие записи, будут перезаписаны
+            изменения
+        +   update_merge - изменять "исходное" состояние записи + текущие значения
+            полей, которые не были изменены // HYDRATE_MERGE
+    +   в example 14 перестали новые записи добавляться
+    +   подумать, как keyProperty должно работать, когда this.key is null?!
+        как вообще тогда новые записи должны себя вести?!
+
+// с этим проблема: у нас есть наследник Transaction, HttpTransaction, который
+// отвечает за транспорт. Добавить Trait'ы? или декораторы? или что-то еще?
+// или Http вынести в TransactionImplementation?
+
+Data.TransactionRunner.Http => Data.TransactionRunner (04.12)
+
+    -   сделать, чтобы runner мог обслуживать несколько транзакций?
+    -   runner.cancel
+    -   Mapper.runnerPrototypes по типам, как сейчас transactionPrototypes,
+        включая default
+    -   убрать unparsedResponse из транзакции, пусть это всё делает runner
+        (сделать у transaction свойство runnerData, куда runner может
+        сгружать всё, что ему интересно)
+
+>   Amm.Data.ViewTransaction: 
+
+    -   sort, filters, limit, fields
+
+    -   sortParam
+    -   filtersParam
+    -   limitParam
+    -   fieldsParam
+
+-   FetchManyTransaction -> ViewTransaction:
+
+    -   offset
+    -   offsetParam    
+    -   totalNumKey
+
+-   FindOffsetTransaction -> ViewTransaction:
+
+    -   bool multiple
+    -   keysParam
+    -   keys
+
+-   Amm.Data.RecordSet -> Amm.Element:
+
+    -   collection: .Collection
+    -   mapper: .Mapper
+    -   currentRecord: .Record
+    
+    -   beginUpdate/endUpdate
+    
+    -   sort, filters, offset, limit
+    -   totalRecords
+    
+    -   readOnly? - disallows editing
+    -   locked? - disallows editing while transaction in progress?
+    -   activeTransactions collection?
+    -   transaction: for navigation results?
+    
+    -   bool keepCurrentRecordVisible
+    
+    -   bool navigationalProps:
+        -   canNext
+        -   canPrev
+        -   canFirst
+        -   canLast
+        -   canNew
+        -   canDelete
+        -   canSave
+        -   canRevert
+        
+    -   methods: 
+        -   next
+        -   prev
+        -   first
+        -   last
+        -   new
+        -   delete
+        -   save
+        -   revert
+        
+    -   bool options:    
+        -   deleteInstantly
+        -   commitOnNavigate
+        -   paginateOnNextPrev // prev page: will go to last record of it
+        -   newOnPastLast: bool
+        -   deleteBlankNew: bool
+        
+    -   commit/revert
+
+    // impl. log    
+    +   records - array, recordsChange (from recordsCollection.itemsChange)
+    +   recordsCollection - actual collection ("set" has no effect)
+    >   refresh on filters/ sort/ offset/ limit change
+        -   offset/limit: allow only numbers && numeric strings
+        -   filters/sort: 'key' param; deep comparison with old value
+    >   don't allow to change any "location" properties when !allowNaviagation
+    >   working begin/endUpdate
+    >   pagination: offset changes by limit size
+    
+    +   check why two requests were sent initially
+    >   gotoKey()
+        -   soft "gotoKey" support (fetch keys only)
+        -   memstor & RecordSet: support gotoKey w/fetch?
+    
+    -   commitOnNavigate: feching doesn't happen before commit;
+        navigation is cancelled if commit failed
+    -   autoNewRecord: never / end of page / end of all
+    
+    -   ?ability to navigate w/o mapper by using events?
+
+Amm.Table.Data trait & view
+=====================-=====
+
+
+-   SimpleKeyboardControl: расширение для работы с данными
+ 
+    -   event'ы на navigate(direction, options: {toTheEnd: true/false})
+        
+        up, down, left, right, home, end, nextPage, prevPage,
+        с опцией "to the end" t/f
+        
+    -   таблица клавиатурных команд типа 
+        {C-ArrowUp: command}, {C-A-ArrowUp: command} и так далее;
+        
+    -   выполняется outCommand(command, retHandled, event)
+    
+        handled == false: если есть метод command<Foo>, он выполняется
+
+Filters & Sorting UI (& impl stack?)
+========-===========
+         
+Miscellaneous & Bugs
+==============-=====
+    
+?   23.11 Amm.dom, Amm.html: _wrap property (current element will be put inside 
+    the element defined by _wrap)
+
++   Amm.Table.ObservingColumn: убедиться, что expression не clenup-ится, 
+    когда таблица оказывается пустой
+    (создавать какой-то левый контекст) // была другая причина; d@23.11
+    
++   X   ObservingCell: когда открыт редактор и поменялся Item, 
+        отменять редактирование
+    +   отменяю, когда меняется value у редактируемого cell
+    
++   Amm.View.Html.JQueryListener: sets _htmlElement to htmlRoot, creates _handler
+    (use in Input and other such nodes) //d@26.11
+    
++   SimpleKeyboardControl: сделать, что Shift-Tab переходит на пред ячейку
+    в режиме редактирования, а не закрывает редактор с фокусировкой текущей ячейки. 
+    Сейчас движение справа налево при редактировании затруднено из-за 
+    этого и пред. пунктов
+    +   тесты
+    
++   SimpleKeyboardControl: если ты Tab/S-Tab во время редактирования, прыгать только
+    по редактируемым ячейкам, иначе редактирование заканчивается и удовольствие пропадает
+    +   тесты
+    
+X   Expression: a + b? c: d парсится как (a + b)? c: d, а не как a + (b? c: d)
+    Это баг? -- не баг, в js так же
+    
+-   SimpleKeyboardControl: сделать C-Arrows вместо A-Arrows для навигации, 
+    C-A-Arrows для движения "до упора" (сейчас это C-Arrows), т.к. A-Left 
+    и A-Right - это навигация в браузере
+        
+Тесты
+
+    +   Tab/S-Tab у таблицы
+    +   whenEditingTabThroughEditableCellsOnly
+    +   Отмена редактирования у ячейки, когда меняется value
+    +   Не-перезапись измененных у таблицы

@@ -1,0 +1,19 @@
+2021-08-09
+
+Omni filters
+
+Omni filter for column: (supported both client- and server-side)
+
+    value: direct match
+    /regex/
+    %value%: like in SQL LIKE (use quotes to override)
+    "value": no parsing
+    null, not null, true, false - special keywords
+    value,value,value: several values
+    min..max, min.., ..max: interval
+    value,min..max,min..: can be mixed
+    !value: exclude specified value
+    
+We will add omni filters' row (currenty text fields) to the table,
+also omni sorting capability to the table, 
+and new PHP admin will support it.

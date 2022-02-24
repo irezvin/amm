@@ -1,0 +1,16 @@
+2020-03 -- 2020-04 tasks
+
++   table: доделать сохранение активной позиции, деактивацию, когда скрывается 
+    или удаляется строка/столбец // done @ 23.04
+
+    -   canActivate: use observable function
+    -   изменение строк/столбцов: сохраняем активную позицию, добавляем её восстановление в очередь
+
++   тесты для table и editor'а, commit // done @ 18.05
+
+-   extractor
+-   multiMapper
+-   строки перед, строки после
+-   multiple display parents
+-   view cloning (multiple display parents)
+-   simpleNavigatorView

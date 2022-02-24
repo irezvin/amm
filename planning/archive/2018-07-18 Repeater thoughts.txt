@@ -1,0 +1,99 @@
+2018-07-18 Repeater // Старое - не читаем -- 01-09
+
+Основной вопрос: 
+
+    -   у нас должны параллельно создаваться 
+    
+        -   элементы repeater'а, 
+        -   views для этих элементов, 
+        -   html-элементы для этих views
+        
+    -   самый простой вариант:
+    
+        создаём html, который создает views и элементы при помощи builder'а,
+        которые затем попадают в коллекцию (при этом если builder, после обработки html,
+        возвращает больше одного элемента верхнего уровня, ругаемся)
+        
+    -   более сложный вариант:
+    
+        элемент-repeater создает элементы, у которых прописаны прототипы views,
+            у которых прописаны _относительные_ пути к html-элементам при помощи
+            jQuery (при этом нам нужна возможность устанавливать локальный корень
+            для выражений jQuery)
+            
+        view-repeater создает html-разметку
+
+А как структура repeater'а вписывается в текущие реалии?
+
+    Repeater is DisplayParent
+        Repeater.$value (arbitrary) -> Repeater.$displayChildren (RepeaterItem elements)
+    
+        consists of RepeaterItem items
+            each is Component
+            each has $key, $value, $index properties <- assigned from Repeater.$value collection
+    RepeaterItem is Component
+
+Repeater создает необходимое количество RepeaterItem и присваивает некоторому RepeaterItem свойства
+    key, value, index. 
+    
+RepeaterView создает разметку для RepeaterItem и связывает View(s) RepeaterItem с ней.
+
+Если нам нужно разнообразие, мы используем Choice в качестве RepeaterItem (см. ниже).
+
+Вариант с Choice <-- вообще не используем expression, хотя можем.
+
+    variants: { variantName: mask, variantName2: mask2 }
+        mask := { prop: value, prop2: [valueA, valueB] } or [ mask, mask ]
+    
+    prototypes :
+        {
+            variantName: proto,
+            variantName2: proto2
+        }
+        
+    htmlElements:
+        {
+            variantName: selector1,
+            variantName2: selector2
+        }
+        
+    useBuilder: t/f
+        
+    itemProperty: propName
+    
+    or
+    
+    itemProperty: { variantName: propName, variantName2: propName2 }
+    
+    
+        
+    
+------------------------------
+
+Repeater
+
+
+RepeaterView
+
+------------------------------
+
+У нас есть два варианта
+
+    а)  view создает html-узлы, которые затем привязываются к элементам
+        (как-то офигительно сложно, т.к. нам надо как-то связать views элементов
+        с созданными html-узлами)
+    б)  view создает html-узлы с разметкой для builder'а, по которым затем 
+        создаются элементы
+    в)  
+
+Определяем в html
+
+    ItemHTMLTemplate
+    
+        <div data-amm-if="expression">
+            ... builder prototype ...
+        </div>
+        <div data-amm-if="expression">
+            ... builder prototype ...
+        </div>
+

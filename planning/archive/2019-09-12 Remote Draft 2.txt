@@ -1,0 +1,38 @@
+2019-09-12  Amm Remote
+
+Amm.Remote.SimpleRequest
+
+    максимально простой класс, который описывает только запрос для его реализации через XMLHttpRequest или jQuery.ajax
+    
+    getUrl()
+    getMethod() // 'GET' ('POST', 'DELETE', 'PUT')
+    getPostBody()
+    getHeaders() // array of strings
+    
+abstract Amm.RequestSource extends Amm.WithEvents
+
+    getRequest() <- должен возвращать новый экземпляр, если параметры запроса изменились (Amm.Remote.simpleRequest)
+    outRequestModified(this) - параметры запроса изменились
+
+Amm.Remote.Url extends Amm.Remote.RequestSource
+
+    setUrlMapper() 
+    getUrlMapper()
+
+    setUrl(string, [part])
+    getUrl([part])
+    outUrlChanged()
+    
+    setQuery(value)
+    getQuery()
+    outQueryChanged()
+    
+    // params идут через mapper, а если его нет, то попадают сразу в query
+    // SCHEME, HOST, PORT, USER, PASSWORD, PATH, FRAGMENT - специальные параметры, которые позволяют передавать/получать элементы URL
+    
+    setParams(value, [part])
+    getParams([part])
+    
+Amm.Remote.Request extends Amm.Remote.Url
+    
+    

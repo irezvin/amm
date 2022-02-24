@@ -1,0 +1,19 @@
+2021-04-23
+
+Как сделать множество displayParents?
+
+-   Visual.allDisplayParents: array (get/set/change), unique items
+-   displayParent is primary
+-   when displayParent is set to null, it is removed from allDisplayParents,
+    and allDisplayParents[0] becomes displayParent
+-   displayParent has always index 0 in allDisplayParents
+-   addDisplayParent / removeDisplayParent / hasDisplayParent / indexOfDisplayParent
+-   addDisplayParent: first parent becomes primary
+-   Amm.Trait.DisplayParent.`passDisplayChildrenToComponent`: applied only if current display
+    parent is primary
+-   Amm.Trait.Form.displayChildrenAreFields: 
+    CHILDREN_FIELDS_NEVER | CHILDREN_FIELDS_PRIMARY | CHILDREN_FIELDS_ALL
+    
+When focus model will be supported and element is to-be-activated, priority will be given
+to the chain that requires least changes to the parents' state (i.e. less nested tabs to show, 
+preference to the container that's already visible etc).

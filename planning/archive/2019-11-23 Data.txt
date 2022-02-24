@@ -1,0 +1,147 @@
+2019-11-23
+
+Очередь транзакций + объекты данных: размышления на тему
+
+Роли
+
+-   Amm.Data.Object - доступ к полям записи. Свойства те же. Есть setter'ы и getter'ы,
+    а также упрощенный доступ через object.defineProperty.
+    
+    -   Amm.Data.Object->lm - все методы работы с данными, чтобы избежать конфликта имен
+        и оставить краткие названия методов .lm
+    
+        Все вспомогательные методы есть в .lm  (foo.lm.method(), foo.getlm().method()).
+        
+        "lm" это типа "lifecycle methods", на самом деле, просто удобно набирать, 
+        и поле данных с таким именем будет редким. Если конфликт, то поле переименовывается 
+        в lmField.
+        
+        lm instanceof Amm.Data.LifecycleMethods.                
+    
+    -   Если мы добавляем какую-то специфическую логику или методы, мы добавляем их 
+        в Amm.Data.Object, чтобы обращаться к своим свойствам через this. 
+        Шаблонные методы вроде doOnCheck(), doBeforeSave() и так далее тоже
+        добавляются в Amm.Data.Object. 
+    
+    -   Template Methods:
+    
+        -   doOnActual(); 
+        -   doBeforeSave(); doAfterSave(); doOnSaveFailed();
+        -   doBeforeDelete(); doAfterDelete(); doOnDeleteFailed();
+        -   doBeforeLoad(); doAfterLoad(); doOnLoadDeleted();
+        -   doOnCheck();
+        -   doOnDirty();
+        -   doOnAnyChange();
+        -   doOnDispose();
+    
+    this._data_errors - а) также у Amm.Data.Object (чтобы при валидации было проще 
+    сообщать об ошибках); б) doOnCheck() предоставляет параметр-хеш errors;
+    в) setter'ы могут выкидывать исключения, чтобы сообщить об ошибке.
+    
+-   События (on__) также генерируются объектом данных, а не lm
+
+-   Особенность объекта данных при гидрации или массовом обновлении в том, что
+    поля меняются не по одному, а все сразу, а уже затем идут серии событий onFooChange().
+    
+-   Amm.Data.LifecycleMethods
+
+    -   object, o - обратная ссылка на объект данных
+    
+    -   deleted -> delete() was called, success reported
+    -   persistent -> not new, not deleted
+    -   changed -> persistent, altered (dirty)
+    -   new -> not persistent, not deleted
+    -   unsaved -> new or changed
+    
+    -   checked
+    -   valid
+    -   errors
+    
+    -   currentTransaction
+    -   lastTransaction
+    
+    -   changed - измененные значения полей (undefined если не изменено)
+    -   originalValues - исходные значения полей
+    
+    Все методы ниже отменяют текущую транзакцию, возвращают promise:
+    
+    -   revert() - возвращает все изменения
+    -   save() - инициирует сохранение
+    -   load() - загружает инфу по объекту
+    -   delete() - удаляет объект
+    
+-   Amm.Data.Mapper
+
+    -   objectPrototype
+    
+    -   должен как-то описывать формирование объектов данных (какие свойства являются
+        коллекциями и т.п.)
+        
+    -   createTransaction (object, type - load/save/delete)
+        
+-   Amm.Data.Collection
+
+    -   mapper
+    -   hasActiveTransactions
+    -   hasErrors
+    -   hasUnsaved
+    -   protectUnsaved <- update не будет убирать новые/измененные записи
+    -   update(json) <- saved записи будут обновлены, а те, которых не было - исчезнут
+    -   partialUpdate(json) <- записи с совпавшими ключами будут обновлены, новые - созданы
+    -   reuseObjects <- если нужно добавить записи, ненужные будут использованы повторно
+
+?   Amm.Remote.TransactionQueue? - интеллигентное управление транзакциями
+
+?   Как мы сделаем ассоциации? <foo>Loaded и так далее? 
+    Будем ли повторять всю систему с Ac_Model_Relation?
+
+    
+2019-11-24
+
+Размышления
+
+-   "много работы"
+-   начать с чего-то
+
+2019-12-09
+
+-   Amm.Data.Object
+
+    -   должен поддерживать Traits и Expressions
+        
+    -   $serverErrors: не удаляются при повторной проверке, не мешают submit'ить объект
+        (то же самое сделать для формы)
+    -   getErrors(propName)
+    -   getCommonErrors() - ошибки, которые не соответствуют никаким свойствам 
+        (и выводятся как общие для всей модели)
+        
+
+-   Amm.Data.Mapper        
+
+    -   $validation: Validator'ы для индвидуальных свойств и для объекта в целом
+        (Amm.Data.Validation)        
+            
+            Validation - это объект? 
+            
+            props: { propFoo: [ validators ] }
+            common: { commonValidators }
+            exprs: { ... }
+            
+        Проверка делается 
+        
+        а)  при изменении свойств (или при endUpdate)
+        б)  только при check() или getErrors()
+        
+    X   $translators: { propFoo: trans } - преобразование туда-обратно 
+        для индивидуальных свойств при сохранении или загрузке (проверка модели 
+        также запускает пробное преобразование, чтобы получить инфу об ошибках, 
+        а ошибки преобразования при загрузке приводят к провалу транзакции)
+
+
+-   Amm.Trait.Form - сделать интеграцию с Amm.Data.Object так, чтобы индивидуальные поля
+    связывались с отдельными свойствами, а ошибки корректно передавались обратно 
+    (в том числе серверные и общие)
+    
+2019-12-15
+
+-   idFields

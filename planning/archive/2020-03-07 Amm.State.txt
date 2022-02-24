@@ -1,0 +1,29 @@
+2020-03-07 Amm.State
+
+https://www.youtube.com/channel/UCVHOgH4XEyYx-ZEaya1XqCQ
+https://www.youtube.com/watch?v=vfWwxtJW0Tc
+
+Хранилище состояния:
+
+-   структура: хеш параметров
+-   возможно внешнее изменение
+-   привязка свойств элементов к ключам в состоянии
+-   синхронизация: хранилище состояния <-> состояние <-> свойства элементов
+
+?   у состояния может быть название (заголовок), которое будет отражаться в title страницы
+
+
+Самый простой вариант:
+
+encoded query string в fragment'е URI
+
+При этом можно сделать расширение URI, в котором fragment является таким же ассоциативным 
+массивом, как и query, и при этом у него есть свой uri mapper.
+
+Amm.State.Storage
+
+-   fragment - использует location.uri.fragment и подписывается на hashChange
+-   history - использует history.pushShate с возможностью использовать какой-нибудь polyfill
+    storage - использует storage api и storage events
+
+

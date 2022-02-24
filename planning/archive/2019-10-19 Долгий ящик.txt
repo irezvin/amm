@@ -1,0 +1,88 @@
+Долгий ящик:
+
+//  2019-10-19
+
+-   Amm.Collection.protectedProperty - объекты не удаляются при setItems, splice
+    -   как быть с ArrayMapper + protected dest objects?!
+    
+-   Amm.ArrayMapper.Multi: src is collection of collections
+
+//  2019-10-31
+
+-   (когда будет) оператор new в Expression: 
+    (new Amm.Remote.Fetcher({request: 'https://www.example.com'})).response 
+    позволяет нам получить значение с сервера и обновить результат по готовности. 
+    Это круто, и нужно показать в какой-то демке.
+    
+//  2019-11-10 -- из старого ("2019-04-13 Mong.txt")
+
+    //  19.06:
+    
+
+    -   четко задокументировать правила работы builder'а
+    -   !!! синтаксис Expressions !!! а то забуду
+    -   у нас есть иерархия Display Parent / Display Child, но у каждого элемента может
+        теоретически быть любое количество Views. Получается, что элемент теоретически может 
+        быть в нескольких иерархиях. Что делать? оставить основную, сделать дополнительные?
+
+    +   выкинуть parent/child/path, оставить component/element: // done@20.11
+
+        -   у нас есть две иерархии: Component и Composite (плюс для Composite у нас есть 
+            еще "Amm.Operator.ChildElement: ->>")
+        -   я предлагаю Composite вообще выкинуть нахер, вместе с Path, deferredParentPath,
+            parentPath и прочим мусором в стиле "сверху вниз" (так как любой "путь" предполагает
+            подход "сверху вниз")
+        -   им пользуется только Annotated, написанный "давным-давно, в далекой галактике", 
+            т.е. в 2016 г.
+        -   правда, у Composite есть плюс: он cleanup'ит потомков
+
+    //  24.06:
+
+    -   подумать насчет data-amm-id: не вести глобальный реестр элементов, а 
+        делать ссылки на них из dom nodes с соотв. атрибутом
+
+    // 25.06.2019
+
+    +   TODO: get rid of decorators in event calls -- not used
+        (note: indexes in getSubscribers() are changed: 5 => 4, 6 => 5 //done@18.11
+        
+    -   подумать: сделать Amm.Trait.Toggle::findToggleGroupItems через WeakMap,
+        Amm.Root interval event через WeakMap (может, сделать глобальную поддержку 
+        "weak" events?)
+
+2019-11-10
+
+-   Builder: позднее связывание экземпляров
+
+    fooProto: { id: foo, extObject: { __ref: 'bar' }, extObject2: { __ref: 'baz' } }
+    barProto: { id: bar, mm: { __refs: 'foo' } }
+    bazProto: { id: baz }
+    
+    будут созданы в обычном порядке, но в конце будет выполнено
+    
+    foo.setExtObject(instances.bar)
+    foo.setExtObject2(instances.baz)
+    bar.setExtObject(instances.foo)
+    
+    ЛИБО
+    
+    сделать, что если упоминаемый объект уже создан, то он будет сразу подставлен в прототип.
+    
+    Это позволит назначать компоненты-предки объектам внутри без дурацких хаков типа
+    staticDisplayParent.
+    
+    Кроме того, чтобы таких хаков и дальше не было, можно сделать а) data-amm-x
+    для подвязывания к компоненту; б) сделать спецслучай для builder-а
+    
+    ЛИБО
+    
+    гетто-метод: Amm.Element.locateComponent -> опрашивает views для поиска компонента, 
+    внутри которого мы находимся. Как бонус, мы можем связывать элементы, просто засовывая
+    узлы DOM друг в друга.
+    
+    ?   Amm.View.Component: autoParent? 
+    ?   Amm.Component.autoParent? - компонент-предок будет искаться каждый раз?
+    ?   static Amm.View.Html.locateParentComponent(element)?
+    
+    ?   как сделать, чтобы это происходило гладко и красиво?
+

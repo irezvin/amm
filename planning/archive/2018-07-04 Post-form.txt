@@ -1,0 +1,56 @@
+2018-07-04 
+
+Happy Independence Day!
+
+Доработки, которые кажутся актуальными в ходе работы над формами
+
++   View.Html.Select: если у нас высота 1 шт., автоматом выбирать первый пункт // d:07-05
++   Amm.Root.subscribe('bootstrap'...) -> сразу вызывать handler, если мы 
+    уже инициализировались // d:07-05
++   вместо throw "String"; сделать throw Error("String"); - это сделает нормальные 
+    стеки ошибок! // 2018-07-11
+-   Amm.Translator.Date - использовать библиотеку strtotime() // 2018-07-11
+>   Expression - делать по чуть-чуть
+    -   поддержка read-only свойств (get, без out) - убедиться, что работает 
+        и не стоит на таймере
+    -   array & json expressions
+        -   "skip" special value or keyword - omits key from result
+        -   if const, cache the value
+    +   "new" construct // 2020-01-11
+    +   support for standard JS constructs such as parseInt, Math(anything)
+        // done via FunctionCall - 2020-01-11
+    -   'is' construct - like instanceof, but use Amm.is; accepts arrays too;
+        can check for basic types such as "boolean"
+    +   check we have typeof, instanceof support // 2020-01-12
+    -   comments (/* */ and //)
+    -   string templates (``) - see ECMA spec
+    +   Amm namespace 
+        // 2012-01-11 -- сделал, что в качестве имен классов и функций могут быть строки
+    -   Полностью кешировать expressions; если используются повторно - создавать
+        новый контекст
+    +   Поменять foo => bar на foo -> bar (т.к. в ECMA используется => для созд ф-ций)
+        // done@2019-11-19 when removed "Child element" operator that used =>
+    -   Генераторы массивов и хешей
+        -   Сделать цикл: как range, при этом создается новый массив из значений внутри,
+            кроме случая, когда возвращено "skip" - в этом случае значение внутри пропускается.
+        -   Сделать адекватное changeinfo, чтобы при повторах не вызывать лишние события
+        -   Вариант Б: то же самое, но создается хеш, при этом у нас есть выражение
+            для ключа хеша и для значения хеша
+            
+            (продумать синтаксис)
+             
+        -   [^...^] означает генерацию массива
+            [^ expr as k -> v :: v > 10? v : skip ^]
+            вернет массив со всеми значениями больше 10
+            
+        -   {^...^} означает генерацию хеша
+            {^ expr as k -> v :: /^a_/.match(k)? k : skip -> v ^}
+            вернет все ключи-значения хеша expr, начинающиеся на a
+            
+-   Возможность регистрировать объекты в глобальном namespace (window, либо какой-то хеш
+    в window, либо дописывать в массив) при создании
++   Collection:
+    X   baseClass, defaults, setPropertiesToDefaults - для этого есть instantiator // 2019-06-01
+    X   если не объект, передаем в Amm.Construct - для этого есть instantiator // 2019-06-01
+    -   {prop__foo: hash}, {properties: {foo: hash}}: если в hash есть 'class', 
+        то инстанцировать

@@ -1,0 +1,207 @@
+2020-10-05
+
+Ниже полный список не реализованных доработок Amm, разбросанных по разным файлам, по начало сентября 2020.
+Пояснения и дополнения дописываются там, где это приходило в голову, без указания даты.
+
+2018-07-04 
+
+-   Amm.Translator.Date - использовать библиотеку strtotime() // 2018-07-11
+-   Expression
+    -   поддержка read-only свойств (get, без out) - убедиться, что работает 
+        и не стоит на таймере
+    -   array & json expressions
+        -   "skip" special value or keyword - omits key from result
+        -   if const, cache the value
+    -   'is' construct - like instanceof, but use Amm.is; accepts arrays too;
+        can check for basic types such as "boolean"; accepts class names;
+    -   comments (/* */ and //)
+    -   string templates (``) - see ECMA spec
+    -   Полностью кешировать expressions; если используются повторно - создавать
+        новый контекст - описано подробнее 2020-09-22
+    -   Генераторы массивов и хешей
+        -   Сделать цикл: как range, при этом создается новый массив из значений внутри,
+            кроме случая, когда возвращено "skip" - в этом случае значение внутри пропускается.
+        -   Сделать адекватное changeinfo, чтобы при повторах не вызывать лишние события
+        -   Вариант Б: то же самое, но создается хеш, при этом у нас есть выражение
+            для ключа хеша и для значения хеша
+            
+            (продумать синтаксис)
+             
+        -   [^...^] означает генерацию массива
+            [^ expr as k -> v :: v > 10? v : skip ^]
+            вернет массив со всеми значениями больше 10
+            
+        -   {^...^} означает генерацию хеша
+            {^ expr as k -> v :: /^a_/.match(k)? k : skip -> v ^}
+            вернет все ключи-значения хеша expr, начинающиеся на a
+            
+-   Возможность регистрировать объекты в глобальном namespace (window, либо какой-то хеш
+    в window, либо дописывать в массив) при создании
+    
+2019-08-20
+-   Сделать компонент Select2
+    
+2019-09-29
+-   сделать onPropertiesChange 
+
+2019-10-10
+
+-   невозможно сделать фильтр, в котором expression condition
+    бы возвращало свое собственное значение!! а так было бы просто преобразовывать значение
+    какого-либо свойства напрямую в значение match
+    
+        f = new Amm.MultiObserver.Filter({
+            conditions: [
+                {_expr: 'this.a'},
+            ]
+        });    
+        
+        var e = new Amm.Element({prop__a: 'aVal'});
+        
+        f.getMatch(e); // returns 1; should return 'aVal'
+
+2019-10-14
+
+-   сделать, чтобы расширения (data-amm-x) могли останавливать рекурсивную работу builder'а
+    (чтобы не нужно было писать data-amm-dont-build)
+
+2019-10-19
+
+-   ? Amm.Collection.protectedProperty - объекты не удаляются при setItems, splice
+    -   как быть с ArrayMapper + protected dest objects?!
+    
+    protectedPropery это свойство коллекции, которое хранит имя свойства элемента коллекции, 
+    сообщающего коллекции о том, что данный элемент не подлежит удалению.
+    
+    Например. 
+    
+    coll.setProtectedProperty('dontDelete');
+    coll.items[0].setDontDelete(true); // конечно, это свойство должно быть определено заранее
+    coll.setItems([]); // обычная коллекция бы полностью очистилась
+    coll.length; // 1 // остался coll.items[0], поскольку !!coll.items[0].getDontDelete()
+    
+    Непонятно:
+    
+    а) зачем нам это нужно вне серверных объектов? - изначально я планировал это для обновления
+    autocomplete-виджетов с сервера так, чтобы selected-объекты не исчезали
+    
+    б) как спрашивалось ранее, как быть с ArrayMapper, у которого из-за protected объектов 
+        -   порядок может перестать совпадать? 
+        -   если у нас остается protected item (p.i.), но он теряет ассоциацию с источником,
+            а затем объект-источник возвращается, нам надо ассоциировать уже существующий p.i.
+            с источником, а не создавать новый
+    
+-   (сложно) Amm.ArrayMapper.Multi: src is collection of collections
+    
+    - Amm.ArrayMapper.Recursive для древоподобных структур (как развитие идеи),
+        -   возможность спускаться только в члены, соотвествующие определенному условию
+            (RecursiveFilter) 
+    
+2019-11-10
+
+-   у нас есть иерархия Display Parent / Display Child, но у каждого элемента может
+    теоретически быть любое количество Views. Получается, что элемент теоретически может 
+    быть в нескольких иерархиях. Что делать? оставить основную, сделать дополнительные?
+
+    -   речь идет о том, что у одного Display Child может быть любое количество DisplayParent'ов
+        (по количеству привязанных Amm.View.Html.Visual, элементы которых находятся в разных контейнерах)
+        
+    -   у потомка: primaryDisplayParent (set/get); первый по умолчанию становится главным (если в view 
+        не стоит isPrimary);
+    -   у контейнера: в displayChildren помещать не элементы, а их views (мы можем легко получить элемент
+        через view.getElement)
+        
+-   Builder: позднее связывание экземпляров
+
+    fooProto: { id: foo, extObject: { __ref: 'bar' }, extObject2: { __ref: 'baz' } }
+    barProto: { id: bar, extObject: { __ref: 'foo' } }
+    bazProto: { id: baz }
+    
+    будут созданы в обычном порядке, но в конце будет выполнено
+    
+    foo.setExtObject(instances.bar)
+    foo.setExtObject2(instances.baz)
+    bar.setExtObject(instances.foo)
+    
+    ЛИБО
+    
+    сделать, что если упоминаемый объект уже создан, то он будет сразу подставлен в прототип.
+    
+    Это позволит назначать компоненты-предки объектам внутри без дурацких хаков типа
+    staticDisplayParent.
+    
+    Кроме того, чтобы таких хаков и дальше не было, можно сделать а) data-amm-x
+    для подвязывания к компоненту; б) сделать спецслучай для builder-а
+    
+    ЛИБО
+    
+    гетто-метод: Amm.Element.locateComponent -> опрашивает views для поиска компонента, 
+    внутри которого мы находимся. Как бонус, мы можем связывать элементы, просто засовывая
+    узлы DOM друг в друга.
+    
+    ?   Amm.View.Component: autoParent? 
+    ?   Amm.Component.autoParent? - компонент-предок будет искаться каждый раз?
+    ?   static Amm.View.Html.locateParentComponent(element)?
+    
+    ?   как сделать, чтобы это происходило гладко и красиво?
+    
+-   дописано из того, что выше (просто и полезно, поскольку позволит избавиться от StaticDisplayParent):
+    
+    -   расширение autoParent для builder'а: ищет компонент в иерархии предков, привязывает к нему
+    -   Amm.Trait.LocateComponent, Amm.View.(Abstract|Html).LocateComponent
+        -   по таймеру либо через наблюдение DOM ищет html-элемент компонента, в котором находится данный;
+            если нашло, устанавливает компонент и прекращает проверки
+        -   observeHtml: true/false: всё время проверяет
+    
+2020-03-04
+
+-   Amm.Data.ModelMeta::getHasField(field), outHasFieldChange()
+-   Amm.Trait.Form: 
+    -   setRemoteErrors(errors, fieldName, translate):
+        accepts hash, will pass to respective fields; when translate is enabled,
+        will match fields using dataProperty instead of fieldName;
+    -   unmatchedErrorsTarget <- control which will show remote errors 
+        that don't have corresponding elements
+-   вообще проверить работу Form с объектами данных!
+    
+2020-03-21
+
+-   Improvements of Amm.Data.ModelMeta:
+
+    -   meta-properties:
+    -   applicable - скрывает (?) данное поле в большинстве случаев; убирает его из данных, которые
+        отправляются на сервер        
+    -   readOnly
+        a   -   "soft" - just return metadata
+        b   -   enforced - value changes only during hydration
+                
+-   Amm.Trait.Data:
+    -   if lockable, ability to lock during transaction
+    -   dataDisableWithoutProperty
+    -   dataValueWithoutProperty
+    
+-   Amm.Trait.ClassNameToggle - different properties or expressions 
+    toggle different css classes; require 'ClassName' trait
+    
+-   if setter triggers an exception (outside of event handler), its' message is set to localErrors($field)
+    -   это можно делать в Field
+    -   это можно делать в Data.Model
+    -   ? как быть при повторной валидации модели? нужно ли всё-таки устанавливать в ошибочное значение?
+        как делать, чтобы сообщение об ошибке не терялось? записывать в remoteErrors?!
+    
+    
+2020-05-09
+
+-   Amm.WithExpressions: общий базовый класс для Element и Amm.Data.Model, в котором есть in__ и expr__
+
+-   Amm.WithProps: база для Element, есть prop__ и props (Amm.Data.Model они не нужны)
+    
+-   Amm.Trait.Data: 
+    -   set/get meta + args, чтобы можно было привязывать выражения к метаданным текущего поля    
+
+-   Amm.Data.Model:
+    -   развивать метаданные для работы с отдельными полями
+    -   expr: Amm.Expression
+    -   ОЧЕНЬ нужно сделать ассоциации и совместное вычисление всего графа
+    -   сделать, что нет валидации и сохранения вычисляемых полей
+

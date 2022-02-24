@@ -1,0 +1,240 @@
+2018-03-19 - Работа с "формами"
+
+1)  Год назад это формулировалось так:
+
+    "дистанционное управление - json туда и обратно" (значения полей, параметры, ошибки)
+
+2)  В этом году я сформулировал так:
+
+    Работа с формами
+    
+    -   базовая validation
+    -   get/set value
+
+3)  Следующий тест-кейс такой:
+
+    Кейс: проверка валидности формы, вывод сообщений об ошибках
+    
+    -   Amm.Trait.Model // Add 2018-05-26 Amm.Trait.Property это 1 поле, Amm.Trait.Model это много полей
+        
+        -   parentModel
+        -   parentPropertyPath - путь к свойству модели, куда мы выводим значение
+            (по умолчанию совпадает с propertyName)
+        -   propertyName - по умолчанию совпадает с id
+        -   caption - по умолчанию совпадает с propertyName - это свойство
+        -   validators
+            -   simple (а-ля avancore)
+            -   expression? - было бы прикольно конвертить автоматом в сообщения
+                -   message
+        -   validateMode
+            -   onChange
+            -   onLostFocus - это если мы Focusable
+            -   onParentValidate
+        -   applied - вообще возвращать значение предку, д/н
+    
+
+2018-04-09
+
+    +   исправить в Builder-е следующий случай: // done @22.04.2018
+        
+        <div data-amm-e="..." data-amm-v="...">
+            <div data-amm-v="..."> <!-- <<< этот элемент попадает во владение и внешнего, и внутреннего -->
+                <!-- приоритет надо отдавать внутреннему элементу, т.к. обычно я использую паттерн "контейнер снаружи" -->
+                <div data-amm-e="...">
+                </div>
+            </div>
+        </div>
+        
+    +   у нас вообще нет tests для Annotated  // done @ 2018-05-31
+    ?   сам Annotated сделан как-то через одно место, потому что он создает элемент 
+        для аннотаций (у которого есть элементы-потомки для отдельных аннотаций!)
+        // "пока так", а там посмотрим, когда из-за этого мы упремся в какую-нибудь фигню
+        // -- @ 2018-06-14
+       
+        
+2018-04-18
+
+    Был большой перерыв из-за дней рождений и общей загруженности, а также весеннего упадка сил )
+    
+    Планы на ближайшее время:
+    
+    +   фикс в Builder'е (см. выше) // 22.04.2018
+        +   база
+        +   глючит вариант, когда v внутри e
+        +   тест
+    +   Amm.Translator - может конвертировать значения в двух направлениях
+        +   out (inValue, error)
+        +   in (outValue, error)
+        +   установка error означает, что inValue или outValue были некорректными
+        +   outDecorator
+        +   inDecorator
+    >   использовать Translator в Annotated для кодирования/декодирования required, error
+        +   Amm.Translator.List, ErrorList
+        +   Amm.Translator.List
+        +   Amm.Translator.ErrorList
+        +   Amm.Translator.Bool
+        +   Amm.Translator.RequiredSign
+        -   в дальнейшем будет еще Date
+        
+    +   Тесты
+        +   Amm.Validator
+        +   Amm.Decorator
+        +   Amm.Translator
+        +   Amm.Translator.Bool
+        +   Amm.Translator.RequiredSign
+        
+        +   Amm.Translator.List
+        +   Amm.Translator.ErrorList
+        
+    +   тесты для Annotated
+
+    +   Annotated: когда error создается динамически, то у него нет translator'а (может,
+        при динамическом создании не применяется прототип?)
+            .   на самом деле элемент создается заранее, поскольку error вписан 
+                в _defaultAnnotations
+            .   но у него нет контейнера
+            .   и, скорее всего (проверить), когда создается View самого Annotated,
+                View элемента не создается
+            +   todo: такие "безконтейнерные" элементы "оконтейнеривать", когда они получают
+                какой-то контент
+            ?   ??? но почему сообщение об ошибке появляется в scratch4.php ???
+            +   посмотреть, когда у нас есть _изначальное_ значение error, но нет
+                контейнера - тогда что, translated не применяется?
+                    +   это была бочина с инстанцированием
+                    +   сделать тесты
+
+    +   закончить доработки Property
+        +   поддержка validateMode
+        +   тесты
+            +   проверить баг, когда у нас одно сообщение об ошибке при заранее введенном 
+                значении, и другое после change
+                (1 - Value value must be higher than 0,
+                 2 - value must be higher than 0)
+            +   простейший вариант (нет валидаторов или value)
+            +   вариант с валидаторами, без транслятора
+                +   что будет при setValidators()?
+            +   вариант с value, без translator
+            +   вариант с value и translator
+                +   корректная работа
+                +   ошибка inTranslation
+                +   ошибка outTranslation
+            +   проверить интеграцию с Annotated
+                +   получение параметров
+                +   установка параметров
+        +   доп. вопросы
+            +   нужна ли нам доп. валидация, когда у нас есть ошибки транслятора?
+                мне кажется, нет, поскольку значение некорректно
+            ?   нужны валидаторы с событиями (needUpdate), 
+                так как валидатор-выражение может, при перемене входных данных, выдавать
+                другой результат
+            ?   translator'у тоже нужно needUpdate, если у его validator'а оно сработает?
+            
+            +   как я сделаю expression validator?
+                
+                +   как вариант, сделать их вообще отдельным свойством, например,
+                    validationHandlers // сделал validationExpressions
+            
+            X   нам нужен validator.element, get/set/out - контекст для выражения
+            X   нам нужен translator.element, get/set/out - контекст для выражения validator'ов
+          
+        +   тесты-2
+            +   проверить валидатор с выражениями
+            
+                X   также динамическую смену параметров
+                X   в translator'е
+                    X   также динамическую смену параметров
+                    
+            +   проверить событие onValidate            
+                                
+        ?   и всё-таки, как совместить "серверные" ошибки с клиентскими?.. 
+            Если мы берем изначальные propertyErrors из annotated, как сделать, чтобы они
+            не пропадали? Сделать propertyPersistentErrors?
+                -   это можно сделать "попизже"
+                -   это можно сделать на уровне annotated, либо, действительно, сделать
+                    отдельное свойство для "постоянных" ошибок (кроме того, и в annotated
+                    можно сделать два "ящика" для ошибок, правда, хотелось бы объединять 
+                    их в один список)
+                
+    +   Model (включает несколько Property)
+        +   принимает/выдаёт json или javascript hash?
+        +   событие валидации вызывает валидацию "детей"
+        ?   убедиться, что корректно работают составные модели
+        ?   возможность модели-массива - здесь нужно обдумывание
+            (что делать с разным количеством элементов)
+        +   Переименовать Traits для ясности //  2018-07-09
+            +   Amm.Trait.Field     ->  Amm.Trait.Input
+            +   Amm.Trait.Prop      ->  Amm.Trait.Field
+            +   Amm.Trait.Model     ->  Amm.Trait.Form ("props" -> "fields")
+        
+        //  2018-06-16
+        
+        +   childProperties: collection (теперь это fields)
+        +   displayChildren are childProperties
+        +   components are childProperties
+        +   children are childProperties
+        +   сделать, что если поле уходит из одной категории, но остается в другой, то не убирать из fields
+        +   тесты
+        
+        // 2018-06-26
+        +   тест Amm.event.parent
+        +   тест назначения onHandlers
+        +   идея: Amm.Collection.assocEvents ( { eventName: handlerName } )
+            будет подписывать события элементов на handler'ы assocObject'а
+            (и отписывать при диссоциации) (+тест)
+        
+        // 2018-07-02
+        
+        +   сделать chaining для get/set PropValue
+        +   тесты get/set FieldValue
+            +   просто
+            +   составное
+            +   переключение ассоциативный/числовой
+        +   тест propValueChange для смены propName, propIndex
+        ?   вообще не понятно, что делать с getFieldErrors. Мы включаем ошибки
+            индивидуальных fields или нет?
+        ?   переделать ошибки на ассоциативные хеши :(
+        +   validate() должен включать проверку props. 
+            По этой логике, ошибки потомков должны входить в ошибки модели. Но как их подписывать?
+        +   validate: проверять только applied fields
+        +   validate: тесты
+        
+        +   тест-кейс проверки формы:
+            +   берем scratch4
+            +   делаем кнопку check(), которая выводит где-то ошибку формы, если есть
+            
+    ?   Amm.Builder: поддержка defaults через атрибут? продумать
+        ?   defaults для класса
+        ?   defaults для traits
+        ?   можно вообще прописать разные правила для разных selector'ов jquery        
+
+    Библиотека для дат: http://locutus.io/php/datetime/strtotime/
+    
++   тесты Amm.constructInstance // 2018-06-02
+    +   options is string
+    +   options is instance
+    +   options is instance of wrong class (Ex)
+    +   options is FALSEable
+    +   options is something else
+    +   base class is provided
+    +   base class is not provided
+    +   defaults
+        +   test options + defaults: options not modified
+        +   test set-to-defauts
+    +   requirements
+    
+    
++   тесты Amm.constructMany
+    +   значение массив
+    +   значение хеш
+        +   выставляем ключ в свойство
+        +   когда есть keyToProperty и defaults, defaults не меняются
+        +   когда нет setToDefaults, у экземпляров, которые уже есть в коллекции,
+            должно всё равно выставляться keyToProperty
+            
++   сделать, чтобы Amm.decorate работал с decorator'ами и их прототипами
+
+i   Zhanna - Kamshat - Aida
+
+
+
+

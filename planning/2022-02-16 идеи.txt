@@ -1,0 +1,125 @@
+2022-02-16 Идеи 21 - early 22
+
+2020-12-01
+==========
+
+-   Amm.Data.FieldMeta: сделать, чтобы можно было передавать валидаторам 
+    параметры, и если они менялись, то валидация выполнялась заново
+    (либо передавать какой-то хеш, изменение которого означало бы,
+    что нужно перепроверить поле)
+
+
+2021-02-11
+==========
+
+Вопросы и идеи, которые возникают в ходе работы над таблицей
+
+-   подумать, как сделать грамотную актуализацию значений у input'ов 
+    (например, значение изменилось, но событие типа blur еще не произошло; 
+    сейчас используется костыль типа input.actualizeValue, но, может, есть смысл 
+    сделать что-то еще)
+    
+-   сделать, чтобы Traits
+    а) могли расширять классы
+    б) могли динамически присваиваться элементам
+    
+-   new Amm.Element: если в прототипе прописан класс, возвращать instance 
+    этого класса (в javascript new может возвращать любой объект вместо this, удобно)
+    
+-   new Amm.Expression: возвращает "slave expression", 
+    где все методы передаются "master expression" с определенным contextId:
+    то самое "повторное использование выражений", давно запланированное
+    
+2021-08-23
+==========
+    
+-   amm.view.html.drag.move (requires drag source & dimensions)
+    -   move constraints?
+    
+-   amm.view.html.drag.resize (requires drag source & dimensions)
+    -   resize constraints?
+
+-   omni filter
+
+-   amm.view.html.trait.dimensions:
+    -   defaultAnimationDuration
+    -   moveAnimationDuration
+    -   resizeAnimationDuration
+    -   moveAnimationThreshold (null disables): 
+        if movement is longer than threshold, animation is enabled
+    -   resizeAnimationThreshold:
+        if resize is longer than threshold, animation is enabled
+
+-   amm.trait.drag.sidePanel
+    -   axis: h/v
+    -   resizable
+    -   panelSize
+    -   minPanelSize
+    -   maxPanelSize
+    -   collapsable
+    -   collapseSize
+    -   collapsedClass
+    -   nonCollapsedClass
+    
+-   amm.view.html.drag.sidePanel (requires resize)    
+
+2021-10-14
+==========
+
+?   Array: добавить новые события
+
+    -   spliceInfo: как splice, но есть доп параметр 
+        spliceInfo
+            insert   [ insertIndex, insertIndex, ... ]
+            cut      [ cutIndex, cutIndex, ... ]
+            reinsert [ [cutIndex, insertIndex], ... ]
+            
+    -   pan:
+        когда мы убрали элементы с одного конца (точно удалили, не reinsert),
+        и добавили с другого (точно добавили, не reinsert),
+        а какое-то количество элементов посередине осталось без изменений
+        -   cutFromEnd: true/false 
+            -   true:  элементы были удалены с конца, добавлены в начало
+            -   false: наоборот
+        -   cut: [ item, item... ] - удаленные элементы
+        -   insert: [ item, item... ] - добавленные элементы        
+    
+2022-01-19
+==========
+    
+-   не хватает специальных control'ов, таких как 
+    -   "статус записи" 
+        -   new
+        -   verbatim
+        -   persistent
+        -   deleteIntent
+        -   deleted
+        -   transaction in progress
+        -   errors
+    -   "статус рекордсета"
+        -   numUncommitted
+        -   numWithErrors
+        -   activeMultiTransaction - это есть у коллекции? как и defaults?
+    -   data navigator 
+        -   nav buttons: first/prevPage/prev/next/nextPage/last
+        -   tr buttons: new/revert/delete/commit
+        -   absoluteIndex
+            
+-   Amm.Trait.Repeater: пока вспомнил, как им пользоваться, потратил, наверное,
+    час. Нужно сделать нормальный пример в zim'е, или в коде!
+    
+?   Builder Extension, которое бы позволяло создавать ad-hoc прототипы control'ов
+    (возможно, в ограниченной области видимости). А может, у меня такое есть?
+        -   options.builderSource
+        -   принимается Amm.Builder.Ref
+        -   TODO: задокументировать, как пользоваться ref
+        !   сейчас, когда я пытаюсь объединить ref с default view, 
+            прототип вроде как расчитывается, но узел, упомянутый в ref 
+            из builderSource, куда-то пропадает
+            -   builder корректно расчитывает прототип, но у него почему-то
+                нет views!
+            -   в САМОМ идеальном варианте Amm.View.Html.Default мог бы позволять
+                override'ить уже существующие представления дополнительными 
+                внутренними html-элементами (data-amm-override="css selector"?),
+                или это должен делать сам Builder между клонированием и расчетом
+                прототипа

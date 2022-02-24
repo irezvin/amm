@@ -1,0 +1,36 @@
+2021-08-09
+
+Amm.Trait.Drag.Reorder, 
+Amm.View.Html.Drag.Reorder
+
+-   srcItem
+    -   srcItemRequirements
+    -   srcCollection
+-   destItem
+    -   destItemRequirements
+    -   destCollection
+-   doReorder (srcItem, srcCollection, destItem, destCollection)
+
+
+-   view:
+    -   handleSelector
+    -   containerSelector    
+    -   draggingClass
+    -   useDragShadow
+    -   dragShadowClass
+    -   intentBeforeClass
+    -   intentAfterClass
+    -   axis: x, y, both
+
+-   Amm.View.Html.Table.DragSupport: controls mouse gestures    
+    -   support resizing both rows and columns with HeaderCell
+    -   support dragging rows and columns (when HeaderCell is selected)
+    
+-   table.attributes: hash with attribute data
+    -   columns order
+    -   columns visibiliy
+    -   columns width
+    -   rows height
+    -   ordering
+    -   filters
+    

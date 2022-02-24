@@ -1,0 +1,68 @@
+2021-10-27 Universal DragBetween (formerly trait/view Drag.Reorder)
+
++   Rename Reorder to Between   
+
+2021-10-28 Update: все-таки пойдем с вариантом ItemSource, ItemTarget
+
+i   Items может быть произвольное количество (но фиксированное на период сессии)
+
+>   ItemSource:
+
+    outGetDragItem(dragNativeItem)
+    outGetSelectedDragItems()
+
+-   ItemSourceView: инициируем
+
+    -   рисуем shadow, двигаем shadow
+
+    Amm.Drag.Session.setExtra(extra, id) -- id defaults to class
+    
+    Amm.Drag.Session.Extra.ItemSource -- делаем, с capabilities и всем остальным
+    
+    Amm.Drag.Session.getExtra(idOrClass)    
+
+-   ItemTargetView: реагируем
+
+
+2021-11-02
+
+План тестов
+
+-   ItemDragBase (пофиг, что): тестируем fillItemInfo
+    
+    -   itemElementRequirements: null, функция, требования
+    -   itemElementAssocProperty: null, строка
+    -   itemCollectionAssocProperty: null, строка
+    -   collectionElementRequirements: null, функция, требования
+    -   collectionElementAssocProperty: null, строка
+    -   defaultCollection: null, строка, instance
+    -   itemSelector
+    -   containerSelector
+    -   alwaysLocateContainer
+
+>   ItemSource: начало перетаскивания
+
+    -   вариант со статической shadow
+    -   вариант с динамической shadow
+    -   вариант с клонированием shadow (static + dynamic)
+    -   убедиться, что перетаскиваемый элемент перетаскивается при движениях мышки
+    -   убедиться, что Extra заполняется
+    -   убедиться, что при окончании перетаскивания всё возвращается взад
+    
+-   ItemTarget:
+
+    -   менять intent при hover'е
+    -   попробовать разные комбинации intent'ов
+        -   без over
+        -   без container
+        -   только container
+    -   перетаскивание в другой контейнер
+    -   перетаскивание в рамках одного контейнера
+    
+Окончание перетаскивания: убедиться, что есть отмена
+
+Окончание перетаскивания: подтверждения
+
+    -   retHandled: если true, нет продолжения
+    -   поиск handler'а по умолчанию
+    -   убедиться, что событие обрабатывается ПОСЛЕ уборки за сессией (когда уже нет bookmark и/ли drag shadow)

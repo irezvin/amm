@@ -1,0 +1,7 @@
+2020-12-09 Доработки Amm.View.Html.Expressions
+
++   reapply(): применяет defaultHtml, последовательно применяет все link'и
++   при изменении htmlElement или defaultHtml вызываем reapply()
++   парсим selector:::target[__arg[__arg2...]]
++   применяем с selector'ами
++   передаем методам доп. параметры arg1, arg2...

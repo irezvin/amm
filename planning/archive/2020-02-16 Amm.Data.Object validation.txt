@@ -1,0 +1,44 @@
+2020-02-16
+
++   учитывать validWhenHydrated при проверках индивидуальных полей
++   сделать работу commonValidators
++   полная автоматичекая проверка
++   тест validation в разных режимах
+    +   ручной
+        +   сброс
+    +   ручной, validWhenHydrated
+    +   умный
+    +   умный, validWhenHydrated
+    +   авто
+    +   авто, validWhenHydrated
+
++   тест транзакций // done @26.02
+
+    +   загрузка
+        +   корректно
+        +   с ошибками
+            +   outTransactionError
+            +   установка ошибки загрузки в свойство объекта
+            +   установка состояния
+            +   если действие было "загрузка", убедиться, что ключ был предоставлен
+                обратно (и выдавать ошибку, если нет) 
+            +   ругаться на пустой результат
+    +   сохранение новой/существующей записи
+        +   плюс ошибки
+        +   partial hydration
+    +   удаление
+        +   плюс ошибки
+    
++   убедиться, что все doBefore<Xx> / doAfter<Xx> срабатывают // done @27.02
+    +   _doOnActual 
+        +   hydrate; 
+        +   load;
+        +   update/save => first param is true
+    +   _doAfterSave()
+    +   _doAfterLoad()
+    +   _doAfterDelete()
+    +   _doBeforeSave() - when returns false, save() doesn't proceed
+    +   _doBeforeDelete() - when returns false, delete() doesn't proceed
+    +   _doBeforeLoad(key) - when returns false, load() doesn't proceed
+
++   метаданные // done @04.03

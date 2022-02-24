@@ -1,0 +1,57 @@
+2020-09-22
+
+Amm: улучшение конструкторов для Expression и Element
+
+-   Expression
+    -   реестр выражений definition => instance
+    -   если есть, повторно используем, добавляя новый контекст
+        -   Amm.Expression.Context
+            -   cannot create multiple contexts or switch context
+            -   contextId
+            -   expression: Amm.Expression
+            -   methods:
+                this.expression.setContextId(this.contextId)
+                return this.expression.<methodName>(args)
+    -   уничтожаем, только если закончились контексты (частично поддерживается)
+    -   проверить, как работают контексты для write-expressions 
+    -   тесты
+-   Element
+    -   если в конструкторе известны Traits, создаем конструктор и прототип с этим набором Traits, 
+        и возвращаем созданный с ним экземпляр
+    -   сейчас код инициализации находится в __augment, эти методы должны корректно вызываться
+        конструктором
+    -   предполагаем, что "родной" new будет работать быстрее
+    -   в developer tools будут чище отобрражаться свойства
+    -   свойства traits будут идти в начале прототипа (как при наследовании)
++   Перед этой капитальной работой пишем тесты для изменений, которые уже есть // done @ 01.10
+    +   проверить expression + range
+    +   список тестов (он же changelog к новому commit'у)    
+        +   Amm.extend: inherit properties with setters & getters
+        +   Amm.copy() for creating deep copies of hashes
+        +   Added Amm.Builder.Ref.toJSON which serializes instance which may be useful in Amm.html()
+        *   Amm.Collection: fixed bug in accept() when inserting in middle of sorted collection
+        +   Amm.Data.Model._doOnCompute() template method
+        +   Amm.Expression.Parser: allow several :: :: in property parameters to denote 
+            empty arguments
+        +   Amm.Instantiator.Proto: overrideProto parameter that enables combining object
+            argument with this.proto options
+        +   Amm.Element: prop__<foo> and properties: {foo: value} now define members element.<foo>
+            using Object.defineProperty
+        *   Amm.Element: it is possible to define property prop__<foo> and assign it using <foo>: value
+            in options during instantiation
+        *   Amm.Elemnet: onHandlers are initialized last
+        *   Amm.Trait.Field: fixed local errors sometimes not showing up
+        +   Amm.Data.ModelMeta.getLocalErrors(): added support for partial or suppressed validation
+        +   Amm.Data.ModelMeta.checkFields(fields) method that validates only fields and doesn't
+            run _doOnCheck()
+        +   Amm.Data.FieldMeta.change: function that is called when field is changed
+        +   Amm.Data.ModelMeta: compute() public method, outCompute() event
+        +   Amm.Data.ModelMeta: update({field: value, field2: value2}) method that updates several 
+            fields in semi-atomical fashion        
+        *   Amm.Data.Model: its and bound ModelMeta's events aren't triggered until Model's 
+            constructor finishes work
+        *   Amm.Data.ModelMeta, Amm.Data.Model: constructors now create shallow clones of options 
+        +   Amm.Data.ModelMeta: anyChange event that is executed during data, errors, state, 
+            properties list change, or during any change in sub-models 
+            (sub-model is Amm.DAta.Model or Amm.Data.Collection that is referenced from model property)
+        +   Amm.Data.Collection with anyChange event

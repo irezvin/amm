@@ -1,0 +1,197 @@
+2017-08-20
+
+Как реализовать Range Expressions
+
+    ?   реализовать sort expressions
+    ?   сделать limit (..20 и т.п.)
+
+    range:
+    -   наблюдает некоторую коллекцию 
+        -   но у нас это могут быть все компоненты и так далее, где порядок
+            четко не определен, а события - добавить/убрать!
+            -   возможно, нужно использовать промежуточный наблюдаемый массив?
+            
+        -   когда у нас не настоящий observable array / collection, то новые 
+            элементы всегда добавляются в конец (так что мы всегда знаем, какие
+            элементы затронуты)
+            
+            ?   вариант для компонентов или чего-то там: в качестве индекса
+                можно использовать id или path??
+            
+    -   вариант а:
+        expression($index) - пересчитываем только для изменившихся элементов
+        
+    -   вариант б: 
+        expression($item) - наблюдаем новые элементы, исключаем удаленные
+        
+    -   вариант в (самый сложный):
+        expression($index, $item) - т.е. у нас функция и от индекса элемента,
+            и от его содержимого. В этом случае при вставке/удалении из массива
+            мы всегда отслеживаем изменения индексов всех элементов.
+        
+    range:
+        expression - это индекс
+        expression..expression - это с индекса по индекс
+        $item: это условие на элемент (но $item никогда не будет меняться)
+        $index => : это индекс
+        $index => $item: это условие и на индекс, и на элемент (но $item
+        никогда не будет меняться, будет меняться только $index)
+        
+    ?   предложение: в range сделать list (через запятую), что эквивалентно 
+        "+" (или or). Можно строить абсурдные конструкции типа 
+        x   1, 3..5, $item: $item.content <> '' - нельзя. Возможен конфликт 
+            идентификаторов index/item. Можно, наверное, делать так:
+        ?   $item: 1, 3..5, $item.content <> '' - но это просто украшательство,
+            на самом деле OR-а хватит с головой
+            
+-   наблюдение item'а: нам нужно подписываться на изменения _каждого_ элемента
+    коллекции!
+        -   но плодить операторы (по дереву на каждый элемент) я не вижу смысла.
+        ?   А может, это и проще?
+        
+        -   можно хранить только определенную специфичную информацию 
+            ("контекст")
+            -   локальные переменные index/item для range operator
+            -   _value/_hasValue
+            -   xxValue/xxExists
+            -   _subs, _defSub
+            -   _lockChange, isEvaluating, _evaluated, _nonCacheable,
+                _hasNonCacheable, _destChanged
+        -   contextId
+            -   распространяется постепенно
+                (вверх, вниз)
+            -   последний параметры в событии - это Amm.Expression.ContextId
+                с одним членом { value: contextId }. Если мы его встречаем в 
+                событии, то всё.
+            -   проблема только в принудительном пересчете range: нам надо 
+                запоминать contextId для уже обработанных элементов. Как это 
+                сделать эффективно??? Хранить прямо в них? Типа
+                member._range<Foo>_cid = <contextId>
+                
+2017-08-25
+
+Range variations:
+
+by source type
+
+    -   component access range
+        -   all componenets
+        -   component by name <- observe if component renamed
+    -   child access range
+        -   all children
+        -   child by name <- observe if child renamed
+    -   result range << dynamically changes except when in 
+        "range result range"
+        -   collection result range - easy to observe
+        -   'abstract array' result range - should monitor for changes?
+        ?   string
+        ?   range result range?? should some optimizations apply?
+            -   at least we can make the range 'observable'
+    
+by restriction type
+
+    -   all (not a range!) <- null is converted to empty array, undefined remains undefined?
+    -   index <- {0} can be used to return first result even if it's not an array
+    -   interval (a .. b) <-- last index is NOT included!
+    -   criterion
+        -   index criterion ($i => :)
+        -   item criterion ($v:)
+        -   index/item criterion ($i => $v:)
+
+Different value/context binding ability (per item)
+    -   context data can be saved in item
+    -   context data cannot be saved in item
+
+     
+Порядок реализации
+
+    +   убеждаемся, что все типы range корректно парсятся
+        +   остаток от деления должен быть! %
+    >   Amm.Operator: spliceInfo
+    
+        ??? наблюдение за массивами ???
+        -   у нас было "возвращать другой результат, если члены изменились"
+        -   если операнд не является оператором, а обычный массив, то при
+            needSpliceInfo мы будем его _наблюдать_. Если это оператор, он нам 
+            будет давать spliceinfo. Если это коллекция или Array, 
+            то подписываемся.
+    
+    >   Amm.Operator.Range.All: "all" range for result access: convert to array, null/undefined 
+        is empty array
+    -   Amm.Operator.Range.Index
+    -   Amm.Operator.Range.Interval
+        -  ненаблюдаемый источник: rescan
+    ?   убеждаемся, что в некоторых случаях оператор range не создается
+        (all/index for component/child access)
+    -   убеждаемся, что оператор range создается во всех необходимых случаях
+        и с нужными параметрами
+    -   убеждаемся, что изменения в массивах корректно отслеживаются между operand'ами
+        -   а - при том же экземпляре массива, но изменении состава массива должно быть событие change
+        -   б - при другом экземпляре массива, но том же составе, не должно быть изменения change
+        -   для этого должно быть событие operandItemsChanged для Arrays и коллекций; 
+            при этом должен поддерживаться вариант с событием коллекции (splice и т.д.)
+            
+         
+    -   Amm.Operator.Range.Criterion
+        -   поддержка index criterion
+        -   поддержка item criterion
+        -   добавляем поддержку contextId в операторы
+            -   при уничтожении оператор должен отписываться от наблюдаемых
+                значений во всех контекстах
+            -   contextId распространяется постепенно (вверх, вниз) по мере
+                необходимости
+        -   возможность наблюдать за items
+        
+2017-09-23 
+
+Размышления по поводу spliceInfo
+             
+    Operator::notifyOperandChanged(), вызывающий _setOperandValue, 
+    хорошо делает работу при смене *экземпляров* значения операнда:
+    -   отписка от событий старого
+    -   подписка на события нового
+    -   пересчет результата
+    
+    Operator::getObservesResultContent() - read-only bool - возвращает true,
+        если он будет передавать предку notifyOperandContentChanged(),
+        и false, если предок должен следить сам.
+
+    Любой предок умеет мониторить операнды-значения, потому что нам 
+        надо наблюдать а) коллекции б) массивы. Будем ли мы наблюдать 
+        в дальнейшем хеши и т.п. - хз.
+        
+    Для этого используется _observeOperandContent(operand, value, unobserve).                        
+        Возвращает true, если операция была выполнена (observed, unobserved).
+    
+    Он вызывается для всех типов операндов, но базовая реализация возвращает
+        false для всего, кроме коллекций или массивов.
+            
+    Operator::notifyOperandContentChanged(changeInfo, internal).
+
+        bool internal - означает, что сигнал вызван внутренним методом
+        наблюдения, а не оператором-потомком.        
+    
+    changeInfo := {type: 'splice', spliceInfo: [offset, cut, insert]}
+    
+    В дальнейшем может быть что-то еще.
+            
+    у Expression::onChange есть третий параметр - changeInfo
+
+    Возможны ли реальные случаи, когда нам не нужно сообщение об изменених
+    контента? - Да. но их мало, так что динамически подписываться/отписываться, 
+    скорее всего, смысла нет. 
+        
+    Вопросы
+    
+        -   expression.write? чтобы обновлялось каждый раз?
+        
+2017-10-07 
+
+Отчет
+
+    #   Отказался от spliceInfo   
+    #   Ограничился changeInfo и notifyContentChanged
+    #   У нас три вида "некешируемости": контент, значение и контент + значение
+        (битовая маска)
+    
+

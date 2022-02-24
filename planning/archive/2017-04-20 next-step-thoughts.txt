@@ -1,0 +1,126 @@
+2017-04-20 
+
+Размышления над развитием A.m.m.
+
+?   переименовать в Vmm? (View-Model-Model) или mmv (Model-Model-View)? 
+    -   mmv мне нравилось больше
++   глобальные события (в Root)
+    +   метод, который будет вызываться при несуществующем событии
+        +   в Root можно подписываться на любые события, которые мы затем
+            можем из любых мест вызывать
+        +   это и есть global events
+        // done: 2017-04-21
+
++   selection object // done: 2017-04-30
+
+    FEATURES
+    
+        -   это коллекция, которая является подмножеством
+            -   parentCollection
+        -   valueProperty - в selection будут не сами объекты, а их свойства
+        -   multipleValues: bool
+        -   sameOrder: bool - если multiple, то значения в коллекции будут идти
+            всегда строго в том же порядке, что и объекты в оригинале
+        -   selectedProperty: string - имя свойства, которое selected
+            -   будет true у объектов, которые выбраны
+            -   изменение делает объект выбранным / не выбранным
+    TODO
+        +   selectedProperty: нам придется subscribe() на все элементы `collection`,
+            в т.ч. новые
+        +   valueProperty: то же самое (чтобы делать элементы выбранными, если их
+            значение попадает в наше value, и наоборот)
+        +   проверка при add, чтобы были в коллекции
+        +   handle collection removal:
+            +   clear our collection
+            +   stop listening
+        +   when items' valueProperty changes, we need to have oldValue and 
+            trigger valueChange if needed
+        +   handle sel. prop.
+        +   handle val. prop.
+        +   val. prop. name change
+        +   sel. prop. name change
+        
+    +   Collection::undefaults - вариант, противоположный defaults, т.е. ставится
+        всем элементам, которые *диссоциируются*
+        
+    +   test Selection w/o valueProperty
+    +   test maintainOrder
+        +   Amm.Array: observe splice with a; add reorder; call reorder; splice will be called
+    +   test unselectWhenValuePropertyChanges
+    +   test valueChange events
+                                                 
+>   fields
+    +   selects
+        +   баги в scratch
+            +   s.getOptions()[4].setIndex(0) -- глючит (повторное добавление элемента)
+            +   s.getOptions()[2].setIndex(1) -- опция E становится setSelected(false)
+        +   реагировать на change!! (а то не работает нифига!!) -- ложная тревога, работает ))
+        +   select.setReadOnly() - эмулировать?
+        +   если у элемента несколько views, поддерживающих focused, что делать???
+            +   изменение фокусировки вызывает бесконечную рекурсию!
+            +   проверить другие views
+            +   если хотя бы у одной из них стоит focused, то ничего не делать
+        +   тесты
+            +   ! пофиксить проблему, когда у select(size=1) всегда выделен какой-то элемент,
+                и если не выделен никакой, то выделен первый (non-disabled) элемент 
+                - получается size надо сделать полем данных, и сопроводить это в логике
+        
+            +   а - определение items, value
+            +   б - установка value
+            +   в - изменение value при change
+            +   г - изменение html-элемента при изменении модели
+            
+    +   unbound radios and checkboxes //done: 2017-05-12
+        
+        // 2017-05-10
+        
+        +   groupName - default to propertyName or to input name w/o trailing []
+        +   groupParent, это *любое* значение, - объект - уникально
+            идентифицирующее группу control'ов для radio
+        +   getValue() и setValue() будет возвращать и устанавливать 
+            значение для всей группы
+        +   get/set Checked()
+        +   get/set CheckedValue() - это значение value у input'а
+        +   get/set UncheckedValue() - имеет смысл, только когда isRadio() === false
+            - значение, которое возвращается, если не checked (кроме undefined)
+        +   get/set ReturnOnlyOwnValue() - get/setValue будет игнорировать группу
+        +   значение группы: скалярное, если в группе нет checkbox'ов; массив, если нет
+        
+        +   логика группы:
+            +   покидаем группу - уведомляем старую
+            +   регистрируемся в новой группе - уведомляем новую
+            +   приходит уведомление - сравниваем с нашим value, генерируем событие
+            +   приходит value - перенастраиваем группу, уведомляем
+            
+        +   эмулировать readOnly
+        
+        +   тесты
+    
+    X   text areas
+
+-   Что я еще не предусмотрел: //  2017-05-01
+    -   StaticDisplayParent: элемент, в html-е которого разбросаны
+        другие элементы, но при этом их нельзя извлекать или менять
+        местами (но можно в любой момент просканировать на предмет 
+        наличия новых или исчезновения старых)
+    
+>   scopes // приступил 2017-05-14 // стали называться components
+
+-   инициализаторы для scopes (Amm.registerScriptForScope)
+-   контекстно-чувствительный "get" (позволит нам находить элементы)
+-   detection - простейший вариант
+-   обработчики
+
+~   транслятор выражений // done on 2018-02-10 - Amm.Expression*
+    -   находит куски вида {{xxx.yy}} и 
+        -   заменяет их на яваскрипт Amm.get(this, "xxx.yy")
+        -   определяет, на кого мы ссылаемся, и прописывает цепочку
+            обработчиков событий (если свойство входное)
+-   scope connects to model
+    -   properties
+-   export/import of element tree to/from hash 
+    // with detection it provides us the step to "form on steroids"
+
+-   Collection: добавить декоратор элементов // 2017-05-07
+    -   пусть у Select'а он будет, чтобы было легко добавлять опции
+    

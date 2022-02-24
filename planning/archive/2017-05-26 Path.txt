@@ -1,0 +1,378 @@
+2017-05-26
+
+Спецификация "пути"
+
+^ - это root
+@ - это текущий элемент (относительно которого мы считаем путь)
+он же @this
+@component
+@this.component
+
+component->element
+component->component->element
+composite/element
+
+element.property
+element.property:getterParam
+element.property::getterParam2
+element.property.propertyOrIndex
+element[expr]
+element.property:[expr]
+
+Вопрос!!!
+    классы компонентов?
+    (пока есть только идентификаторы)
+    
+Компонент генерирует такие события
+    onAcceptElements
+    onRejectElements
+    
+Path.Parse(spec)
+Path.Segment
+    type = property
+        .property or [property]
+    type = component
+        component-> or [component]->
+    type = child
+        /element or /[element]
+        
+    expression: Path
+
+Path
+    onChange
+    
+???
+        
+    [[0]]
+    [[foo=bar baz=quux]]
+    [[foo=[expr]]]
+    [[ [expr] = [expr] ]]
+
+2017-05-31
+
+    path
+    
+        curr := this
+        
+        ^ - это Amm.getRoot()
+        
+        (void) @this или (void) @ - это текущий элемент
+        (void) element
+            - это curr := curr.getClosestComponent().getNamedElement(element, 0, true)
+        (void) $component
+            - это curr.getClosestComponent().getNamedComponent(component, 0, true)
+        ->element - ищет элемент без bubble
+        ->$component - ищет компонент без bubble
+        (whitespace) element - ищет элемент с bubble
+        (whitespace) $component - ищет компонент с bubble
+        
+        .xxx - это Amm.getProperty(curr, xxx) 
+        .xxx:yyy:zzz и т.д. - это Amm.getProperty(curr, xxx, yyy, zzz) - параметры getter'а
+                /xxx - это composite.getElement(xxx)
+        /.. - это element.getParent()
+        в любом месте вместо идентификатора можно использовать выражение [expression]
+
+    логика
+    
+        каждый вид сегмента подписывается на события предыдущего сегмента и свои.
+
+            ** какие это события - нужно расписать. **
+            
+            если событий не хватает (сегмент их не поддерживает), то путь переходит 
+            в категорию "таймерных" и будет автоматом пересчитываться по таймеру.
+        
+        когда событие сегмента срабатывает, он вычисляется заново, и, если было изменение,
+            персчитывает всю последующую цепочку и передает результат предыдущему
+            сегменту.
+
+
+        
+    element.outPropertyAppeared() ???
+    
+    
+2017-06-01
+
+    TODO:
+        +   root.timer
+        +   component.elementsChange: accept/reject/rename
+            +   tests
+        +   component.elementsInScopeChange (recursively notify child components)
+            +   tests
+        +   composite events
+            i   они уже есть
+            X   tests?
+            
+    node types
+    
+        root - returns Amm.getRoot()
+        this - returns path context element
+        
+        scopedElementRef (elementName): (void) element
+        scopedComponentRef (componentName): (void) $component
+        
+            (both) subscribe to
+                curr.closestComponentChange
+                curr.getClosestComponent().elementsInScopeChange
+                
+            ???
+                appear in scope / disappear in scope: child components MUST
+                be notified about new elements that appear in parent components
+                because they share the "namespace"!!
+
+        subElementRef (elementName): ->element
+        subComponentRef (componentName): ->$component
+            curr must be component!
+            (both) subscribe to
+                curr.elementsChange
+            
+            
+        property (propertyName or index) (getterParams)
+            subscribes to propertyChange            
+            
+        child (id)
+            subscribes to composite events 
+            
+        parent
+            subscribes to curr.parentChange
+
+2017-06-04
+
+    Segment
+        -   setNode()
+        -   recalc()
+        -   getValue()
+        
+    Более формальный подход: определяем всё в виде операций
+            
+        foo.bar.baz
+        
+            prop(prop(prop(foo), 'bar'), 'baz')           
+        
+        op(a, b)
+            eval(a)
+            eval(b)
+            eval(op(a, b))
+        op(a)
+            eval(a)
+            eval(op(a))
+            
+    Сегмент это и есть операция
+    
+    Amm.Path.Operation
+    
+        numArgs
+        
+        setParent - это тот, кого мы уведомляем о своём изменении
+        
+        setLeft - может быть Operation <- если да, то становимся его Parent'ом        
+        setRight - может быть Operation  <- если да, то становимся его Parent'ом
+        
+        если left у нас элемент или компонент, мы на него соответствующе подписываемся
+        
+        asFunction() - возвращает функцию, которая может быть применена к left, чтобы получить результат
+        
+        
+2017-06-05
+        
+        Для операторов с подпиской мы должны кешировать 
+        -   left, - это может быть op
+        -   right, - это может быть op
+        -   leftValue, - если left не op, совпадает с left
+        -   rightValue, - если right не op, совпадает с right
+        и при этом когда leftValue или rightValue меняются, подписываться/отписываться заново        
+        
+2017-06-13
+
+    Amm.Operator.Property
+    
+        +   отличать числовые индексы при доступе к массивам и коллекциям 
+        +   наконец-то сделать некешируемые значения, которые push'аются по таймеру,
+            и всегда пересчитываются при pull
+            
+            Operator
+                +   cacheable
+                +   reportCacheableStatus
+                
+                Expression becomes non-cacheable.
+                
+                If Expression is non-cacheable, it is subscribed to timer 
+                and re-evaluated from time to time to see if it is changed
+                    +   but we should re-eval only non-cacheable items
+                    +   _reEvaluated: bool, _nonCacheable: false, _hasNonCacheable: false
+                    +   go to bottom, clearing _reEvaluated
+                    +   if _nonCacheable, _evaluate() and _reEvaluated := true
+                    +   if !_reEvaluated and _nonCacheable, _evaluate()
+                    +   bingo
+        +   тесты
+        
+            +   с методами изменения
+            +   без методов изменения
+            +   с массивами
+            +   изменения Property
+                +   изменение значения
+                +   подписка, отписка
+            +   параметры Getter
+            
+            +   функции??
+        
+        +   массивы: свойство length (get only) + событие lengthChange
+        
+2017-06-17
+
+    +   Amm.Operator.supportsAssign,
+    +   Amm.Operator.canAssign(),
+    +   Amm.Operator.assign() (setValue) // d'18.06.2017
+    
+    +   Amm.Operator.List - список операндов; возвращает массив  //d'19
+    
+    +   сделать className с поддержкой getter'а и setter'а с параметрами // d'20
+        
+2017-06-20 //d'23
+
+    +   Amm.Operator.ScopeElement
+        +   component: передача изменения статуса isComponent по всему scope,
+            иначе при изменении isComponent() будем глючить
+        +   тесты с поиском компонентов
+        +   тесты с функциями
+        +   customChangeCompare, если у нас результат - массив! 
+            (потому что каждый раз это другой экземпляр массива)
+    +   Amm.Operator.ComponentElement
+        
+    +   удалить Amm.Handler.Property, Amm.Handler.Property.JQuery - они в таком
+        виде не будут существовать и подлежат переработке
+        
+        
+2017-06-23
+    
+    +   Expression syntax
+        
+        $var.prop:getterArg:getterArg...
+        $var[expr]
+        $[expr][expr]
+        element // same as this<-element        
+        element:range // same as this<-element:range
+        this - это ключевое слово - expression root?
+        
+        /*
+        @component // same as this<-@component
+        @component:range
+        @component->element
+        @component->@component
+        @component->element:range, @component->@component:range
+        */
+        
+        Embedded in JS: <<<expression>>>, '<<<expression>>>'
+        Strings may be quoted
+        Special characters may be escaped
+        [expr] may be used everywhere
+        ( and ) used for grouping
+            
+    +   Expression parser to AST ?? 
+        +   basic support
+        
+        +   basic tests
+        
+        +   non-cacheable !! - cacheable - for property access and method calls        
+            default:
+            -   values that return functions are cacheable
+            -   method call results are cacheable
+            
+        +   Expression range: key/value variables support
+        {
+            $item: expression
+            $key => $item: expression
+            
+    +   Amm.Operator.Binary + - * / == === !== < > <= >= !=  && ||
+        +   простое построение выражений для тестирования
+        +   собственно, оператор
+    +   Amm.Operator.Unary !, -
+    +   Amm.Operator.Condition
+    +   Amm.Operator.FunctionCall 
+        +   call-from-property
+            +   js "this" must be properly set when using property access
+        +   call from other expression
+        
+    +   Property, call: obey cacheability modifiers
+    
+    +   expression (thisObject, string[, writeProperty])
+    
+            +   this keyword returns expression.this
+            X   $this variable returns expression.this and cannot be changed
+            +   basic writeProperty support
+            
+            +   destinationChange event - for writeable expressions
+            
+    +   Amm.Operator.getSrc(), beginPos, endPos
+    
+        +   right-associative operators?
+            
+    +   Amm.Handler-like
+   
+        +   Amm.Expression - uses expression
+        +   Amm.FunctionHandler - uses function        
+            +   records used expressions
+            +   subscribes used expressions, unsubscribes unused; caches values            
+                this.e('expr');
+                this.e('this.foo');
+         
+        +   expression, functionhandler cleanup
+            +   on thisObject clenup
+            +   on writeObject cleanup
+         
+                
+        +   properties-to-handlers-initialization
+
+            +   inExpressions
+            
+                prop__foo - creates property
+                prop__in__foo - creates property and in-handler
+            
+                ?? properties are created if we don't have them ??
+
+                // in_foo creates expressions or handlers with writeProperty foo
+                in_foo: strExpression
+                
+                // creates function handlers
+                in_foo: function
+                in_foo: strFunctionDef
+                
+            X   outExpressions            
+            
+                // creates expressions with writeProperty
+                out_foo: rvalueExpression
+                
+                // creates function handler without writeProperty 
+                // and arguments (value, oldValue)
+                out_foo: function
+                out_foo: strFunctionDef
+                
+                // creates event handler
+                on_foo: expression which returns method
+                on_foo: function - simple function handler
+                on_foo: Array (function, this, extra, decorator)            
+                            
+                strFunctionDef
+                
+                "javascript: function body"
+                function body is javascript which may contain {:expression:}
+                placeholders which are replaced with g('expression')
+                
+    +   Amm.Operator.ChildAccess
+    
+        !!! no range support
+                
+    +   Amm.Operator.Range
+        // done on 2018-02-08
+            
+            How should we set $key/$item in per-object context while 
+            NOT triggering variable change events?!
+    
+        +   Workable range specifiers 
+    
+    
+    +   TODO: мониторить не-observable массивы на предмет изменений    
+        // done on 2017-10-08
+        // пришлось сделать для range
+        // observable тоже мониторятся!
+    
+    

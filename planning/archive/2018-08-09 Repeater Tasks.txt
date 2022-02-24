@@ -1,0 +1,251 @@
+2018-08-09
+
++   https://www.rogerebert.com/reviews/hereditary-2018
++   perfect blue (мультик)
+-   https://www.rottentomatoes.com/m/american_animals
+
+Задачи, связанные с Repeater'ом
+
++   создание Views и разметки вместе с элементом - попробовать разные варианты,
+    остановиться на чем-то
+    
+        +   вариант с dependent view: тесты 
+        
+        +   тесты
+            +   findView
+            +   viewAdded
+            +   viewReady
+            +   waitForView
+            +   "relativeToView"
+            +   viewDeleted
+            +   htmlSource
+    
+>   ряд задач от 2018-08-15 в ходе работы над scratch5.php:
+    
+    +   annotated не выводит label (( -- проблема была связана со след. задачей!
+    
+    +   когда мы присваиваем visual элемент, не находящийся в общем дереве dom, 
+        jQuery возвращает, что его visible false, что технически корректно, но затем 
+        наш элемент остается невидимым и дальше при переносе в дерево. Сделать проверку (как?)
+        // 2018-08-20 сделал проверку на display: none как признак того, что элемент скрыт
+
+    +   Переименовать Amm.ArrayMapper.Builder в Instantiator, это будет универсальный объект
+    
+    +   Нужно как можно быстрее и проще сделать так, чтобы Builder мог использоваться 
+        для создания множества экземпляров
+        
+        +   а) возвращая прототип // done on 2018-09-01
+        
+        X   б) создавая каждый раз новый экземпляр
+        
+        -   а - instantiator, который будет использовать builder
+        -   б - в прототипе можно указывать 
+                -   builderSource: путь jQuery <-- но как нам сделать его относительным?!!!!
+                    -   при этом views должны клонировать html, а не получать прямые
+                        ссылки на узлы
+                -   builderPriority: true - он будет важнее, чем options
+                -   builderOptions: прототип builder'а
+                
+        -   проблема: сборка множества элементов
+            нужно добавить в прототип 
+                createElements: - которое будет создавать другие элементы в конструкторе нашего,
+                до того, как views нашего применены
+        
+        X   возможность ссылаться в builder'е на элемент-предок? а если у нас прототип?...
+            
+            {'$ref': '_parent_'}
+            {'$ref': 'in-builder-id'} - это работает только в builder'е?
+            {'$exp': 'one-shot-expression'}
+                
+            -   тут проблема, если мы в потомке ссылаемся на предка, так как у нас потомки
+                всегда создаются раньше предков. Получается, нужно либо 
+                    а)  сначала создавать предков раньше потомков
+                    б)  создавать сначала все элементы по отдельности, а потом назначать им
+                        views
+                    в)  создавать в обычном порядке, а потом присваивать свойства
+                    г)  действовать в два этапа: сначала создание элементов и views, а затем
+                        сообщать views о завершении инициализации
+                    д)  
+                        сначала создавать все элементы, отсортировав, кто ссылается на кого;
+                        затем создать все views;
+                        затем назначить элементы views, тем самым завершив инициализацию.
+                    
+            -   но при этом получается, что нам нужно рекурсивно проходить все ключи
+                прототипов, чтобы находить ссылки; в общем миллион вопросов
+                
+            -   альтернативный вариант - расставлять ссылки после инициализации элементов,
+                например, 
+                
+                data-amm-init = json
+                {
+                    'prop': val,
+                    'prop.sub': val,
+                    'exp:expression:' val                    
+                }
+                где val это {$ref или $exp - см. выше}
+                этот init будет срабатывать только после того, как элемент построен.                
+        
+        ?   простота определения прототипа/прототипов через html-разметку в displayParent'е,
+            например
+            
+        +   еще одна проблема: ссылки на html-элементы относительно узлов builder'а.
+            технически это легко в момент, когда builder применяется; я предполагал сделать такие
+            ссылки схеме "ход конем":
+                1) подъем до предка с указанной спецификацией (closest)
+                2) потом поиск (find) в этом предке
+            Это позволит нам избежать абсолютных ссылок в документе, что важно для случая,
+            если сервер выдает большое количество разметки для элементов.
+            
+            НО здесь повторяется проблема, описанная выше:
+            
+            -   ссылки могут быть "закопаны" глубоко в прототипе
+            
+            (хотя html-элементы уже точно существуют к этому моменту, и мы можем выполнять
+            поиск html-элементов ДО инстанцирования элементов)
+            
+        +   проблема в том, что мне начинает мешать дихотомия элемент-представление, когда
+            представление (view) не является обязательной частью элемента; не говоря уже об
+            HTML, который является подвидом представления. А тут я хочу делать что-то вроде
+                
+                { itemPrototype: { '$ref': '.query', 'relativeTo': '.parentQuery' }
+                
+        /   формат $ref:
+        
+            свойство $ref говорит о том, что этот объект будет преобразован в Amm.Builder.Ref
+            Builder'ом и соответственным образом обработан
+            
+            { $ref: anything } => будет создан объект Amm.Builder.Ref
+            
+            { $ref: null } => свойства не назначаются
+            
+            { $ref: value } => все равно что { find: value }
+            
+            Amm.Builder.Ref
+            
+                node: HTMLElement 
+                    // это свойство назначается в момент работы builder'а - это будет
+                    // тот html-элемент, в атрибуте которого встретилось $ref
+                    
+                parent: int // берем n-ного по счету parent'а
+                closest: jQueryExpression // затем выполняется closest()
+                find: jQueryExpression //  затем выполняется find()
+                index: int = 0 // какой по счету элемент из найденных брать
+                    (Если null, то будет вообще возвращен результат jQuery)
+                
+        -   нужно посмотреть на конкретных случаях и выписать простейшее решение
+            
+            -   repeater с прототипом потомка
+            -   repeater с прототипами нескольких видов потомков (сложнее)
+        
+    +   Двусторонние привязки свойств:
+        а) свойство <-> свойство;
+        б) свойство <- translator -> свойство.
+        
+        +   если одно из свойств undefined, а другое нет, передавать в "ту" сторону, которая undefined
+        +   передавать ошибки трансляции?
+
+    +   Сделать, чтобы Instantiator использовался в Collection для создания новых объектов
+        
+        +   тест instanitator'а
+        +   тест instantiator'а в коллекции (может, задумка с ним и не очень)
+            +   createInstance
+            +   automatic creation
+        +   тест instantiator'а в Array Mapper
+    
+    +   DisplayParent: сделать, чтобы displayOrder у Visual не мог быть с дырками 
+        или больше длины
+
+        +   тест // дошел до этого места 29.09
+
+>   Repeater: простейший вариант
+
+    +   Amm.Instantiator.prototype (был раньше)
+    
+    >   попробовать repeater 
+        
+        // @13.12 !!!!!!! - кажется на этом я переключился на Filter, Sorter и Instantiator !!!!!!
+        
+        -   view: если находит внутри элементы типа itemPrototype<foo>, то настраивает instantiator
+            соответсвенно // 30.09 - начал делать Filter, чтобы использовать его в Repeater'е
+            
+            data-amm-proto="{ // all keys are optional
+                condition:
+                srcProperty:
+                destProperty: 
+            }"
+            
+        -   array mapper скрыт
+        -   есть filter, sort, offset, limit
+            
+>   Amm.MultiObserver.Filter - проверка, соответствуют ли свойства объекта маске
+        masks:
+            [
+                { 
+                    _id: <matchId>, 
+                    _class: [className],
+                    prop: val, 
+                    prop2: [valA, orValB], 
+                    prop3: { validator: { class: Amm.Validator.Number, gt: val... } },
+                    prop4: /regex/,
+                    ...and others... 
+                }, 
+                { 
+                    _id: <matchId2>,
+                    ...or others...
+                },
+                {
+                    _id: <matchId3>,
+                    _expr: expression
+                }
+            ]
+
+        observeElement
+        unobserveElement
+        onElementMatchChange(element, matchId, oldMatchId)
+        
+        // 2018-10-05
+        
+        -   Filter includes set of conditions that cannot be added or removed, but some
+            can be changed dynamically
+    
+            PropertyCondition -> 
+                prop: value
+                setCriterion(criteria[, prop])
+                getCriterion([prop])
+                hasCriterion(prop)
+                
+            When several conditions refer same properties of the test element, one property
+            change may lead to cascade of condition.match changes. So we need to create
+            expression-like dispatching system which will prevent multiple events originating 
+            from Filter.
+            
+            This is especially difficult for Expression conditions which currently 
+            subscribe/unsubscribe to observed objects' directly with their marshalling system.
+            
+            (We may change target.getSubscribers, .subscribe, .unsubscribeByIndex, .unsubscribe 
+            in Expression with calls to own, re-definable methods that will call parent Filter's
+            mux-demux tools)            
+        
+-   Amm.ArrayMapper.Filter (extends Amm.MultiObserver.Filter)
+    
+-   Amm.Instantiator.WithFilter
+
+        pairs: { matchId: [ prototype, srcProperty ] }
+        rebuildOnMatchChange
+        
+-   Amm.Chooser
+
+    -   src
+    -   Amm.ArrayMapper.FilterBuilder
+    
+    (но строит только один элемент)
+    
+-   Когда все это сделаю, то мелкие доработки:
+
+    -   Amm.Array: length property (with lengthChange event, get/set)
+    -   Collection.prototype: используется при setLength
+    -   Collection.overridePrototypeWithObject
+    -   Collection.sequences.<prop> - генераторы значений при создании новых элементов (типа foo1, foo2 и так далее)
+    -   ArrayMapper: сделать фигуленцию с удобной сортировкой по свойствам
+    -   Collection: тоже сделать фигуленцию с сортировкой (с использованием Sorter)
+    -   сделать в "классах" свойство __CLASS__

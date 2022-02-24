@@ -1,0 +1,186 @@
+2021-05-21 Drag and Drop
+
+-   Состоит из двух частей:
+    -   низкоуровневое api - генерация и передача нужных событий участникам процесса
+        (инициация, перемещение указателя, завершение)
+        
+    -   высокоуровневые средства - как мы реагируем на эти события - resize, move, reorder etc.
+
+-   Виртуальный вектор перемещения
+
+    -   во время перетягивания есть понятие "текущей точки". На неё могут влиять
+        как действия пользователя, так и программа;
+    -   кроме текущей точки, есть текущий вектор перемещения: dX, dY от последней точки,
+        где происходило событие перетягивания, к текущей
+    -   я могу влиять на текущую точку или задав её координаты напрямую, 
+        или изменив значения вектора (тогда точка будет пересчитана как предыдущая + вектор)
+    -   чтобы зафиксировать оси движения, мне достаточно повлиять на относительный вектор (dX, dY)
+    -   таким образом, мы можем создавать "невидимые стены", увеличивать/уменьшать точность,
+        обеспечивать пропорциональный resize или фиксировать движение вдоль какой-либо оси
+        
+
+-   Порядок действий
+
+    -   dragSourceView.htmlElement.onmousedown: dragController.dragAttempt
+    
+    -   dragController.dragIntent:
+        -   document.documentElement.mousemove - смотрим deltaX, deltaY от начала;
+            если больше заданного расстояния, И document.selectionchange / document.selectstart 
+            за это время не сработало, И кнопка не была отпущена, то передаем dragStartEvent
+            
+    -   dragSourceView.dragStart (может запретить перетягивание)
+    
+    -   dragSourceView.dragVector: можно изменить вектор перетягивания
+        (всегда происходит ПЕРЕД dragging, в ходе которого вектор изменить
+        уже нельзя)
+            -   может изменять вектор (currX, currY, dX, dY)
+        
+    -   dragSourceView.dragging
+    
+            -   htmlElement под указателем
+            -   vector: currX, currY, lastX, lastY, dX, dY
+            -   target: если есть текущая dragTarget
+            -   может завершить перетягивание
+            -   может изменять указатель мыши или подсказку, которая висит рядом с указателем
+            
+    -   dragTarget.dragEnter: drag в процессе, указатель мыши (не виртуальный!) висит над ним
+    -   dragTarget.dragLeave: указатель покинул dragTarget, но кнопку не отпустили
+    -   dragTarget.drop - получает dragTarget, если пользователь отпустил кнопку мыши над ним
+    
+    -   dragSourceView.dragEnd: перетягивание завершилось (если был dragTarget, то его drop
+        срабатывает первым)
+
+
+-   Роли и классы низкоуровневого API
+
+    -   Drag.Controller - единственный на всё окно объект, координирующий drag-and-drop    
+        -   session: Drag.Session - активный сеанс перетягивания (в случае multi touch их может
+            быть несколько одновременно? либо может быть несколько векторов одновременно, например,
+            для определния поворота/масштабирования? но это должен делать api браузера)
+    
+    -   Drag.Session
+        
+        -   source: Drag.Source
+        -   startNativeItem: htmlElement
+        -   vector: Drag.Vector
+        -   nativeVector: Drag.Vector (constraint не могут ставиться)
+        -   startNativeX, startNativeY
+        -   target: Drag.Target
+        -   targetNativeItem: htmlElement, относящийся к drag.target                
+        -   currentNativeItem: htmlElement, над которым висит указатель
+        
+        -   dragTargetOnly: true/false - событие drag срабатывает только над
+            Drag.Target
+        -   targetNativeItemSelector: jQuery selector, если выставлен,
+            то событие drag срабатывает только над html-элементами, соответствующими
+            данному селектору
+    
+    -   Drag.Source:
+    
+        -   isDragging: boolean
+    
+        -   handle - элемент, несколько элементов, selector, перетаскивание которых инициирует drag;
+            если пустое, то любой htmlElement любого view данного элемента
+                        
+        -   coarseDragReporting - событие drag передается только при попадании указателя
+            на очередной htmlElement, а не для каждого mousemove
+            
+        -   notifyDrag ( ... )
+        
+        -   notifyDragTarget ( target, targetNativeItem, retCanDrop: { canDrop: undefined } )
+
+    -   Drag.Target:    
+    
+        -   handle - элемент(ы)/selector, перетаскивание над которыми инициирует событие dropIntent;
+        
+        -   может принимать события результата drag-and-drop
+            -   notifyDropIntent ( ... retCanDrop: { canDrop: undefined } ):
+                висит, но еще не отпустили;
+            -   drop: уже отпустили
+        
+    -   Drag.Vector:
+        -   lastX, lastY, currX, currY, dX, dY        
+        -   apply (nativeDx, nativeDy)
+        -   constraint: ограничивает изменения dragVector
+
+        
+2021-06-02
+
+План действий?
+
+Чтобы DnD практически работало, надо реализовать низкоуровневое API, описанное
+выше (source и target принимают сообщения и могут давать контроллеру
+необходимую обратную связь).
+
+После этого можно создать набор высокоуровневых views или traits, которые позволят
+влиять на этапы процесса drag and drop.
+
+Высокоуровневые конечные варианты:
+
+    Amm.Trait.Drag.DisplayChildren
+    
+        reorder: true/false
+        dontate: true/false
+        accept:  true/false
+        multiSelect: true/false
+    
+    Amm.Trait.Drag.Resizeable
+    
+        widthPropName
+        heightPropName
+        minWidth
+        maxWidth
+        minHeight
+        maxHeight
+        proportional: true/false
+    
+    Amm.Trait.Drag.Moveable
+    
+        leftPropName
+        topPropName
+        widthPropName
+        heightPropName
+        minLeft
+        maxLeft
+        minTop
+        maxTop
+        maxRight
+        maxBottom
+        
+2021-06-03
+
+Низкоуровневое API
+
+-   Vector
+    
+    -   Constraints
+    
+        -   Axis
+        -   Proportional
+        -   Min/Max X/Y
+    
+-   Session
+
+2021-06-09
+
++   уведомления dragSource:
+    +   начало сессии
+    +   смена drag element
+    +   смена drag target
+    +   конец перетягивания
+    
+2021-07-05
+
+-   dragTarget тоже получает события
+-   canAccept()
+-   поддержка pointer events!!! потому что сейчас "пальцем" ничего сделать нельзя!!
+    -   у handl-ов должна быть touch-action: none, сейчас это через css, а как быть? В процессе, кажется,
+        поставить не получается!
+    -   сделать возможность отключать threshold при pointer events, оставить только для mouse
+    
+    
+2021-07-16
+
+-   Amm.Session.dropEnabled 
+-   Amm.Trait.Drag.Target.dropEnabled
+-   dragTarget has dragSource property set when hovered above

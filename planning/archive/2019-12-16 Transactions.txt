@@ -1,0 +1,80 @@
+Amm.Data.Transaction
+
+    $interface - Amm.Data.Interface that executes transactions
+    $misc - hash with interface-related info
+    $status - configuring | running | done
+    $response
+
+    Amm.Data.TransactionResponse
+        $rawResponse
+        $parsedResponse (if JSON  was returned)
+        isError()
+        
+        .Error 
+            $code - optional
+            $description
+            
+        .Cancelled - transaction was cancelled
+                    
+        .InvalidTransaction
+            not supported - such type of transactions cannot be supported by the interface
+                        
+        .InvalidData extends .Error
+            $dataErrorHash
+            
+        .Success
+                
+            $zeroEffect - means request didn't produce an error, but didn't affect anything
+                
+            .DataAccepted extends .Success
+                $newData - hash (optional)
+                
+        .MultiResponse
+        
+            $subResponses - hash
+            
+    Amm.Data.Transaction
+    
+        .Create
+        
+            $data
+            
+        .Update
+        
+            $key
+            $data
+            $dryRun
+            
+        .Delete
+            
+            $key
+            
+        .Validate
+        
+            optional $key
+            $data
+        
+        .MultiTransacton extends .Transaction
+        
+            .Create
+                $datas is hash
+            
+            .Delete
+                $keys is hash
+            
+            .Update
+                $keys is hash
+                $datas is hash, required to have same keys as $keys
+            
+            .Load
+                $keys is hash
+
+??      Action transaction and response - apply some action on zero, one, many records
+        Also: DescribeAction - gets action meta information, Describe - gets record 
+        (and mapper? meta-information)
+
+Transactions are created by Mapper.
+
+Amm.Data.Interface implements Transactions.
+
+startTransaction: creates new transaction and begins its execution. Ends when response is set.

@@ -1,0 +1,59 @@
+2019-01-09 Amm.Trait.Repeater - доделываем и движемся дальше
+
+---
+
+Немного предистории из 2018-08-09 Repeater Tasks.txt
+
+        // @13.12 !!!!!!! - кажется на этом я переключился на Filter, Sorter и Instantiator !!!!!!
+
+        -   view: если находит внутри элементы типа itemPrototype<foo>, то настраивает instantiator
+            соответсвенно // 30.09 - начал делать Filter, чтобы использовать его в Repeater'е
+            
+            data-amm-proto="{ // all keys are optional
+                condition:
+                srcProperty: // теперь это assocProperty -- 01.09
+                destProperty: // теперрь это revAssocProperty -- 01.09
+            }"
+            
+        -   array mapper скрыт
+        -   есть filter, sort, offset, limit
+   
+---
+            
+Пример того, что я хочу:
+    
+    Без вариантов:
+    
+        <div data-amm-view="Repeater">
+            <div data-amm-variant="" data-amm-e="{,,,}" />
+        </div>
+    
+    С вариантами, зависящими от условий:
+    
+        <div data-amm-view="Repeater">
+    
+            <div data-amm-variant="{condition: condition1}" data-amm-e="{...}" />
+            <div data-amm-variant="{condition: condition2}" data-amm-e="{...}" />
+        
+        </div>
+
+    Вложенные условия делать можно, но для этого у меня будет Amm.Trait.Choice
+    
+        <div data-amm-view="Choice">
+            <div data-amm-variant="{condition: condition1}" data-amm-e="{...}" />
+            <div data-amm-variant="{condition: condition2}" data-amm-e="{...}" />
+        </div>
+    
+    Choice уничтожает начинку и создает её заново, когда condition меняется
+    
+TODO
+
++   Amm.MultiObserver.Sorter: какая-то бочина при сортировке с двумя критериями, и вообще он бочинит - первый элемент не 
+    движется вверх-вниз!!! - может это что-то с DisplayParent'ом // было с ArrayMapper - пофиксил @09.01
+    
+?   in__prop, sync__prop: возможность использования translator'а (например, для чисел)
+
+// 11.01.19
+
+-   не хватает возможности создавать просто какие-нибудь expressions, которые привязаны к элементам,
+    и связывают одно свойство одного элемента, и другое свойство другого элемента

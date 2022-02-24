@@ -1,0 +1,460 @@
+2016-11-26
+
+Amm.ObservableArray
+
+1)  set/get unique
+2)  set/get comparison
+3)  by default comparison is done using ===
+4)  set/get smart diff
+5)  begin/end Update(), getIsUpdating() - mutators won't produce events; necessary events will be called on endUpdate()
+
++   implements some Array methods
+
+    +   push
+    +   pop
+    +   slice
+    +   splice
+    +   shift
+    +   unshift
+    +   indexOf(item, fromIndex)
+    +   TEST!!
+    
+    
+    length    
+    [index] => element
+
++   More methods
+
+    +   getItems () - returns all items
+    +   getItem(index)
+    +   getIndexExists(index)
+    +   setItem(index, item) <- replaces item 
+    +   removeAtIndex(index, sparse)
+    +   insertItem(item, [index])
+        -   if no index is provided or index >= length, adds last
+        -   if index is 0, adds first
+        -   if index is x, elements at index >= x are shifted right        
+    
+    +   setItems (array) - sets items
+    +   insertItemBefore(item, [item])
+        +   if item is empty, will insert last
+    +   removeItem(item, [all]) - removes (optionally, all) occurances of item
+
+    +   tests!!!
+    
+    +   check for duplicates!
+        
+        -   arrange chk array
+                *   new items
+                *   items before the gap
+                *   items after the gap
+        -   idx de-ref
+                idx < newLength: add[idx]
+                newLength <= idx < gap + newLength: items[idx - newLength]
+                newLength >= gap + newLength: items[idx + gapLength - newLength]
+                
+    +   additional tests for "unique" arrays
+
+
++   Events
+    
+    Propagates from top to the bottom.
+    Element that was subscribed to the more specific events DOES NOT receive more general ones.
+        
+    -   moveItem(oldIndex, newIndex, item)
+    -   deleteItem(index, item)
+    -   insertItem(index, newItem)
+    -   replaceItem(index, newItem, item)
+    -   appendItems(items[])
+    -   clear()
+    -   spliceItems(index, length, items[], newItems, beforeItem)
+    -   reorderItems() - same items, but the order is different
+    -   itemsChange() -- we don't support old value?!!
+    
+    +   TESTS!!!
+        +   compare events
+        +   separate assertions with stub entries
+    
+        +   test events emission & test degradable events
+        
+            +   splice
+            
+            +   smart splice
+                    +   unchanged
+                    +   clear
+                    +   append
+                    +   insert
+                    +   replace
+                    +   delete
+                    +   reorder
+                    +   move
+                    +   just splice
+                    
+            +   setItems
+                +   diff
+                
+            +   begin/end Update
+
+            
+            +   moveItem: moveItem, reorderItems, spliceItems + itemsChange (s/c)
+                +   todo: move method
+            +   outReorderItems: reorderItems, s/c
+                X   todo: reorder method
+                
+            +   insertItem: s/c
+            +   deleteItem: s/c
+            +   appendItems: s/c
+            +   replaceItem: s/c
+            +   clearItems: s/c
+            
+
+        +   allEv receiver MUST NOT receive extraneous events
+        
+    X   also test simple array synchronization??
+    
+    when smartDiff mode is enabled (almost always), setItems() calculates diff betwen old and new array, 
+        and tries to detect the specific action to call more concrete events.
+        
+
+2016-12-01
+
+-   Идеи для ObservableArray (ObservableCollection)
+    -   базовый класс / интерфейсы элемента
+    -   доп. метод при проверке на уникальность (можем ли принять элемент)
+    -   вызывать методы элемента при 
+        -   помещении в массив 
+        -   извлечении из массива 
+        -   смене индекса (это особенно tricky)
+    -   наблюдать за событиями элементов, вызывать свои события
+
+2016-12-05
+
+?   Observable Array: degradable events?
+
+    a.  _observer_ is responsible - that's shit 'cuz more work
+    b.  maintain the registry of unique event scopes, each scope receives 
+        supported events only (may override that stuff)
+        x - events a, b
+        y - events a, c
+        
+        -   cache is created on first event call, cleared on sub./unsub.
+        -   subList: [ subIdx: scope ] (sub.0 is null-scope)
+            cache: [ subIdx: { eventName: [idxInSubscribersOfThatEvent] } ]
+            - only for 'hierarchical' events
+        -   important! subs w/o scopes - subIdx 'ns' - will be called always
+        -   hierarchical calls: eventA(params), eventB(params)
+                if we call subX.eventA, we don't call eventB, but proceed to the next sub
+
+2016-12-14 
+
+    Доработки ObservableArray, чтобы довести его до _идеального_ состояния
+
+    -   функция сортировки - присваивает элементам индексы
+    
+    -   Для массивов с элементами-объектами
+        -   компонент, который перехватывает помещение элементов в массив
+            -   ограничение на тип элементов
+            -   ассоциирование/диссоциирование
+            -   если элемент уже "найден" при помощи comparisonFn, 
+                возможен метод "обновление"
+        -   подписка на любое количество событий элементов, которые генерируют событие
+            "элемент изменился", после чего
+                -   функция сортировки, если она есть, изменяет положение элемента
+                    (и генерируются соответствующие события)    
+                -   гененируется событие "элемент массива изменился"
+        -   при необходимости, сообщать элементам их позицию при изменении 
+            позиции элемента
+            
+2016-12-25 
+
+    Amm.ObservableCollection - см. прошлую запись
+    
+    assocProperty 
+    indexProperty
+    defaults
+    observesItems
+    changeEvents
+    comparisonProperties
+    sortProperties
+    sortFn
+    allowUpdate
+    
+    
+
+    +   Всегда unique
+    +   Никогда не sparse
+    +   Метод canAccept(); проверка классов/интерфейсов (базовый вариант)
+        +   requirements
+    +   comparisonProperties - как мы сравниваем совпадения
+        +   comparison вызывается, если они равны
+    +   sortProperties - как мы сравниваем при сортировке
+    +   sortFn
+        +   вызывается, если sortProperties совпадает
+    -   Метод accept(item): out onAccept (item, {replacementItem, error})
+        -   assocProperty - устанавливаем ссылку потомку на себя
+        -   indexProperty - сообщаем элементам их индекс        
+        -   база - установка defaults
+        -   база - ассоциация/диссоциация
+    -   observesItems true/false (обычно true), 
+        -   changeEvents: array 
+        -   в ответ на какие события в элементе у массива генерируется событие 
+            outOnItemChange            
+    -   sortProperties null/false - не сортируем
+    -   allowUpdate, onItemUpdate, -- что делает, если мы помещаем в коллекцию элемент,
+        для которого comparisonFn выдает 0 (мы можем обновить этот элемент)
+        -   beginUpdate/endUpdate корректно работают
+        
+    Это !бомба!
+
+2016-12-31
+
+Мысли насчет Collection
+
+    -   Если у нас есть indexProperty, то...
+        -   Когда у нас идут любые изменения, у нас есть oldItems и items.
+            Мы можем их сравнить в цикле и новым элементам сообщить их обновленные 
+            индексы. Но это не очень оптимиально...
+        -   это мы делаем, когда вставляется/удаляется множество элементов
+        -   когда вставляется один элемент, мы действуем более оптимально
+            
+    -   Если массив не отсортирован, то поведение в целом такое, как было
+        кроме регистрации/дерегистрации
+        
+    -   splice: всегда сравниваем cut и insert, и не проводим дерегистрацию+регистрацию
+        объектов, которые мы сначала cut'нули, а потом вставили
+        -   то же самое для setItems()
+    
+    -   Если отсортирован, то
+        -   moveItem не работает
+        -   reverse() не работает
+        -   для splice, push, unshift
+            -   insert сортируется 
+            -   insert вставляется по одному, генерируя соотв. события
+    
+2017-01-01
+
+    -   Collection: делаем всё кроме сортировки
+    
+    -   Collection: делаем вариант с сортировкой
+    
+2017-01-02
+
+    +   binSearch
+        +   code
+        +   tests
+    ?   make _sort work
+    ?   indexOf in sorted
+    ?   _locateItemIndex
+    ?   _locateManyItemIndexes
+    ?   report indexes to the items on re-sort - call in sort, _sort, other places?
+
+2017-01-03
+
+    -   non-sorted
+    
+        -   accept, acceptMany: call push()
+    
+        -   push, unshift, insertItem
+            -   check if can accept
+                -   check dupes
+                -   exist: try to update
+            -   not exist: call parent; associate
+                -   ushift: report other items' indexes
+                -   insertItem: update subsequent items' indexes
+
+        -   pop, shift, removeAtIndex
+            -   dissociate
+            -   update other items' indexes
+            
+        -   setItems: replace w/ splice
+
+        -   splice
+            -   memorize indexes
+            -   compare
+            -   new, existing: check if can accept
+            -   new: associate
+            -   missing: dissociate
+            -   existing: update and change indexes
+            -   report indexes
+
+    -   sorted
+    
+        -   accept 
+            -   if exists and can update, go on (after the update, check location)
+            -   if new, 
+                -   determine index 
+                -   insert
+                -   associate
+                -   items whose indexes changed                
+            
+        -   acceptMany
+            -   determine matches
+            -   new
+                -   determine indexes to insert
+                -   insert
+            -   update matches
+            -   _sort (will report indexes)
+            
+        -   when item is updated, check its' new location
+    
+        -   push, unshift, insertItem
+            -   call accept()
+
+        -   pop, shift, removeAtIndex
+            -   same as w/ non-sorted
+            
+        -   setItems: replace w/ splice
+
+        -   splice
+            -   prevent sorting
+            -   compare
+            -   new, existing: check if can accept
+            -   new: associate
+            -   missing: dissociate
+            -   existing: update
+            -   _sort (will report indexes)
+
+        AcceptMany and Splice in sorted array is a nightmare in terms of events.
+        Should create outBigChange event
+            -   changedItems - only content of items change (using old indexes)
+            -   deleteIndexes - these indexes should be deleted
+            -   insertIndexesAndItems - items at these indexes should be changed
+            -   changedIndexes - after change/delete/insert, these items should be moved
+                    to new locations - how can we decide?
+            -   fullyChangedIndexes
+                    full map of oldIndex -> newIndex
+
+2016-01-08 Accept many
+
+    -   _preAccept - find existing
+    -   _addNew (items, index) - sequentially add items in the same order
+    -   _addNewSorted (items) - add items into sorted array
+    
+    Since order may change many times, won't try to track indexes.
+    
+    If no comparisonFn or comparisonProperties are set, will not update 
+    even if updateFn is provided.
+    
+    
+2016-01-12 * CL *
+
+    +   сделать проверку _preAccept
+    >   продолжить делать помещение в массив
+        ?   first add new while triggering every possible event
+            -   if adding to the sorted array, continiously produce smartSplice events
+                (group consequential items!)
+            -   except we don't produce item change' events on registration and
+                de-registration!!!
+        -   then update existing (because sort may change during the update)
+        
+        -   получается, порядок добавления одного элемента/элементов
+            -   помещаем элемент в массив
+            -   ассоциация - установка parent, defaults, сообщаем index
+            -   событие об изменении массива
+            -   подписка на change
+            -   сообщаем всем остальным элементам, индекс которых изменился
+        -   порядок УДО (удаления/добавления/обновления) множества элементов
+            -   запретили сообщать элементам об изменениях индексов
+            -   удалили элементы, которые подлежат удалению
+                -   диссоциировали
+                -   сообщили при помощи минимума событий (например, splice если несколько
+                    или серия outDeleteItem)
+            -   добавили физически все новые элементы
+            -   ассоциировали их
+            -   сгенерировали события об изменении массива
+                -   если массив не отсортирован, то это обычно одно событие,
+                    а если он отсортирован - то серия
+            -   подписка на change добавленных элементов
+            -   сообщили другим элементам об их изменившихся индексах
+            -   последовательно изменили существующие элементы - поштучно
+            -   воссоздали исходную последовательность, но с matches
+            
+        +   метод hasItem(item, nonStrictCompare)
+        +   метод strictIndexOf(item)
+        +   big question - should we re-check uniqueness on item change?!!
+        
+        +   улучшить процесс диссоциации
+            -   отписываемся от событий
+            -   убираем элемент, смещая индексы
+            -   ставим setParent(null)
+            -   элемент должен в момент, когда убирается parent, если он проверяет
+                parent'а при помощи hasItem(this), получить false - чтобы он 
+                не пробовал потом сам себя выпилить
+            -   всем остальным элементам сообщаем об индексах
+            
+        +   тесты ассоциирования/диссоциирования
+            +   Выполняем accept. Должны 
+                +   устанавливаться defaults;
+                +   устанавливаться parent;
+                +   устанавливаться index;
+                +   производиться подписка на события;
+                +   потом эти события должны генерироваться при изменении элемента.
+            +   Выполняем reject (кстати, надо сделать такой метод)
+                +   должен убираться parent
+                +   элемент должен в момент, когда убирается parent, если он проверяет
+                    parent'а при помощи hasItem(this), получить false - чтобы он 
+                    не пробовал потом сам себя выпилить
+            
+        >   тесты для accept
+            +   добавление в сортированный
+                +   с индексом - исключение
+                +   добавляем так, чтобы он бы был в конце, 
+                +   он был в начале
+                +   он бы был в середине
+                +   должен возвращаться элемент                
+                +   проверяем, сообщаются ли индексы (и корректные ли) оставшимся 
+                    элементам
+            +   обновление элемента в сортированном массиве
+                +   проверяем, обновляются ли properies
+                +   проверяем, применяется ли updateFn
+                +   смотрим, что произойдет, если индекс элемента изменится
+                +   смотрим, что произойдет, если элемент перестанет быть уникальным
+                    после обновления
+                +   должен возвращаться обновленный элемент, а не тот, который мы
+                    передавали, как параметры
+                    +   с одним
+                    +   с несколькими
+            +   сортированный - тест splice
+            +   сортированный - тест move - должно ругаться
+            +   добавление в несортированый массив
+                +   тот же самый сценарий
+            +   обновление элемента в несортированном массиве
+                +   должен возвращаться обновленный элемент, а не тот, который мы
+                    передавали, как параметры
+        +   тесты для acceptMany - ??? - придумать какие-то заковыристые случаи
+        
+2017-01-31
+            
+    +   доработка тестов для preAccept() с учетом доп. пар-в и возвр. значений
+    +   проверка работы recheckUniqueness
+    
+    Пока отложим
+    
+    X   проверить методы массива
+    X   проверить события? А как? - ох-ох-ох
+            
+2017-02-09
+
+    +   реверс
+        +   sortReverse: bool
+        +   reverse() на сортированном массиве его переключает туда/сюда
+
+    ?   прописать события у свойств коллекции??    
+    
+        Array props'
+        i   sparse unique comparison diff 
+
+        Collection props'
+        i   requirements assocProperty indexProperty defaults changeEvents comparisonProperties ignoreExactMatches recheckUniqueness sortProperties sortReverse sortFn updateProperties updateFn             
+        i   также: canUpdateChange sortedChange strictChange
+            
+    -   сделать VisualParent на базе Collection
+            
+        ?   неглючная возможность сортировать по indexProperty? seriously?
+            
+    -   попробовать сделать простейший список с редактированием и сортировкой            
+    -   тесты для того, что написал до этого
+    -   двигаться дальше
+    
+    
+

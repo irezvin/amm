@@ -1,0 +1,89 @@
+2018-10-15 :: Выходим из анабиоза // "выходил" два месяца - по 13.12.2018
+
+План: придерживаться первоначального плана
+
++   доделываем Amm.MultiObserver.Filter
+
+    +   Filter работает как диспетчер подписки на события наблюдаемых элементов // d@24.10
+        +   следует помнить, что _выражения_ будут подписываться на события элементов,
+            которые не "фильтруются" напрямую
+    +   простейший вариант: условие со свойствами-критериями // d@2.11
+        +   свойства - критерии
+        +   мы можем добавлять/удалять свойства и изменять их критерии
+        +   свойство не может быть сложным - для этого есть условия-выражения
+    +   подписываться на observed objects' cleanup // 02.11
+    +   тесты к тому, что уже написано // 02.11
+        +   подписка, отписка, генерация events
+        +   cleanup объектов - отписка
+        +   исправить и протестировать ситуацию
+            +   beginUpdate / unobserveObject / endUpdate 
+                + outMatchesChange должна включать удаленный объект
+            +   beginUpdate / unobserveObject / observe same object / endUpdate
+        +   изменение PropsCriterion
+            +   одно
+            +   несколько
+            +   когда allowExpressions запрещено - exception
+        +   несколько критериев - одно событие изменения (корректная диспетчеризация)
+        +   создание, удаление новых критериев
+    +   более сложный вариант: условия-выражения
+    +   смешанный вариант: propsCriterion может использовать выражения в качестве свойств
+    X   еще более сложный вариант: выражения-критерии // c@2.11
+        -   выражение - критерий
+        -   как вариант, из них из всех делать один большой AND, и собирать в большой
+            expression; но сейчас я этого делать не собираюсь, поскольку мне придется
+            делать динамическое изменение выражений
+    +   Amm.MultiObserver.Filter.Condition: getProps, setProps, outPropsChange (для Expression задает Vars, глобально) // 12.11
+    +   Filter.outConditionsChange() // 12.11
+    +   Filter.requireAll - возвращает значение ПОСЛЕДНЕГО условия, если ВСЕ проходят // 12.11
+            
+X   пишем тесты к Amm.MultiObserver.Filter // выполнил раньше
+
++   проверяем Amm.ArrayMapper с Filter // d@17.11
+
++   делаем Amm.Instantiator.Variants // d@27.11
+
+    // 17.11
+    i   construct(object, match)
+    i   arrayMapper: возможность передавать значение pass instantiator'у 
+    // 22.11
+    +   variants instantiator должен хранить ассоциации между исходными и созданными объектами, чтобы отписываться при destruct()-е
+    // 24.11
+        +   hasObject, hasInstance
+        +   forgetObject, forgetInstance
+        +   подписываться на destruct' объектов и экземпляров
+        +   тесты
+    +   тесты variants instantiator со встроенным filter
+        +   filter is aggregate
+        +   subscribeFilter: да/нет
+        +   arrayMapper + filter + (instantiator + filter)
+    
++   Sorter на базе Filter // 17.11 // done @13.12
+    -   сравнивает свойства
+    -   можно менять порядок отдельных критериев (asc, desc)
+    -   можно сортировать по результатам выражений
+    
+    // 27.11
+    
+    +   Amm.MultiObserver.Sorter.Criterion
+        -   asc?
+        -   order
+        -   PropertyCriterion
+        -   ExpressionCriterion
+
+    //  06.12
+    
+    +   Интеграция Amm.MultiObserver.Sorter и Amm.Collection
+        
+
+-   доделываем Amm.Trait.Repeater
+    -   условия
+    -   прототипы для разных условий
+    
+
+?   доп. тесты к Amm.Expression // 13.11
+    
+    -   выражения с List'ами должны быть кешируемы (массив, который возвращает List, _не будет_ меняться задним числом)
+    -   foo.bar::'const' должно парситься
+    -   когда у нас есть Amm.Operator.Property с arguments, и у наблюдаемого срабатывает <Property>Change, нужно заново get'ать свойство
+    
+    

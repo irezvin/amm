@@ -1,0 +1,143 @@
+2018-07-27 Array Mapper // Реализовано -- 01-09
+
+Map
+
+    simple case: 0 to 1 map
+
+    [src, srcIndex] <-> null
+    [src, srcIndex] <-> [dest, destIndex]
+    
+    difficult case: M-N map
+    
+    [ [src, srcIndex], ... ] <-> [ [dest, destIndex] ]
+    
+    
+Filtering strategies:
+
+    a - accept := true
+    b - accept := fn(item)
+    c - accept := obj.pass(item)
+    
+Sorting strategies:
+    
+    a - none - dest items are added to random places; it is up to dest/user to sort them
+    b - direct - from top to bottom; dest order matches src order
+    c - reverse - from bottom to top; dest order matches reverse src order
+    d - random - dest index := fn (src, srcIndex)
+    
+Slicing strategies:
+
+    a - all (we don't slice)
+    b - start, end; same behavior as in string.prototype.slice()
+   
+Possible combined strategy
+
+    filter -> sort -> splice -> build
+    
+How is the strategy applied? (Also partially?)
+    
+    srcEntries := [ [src, srcIndex, refToDestEntry], ... ]
+        always ordered by srcIndex (so we could locate items faster)
+        
+    destEntries := [ [refToSrcEntry, pass, orderValue, inSlice, dest ], ... ]
+        order doesn't matter
+        
+    passEntries := [ destEntry, destEntry... ]
+        always ordered by orderValue
+    
+    sliceEntries := applySlice(passEntries, params)
+        
+    we remember minOrderValue, maxOrderValue, maxSpliceLength for optimization.
+    
+    Edge cases:
+    
+    -   No slice: sliceEntries := destEntries, inSlice := pass    
+    -   No filter: pass := true    
+    -   No order: orderValue := null    
+    -   Simple order: orderValue := srcIndex    
+    -   Simple reverse order: orderValue := -srcIndex
+    
+    Also:
+        
+        src is object -> src has ref to srcEntry
+        dest is object -> dest has ref to destEntry    
+    
+    Optimized:
+    
+    1   element insert
+    1   element delete
+    1   element move
+    N   elements reorder
+    
+    New element:
+        -   add to srcEntries & destEntries
+        -   if passes, add to passEntries
+        -   
+        
+    Deleted element:
+        -   locate in map
+        -   delete from map (and delete dest)
+        -   adjust splice
+        
+2018-08-01
+
+ArrayMapper
+
+    filter: 
+            null, 
+            function, 
+            object (pass),
+            ArrayMapper.Filter 
+                pass 
+                registerItem()
+                unregisterItem()
+            
+            // Filter DOES NOT depend on index
+    
+    applyFilter([item, [pass]])
+            
+    
+    sort:   
+            ArrayMapper.SORT_NONE (=== null), 
+            ArrayMapper.SORT_DIRECT, 
+            ArrayMapper.SORT_REVERSE, 
+            function(src, srcIndex)
+            ArrayMapper.Sort
+                getOrderValue(item)
+                registerItem(item)
+                unregisterItem(item)
+            
+    offset  // may be 0, above or below
+    length  // may be undefined, 0, above or below. undefined means "towards end"
+
+
+    builder:
+            null,
+            function,
+            object (build)
+
+    ArrayMapper.Filter.Properties
+    
+        propMap
+            
+    Internals:
+    
+        ...
+    
+2018-08-03
+
+    +   maintain srcMap, destMap
+    +   apply filter ('pass')
+    +   apply sort
+    +   apply slice
+    +   build
+    +   very basic tests
+    ?   add sanity checks
+    -   sort: compare fn
+    -   sort: compare 2 arrays
+    -   more advanced tests
+        -   filter.register/unregisterItem
+        -   order.register/unregisterItem
+        
+    
+    

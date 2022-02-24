@@ -1,0 +1,142 @@
+2019-12-18
+
+Amm.Data.TransactionMapper -- will be merged with Transaction? // 2019-12-21
+
+    noDefault: true/false -- whether override values from default transactionMapper
+    
+    uri
+    uriOverrides
+    dataOverrides
+    method
+    
+    keyPath
+    dataPath
+    transactionTypePath
+    transactionTypeDecorator
+    
+    errorCriterion
+    errorPath
+    successCriterion
+    successPath
+    
+    prepareCallback
+    cancelCallback
+    parseCallback
+
+Amm.Data.Interface
+
+    uri // sets transactionMap.default.uri
+
+    startTransaction()
+    cancelTransaction()
+
+    transactionMappers: {
+        default|transactionType => transactionMapper
+    }
+
+Amm.Data.Transaction
+
+    construct (interface, type, key, data, autoRun)
+
+    type: create | delete | update | load | ???
+    
+    $key: string|array
+        rq for delete, update, load
+        must be null for create
+    
+    $data: string|array
+        rq for create, update
+        must be null for delete, load
+        
+    $response: Amm.Data.TransactionResponse
+    
+    setResponse() changes status
+    start() // performs basic validation and calls $interface.startTransaction()
+    cancel() // calls interface.cancelTransaction()
+    
+    outStatusChange()
+    
+    $status: init | running | success | error | cancelled
+    
+    $interface
+    
+Amm.Data.TransactionResponse
+
+    $transaction
+    type: success | error
+    errorType: null | config | http | application
+    success // structured response data if successful; empty hash if successful but empty
+    error // structured error info. __http: { code, description }
+
+
+Amm.Data.MultiTransaction
+
+
+Amm.Data.MultiResponse
+
+2019-12=18
+
+Transaction lifecycle
+
+    -   create, state := STATE_INIT (no event triggered)
+
+    -   accepts transaction type
+    -   accepts data
+    -   accepts key
+
+    -   run()
+
+        -   validate() - validates data/key presence against requirements for particular transaction type,
+
+        -   outRun({handled: false}) -- if 'handled' remains false, continues default:
+
+        -   _produceRequest()        
+            -   data decorator is applied to configure requestProducer
+            -   request producer creates request with callback this.handleRequestCallback()
+
+        -   if exception was thrown: state is STATE_FAILURE, transactionResult is set
+            to { errorType: client }
+        -   if no error: state := STATE_RUNNING
+        
+    -   handleRequestCallback()
+    
+        -   depending on params, forms unparsed response object
+            {
+                rawContent: string,
+                parsedContent: string,
+                httpHeaders: array,
+                httpCode: int,
+                exception: object        
+            }
+            
+    -   setUnparsedResponse(Amm.Data.HttpResponse)
+        
+        outParseResponse(unparsedResponse, {transactionResult: null})
+            if parsedResponse remains null, default procedure is applied
+        
+        -   _parseResponse()
+        
+            -   data decorator is applied to create Amm.Data.TransactionResult
+
+Amm.Data.TransactionResult
+
+    $unparsedResponse: null|Amm.Data.HttpResponse|etc
+            
+    $errorType: null | client | http | server
+
+    null - no error
+    client - weren't able to produce request or parse response
+    http - protocol error so we weren't able to receive anything useful
+    server - server gave some useful response application-wise
+        (replied why we cannot complete the transaction, with data
+        or message that can be passed to user, etc) - like record not found
+        or invalid fields with details on what fields and why, 
+        etc. Depending on server protocol, some 'http' errors like
+        403 / 404 may be treated like 'server' errors instead of real http
+        ones (if that's part of RESTish protocol)
+     
+    $data - meaningful data, disregarding it's error or not
+    $exception - jaascript Exception object, if we got it (only for errors)
+    $error - textual error description, if any, or structured error data
+    
+

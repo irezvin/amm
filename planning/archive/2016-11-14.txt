@@ -1,0 +1,90 @@
+2016-11-14
+
+TODO
+
++   View leaves its' mark on related HTML elements so elements can be traced back
+    (Amm.DomHolder)
++   HTML
+    +   contentDecorator
++   Annotated
+    +   Annotations element which contains HTML elements
+        -   label
+        -   readOnly
+        -   description        
+        -   error
+    ?   Cleanup
+        -   при смене элемента удалять все аннотации ?
+        -   при cleanup тоже
+
++   DomHolder: несколько views, относящихся к одному элементу, могут совместно использовать
+    один и тот же узел
+        
+>   VisualParent
+    
+    --  мысль: visual children must implement observable array interface
+
+    
+    -   listVisualChildren()
+    
+    -   hasVisualChild(child)
+    -   addVisualChild(child, beforeChild)    
+    -   removeVisualChild(child)
+    
+    -   setVisualChildren([children]) -- reorders if same children are provided
+    
+    -   setVisualChildOrder(child, index)
+    -   getVisualChildOrder(child)
+    -   getVisualChildAtPosition(index)
+    -   
+    -   getAllowReorder()
+    -   getAllowAdd()
+    -   getAllowRemove()
+
+    -   getCanReorder
+    -   getCanAdd (if canReorder === false, only appends, otherwise can inserBefore)
+    -   getCanDelete
+    
+    -   Visual sometimes can, sometimes cannot change displayOrder
+    -   Sometimes display parents cannot accept Visual
+
+-   ТЕСТ
+
+
+2016-11-23
+
+    i   Annotated future:
+        -   I should have reverse and two-side decorators (for error, required)
+       
+    i   Конструкция Annotated по умолчанию    
+        -   Defaults для аннотаций прописать в базе? (создавать или нет элементы)
+        -   Defaults для разных id'ов и views аннотаций, merge "прототипа" с ними
+        -   Можно передать другой defaultsProvider как Composite, так и View
+        
+    i   Behaivours - connect properties
+        -   propToClass - {propName, decorator, className} or {"propname|className": decorator}
+        -   propToProp - propName: decorator: propName (i.e. HideOnEmpty) - for required, error
+        
+        (подумать)
+        
+        например, сделать "активные" спецификации свойств, i.e. 
+            ./$foo/$bar/$baz 
+            
+        -   прописывает handlers на $fooChange, $barChange, $bazChange, при этом обработчики, которые дальше в цепочке, пропадают при 
+            событиях выше в цепочке (например, срабатывание $fooChange обнуляет обработчики onBarChange, onBazChange)
+            
+        спецификация $foo:bar - getFoo(bar), $foo:bar:baz - getFoo(bar, baz)
+    
+2016-11-25
+
+    The New Order
+
+    -   tests // add @2016-12-16 - tests plan??? 
+    
+    +   observable arrays // 2016-12-16
+        -   non-unique items? how they should be addressed? 
+                - no problem
+                - we can reorderNode(oldIndex, newIndex) -- set newIndex to null or >= array.length to put the item last
+    
+    -   visual parent (uses observable array as children)
+
+    -   observable collections (observable arrays improved) // add @2016-12-16

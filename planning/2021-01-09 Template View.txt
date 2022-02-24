@@ -1,0 +1,87 @@
+2021-01-09 Template View
+
+-   TODO: Amm.View.Expressions:
+    сделать простую привязку ко всему, что имеет jQuery('val'), jQuery.on('change');
+    сделать "on" (функции срабатывают в ответ на события)
+
+-   пример:
+
+    <div data-amm-v="{
+        class: Amm.View.Html.Template,
+        templateId: "globalTemplateId",
+        extends: "parentTemplate",
+        
+        fullOverride: true 
+        /* если наследуется и false, то элемент верхнего уровня считается не шаблоном, 
+           а чем-то, где переопределяются только parts предка */
+        
+    }"
+         data-amm-e="{/* element defintion */}">
+         
+            {{expr: expressionOrProperty}}
+         
+        <div data-amm-bind="{
+            content: contentProperty, 
+            attr.foo: fooProperty,
+            attr.bar: barProperty,
+        }""></div>
+        <div data-amm-if="expression"></div>
+        <div data-amm-for="arrayOrCollection" data-amm-val="varName"></div>
+        <div data-amm-assign="expression" varName="var"> <!-- assignment will work only inside -->
+        <div data-amm-switch="expression">
+            <div data-amm-case="expressionOrValue">...</div>
+            <div data-amm-case="..."></div>
+            <div data-amm-default=""></div>
+        </div>
+        <div data-amm-part="partId">
+            {{parent}} <!-- this means parent template' part with same name will be inserted here -->
+        </div> <!-- parts can be overridden in child views -->
+        
+        {{part: partName}}
+        
+    </div>
+
+-   data-amm-assign: { var: expression }
+
+-   data-amm-if: данный элемент появится в выводе ТОЛЬКО при данном условии
+
+-   data-amm-case: понятно, о чем речь идет
+
+-   data-amm-for: { expr: expression, key: keyVar, val: valueVar }
+
+-   data-amm-assign: 
+
+-   data-amm-bind:
+
+    -   content, attr, style
+    -   val: через jQuery
+    -   on: события через jQuery;
+        возможно {handler: fnOrExpr, args: args, scope: thisObjectForHandler}
+    -   cls, cls.foo: класс
+    -   visible: видимость,
+    -   json.attrName.foo[.bar]: перегружает ключ foo (или подключ bar ключа foo) в json 
+            в аттрибуте attrName данного элемента (специально для создания элементов
+            и представлений внутри view)
+     -  {v|e}.prop[.bar]: значение prop в data-amm-e или data-amm-v (если views несколько,
+        надо еще в начале указать числовой индекс); если это не класс, то при изменении
+        выражения будет меняться соотв. свойство, а если это класс, то создаваться новый
+        экземпляр
+        
+-   Наследование шаблонов
+
+    -   именованные элементы, которые можно переопределять
+    
+-   Placeholder'ы
+
+    -   {{expr: expressionOrProperty}}
+    -   {{part: partName}} - только в шаблоне-потомке для показа part'а-предка
+    -   {{parent}} - в part'е-потомке для вывода одноименного part'а-предка
+
+-   Хотелось бы сделать рекурсию для построения деревьев и т.п.
+    
+-   Вопросы, которые нужно решить
+
+    -   создание элементов и views
+    -   как сделать, чтобы комп не закипел, и не выжралась вся память в браузере, так как
+        у нас на каждое выражение хранится в памяти несколько объектов
+    

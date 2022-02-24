@@ -1,0 +1,115 @@
+    conditional
+    
+        boolOr ? expression : expression
+        boolOr
+
+    boolOr
+    
+        boolOr || expression
+        boolOr
+        
+    boolAnd    
+    
+        boolEq && expression
+        boolEq
+        
+    boolEq
+    
+        boolComp !== expression
+        boolComp === expression
+        boolComp != expression
+        boolComp == expression
+        boolComp
+        
+    boolComp :=
+        
+        addSub > expression
+        addSub < expression
+        addSub >= expression
+        addSub <= expression
+        
+    addSub :=
+        mulDiv + expression
+        mulDiv - expression
+        mulDiv
+        
+    mulDiv :=      
+        unary * expression 
+        unary / expression
+        unary
+        
+    unary :=
+        -unary
+        !unary
+        item
+
+    item :=
+        accessOperator
+        value
+        
+    accessOperator :=
+        <functionCall | propertyAccess | elementAccess | childAccess | range> [accessOperator]
+        value
+        
+    functionCall
+    
+        ([list]) [cacheabilityModifier]
+    
+    list
+        expression[',', expression ...]
+        
+    childAccess
+        
+        ->> identifier
+        ->> subExpression
+    
+    elementAccess
+    
+        -> identifier [range]
+        -> subExpression [range]
+        -> range
+    
+    identifier
+        a-zA-Z_0-9 (don't begin with character)
+        
+    propertyAccess
+        '.' identifier [propertyArgs] [cacheabilityModifier]
+        subExpression [propertyArgs] [cacheabilityModifier]
+        
+    mutabilityModifier
+        ?? (non-cacheable)
+        !! (cacheable)
+        
+    propertyArgsMany
+        ::[identifier] [::[identifier]...]
+        ::{list}
+        
+    subExpression
+        '[' + expression + ']'
+        
+    constant
+        number \d+(\.\d+)?
+        string: same as JS
+        true|false
+        null
+        undefined
+        regexp
+        
+    value
+        constant
+        variable
+        identifier
+        ( expression )
+        
+    variable
+        '$' + identifier
+                
+    range
+        '{' + rangeItem + '}'
+        
+    rangeItem
+        '*' // select all
+        number // select one with index
+        expression .. expression // select slice
+        expression // will select all for those expression evaluates to true
+

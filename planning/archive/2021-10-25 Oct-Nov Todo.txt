@@ -1,0 +1,82 @@
+2021-10-25 October - early November TODO
+========================================
+
+(in mixed and assorted order)
+
++   Amm.View.Html.SingleDimension: finally test & commit // done @26.10
+
++   Generic reorder support (Amm.Trait.Reorder, v.Reorder) // done @10.11, tests are partial
+    X   source
+    X   dest
+    
+    -   somehow src & dest should agree if they are compatible (first source, then dest)
+    -   reorderOnly: compat only if src === dest
+    -   for simple reordering behavior: itemContainer, itemsCollection (we default to reordering 
+        of display parent if nothing more is provided)
+    
+    // 2021-10-26
+    
+    Reorder solution
+    
+    -   intentType:
+    
+        there can be three types of hover over one item: intentBefore / intentAfter / intentOver
+        there can be fourth state: intentContainer (hover over container, but not 
+        over particular item)
+
+    -   view: Target settings:
+            -   itemHoverBehaviour: detectHorizonal, detectVertical, before, after, over
+            -   before/after: if item is already present in target collection, 
+                drop to the target _after_ the item will be considered "after" and vice versa;
+            -   itemOverDistance 0..1 (sqrt(dx^2 + dy^2))/sqrt(2) - if below specified distance 
+                from center, "over" state will be considered (default to 0: no "over")            
+            -   dropToContainer: true/false
+                -   when true, container itself is considered legitimate drop target;
+                -   probably we should create some mock objects to show before/after, but not
+                    at the moment    
+    -   trait:    
+    
+            outDrop (source, sourceCollection, sourceItem, intentType, targetItem, vector)
+                targetItem & vector can be null (intentType is before/after/over/container)
+
+X   v.DisplayParent: move get-default-view-and-their-containers somewhere, 
+    call that code both from v.Default and v.DisplayParent
+    
++   Amm.Instantiator.Variants: support re-use of instances
+    +   we should remember assoc props for different matches to support re-use // d@12.11
+    
+X   Amm.Instantiator.Proto: we should be able to set match value from instantiating callbacks; 
+    we should remember matches and forget them when instance is deleted // will do when really needed
+    
++   Tests for Proto & Variants instances' re-use (also cover tasks above) // d@12.11
+
++   v.SimpleKeyboardControl: // d@16.11
+    +   t.SimpleKeyboardControl (or in table directly) events:
+        +   navBeforeFirstRow
+        +   navPastLastRow
+        +   deleteItem
+        +   addBlankItem
+        +   isItemBlank (item) - only when leaving last item
+        +   leaveBlankItem
+    +   test
+    +   commit
+
++   Amm.ArrayMapper: match value is property of source items, not dest items array // d@17.11
+
++   Amm.Table: reuseRowInstances, reuseCellInstances props
+    (TRUE by default) // d@17.11
+    
++   Amm.dom: test // d@18.11
+    
++   Amm.Table.Cell: display decorator & decoratedValue property // d@18.11
+        
+?   Model
+
+    ?   Support ofun-based computed fields
+    ?   Support arbitrary modelMeta fields via prop__, expr__, etc??? should think
+    
+    -   todo: think on the concept, might be not so good idea
+    
++   Record // d@2021-11-18
+
+    +   Support shared fieldMeta via Mapper

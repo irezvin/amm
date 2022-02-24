@@ -1,0 +1,128 @@
+2018-07-19 Repeater Implementation // Старое - не читаем -- 01-09
+==================================
+
+Итак, после некоторых размышлений, я знаю _как_ делать repeater, и понимаю, что мне для этого
+не нужно клонирование элементов или какие-то могущественные шаблоны на базе expressions.
+
+По факту я мог бы, наверное, сделать его и до expressions.
+
+Концепция
+
+    Repeater is DisplayParent
+        Repeater.$value (arbitrary) -> Repeater.$displayChildren (RepeaterItem elements)
+    
+        consists of RepeaterItem items
+            each is Component
+            each has $key, $value, $index properties <- assigned from Repeater.$value collection
+
+    RepeaterItem is Component (or Whatever)
+
+Repeater создает необходимое количество RepeaterItem и присваивает некоторому RepeaterItem свойства
+    key, value, index. 
+    
+RepeaterView создает разметку для RepeaterItem и связывает View(s) RepeaterItem с ней.
+
+Если нам нужно разнообразие, мы используем Choice в качестве RepeaterItem (см. ниже).
+
+Вариант с Choice <-- вообще не используем expression, хотя можем.
+
+    variants: { variantName: mask, variantName2: mask2 }
+        mask := { prop: value, prop2: [valueA, valueB] } or [ mask, mask ]
+    
+    prototypes :
+        {
+            variantName: proto,
+            variantName2: proto2
+        }
+        
+    htmlElements:
+        {
+            variantName: selector1,
+            variantName2: selector2
+        }
+        
+    useBuilder: t/f
+        
+    itemProperty: propName
+    
+    or
+    
+    itemProperty: { variantName: propName, variantName2: propName2 }
+
+2018-07-21
+==========
+
+>   Простейшая реализация Repeater
+    -   установка items
+        -   если коллекция, то это становится наша коллекция
+        -   если массив, то создаем нашу коллекцию или назначаем нашей
+
+
+    ?? - прикольно было бы, чтобы items мог быть Amm.Array или тупо Array (чтобы были скаляры)
+    ?? - у нас возникает задача отображения коллекции на коллекцию (либо массива на коллекцию)
+    
+        коллекция на коллекцию: можно сделать указатели в элементах обоих коллекций
+        массив на коллекцию: надо еще как-то отслеживать ассоциации
+        
+-   Amm.CollectionMapper
+
+    src -> dest
+    both src and dest can be Collection or Array -> maybe need different classes
+    contains function createDest(src)
+    
+    ... collectionMapper.window?
+    ... collectionMapper.filter?
+
+    -   TODO: продумать такой набор компонентов и API, чтобы можно было
+        покрыть максимальное количество случаев
+        -   простейший (коллекция -> коллекция, порядок должен совпадать)
+        -   массив -> коллекция, массив -> массив, колекция -> массив
+        -   исходный порядок нерелевантен
+        -   порядок цели зависит от исходного порядка, но другой
+        -   элементов цели меньше, чем исходных (в зависимости от содержимого)
+        -   элементов цели меньше, чем исходных (в зависимости от позиции)
+        -   элементов цели больше, чем исходных - это уже очень сложно, нужно думать
+
+    :   filter - optional
+
+        byIndex <- means we need to re-check src items after they changed their indexes
+        byLength <- means we need to re-check all src items when src array length changes
+        pass: function(srcItem, srcIndex, src, matcher) - whether srcItem should be mapped to the dest
+            
+    :   sorter
+
+        indexIsRelative <- means dest items should be _compared_ by index, not
+            placed to the exact positions
+            
+        getDestIndex(srcIndex, matcher) - null means 'i don't care'
+
+    :   builder - ВАЖНО!! - builder НЕ отвечает за то, чтобы создавать и уничтожать вспомогательные связи между элементами, это делает binder
+    
+        destIsMultiple: true/false
+        createDest(src, srcIndex, mappedDestIndex, mapper)
+        deleteDest(dest, mapper)
+            
+    :   destBinder
+        
+        destIsMultiple => findDest() will return array
+        findDest     (src, srcIndex, mappedDestIndex, mapper)
+        bindDest     (src, srcIndex, dest, mappedDestIndex, mapper) 
+            //dest is not in the collection at the momemnt
+        unbindDest   (dest, mapper) - called when dest is deleted
+        
+        ?getMappedDestIndex(dest, mapper)
+        ?setMappedDestIndex(dest, mappedDestIndex, mapper)
+           
+    :   srcBinder
+            
+        findSrc     (dest, mapper)
+        bindSrc     (dest, mappedDestIndex, src, srcIndex, mapper) 
+            // dest is not in the collection at the moment
+        unbindSrc   (src, mapper) - called when src is deleted
+
+    :   rebuild
+        
+        pipeline: filter > sorter > builder > binder
+        
+    !   в случае с destIsMultiple у нас может быть проблема: состав может меняться
+        в зависимости от состояния src - и это нужно продумать

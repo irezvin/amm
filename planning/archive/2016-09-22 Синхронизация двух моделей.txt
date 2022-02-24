@@ -1,0 +1,87 @@
+2016-09 Синхронизация двух моделей
+
+Как я вижу решение
+
+    View Model
+        Form
+            Controls[]
+                name
+                value
+                caption
+                description
+                visible
+                readOnly
+                enabled
+                ...
+    
+    Data Model
+        Object
+            Properties[]
+                name
+                value
+                caption
+                description
+                readOnly
+                applicable
+                ...
+
+    View <-adapter(s)-> View Model (<->) <-> Data Model (<->) <-> Server
+
+    View: 
+        -   sends signals to View Model
+        -   displays state of View Model
+        -   one or several adapters are responsible to binding Views or View components
+            to the View Model
+        
+    View Model:
+        -   receives signals
+        -   causes events ("change")
+        -   observes own events and may change itself
+    
+    Data Model
+        -   recives signals
+        -   causes evens
+        -   observes own events (and may change itself?)
+        
+    Server Abstractions
+        -   sends some events caused by data model (or the view model?) to the server        
+        -   may update data model (or the view model) with incoming data
+        
+    Problems
+    
+    1)  how to synchronize (both ways) the collections of the items - here where 
+        most of MVVM frameworks come into play
+    2)  how to quickly create different bindings from view to the viewModel
+    
+
+Исследуем вопрос
+
+    MVVM - Model - View - ViewModel
+    (actually View <-> ViewModel <-> Model)
+
+    http://noeticforce.com/best-Javascript-frameworks-for-single-page-modern-web-applications
+
+    knockout.js
+    react.js
+    ember.js
+    
+    vue.js? 
+    mercury.js?
+    
+    
+    http://elm-lang.org/ - functional reactive programming
+    
+    reactive programming <- нужно читать
+        https://gist.github.com/staltz/868e7e9bc2a7b8c1f754
+        https://en.wikipedia.org/wiki/Reactive_programming        
+        http://reactivex.io/intro.html         <- АААА
+        mozilla/reflex?
+
+    Технология virutal dom
+        
+    https://github.com/Matt-Esch/virtual-dom
+
+    --  footnotes
+
+    angular.js? <- слишком сложная система для меня
+    dynamic.js - интересная штука

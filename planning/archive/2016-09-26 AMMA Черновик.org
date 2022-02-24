@@ -1,0 +1,53 @@
+* Основные принципы
+  - Армия дронов :: Элементы по возможности не связаны друг с другом горизонтально (но могут быть вертикально). 
+    Они координируются из "командного центра".
+  - Иерарихия событий: предок-потомок :: У предка есть возможность перехватывать все сигналы, отправляемые потомкам.
+    Наверное. Это делается для того, чтобы, например, когда обновляется большоая группа потомков внутри чего-то 
+    иерархического, предок мог выполнить beginUpdate вначале, затем передать сигналы потомкам, затем выполнить endUpdate
+    в конце. Но, получается, при этом мы должны полностью заменить вызовы методов "сигналами"!
+  - Определение :: Адаптеры ищут элементы и приделывают к ним унифицированные интерфейсы
+  - Заменяемость :: Можно полностью заменить визуальный элемент на его обновленный вариант. Для этого нужно прислать другой
+    виджет с тем же id. При этом:
+    - выполнится код очистки старого виджета;
+    - модель представления будет отсоединена адаптером от старого виджета;
+    - новый виджет будет нарисован (в dom), после чего выполнен сопутствующий js-код (если он там был)
+    - новый виджет будет изучен имеющимися адаптерами и присоединен обратно к остававшейся на месте модели представления.
+    - можно также заменять (либо просто уничтожать) визуальных потомков в составе визуального предка. При этом адаптер 
+      отвечает за то, чтобы уведомить виджет-предок об уничтожении потомка либо появлении его замены. (Виджет-предок
+      сам специфицирует, нужны ли ему подобные уведомления).
+* Система
+  - amma namespace
+    - *System*
+      - viewAdapters [class] = List of viewAdapterInstance
+      - models = List of modelInstance. Has at least two keys: view, data.
+      - rules List of ruleInstance
+      - controls List of controlInstance
+      - viewScene: DOMNode // DOM parent of everything?
+    - *List*
+      - system: amma.System
+      - addItem
+      - deleteItem
+      - findItem
+      - hasItem?
+    - *Item*
+      - id: string
+      - list: List
+    - *Rule*
+      - static Rule.fromJson(ruleJson)
+      - isApplied
+      - affectedElements: Element[]
+    - *Model* extends Object
+      - properties: Property[]
+    - *Object* extends Element
+    - *Element*
+      - id
+      - parent: Element
+      - listOutSignals()
+      - listInSignals()
+      - in(signal, arg1, arg2...)
+      - out(signal, arg1, arg2...)
+      - watch(signal, handler, scope) or watch(signal, path, method)
+      - unwatch(any optional number of watch() args)
+    - *CompositeElement* extends Element
+      - elements[]
+    - *ObservableArray* extends Element

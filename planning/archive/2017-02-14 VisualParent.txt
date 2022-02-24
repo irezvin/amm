@@ -1,0 +1,49 @@
+2017-02-14 Amm Visual Parent / Visual Child
+
+VisualParent
+
+-   children: Collection of VisualChild
+
+VisualChild
+
+-   visualParent
+    -   setVisualParent
+    -   getVisualParent
+    -   children container is HTML element
+    ?   есть варианты типа wrap/unwrap child 
+        (child wrappers могут меняться местами в контейнере, а не children)
+    -   additionalChildRequirements
+    ?   вопросы к views: у нас отношение предок/потомок дублируется с views? 
+        а зачем?
+        
+        
+i   лирическое отступление
+
+    У меня было записано "Визуальная группа. Пока менять порядок нельзя"
+    
+    То есть детектор должен сам находить элементы и их внещнюю визуальную группу, 
+    и определять порядок их следования в контейнере.
+    
+    а)  нельзя менять порядок
+    б)  нельзя менять состав и порядок
+    в)  можно детектить изменения состава и порядка, сканируя заново html-элемент?
+    
+    Зачем вообще визуальная группа тогда?
+    
+    Визуальные группы сейчас:
+        -   select list
+            -   как быть с enabled/disabled?
+            -   с chosen?
+            -   с optgroups?
+        -   radio или checkbox list
+            -   тут вообще нет никакого "единства"
+        -   table
+            -   rows
+            -   columns
+    Вариант: визуальная группа с шаблоном    
+        
+-   displayOrder: set/get
+    -   если мы по ней сортируем, и тут же выставляем порядок, то можно серьезно
+        "бокануть"
+
+

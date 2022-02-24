@@ -1,0 +1,66 @@
+2017-05-17
+
+Предлагаю Scope переименовать в Amm.Trait.Component
+
+-   isComponent: true/false - may be switched on and off
+-   internalId <- default to 'component'
+    -   child id cannot match internalId?
+
+-   magicMethod: _handle__<Foo> <- is subscribed to every registered child
+-   magicMethod: _handle__<Name>__<Foo> <- is subscribed to named children only
+    -   unsubscribed when child is renamed
+
+-   element.`component` property
+-   component.registerElement
+-   component.unregisterElement
+-   component.getElement(name, [index]) <- will return first one if index is omitted
+-   component.getElements([name])
+
+Composite is not Component
+Composite.submitChildrenToComponent
+DisplayParent.submitChildrenToComponent
+
+Composite: allow void or duplicate IDs?
+
+TODO:
+   
++   Тесты Component
+    +   структура данных:
+            a   компонент composite
+                элементы a1, a2, a3
+                adp компонент displayParent
+                    элементы adp1, adp2, adp3
+                ac компонент composite
+                    элементы ac1, ac2, ac3
+                    composite acc 
+                        acc1, acc2, acc3
+    +   операции
+        +   проверяем, чтобы у элементов были корректные компоненты
+        +   проверяем переход от компонента к компоненту
+        +   проверяем переход при setIsComponent true/false
+        +   проверяем переход при passChildrenToComponent / passDisplayChildrenToComponent
+        +   при смене владельца убеждаемся, что у старого владельца не остается ссылок
+            на новый элемент
+        +   убеждаемся, что компонент не заглядывает внуть другого компонента
+        +   проверяем подписку
+        +   проверяем callElements
+            +   если methodName сделать функцией, то это будет callback, который
+                будет вызываться для каждого элемента - с указанными параметрами
+                и элементом в качестве this
+        +   проверяем повторную подписку при переименовании элемента
+        +   проверяем работу getNamedElement, getAllNamedElements с/без bubble
+    
+-   DisplayParent:
+    -   allowDelete y/n
+    -   allowAdd y/n
+    -   view, который бы детектил элементы 
+        -   autoScan
+            -   root.onIntreval
+        -   и, возможно, их контейнеры?
+        -   если контейнеры не продетекчены, то add проверяет, есть ли добавленные элемент
+            во внутреннем html и, если что, сообщает об ошибке
+    
+-   Composite:
+    -   разрешить пустые IDы?
+    -   разрешить обращаться к компонентам по индексам?
+ 

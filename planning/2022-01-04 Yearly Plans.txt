@@ -1,0 +1,53 @@
+2022-01-04
+
+2022
+====
+-   1: аяксовый дашборд на Amm/Avancore
+
+    -   Avancore:
+        -   Chaining URL Mapper (CURLM)
+        -   Omni-filters support
+        -   manager
+            -   everything is a control
+                -   manager UI
+                -   manager tabs
+                -   action list
+                -   menu
+                -   table
+                -   pagination
+            -   proper API controller (rq: CURLM)
+                -   support Amm-type transactions
+            -   proper URLs (rq: CURLM)
+
+    -   Amm:
+        -   закончить recordset
+        -   record status / recordset status / errors display
+        -   data navigator control
+        -   table record features
+            -   filters
+            -   sorting
+        -   action lists
+            ?   nesting, grouping
+        -   popups/dropdowns
+            -   menus w/action lists
+            ?   support different implementations
+        -   dialogs support
+        ?   Amm x Bootstrap integration?
+
+-   2: usability & standards
+    -   Amm:
+        -   упростить bootstrapping новых решений?
+            -   интеграция с module loaders и package managers в js
+        -   реализация как пакета composer и/ли npm
+    -   Avancore
+        -   namespaces
+            -   движок
+            -   сгенерированный код
+            -   найти утилиту перехода на namespaces
+        -   интеграция с composer
+
+2022-01-10
+==========
+Цели, которых я хотел бы добиться в программе-минимум (прилагательные не абсолютны):
+-   быстрая разработка ui для удобного редактирования данных сложной структуры
+-   

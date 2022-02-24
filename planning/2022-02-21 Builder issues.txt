@@ -1,0 +1,15 @@
+2022-02-21
+
+Разбираемся с Builder'ом
+
+-   Amm.Element.prototype.findView: убрать id как первый параметр или сделать его вторым?
+    ?   как часто мы вообще используем id у view? по-моему, почти никогда
+    ?   убрать Amm.View.Abstract.id? А для чего я его добавлял?
+    
+-   Amm.Builder.elements vs Amm.Builder.topLevel
+    ?   зачем дублирование - в elements попадают все, в topLevel только "верхние"
+    ?   попадают ли views в topLevel
+    ?   и т.п.
+
+
+

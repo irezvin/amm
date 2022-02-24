@@ -1,0 +1,20 @@
+<div data-amm-role="container">
+    <select data-amm-role="field" name="appliance" >
+        <option value="keyboard">keyboard</option>
+        <option value="display">display</option>
+    </select>
+</div>
+
+<div data-amm-role="container">
+    <input data-amm-role="field" name="size" />
+</div>
+
+.... 
+
+new Amm.Bind.SetValue({
+    from: 'appliance.value', 
+    to: 'size.visible', 
+    decorator: function(v) { return v === 'display'; }
+);
+
+// how to restrict the scope??

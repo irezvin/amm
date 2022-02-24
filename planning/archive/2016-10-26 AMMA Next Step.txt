@@ -1,0 +1,70 @@
+2016-10-26
+
+Размышления о порядке разработки черновой версии Amm
+
++   Сделаны properties и elements, которые могут обмениваться событиями,
+    и handlers/emitters, которые позволяют привязывать их к jQuery
+
+-   Форма и адаптер: первый вариант    
+
+    -   адаптер детектит элементы
+        
+        Amm.Locator
+        
+            находит entries
+            для entry предлагает конфигурацию Adapter
+            
+            
+            Adapter включает
+                1)  ссылки на узлы контекста
+                2)  прототипы traits
+                3)  Adapters этих Traits
+                
+            У traits прописано, на какие html-элементы (или другие компоненты)
+                они должны ссылаться
+                
+            Например,
+            
+            HtmlControl (extends HasValue, Focusable, Editor)
+                input
+                
+            Visual
+                container
+                
+            Described
+                label
+                annotations
+                error
+                
+            Если у trait есть только одна ссылка на html-узел, то можно в data-amm-role
+                прописать только название этого Trait.
+                    
+            Разные traits группируются по сущностям
+                entity id = foo.bar.baz or foo[bar][baz]
+                
+            <div data-amm-role="VisualParent" data-amm-entity="foo">
+                
+                <div data-amm-role="Visual">
+                    <label for="foobar">The Label</label>
+                    <input id="foobar" name="foo[bar]" data-amm-role="HtmlControl" value="barValue" />
+                </div>
+                <div data-amm-role="Described.error" data-amm-entity="foo[bar]">
+                </div>
+                                        
+            </div>
+                    
+                    
+            foo/bar - Entity element
+                foo/bar/value - has properties of HtmlControl trait (value, visible, 
+                    readOnly, focused)
+                foo/bar/label - of Display trait (value, visible...)
+                foo/bar/error - of Error extends Display
+                foo/bar/annotations - of Annotations extends Display
+                foo/bar/contained
+            
+    -   hasValue for basic HTML fields
+    -   contained
+    -   visual
+    -   wrapped
+    -   visGroup
+

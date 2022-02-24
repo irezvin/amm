@@ -1,0 +1,107 @@
+2020-03-04
+
+>   интеграция Object/Lm и Form
+
+    Amm.Trait.Field:
+    
+    +   fieldRemoteErrors (set/get/change) <- updated from dataObject.errors
+        +   annotation data is passed to remote errors
+    +   fieldLocalErrors (set/get/change)
+    +   fieldErrors (set clears remote, changes local; get/change) <- local and remote combined
+        // d@07.03
+        
+    Amm.Trait.Data: additional trait that requires Amm.Trait.Field        
+        
+    -   dataObject
+        -   undefined => defaults to this._form.dataValue
+        -   null => null
+    
+    -   dataProperty - defaults to fieldName for fields, NULL for forms
+    -   dataIndex - null - argument of dataProperty?
+    -   dataSyncFieldIndex - will sync to dataIndex to fieldIndex?
+        -   will be used when editing several sub-records
+        
+    -   dataHasProperty - whether data object has such field
+        -   get/change
+        -   setter is ignored
+        -   when FALSE, any field-sync functionality is disabled, 
+            remote errors are cleared (although old label/required/description values 
+            will remain)
+        
+    -   dataValue - value of dataObject.get<dataProperty>(dataIndex)
+        -   get/set/change
+        -   for non-existent fields, value is always undefined
+        
+    -   dataMeta - value of dataObject.lm.getMapper().getMeta(dataProperty)
+        -   get/change
+        -   setter is ignored
+        
+    -   dataSyncAnnotations: true/false/array['label', 'description', 'required']
+        
+    -   dataSyncLabel: true/false/undefined
+        -   undefined: will sync if label isn't set, will clear when setLabel() externally
+        
+    -   dataSyncRequired: true/false/undefined - same as label
+        
+    -   dataSyncDescription: true/false/undefined
+        -   will sync meta-description with annotated-description
+        
+    -   dataUpdateMode: 
+        -   Amm.Field.DATA_UPDATE_VALIDATE - update data after field is valid (default)
+        -   Amm.Field.DATA_UPDATE_CHANGE - update data on change
+        -   Amm.Field.DATA_UPDATE_BLUR - update data on blur
+        -   Amm.Field.DATA_UPDATE_NEVER - update data on dataUpdate() call
+        
+    -   Amm.Data.Object.LifecycleAndMeta::getHasField(field)
+        -   outHasFieldChange()
+
+    -   Amm.Trait.Form: 
+        -   setRemoteErrors(errors, fieldName, translate):
+            accepts hash, will pass to respective fields; when translate is enabled,
+            will match fields using dataProperty instead of fieldName;
+        -   unmatchedErrorsTarget <- control which will show remote errors 
+            that don't have corresponding elements
+            
+    Tests:
+    
+    =   field
+    -   form   
+    
+2019-03-09 Data properties logic
+
+    Data:
+
+    dataParent
+
+        -   by default syncs to
+            -   form: fieldName
+            -   non-form: component
+
+    dataObject
+
+        -   by default syncs to dataParent.dataValue
+        -   if set to null, won't change
+        -   if set to undefined, will resume sync
+        
+    dataProperty
+
+        -   by default syncs to 
+            -   form: fieldName
+            -   non-form: id
+
+        -   if set to value that doesn't match one of these, will stop sync
+        -   if set to undefined, will resume sync
+        
+    dataIndex
+
+        -   by default is null
+        -   may sync to fieldIndex, only when field sync is enabled and is non-null
+        
+    dataReadOnly??
+        
+    Sync process:
+        -   updates data object
+            -   form: UPDATE_VALIDATE -> when valid
+            -   non-form: UPDATE_VALIDATE works same as UPDATE_CHANGE
+            
+

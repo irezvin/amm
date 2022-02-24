@@ -1,0 +1,32 @@
+2029-01-09
+
++   Доработки new и FunctionCall:
+
+    +   строка: Amm.getFunction(), а также:
+        
+        RegExp
+        Math
+        Date
+        JSON
+        Intl
+        
+    +   тесты
+    
+        + синтаксис
+            -   new foo
+            -   new new foo
+            -   new foo (arg)
+            -   new foo.bar(arg)
+        
+        + new foo
+        + new foo (arg)
+        + new foo.bar(arg)
+        + new (foo.bar(arg)) (arg2)
+        + удаление если у new foo.bar($var) есть cleanup
+        + удаление если у new foo($var) есть cleanup
+        
++   проблема: у Amm.Element меняется прототип в ходе инстанцирования, что делает его
+    бесполезным как параметр в Expression. Надо сделать, чтобы Amm.Element интеллектуально
+    клонировал прототип перед тем, как его менять. Или работал по-другому.
+    
+

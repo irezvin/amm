@@ -1,0 +1,165 @@
+field
+    -   property path <- defaults to id
+    -   importFromParent - true - imports from parent, not root
+    -   property: link to Property (a metadata-like object)
+    -   export (target, parent's target)
+    -   import (source, parent's source)
+
+export:
+    element -> same as element[element.defaultProperty]
+    element.property
+
+import:
+    element := v <- same as element[element.defaultProperty] := v
+    element.property := v
+
+Active template
+
+    <div data-amm-id="coll" data-amm-trait="DynamicTemplate">
+        <div data-amm-for="{{element.model}}" data-amm-item="v">
+            <span data-amm-bind="html := {{v.name}}"></span>
+            <div data-amm-bind="applicable := {{v.class}} === 'Appliance'">
+                <input type="text" data-amm-bind="value := {{quux}}" />
+            </div>
+        </div>
+        <button onclick="Amm.getElement(this, 'coll').create();">Add</button>
+    </div>
+
+Repeater
+
+    ?   как мы определяем, что в repeater'е находится?
+    основа repeater'а - коллекция.
+
+    collecton.setCount(10) - создает 10 пустых экземпляров из прототипа по умолчанию
+    collection.create({foo: bar}) - создает новый экземпляр с указанными параметрами
+    collection.create(prototypeName[, defaults])
+    collection.prototoypes :=
+        { name: prototype }
+    
+    
+    <div data-amm-scope> // scope без значения создает анонимный scope, удобно для логики а-ля компоненты
+        <select data-amm-id="type" />
+        <input data-amm-id="price" />
+        <button onclick="
+            var coll = Amm.gs(this, 'coll');
+            var type = Amm.gs(this, 'type.value');
+            var price = Amm.gs(this, 'price.value');
+            coll.create (type, {price: price.value});
+        " />
+        <div data-amm-id="coll" data-amm-trait="Repeater" data-amm-scope>
+            <div data-amm-trait="RepeaterItem" data-amm-id="i"> // RepeaterItem will always be in separate scope
+                Price: <span data-amm-id="price" data-amm-trait="Content" data-amm-bind="content := {{i.model.price}}" />
+                <button onclick="Amm.gs(this, 'coll').remove(Amm.gs(this, 'i.model'));">Delete</button>
+            </div>
+        </div>
+    </div>
+    
+Scope позволяет также эффективно клонировать элементы, т.к. все ассоциации, которые находятся *внутри* клонируемого scope, клонируются, а снаружи - обрываются.
+    
+WithModel: trait
+    -   model property
+    -   this.value := this.model[this.propName] <- default binding
+    
+CompositeWithModel: trait
+    -   has children
+    -   assigns model to the children <- default binding
+        -   child.model := this.value
+
+Repeater: trait    
+    -   has children (of some number, with keys)
+    -   clones RepeaterItem instance necessary number of times (with proper model class mapping or other conditions)
+    -   model is the collection or an Array
+    -   child.propName is usually the index in the collection
+    
+Model-less repeater - dummy objects may be used.
+
+Every composite Element with scope and children may be used as some kind of component. Even cloning is supported.
+We may bind events to methods.
+    <a data-amm-onclick="{{coll}}.remove({{i.model}})">Remove</a>
+We may as well define deferred Javascript for scoped objects.
+    <div data-amm-scope="foo">
+    </div>
+    <script type="text/javascript">
+        Amm.registerScriptForScope('foo', function(element) {
+            //...
+        });
+    </script>
+
+2017-04-13
+==========
+Использование Scope позволяет мне создавать подобия компонентов.
+Идентификатор элемента внутри Scope отличается от его идентификатора снаружи.
+По умолчанию внутренний идентификатор совпадает с именем scope.
+В html-разметке можно определять свои собития, а также их обработчики.
+
+<div data-amm="{scope: 'calculator', events: ['recalc']}" data-amm-onrecalc="console.log('Recalc')">
+    <input name="a" data-amm-trait="Field">
+    <select name="op" data-amm-trait="Field">
+        <option value="add">+</option>
+        <option value="sub">-</option>
+        <option value="mul">X</option>
+        <option value="div">/</option>
+    </select>
+    <input name="b" data-amm-trait="Field">
+    =
+    <span data-amm="{trait: 'Content', id: 'result'}"></span>
+    <button data-amm-emit="click := {{calculator}}.out('recalc')">Recalc</button>
+</div>
+
+<script type="text/javascript">
+    Amm.registerScriptForScope('calculator', function(element) {
+        element.op_add = function(a, b) {return a + b;};
+        element.op_sub = function(a, b) {return a - b;};
+        element.op_mul = function(a, b) {return a * b;};
+        element.op_div = function(a, b) {return a / b;};
+        element.subscribe('recalc', function() {
+            var a = element.g('a').getValue();
+            var b = element.g('b').getValue();
+            var op = element.g('op').getValue();
+            var fn = 'op_' + op;
+            if (typeof element[fn] === 'function') {
+                element.g('result').setValue(element[fn](a, b));
+            }
+        });
+    });
+</script>
+
+Из наброска выше следует, что
+-   атрибут data-amm может быть json с параметрами элемента или его trait'ов
+-   либо можно использовать data-amm-foo="xxx", что аналогично data-amm="{foo: 'xxx'}"
+-   Builder вначале проходит DOM снизу вверх, но собирает её сверху вниз,
+    поскольку ДО того, как мы инициализируем экземпляры, нужно, чтобы их предки
+    также были инициализированы, поскольку мы можем ссылаться на scope в формате
+    'parentScope childScope' а-ля CSS
+        -   что будет, если элемент попадет из однго scope в другой?
+        
+-   Builder работает так, чтобы был минимум действий
+    -   <input name='xx'> - по умолчанию id элемента будет xx, 
+        если не xx[yy] - в этом случае yy
+    -   у каждой связки Trait + View есть свои возможные параметры,
+        при этом мы можем задавать параметры элемента в любом связанном
+        html-элементе
+        
+    -   пример
+        
+        <div data-amm-trait="visual annotations">
+            <label class="a_label">Xxx</label>
+            <span class="a_required">*</span>
+            <input name="x" id="xInput" data-amm-trait="field" />
+            <div class="a_description">Some useful info</div>
+            <div class="a_error"></div>
+        </div>
+    
+    -   в примере выше система должна распознать, что все traits относятся
+        к одному элементу с идентификатором X, потому что
+        
+    -   когда amm-id у узла отсутствует, мы пытаемся получить amm-id
+        у внутреннего узла, а в данном случае amm-id берется из name
+        внутреннего input'а
+    
+    -   при этом внутренние неявные "атрибуты" имеют меньший приоритет,
+        чем внешние явные, т.е. если бы у внешнего trait'а был задан 
+        id, то все дерево относилось бы к элементу с другим id
+        
+    -   при этом если бы у них двоих было бы id, это были бы разные
+        элементы

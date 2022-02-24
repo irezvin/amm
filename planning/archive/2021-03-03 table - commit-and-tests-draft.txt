@@ -1,0 +1,156 @@
+Observable function & Table editing support
+
++   Renamed Element.properties to Element.props
+
++   Amm.ObservableFunction: javascript-only adaptive observer chains
+
++   Amm.ObservableFunction.createCalcProperty(propName, object): when _calc<PropName> OFn getter
+    provided, adaptive caclulated property is created (function is observed only when event
+    handler assigned, unobserved when there are no more event handlers)
+
++   Element.props or prop__foo: if function supplied, it is treated as observable function
+    getter, and read-only calc property is created
+    
++   Amm.extend now properly adds non-enumerable properties that were added 
+    with Object.defineProperty
+
+Amm.Table improvements (Stage 2, unfinished)
+
+*   Amm.Table was renamed to Amm.Table.Table to keep all table-related classes code in common
+    directory
++   Amm.Table.Table.activeCell, activeRow, activeColumn properties,
+    also activeCellClass, activeRowClass, activeColumnClass
+
++   Amm.Table.(Row|Cell|Column): `canActivate` read-only property; row or column 
+    can be activated when they are both enabled and visible, and cell can be activated
+    if both its' Row and Column can be activated
+    
++   Amm.Table.(Row|Cell|Column): `locked` property allows to disable particular item ability
+    to be activated
+
++   Amm.Table.Table: `preserveActiveCellAddress` property: if TRUE, once active cell becomes
+    inactivatable due to row/column state change, or is destroyed, next active cell with same
+    or close address becomes active
+
++   Amm.Table.Table.findCellByAddress()
+    
++   support of cell prototypes in Columns and Rows:
+    +   Amm.Table.Table: rowProto property (change rebuilds all rows)
+    +   Amm.Table.RowOfCells.cellProto property (change rebuilds all cells)
+    
++   Amm.Table.Table: editingCells collection that contains all cells with shown editors
++   Amm.Table.Cell: editing support
+    +   activeEditor: Amm.Element read-only property that returns editor element inside the cell 
+        only when it is being edited        
+    +   editing: bool property (set to true to make the cell editing)
+    +   editor: Amm.Element property
+    +   isEditable() - FALSE when cell cannot be updated or editor not provided
+    +   updateValue(value, editor)
+    +   outUpdateValue(value, editor, ret, cell) event
+    +   valueUpdateable: bool read-only property
+        Value is updateable when there either outUpdateValue has handlers or (in descendant
+        Amm.Table.ObservingCell) property or expression bound to the Cell is writable
++   Amm.Table.WithEditor supplementary partial class
+    +   Amm.Table, Amm.Table.Column, Amm.Table.Cell extend Amm.Table.WithEditor
+    +   Cell uses own, or Column, or Table default editor (in that order)
++   Amm.Table.Cell & Row navigation-related helper methods:
+    +   Amm.Table.Row.findAdjacent(reverse, callback, all)
+    +   Amm.Table.Cell.findAdjacent(reverse, callback, within, rowCallback)
+    
++   Amm.Table.Table.syncActiveCellEditor property controls what happens when, 
+    while some cell is being edited, activeCell changes
+    
+    // If non-active cell starts editing, or existing editor is focused, cell becomes active
+    Amm.Table.Table.EDITOR_ACTIVATES_CELL = 1;
+
+    // If editing active cell becomes non-active, changes are applied
+    Amm.Table.Table.DEACTIVATION_CONFIRMS_EDITOR = 2;
+
+    // If editing active cell becomes non-active, changes are cancelled
+    Amm.Table.Table.DEACTIVATION_CANCELS_EDITOR = 4;
+
+    // If active cell is editing, and another cell becomes active, 
+    //  that cell starts editing (if possible)
+    Amm.Table.Table.EDITOR_FOLLOWS_ACTIVE = 8;
+
+    // If editing cell becomes active, and editor is focusable, it will be focused
+    Amm.Table.Table.FOCUS_EDITOR_WHEN_ACTIVE = 16;
+
+    // If editable cell becomes active, it will become editing
+    Amm.Table.Table.OPEN_EDITOR_WHEN_ACTIVE = 32;    
+    
+
+----------------------------------------------------------------------------------------------------
+
+TESTS
+
++   Observable function: propertyOrHandler as function
+
++   Amm.Table.Table.activeCell, activeRow, activeColumn properties,
+    also activeCellClass, activeRowClass, activeColumnClass
+    
++   Amm.Table.(Row|Cell|Column): `canActivate` read-only property; row or column 
+    can be activated when they are both enabled and visible, and cell can be activated
+    if both its' Row and Column can be activated
+
++   Amm.Table.Table.preserveActiveCellAddress
+
++   Amm.Table.Table.findCellByAddress
+    -   FIND_EXACT
+    -   FIND_CLOSEST
+    -   FIND_ACTIVABLE
+    
++   support of cell prototypes in Columns and Rows:
+    +   Amm.Table.Table: rowProto property (change rebuilds all rows)
+    +   Amm.Table.RowOfCells.cellProto property (change rebuilds all cells)
+    
++   Amm.Table.Cell & Row navigation-related helper methods:
+
+    +   Amm.Table.Row.findAdjacent(reverse, callback, mode)
+        -   ADJACENT_SAME_SECTION
+        -   ADJACENT_ITEM_ROW
+        -   ADJACENT_ANY_SECTION
+        
+    +   Amm.Table.Cell.findAdjacent(reverse, callback, mode, rowCallback)
+        -   ADJACENT_SAME_SECTION
+        -   ADJACENT_ITEM_ROW
+        -   ADJACENT_ANY_SECTION
+        -   ADJACENT_SAME_ROW
+
++   Amm.Table.Cell: editing support
+
+    +   (Amm.Table.Cell: fix valueUpdateable calc property; remove setter & pseudo-setter,
+        recalc prop once subscribed and unsubscribed to updateValue)
+        +    Amm.Expression: readonly and setValue() exist in the context!!
+
+    +   Cell uses own, or Column, or Table default editor (in that order)
+    +   activeEditor: Amm.Element read-only property that returns editor element inside the cell 
+        only when it is being edited        
+    +   Amm.Table.Table: editingCells collection that contains all cells with shown editors
+    +   editing: bool property (set to true to make the cell editing)
+    +   editor: Amm.Element property
+    +   isEditable() - FALSE when cell cannot be updated or editor not provided
+    
++   Amm.Table.Table.syncActiveCellEditor property controls what happens when, 
+    while some cell is being edited, activeCell changes
+    
+    // If non-active cell starts editing, or existing editor is focused, cell becomes active
+    Amm.Table.Table.EDITOR_ACTIVATES_CELL = 1;
+
+    // If editing active cell becomes non-active, changes are applied
+    Amm.Table.Table.DEACTIVATION_CONFIRMS_EDITOR = 2;
+
+    // If editing active cell becomes non-active, changes are cancelled
+    Amm.Table.Table.DEACTIVATION_CANCELS_EDITOR = 4;
+
+    // If active cell is editing, and another cell becomes active, 
+    //  that cell starts editing (if possible)
+    Amm.Table.Table.EDITOR_FOLLOWS_ACTIVE = 8;
+
+    // If editing cell becomes active, and editor is focusable, it will be focused
+    Amm.Table.Table.FOCUS_EDITOR_WHEN_ACTIVE = 16;
+
+    // If editable cell becomes active, it will become editing
+    Amm.Table.Table.OPEN_EDITOR_WHEN_ACTIVE = 32;
+
+
