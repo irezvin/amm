@@ -122,7 +122,7 @@ class Builder {
             return $this->classFiles;
         }
         $dir = $this->getJsDir();
-        if (!is_dir($dir)) throw new Excepition("JS sources directory '{$dir}' does not exist");
+        if (!is_dir($dir)) throw new Exception("JS sources directory '{$dir}' does not exist");
         $directory = new RecursiveDirectoryIterator($dir);
         $iterator = new RecursiveIteratorIterator($directory);
         $regex = new RegexIterator($iterator, '/^.+\.js$/i', RecursiveRegexIterator::GET_MATCH);

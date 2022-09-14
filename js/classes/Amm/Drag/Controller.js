@@ -55,12 +55,13 @@ Amm.Drag.Controller.prototype = {
         this._out('draggingChange', dragging, oldDragging);
     },
 
-    notifyDragStart: function(vector, startView, startNativeItem, nativeItem, nativeEventInfo) {
+    notifyDragStart: function(vector, sourceView, startNativeItem, nativeItem, nativeEventInfo) {
         this.setDragging(true);
-        var element = startView.getElement();
+        var element = sourceView.getElement();
         this.setSession(new Amm.Drag.Session({
             source: element,
             startNativeItem: startNativeItem,
+            sourceView: sourceView,
             nativeItem: nativeItem,
             vector: vector,
             nativeEventInfo: nativeEventInfo

@@ -132,6 +132,10 @@
                 touch-action: none;
             }
             
+            .dr, .touch-disable {
+                touch-action: none;
+            }
+            
             .dr.move {
                 cursor: move;
             }
@@ -253,7 +257,7 @@
                             map: { 'h2:::_html': 'this.src.caption' }
                         }]"
                     >
-                        <h2></h2>
+                        <h2 class="touch-disable"></h2>
                     </div>
                 </div>
             </div>
@@ -304,7 +308,7 @@
                             map: { 'h2:::_html': 'this.src.caption' }
                         }]",
                     >
-                        <h2></h2>
+                        <h2 class="touch-disable"></h2>
                     </div>
                 </div>
             </div>

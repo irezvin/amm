@@ -1926,9 +1926,9 @@
             
                 assert.deepEqual(Math.round(t.e.surname.getSize()), oldSize + 25, 
                     'End resize: new size remains');
-                assert.notOk(t.getDragObject(),
+                assert.notOk(!!t.getDragObject(),
                     'End resize: no more drag object');
-                assert.notOk(t.getDragAction(),
+                assert.notOk(!!t.getDragAction(),
                     'End resize: no more drag action');
                 assert.notOk(cell.is('.isResizing'),
                     'End resize: no more isResizing class');
@@ -2237,9 +2237,9 @@
             
                 assert.deepEqual(Math.round(t.rows[1].getSize()), oldSize + 25, 
                     'End resize: new size remains');
-                assert.notOk(t.getDragObject(),
+                assert.notOk(!!t.getDragObject(),
                     'End resize: no more drag object');
-                assert.notOk(t.getDragAction(),
+                assert.notOk(!!t.getDragAction(),
                     'End resize: no more drag action');
                 assert.notOk(cell.is('.isResizing'),
                     'End resize: no more isResizing class');
@@ -2443,7 +2443,7 @@
                     "Enter finishes edit");
                 assert.deepEqual(t.getActiveCell().getValue(), "Foobar",
                     "Enter confirms edit");
-            
+                    
             key(node, "Enter");
                 assert.ok(t.getActiveCell().getEditing(),
                     "Enter begins editing of the active cell");
@@ -2616,7 +2616,16 @@
             
             t.rows[1].cells[1].setActive(true);
             t.rows[1].cells[1].setEditing(true);
+
+            console.clear();
+            
+            console.log(t.getActiveCell().getAddress(), t.getActiveCell().getId());
+            
+            console.log(t.getActiveCell().getAddress(), t.getActiveCell().isEditable());
+            
             key(node, "S-Tab");
+                        
+            console.log(t.getActiveCell().getAddress());
             
                 assert.ok(t.rows[0].cells[4].getActive(),
                     'S-Tab: goto prev editable cell w/ whenEditingTabThroughEditableCellsOnly');

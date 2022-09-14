@@ -6,8 +6,16 @@
     <link rel="stylesheet" type="text/css" href="tbl2.css" />
     
     <style type="text/css">
+
+        .draggableColumn, .resizableColumn, .draggableRow, .resizableRow {
+            touch-action: none;
+        }
         
         button { padding: .25em 1em; margin: .25em; font-size: 1.1em }
+        
+        td:focus, th:focus, a:focus {
+            background-color: darkblue;
+        }
         
         tr.new td {
             border-color: lightgreen;
@@ -39,6 +47,7 @@
         #tbl {
             display: inline-block;
             padding: .25em;
+            text-align: initial;
         }
 
         #tbl:focus-within {
@@ -84,7 +93,7 @@
         }
         
         ul.pagination a.page-link-kind-ellipsis {
-            margin: 0 calc(.125em + 2px);
+            /*margin: 0 calc(.125em + 2px);*/
         }
         
         ul.pagination a.page-link-disabled {
@@ -145,25 +154,38 @@
         
         window.nullify = function(ret) { if (ret.value === '') ret.value = null; };
         
+        window.floatify = function(ret) {
+            if (ret.value === '') {
+                ret.value = null; 
+                return;
+            }
+            var value = parseFloat(ret.value);
+            if (!isNaN(value)) ret.value = value;
+        }
+        
+        window.intify = function(ret) {
+            if (ret.value === '') {
+                ret.value = null; 
+                return;
+            }
+            var value = parseInt(ret.value);
+            if (!isNaN(value)) ret.value = value;
+        };
+        
         window.addressMeta = {
-            id: {},
+            id: {
+                set: intify,
+            },
             guid: {},
             isActive: {
                 def: false,
                 required: true
             },
             balance: {
-                set: function(ret) { 
-                    if (ret.value === '') {
-                        ret.value = null; 
-                        return;
-                    }
-                    var value = parseFloat(ret.value);
-                    if (!isNaN(value)) ret.value = value;
-                },
+                set: floatify,
             },
             age: {
-                set: nullify,
+                set: intify,
             },
             eyeColor: {
                 set: nullify,
@@ -235,7 +257,10 @@
                 ],
                 id: 'tbl',
                 editor: {
-                    builderSource: new Amm.Builder.Ref({$ref: '#lib .ed-proto', global: true, clone: true})
+                    builderSource: new Amm.Builder.Ref({$ref: '#lib .ed-proto', global: true, clone: true}),
+                    on__focusedChange: function(focused) {
+                        //if (focused) console.trace();
+                    }
                 },
                 columns: {
                     rowHeader: {
@@ -330,6 +355,11 @@
                 console.log('Set items', items);
                 tbl.items.setItems(items);
             };
+            
+            var u1 = new Amm.Remote.Uri(location.hash.slice(1)),
+                u2 = new Amm.Remote.Uri(location + ''),
+                params = Amm.override({}, u2.getUri([]), u1.getUri([]));
+            if (params.twin && params.twin !== '0') tableJson.twinView = true;
         
             var t1 = (new Date()).getTime()/1000;
             console.log('init:', TestUtils.round(t1 - window.t0));

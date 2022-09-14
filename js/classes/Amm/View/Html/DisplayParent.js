@@ -16,8 +16,6 @@ Amm.View.Html.DisplayParent.prototype = {
     
     _collectionProperty: 'displayChildren',
     
-    itemHtmlElementsMustBeOrphans: false,
-    
     scanForItems: true,
     
     buildItems: false,
@@ -27,67 +25,83 @@ Amm.View.Html.DisplayParent.prototype = {
     useIntermediaryDefaultView: false,
     
     createItemHtml: function(item) {
-        // To-be-overridden
-        return "<div>Overwrite createItemHtml!</div>";
+        return this.provideItemHtmlElement(item, true);
     },
     
-    getItemHtmlElement: function(item, dontThrow) {
-        var cv = this._getItemView(item, dontThrow);
-        var res = null;
-        if (cv) res = cv.getHtmlElement();
-        if (!res && item.constructDefaultViews !== Amm.Element.prototype.constructDefaultViews) {
+    provideItemHtmlElement: function(item, dontThrow) {
+        
+        try {
             
-            if (this.useIntermediaryDefaultView) {
-            
-                var el = document.createElement('div');
+            Amm.View.Abstract.pushParentView(this);
+        
+            var itemView = this._getItemView(item, dontThrow);
+            var res = null, origRes = null;
+            if (itemView) res = origRes = itemView.getHtmlElement();
 
-                el.setAttribute('data-amm-dv', true);
+            // case for multiple views of the same collection: 
+            // check if this element is already inside our element's collection view
 
-                var v = new Amm.View.Html.Default({
-                    replaceOwnHtmlElement: true,
-                    htmlElement: el,
-                    element: item, 
-                });
-                res = v.getHtmlElement();
-                if (res) this._htmlElement.appendChild(res);
-            
-            } else {
-                
-                var def = item.constructDefaultViews();
-                var inst;
-                if (Amm.Builder.isPossibleBuilderSource(def)) {
-                    inst = Amm.Builder.calcPrototypeFromSource(def, true, true);
-                } else if (def instanceof Array) {
-                    inst = def;
-                } else if (def) {
-                    inst = [def];
-                } else {
-                    inst = [];
+            if (res) {
+                var isInsideOurView = (this._htmlElement && jQuery(res).parents().is(this._htmlElement));
+                if (!isInsideOurView) {
+                    var fn = function(e) { return e && e === this._element; };
+                    var isInsideOurElement = Amm.findElement(res, fn, this);
+                    if (isInsideOurElement) res = null;
                 }
-                var views = Amm.constructMany(inst, 'Amm.View.Html', {element: item}, false, true);
-                for (var j = 0, l = views.length; j < l; j++) {
-                    var elem = views[j].getHtmlElement();
-                    if (!elem) continue; // wtf
-                    // we are interested in outermost nodes only
-                    if (elem.parentNode) continue; 
-                    this._htmlElement.appendChild(elem);
-                    if (!res) res = elem;
-                }
-            
             }
+
+            if (!res && item.constructDefaultViews !== Amm.Element.prototype.constructDefaultViews) {
+
+                if (this.useIntermediaryDefaultView) {
+
+                    var el = document.createElement('div');
+
+                    el.setAttribute('data-amm-dv', true);
+
+                    var v = new Amm.View.Html.Default({
+                        replaceOwnHtmlElement: true,
+                        htmlElement: el,
+                        element: item, 
+                    });
+                    res = v.getHtmlElement();
+                    if (res) this._htmlElement.appendChild(res);
+
+                } else {
+
+                    var def = item.constructDefaultViews();
+                    var inst;
+                    if (Amm.Builder.isPossibleBuilderSource(def)) {
+                        inst = Amm.Builder.calcPrototypeFromSource(def, true, true);
+                    } else if (def instanceof Array) {
+                        inst = def;
+                    } else if (def) {
+                        inst = [def];
+                    } else {
+                        inst = [];
+                    }
+                    var views = Amm.constructMany(inst, 'Amm.View.Html', {element: item}, false, true);
+                    for (var j = 0, l = views.length; j < l; j++) {
+                        var elem = views[j].getHtmlElement();
+                        if (!elem) continue; // wtf
+                        // we are interested in outermost nodes only
+                        if (elem.parentNode) continue; 
+                        this._htmlElement.appendChild(elem);
+                        if (!res) res = elem;
+                    }
+                }
+            }
+            if (!res && !dontThrow) {
+                throw Error("Collection item doesn't have view with htmlElement");
+            }
+        } finally {
+            Amm.View.Abstract.popParentView();
         }
-        if (!res && !dontThrow) {
-            Error("Collection item doesn't have view with htmlElement");
-        }
-        if (res && !res[this._mappingProp]) {
-            res[this._mappingProp] = item;
-            item[this._mappingProp] = res;
-        }
+        
         return res;
     },
     
-    updateItemHtml: function(item, existingNode) {    
-        
+    updateItemHtml: function(item, existingNode) {
+        return existingNode;
     },
 
     _getItemView: function(item, dontThrow) {
@@ -97,7 +111,7 @@ Amm.View.Html.DisplayParent.prototype = {
                 Error("Collection item doesn't have respective Amm.View.Html.Visual view");
             return null;
         }
-        if (!elViews.length > 1) console.warn("Collection item have more than one Amm.View.Html.Visual view");
+        if (!elViews.length > 1) console.warn("Collection item has more than one Amm.View.Html.Visual view");
         return elViews[0];
     },
     
@@ -107,8 +121,8 @@ Amm.View.Html.DisplayParent.prototype = {
     _getHtmlElementsWithItems: function() {
         var attr = Amm.domHolderAttribute;
         return jQuery(this._htmlElement).children('['+ attr + ']').toArray();
-    },
-    
+    }, 
+   
     _getElementOfHtmlElement: function(htmlElement) {
         var attr = Amm.domHolderAttribute;
         var ids = (htmlElement.getAttribute(attr) + '').split(' ');
@@ -159,16 +173,22 @@ Amm.View.Html.DisplayParent.prototype = {
     _scanForItems: function() {
         
         if (this.buildItems) {
-            var b = new Amm.Builder(jQuery(this._htmlElement));
-            b.build();
+            try {
+                Amm.View.Abstract.pushParentView(this);
+                var b = new Amm.Builder(jQuery(this._htmlElement));
+                b.build();
+            } finally {
+                Amm.View.Abstract.popParentView();
+            }
         }
         
         var scanForItems = this.scanForItems, scanForDisplayOrder = this.scanForDisplayOrder;
         if (!scanForItems && !scanForDisplayOrder) return;
         
         var foundItems = this._getItemsInContainer();
-        if (foundItems.length)
+        if (foundItems.length) {
             this._updateCollectionWithFoundItems(foundItems);
+        }
     },
 
     _beginObserveCollection: function() {

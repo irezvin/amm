@@ -3028,7 +3028,7 @@
         
     });
     
-    QUnit.test("Data.RecordSet", function(assert) {
+    QUnit.test("Data.Recordset", function(assert) {
         
         var log = [];
         
@@ -3073,7 +3073,7 @@
         
         mapper.setTransactionPrototypes(proto);
         
-        var rs = new Amm.Data.RecordSet({
+        var rs = new Amm.Data.Recordset({
             mapper: mapper,
             limit: 3,
         });
@@ -3086,7 +3086,7 @@
                 'Total number of records is correct');
 
             assert.ok(Amm.is(rs.getRecordsCollection(), 'Amm.Data.Collection'),
-                'RecordSet exposes Amm.Data.Collection');
+                'Recordset exposes Amm.Data.Collection');
 
             assert.equal(rs.records.length, 3,
                 "records.length same as recordset's limit");
@@ -3172,7 +3172,7 @@
             assert.equal(rs.getOffset(), 3,
                 "Set filter: FILTER_KEEP_KEY: we're on the proper page");
                 
-        rs.filterOffsetAction = Amm.Data.RecordSet.FILTER_GOTO_FIRST;
+        rs.filterOffsetAction = Amm.Data.Recordset.FILTER_GOTO_FIRST;
         
         rs.setFilter(undefined, 'gender');
         
@@ -3196,8 +3196,8 @@
             assert.equal(rs.getCurrentRecord().mm.getKey(), 12, 
                 "Went to last record");
         
-        rs.filterOffsetAction = Amm.Data.RecordSet.FILTER_OFFSET_SAME;
-        rs.pastOffsetAction = Amm.Data.RecordSet.PAST_OFFSET_GOTO_FIRST;
+        rs.filterOffsetAction = Amm.Data.Recordset.FILTER_OFFSET_SAME;
+        rs.pastOffsetAction = Amm.Data.Recordset.PAST_OFFSET_GOTO_FIRST;
         
         rs.setFilter('M', 'gender');
         
@@ -3206,8 +3206,8 @@
             assert.ok(rs.getCurrentRecord(), 'Current record is set');
             assert.ok(rs.getCurrentRecord() === rs.getRecords()[0], 'Current record is first');
         
-        rs.filterOffsetAction = Amm.Data.RecordSet.FILTER_OFFSET_KEEP_KEY;
-        rs.pastOffsetAction = Amm.Data.RecordSet.PAST_OFFSET_GOTO_LAST;
+        rs.filterOffsetAction = Amm.Data.Recordset.FILTER_OFFSET_KEEP_KEY;
+        rs.pastOffsetAction = Amm.Data.Recordset.PAST_OFFSET_GOTO_LAST;
         
         var coll = rs.getRecordsCollection();
         
@@ -3407,7 +3407,7 @@
     });
     
     
-    QUnit.test("Data.RecordSet: preventing navigation/fetch behaviour", function(assert) {
+    QUnit.test("Data.Recordset: preventing navigation/fetch behaviour", function(assert) {
         
         var log = [];
         var storage = new MemStor({
@@ -3447,7 +3447,7 @@
         // do bother with async
         proto.default.runner.transport.replyTime = 1;
         mapper.setTransactionPrototypes(proto);
-        var rs = new Amm.Data.RecordSet({
+        var rs = new Amm.Data.Recordset({
             mapper: mapper,
             limit: 3,
         });
@@ -3474,7 +3474,7 @@
                 'canNavigate is FALSE while TR running');
             assert.notOk(rs.getCanFetch(), 
                 'canFetch is FALSE while TR running');
-            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_NAVIGATION,
+            assert.equal(rs.getNavigationLocked(), Amm.Data.Recordset.LOCK_NAVIGATION,
                 'navigationLocked property during fetch');
                 
         // check prevention of navigation/fetch methods during "navigationLocked" calc'd event
@@ -3495,7 +3495,7 @@
                 'canNavigate is TRUE after TR complete');
             assert.ok(rs.getCanFetch(),
                 'canFetch is TRUE while TR complete');
-            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_NONE,
+            assert.equal(rs.getNavigationLocked(), Amm.Data.Recordset.LOCK_NONE,
                 'navigationLocked property after fetch complete');
         
         // check prevention of navigation with dontNavigateUntilCommitted
@@ -3503,12 +3503,12 @@
         rs.setDontNavigateUntilCommitted(true);
         rs.getCurrentRecord().firstName += 'Foo';
             
-            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_NAVIGATION,
+            assert.equal(rs.getNavigationLocked(), Amm.Data.Recordset.LOCK_NAVIGATION,
                 'navigationLocked property when modified + dontNavigateUntilCommitted');
         
         rs.revert();
         
-            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_NONE,
+            assert.equal(rs.getNavigationLocked(), Amm.Data.Recordset.LOCK_NONE,
                 'navigation not locked after revert + dontNavigateUntilCommitted');
         
         // check prevention of fetching with dontFetchUntilCommitted
@@ -3517,12 +3517,12 @@
         rs.setDontFetchUntilCommitted(true);
         rs.getCurrentRecord().firstName += 'Foo';
             
-            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_FETCH,
+            assert.equal(rs.getNavigationLocked(), Amm.Data.Recordset.LOCK_FETCH,
                 'fetch locked when modified + dontFetchUntilCommitted');
         
         rs.revert();
         
-            assert.equal(rs.getNavigationLocked(), Amm.Data.RecordSet.LOCK_NONE,
+            assert.equal(rs.getNavigationLocked(), Amm.Data.Recordset.LOCK_NONE,
                 'fetch not locked after revert + dontFetchUntilCommitted');
                 
         rs.setLimit(10);
@@ -3554,7 +3554,7 @@
     });
     
     
-    QUnit.test("Data.RecordSet: commitOnNavigate/Fetch + dontFetch/NavigateUntilCommitted", function(assert) {
+    QUnit.test("Data.Recordset: commitOnNavigate/Fetch + dontFetch/NavigateUntilCommitted", function(assert) {
         
         var log = [];
         
@@ -3595,7 +3595,7 @@
         // do bother with async
         proto.default.runner.transport.replyTime = 1;
         mapper.setTransactionPrototypes(proto);
-        var rs = new Amm.Data.RecordSet({
+        var rs = new Amm.Data.Recordset({
             mapper: mapper,
             limit: 3,
         });
@@ -3635,7 +3635,7 @@
         
             assert.ok(tr, 
                 'commitOnNavigate + dontNavigateUntilCommitted: '
-                + 'navigation creates RecordSet dummy fetch transaction');
+                + 'navigation creates Recordset dummy fetch transaction');
             assert.equal(tr.getState(), Amm.Data.Transaction.STATE_WAITING,
                 'dummy fetch transaction state is WAITING');
             assert.equal(rs.getCurrentIndex(), idx,

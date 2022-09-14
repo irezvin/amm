@@ -51,6 +51,7 @@
         updatedItems.push(item);
         jQuery(element).find('span').html(item.getName());
         jQuery(element).find('strong').html(item.getSize());
+        return element;
     };
     
     var cnt = function(items) { return Amm.getProperty(items, 'content').join(''); };
@@ -119,7 +120,7 @@
         assert.equal(cont_c1.innerHTML, renderItem(a) + renderItem(b), 'items are properly rendered');
         coll1.moveItem(1, 0);
         assert.equal(cont_c1.innerHTML, renderItem(b) + renderItem(a), 're-render after move');
-        
+
         renderedItems = [];
         b.setSize('200');
         assert.ok(renderedItems.length === 1 && renderedItems[0] === b, '`updateItemHtml` not set: changed item was re-rendered');
@@ -166,6 +167,7 @@
         var items = [];
         for (var i = 0; i < 10; i++) items.push(new Item({name: 'item' + i, size: i*10}));
         
+        //vc2.debug = true;
         coll2.setItems(items);
         assert.equal(cont_c2.innerHTML, renderItems(items), 'All items replaced and HTML is Ok');
         
@@ -371,9 +373,9 @@
                 if (mode === 'enclose') return jQuery(node).wrap('<div></div>').parent('div');
                 if (mode === 'extract') {
                     return jQuery(node).find('p')[0];
-                    
                 }
-                if (mode === 'return') return node;
+                //if (mode === 'return') return node;
+                return node;
             },
             htmlElement: d
         });

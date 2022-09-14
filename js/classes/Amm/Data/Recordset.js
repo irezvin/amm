@@ -1,6 +1,6 @@
 /* global Amm */
 
-Amm.Data.RecordSet = function(options) {
+Amm.Data.Recordset = function(options) {
     options = Amm.override({}, options);
     var initialFetch = true;
     if ('initialFetch' in options) {
@@ -9,67 +9,71 @@ Amm.Data.RecordSet = function(options) {
     }
     Amm.Element.call(this, options);
     if (initialFetch) {
-        this._fetch();
+        if (this._mapper) {
+            this._fetch();
+        } else {
+            this._shouldFetch = true;
+        }
     }
 };
 
 /**
  * Try to keep offset when filter changes, otherwise resort to pastOffsetAction
- * (value for Amm.Data.RecordSet.filterOffsetAction: what to do with absolute index when filter changes:)
+ * (value for Amm.Data.Recordset.filterOffsetAction: what to do with absolute index when filter changes:)
  */
-Amm.Data.RecordSet.FILTER_KEEP_POS = 'same';
+Amm.Data.Recordset.FILTER_KEEP_POS = 'same';
 
 /**
  * Display page with current record when filter changes, otherwise apply pastOffsetAction
- * (value for Amm.Data.RecordSet.filterOffsetAction: what to do with absolute index when filter changes:)
+ * (value for Amm.Data.Recordset.filterOffsetAction: what to do with absolute index when filter changes:)
  */
-Amm.Data.RecordSet.FILTER_KEEP_KEY = 'keepKey';
+Amm.Data.Recordset.FILTER_KEEP_KEY = 'keepKey';
 
 /**
  * Always go to first record when filter changes
  * (value for filterOffsetAction property: what to do with absolute index when filter changes)
  */
-Amm.Data.RecordSet.FILTER_GOTO_FIRST = 'first';
+Amm.Data.Recordset.FILTER_GOTO_FIRST = 'first';
 
 /**
  * Show empty list if offset past last
  * (value for pastOffsetAction property: what to do when offset is greater than number of records)
  */
-Amm.Data.RecordSet.PAST_OFFSET_IGNORE = 'ignore';
+Amm.Data.Recordset.PAST_OFFSET_IGNORE = 'ignore';
 
 /**
  * Show last page if offset past last
  * (value for pastOffsetAction property: what to do when offset is greater than number of records)
  */
-Amm.Data.RecordSet.PAST_OFFSET_GOTO_LAST = 'last';
+Amm.Data.Recordset.PAST_OFFSET_GOTO_LAST = 'last';
 
 /**
  * Goto first page if offset past lasts
  * (value for pastOffsetAction property: what to do when offset is greater than number of records)
  */
-Amm.Data.RecordSet.PAST_OFFSET_GOTO_FIRST = 'first';
+Amm.Data.Recordset.PAST_OFFSET_GOTO_FIRST = 'first';
 
 /**
  * Any navigation is allowed
  * (value for lockNavigation and appliedNavigationLock)
  */
-Amm.Data.RecordSet.ALLOW_NAVIGATION = 0;
+Amm.Data.Recordset.ALLOW_NAVIGATION = 0;
 
 /**
  * Current record can be changed within the page, but changing filters, sort or offset not allowed
  * (value for lockNavigation and appliedNavigationLock)
  */
-Amm.Data.RecordSet.LOCK_FETCH = 1;
+Amm.Data.Recordset.LOCK_FETCH = 1;
 
 /**
  * No actions that change current record can be applied (including creation of new record)
  * (value for lockNavigation and appliedNavigationLock)
  */
-Amm.Data.RecordSet.LOCK_NAVIGATION = 3;
+Amm.Data.Recordset.LOCK_NAVIGATION = 3;
 
-Amm.Data.RecordSet.prototype = {
+Amm.Data.Recordset.prototype = {
 
-    'Amm.Data.RecordSet': '__CLASS__', 
+    'Amm.Data.Recordset': '__CLASS__', 
     
     /**
      * Create blank record when navigating past last
@@ -92,12 +96,12 @@ Amm.Data.RecordSet.prototype = {
     /**
      * what to do with current record' absolute index when filter changes
      */
-    filterOffsetAction: Amm.Data.RecordSet.FILTER_KEEP_KEY,
+    filterOffsetAction: Amm.Data.Recordset.FILTER_KEEP_KEY,
     
     /**
      * what to do with offset if it is beyound total ## of records
      */
-    pastOffsetAction: Amm.Data.RecordSet.PAST_OFFSET_GOTO_LAST,
+    pastOffsetAction: Amm.Data.Recordset.PAST_OFFSET_GOTO_LAST,
     
     /**
      * Call to any fetch-issuing command until recordset has uncommitted records will fail
@@ -151,7 +155,7 @@ Amm.Data.RecordSet.prototype = {
 
     _readOnly: false,
 
-    _lockNavigation: Amm.Data.RecordSet.LOCK_NONE,
+    _lockNavigation: Amm.Data.Recordset.LOCK_NONE,
 
     _transaction: null,        
     
@@ -181,6 +185,8 @@ Amm.Data.RecordSet.prototype = {
     
     _skipNavFetchCheck: 0,
     
+    _shouldFetch: false,
+    
     setMapper: function(mapper) {
         Amm.is(mapper, 'Amm.Data.Mapper');
         var oldMapper = this._mapper;
@@ -198,6 +204,10 @@ Amm.Data.RecordSet.prototype = {
             this._fetch();
         }
         this.outMapperChange(mapper, oldMapper);
+        if (mapper && this._shouldFetch) {
+            this._shouldFetch = false;
+            this._fetch();
+        }
         return true;
     },
 
@@ -481,9 +491,19 @@ Amm.Data.RecordSet.prototype = {
     },
 
     setCurrentIndex: function(currentIndex) {
+        var oldCurrentIndex = currentIndex;
+        if (currentIndex === null) {
+            if (this._currentIndex !== oldCurrentIndex) {
+                this._currentIndex = null;
+                this.setCurrentRecord(null);
+                res = true;
+                this.outCurrentIndexChange(this._currentIndex, oldCurrentIndex);
+            }
+            return;
+        }
         currentIndex = parseInt(currentIndex);
         if (isNaN(currentIndex)) {
-            throw Error("`currentIndex` must be a number");
+            throw Error("`currentIndex` must be a null or a number");
         }
         var oldCurrentIndex = this._currentIndex;
         if (oldCurrentIndex === currentIndex) return;
@@ -640,10 +660,10 @@ Amm.Data.RecordSet.prototype = {
         var retWhatChanged = {whatChanged: whatChanged || {}};
         this.outBeforeFetch(listOptions, retWhatChanged);
         if ((whatChanged && whatChanged.filter) || retWhatChanged.whatChanged.filter) {
-            if (this.filterOffsetAction === Amm.Data.RecordSet.FILTER_KEEP_KEY && this.getCurrentRecord()) {
+            if (this.filterOffsetAction === Amm.Data.Recordset.FILTER_KEEP_KEY && this.getCurrentRecord()) {
                 if (this._nextKey === null) this._nextKey = this.getCurrentRecord().mm.getKey();
                 if (this._nextKey === undefined) this._nextKey = null;
-            } else if (this.filterOffsetAction === Amm.Data.RecordSet.FILTER_GOTO_FIRST) {
+            } else if (this.filterOffsetAction === Amm.Data.Recordset.FILTER_GOTO_FIRST) {
                 return this.setAbsoluteIndex(0);
             }
         }
@@ -668,6 +688,7 @@ Amm.Data.RecordSet.prototype = {
                 }
             }
         }
+        if (!this.useOffsetTransactions) this._nextKey = null;
         if (this._nextKey !== null) {
             tr = this._createOffsetTransaction(this._nextKey, listOptions);
             this._nextKey = null;
@@ -725,7 +746,7 @@ Amm.Data.RecordSet.prototype = {
     },
 
     setTransaction: function(transaction) {
-        console.warn('Amm.Data.RecordSet.prototype.setTransaction() has no effect');
+        console.warn('Amm.Data.Recordset.prototype.setTransaction() has no effect');
     },
 
     _setTransaction: function(transaction) {
@@ -739,7 +760,7 @@ Amm.Data.RecordSet.prototype = {
         this._transaction = transaction;
         if (lastTransaction) {
             this.setLastTransaction(lastTransaction);
-            lastTrState = lastTransaction.getState();
+            var lastTrState = lastTransaction.getState();
             if (
                 lastTrState === Amm.Data.Transaction.STATE_RUNNING
                 || lastTrState === Amm.Data.Transaction.STATE_INIT
@@ -818,11 +839,11 @@ Amm.Data.RecordSet.prototype = {
         if (!data.records || !data.records.length && data.lastFoundRows && this._offset > data.lastFoundRows) {
             // handle past-the-offset situation
             if ( 
-                this.pastOffsetAction === Amm.Data.RecordSet.PAST_OFFSET_GOTO_FIRST 
-                || this.pastOffsetAction === Amm.Data.RecordSet.PAST_OFFSET_GOTO_LAST
+                this.pastOffsetAction === Amm.Data.Recordset.PAST_OFFSET_GOTO_FIRST 
+                || this.pastOffsetAction === Amm.Data.Recordset.PAST_OFFSET_GOTO_LAST
             ) {
                 var newAbsoluteIndex = 0;
-                if (this.pastOffsetAction === Amm.Data.RecordSet.PAST_OFFSET_GOTO_LAST) {
+                if (this.pastOffsetAction === Amm.Data.Recordset.PAST_OFFSET_GOTO_LAST) {
                     newAbsoluteIndex = data.lastFoundRows - this._limit;
                     if (newAbsoluteIndex >= data.lastFoundRows || newAbsoluteIndex < 0) {
                         newAbsoluteIndex = 0;
@@ -1115,7 +1136,7 @@ Amm.Data.RecordSet.prototype = {
     },
 
     setRecordsCollection: function() {
-        console.warn('Amm.Data.RecordSet: setRecordsCollection() has no effect');
+        console.warn('Amm.Data.Recordset: setRecordsCollection() has no effect');
     },
     
     getRecordsCollection: function() {
@@ -1166,7 +1187,7 @@ Amm.Data.RecordSet.prototype = {
         var curr = this._currentRecord;
         this.outRecordsChange(newItems, oldItems);
         if (item !== curr) return;
-        if (this.getNavigationLocked() & Amm.Data.RecordSet.LOCK_NAVIGATION) return;
+        if (this.getNavigationLocked() & Amm.Data.Recordset.LOCK_NAVIGATION) return;
         var ci = this._currentIndex;
         if (ci >= this._recordsCollection.length) ci = this._recordsCollection.length - 1;
         if (ci < 0) return;
@@ -1220,7 +1241,7 @@ Amm.Data.RecordSet.prototype = {
         var err = '';
         if (opDescr) err = 'Cannot ' + opDescr + '() at the moment - ';
         err += op + ' denied: ';
-        if (this.getLockNavigation() & (isFetch? Amm.Data.RecordSet.LOCK_FETCH : Amm.Data.RecordSet.LOCK_NAVIGATION)) {
+        if (this.getLockNavigation() & (isFetch? Amm.Data.Recordset.LOCK_FETCH : Amm.Data.Recordset.LOCK_NAVIGATION)) {
             err += 'due to prior setLockNavigation() call';
         } else if (this.getTransaction()) {
             err += 'unfinished fetch transaction in progress';
@@ -1241,11 +1262,11 @@ Amm.Data.RecordSet.prototype = {
     },
     
     _calcCanNavigate: function(get) {
-        return !(get('navigationLocked') & Amm.Data.RecordSet.LOCK_NAVIGATION);
+        return !(get('navigationLocked') & Amm.Data.Recordset.LOCK_NAVIGATION);
     },
     
     _calcCanFetch: function(get) {
-        return !(get('navigationLocked') & Amm.Data.RecordSet.LOCK_FETCH);
+        return !(get('navigationLocked') & Amm.Data.Recordset.LOCK_FETCH);
     },
     
     _calcCanBack: function(get) {
@@ -1294,21 +1315,21 @@ Amm.Data.RecordSet.prototype = {
         var res = get('lockNavigation');
         
         // max possible lock - no need to check more
-        if (res === Amm.Data.RecordSet.LOCK_NAVIGATION) return res; 
+        if (res === Amm.Data.Recordset.LOCK_NAVIGATION) return res; 
 
         var state = get.prop('transaction').prop('state').val(),
             isFetch = state === Amm.Data.Transaction.STATE_INIT 
                 || state === Amm.Data.Transaction.STATE_WAITING
                 || state === Amm.Data.Transaction.STATE_RUNNING;
-        if (isFetch) return res | Amm.Data.RecordSet.LOCK_NAVIGATION;
+        if (isFetch) return res | Amm.Data.Recordset.LOCK_NAVIGATION;
         if (get('dontNavigateUntilCommitted') || get('dontFetchUntilCommitted')) {
             var hasUncommitted = get.prop('recordsCollection').prop('numUncommitted').val() > 0;
             if (hasUncommitted) {
                 if (get('dontNavigateUntilCommitted') && !get('commitOnNavigate')) {
-                    return res | Amm.Data.RecordSet.LOCK_NAVIGATION;
+                    return res | Amm.Data.Recordset.LOCK_NAVIGATION;
                 }
                 if (get('dontFetchUntilCommitted') && !get('commitOnFetch')) {
-                    return res | Amm.Data.RecordSet.LOCK_FETCH;
+                    return res | Amm.Data.Recordset.LOCK_FETCH;
                 }
             }
         }
@@ -1317,21 +1338,19 @@ Amm.Data.RecordSet.prototype = {
 
 };
 
-Amm.extend(Amm.Data.RecordSet, Amm.Element);
+Amm.extend(Amm.Data.Recordset, Amm.Element);
 
-Amm.createProperty(Amm.Data.RecordSet.prototype, 'records', null, null, {enumerable: false});
-Amm.ObservableFunction.createCalcProperty('navigationLocked', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('canFetch', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('canNavigate', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('canBack', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('canBackPage', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('canForward', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('canForwardPage', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('canJump', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('canAdd', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('canDelete', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('canSaveOrRevert', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('absoluteIndex', Amm.Data.RecordSet.prototype);
-Amm.ObservableFunction.createCalcProperty('totalRecordsIncludingNew', Amm.Data.RecordSet.prototype);
-
-
+Amm.createProperty(Amm.Data.Recordset.prototype, 'records', null, null, {enumerable: false});
+Amm.ObservableFunction.createCalcProperty('navigationLocked', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('canFetch', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('canNavigate', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('canBack', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('canBackPage', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('canForward', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('canForwardPage', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('canJump', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('canAdd', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('canDelete', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('canSaveOrRevert', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('absoluteIndex', Amm.Data.Recordset.prototype);
+Amm.ObservableFunction.createCalcProperty('totalRecordsIncludingNew', Amm.Data.Recordset.prototype);

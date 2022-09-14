@@ -65,10 +65,10 @@ Amm.View.Html.StaticDisplayParent.prototype = {
         this._freezeCollection();
     },
     
-    _rebuild: function() {
-        // do nothing
-    }    
-
+    rebuild: function(updateItemsHtml) {
+        this._items = this._rebuildItemsArray(updateItemsHtml);
+    },
+    
 };
 
 Amm.extend(Amm.View.Html.StaticDisplayParent, Amm.View.Html.DisplayParent);

@@ -5,7 +5,7 @@ Amm.Trait.Table.SimpleKeyboardControl = function(options) {
 
 Amm.Trait.Table.SimpleKeyboardControl.prototype = {
 
-    'SimpleKeyboardControl': '__INTERFACE__',
+    'TableSimpleKeyboardControl': '__INTERFACE__',
     
     notifyNavBeforeFirstRow: function() {
         var retHandled = {handled: false};

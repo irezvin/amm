@@ -47,6 +47,8 @@ Amm.Table.Cell.prototype = {
     _tableActiveProp: 'activeCell',
     
     cancelEditOnUpdateValue: true,
+    
+    editingClassName: 'editing',
 
     _getDefaultTraits: function (options) {
         return [Amm.Trait.Visual, Amm.Trait.Component, Amm.Trait.DisplayParent];
@@ -66,12 +68,18 @@ Amm.Table.Cell.prototype = {
                     $: 'div',
                     class: 'cellContent',
                     data_amm_v: {
-                        class: 'v.DisplayParent'
+                        class: 'v.DisplayParent',
+                        id: 'cellContentView',
+                        shouldShowItemCallback: this._viewShouldShowItem,
                     }
                 }
             ]
         });
         return res;
+    },
+    
+    _viewShouldShowItem: function(item) {
+        return true;
     },
 
     setColumn: function (column) {
@@ -156,6 +164,11 @@ Amm.Table.Cell.prototype = {
     _onGetClassName: function(res, part) {
         return Amm.Util.getClassNameOrPart(res, part);
     },
+    
+    outClassNameChange: function(className, oldClassName) {
+        Amm.Trait.Visual.prototype.outClassNameChange.call(this, className, oldClassName);
+        if (this._table) this._table.notifyCellClassNameChange(this, className, oldClassName);
+    },
 
     handleColumnVisibleChange: function (columnVisible) {
         if (columnVisible === undefined) {
@@ -183,6 +196,9 @@ Amm.Table.Cell.prototype = {
 
     outValueChange: function (value, oldValue) {
         this._out('valueChange', value, oldValue);
+        if (this._table) {
+            this._table.notifyCellValueChange(this, value, oldValue);
+        }
     },
     
     setDecoratedValue: function(decoratedValue) {
@@ -380,14 +396,25 @@ Amm.Table.Cell.prototype = {
             console.warn('editor not set for column ' + this.getColumn().getId());
             return false;
         }
-        var oldDp = editor.getDisplayParent();
+        var oldDp = editor.getDisplayParent(), oldActiveEditor;
         if (Amm.is(oldDp, 'Amm.Table.Cell')) {
             oldDp.setEditing(false);
         }
-        this.outBeginEdit();
-        editor.setDisplayParent(this);
-        this._setActiveEditor(editor);
-        editor.setValue(this.getValue());
+        try {
+            this._editing = true;
+            oldActiveEditor = this._activeEditor;
+            this.outBeginEdit();
+            this._setActiveEditor(editor, true);
+            editor.setDisplayParent(this);
+            if (oldActiveEditor !== this._activeEditor) {
+                this.outActiveEditorChange(this._activeEditor, oldActiveEditor);
+            }
+            editor.setValue(this.getValue());
+        } catch (e) {
+            this._editing = false;
+            this._oldActiveEditor = this._activeEditor;
+            throw e;
+        }
     },
     
     _endEdit: function(dontChangeActive) {
@@ -418,13 +445,15 @@ Amm.Table.Cell.prototype = {
         console.warn("Amm.Table.Cell.setActiveEditor() has no effect; use setEditor() + setEditing()");
     },
     
-    _setActiveEditor: function(activeEditor) {
+    _setActiveEditor: function(activeEditor, noTrigger) {
         if (!activeEditor) activeEditor = null;
         else this._checkIsEditor(activeEditor, 'activeEditor');
         var oldActiveEditor = this._activeEditor;
         if (oldActiveEditor === activeEditor) return;
         this._activeEditor = activeEditor;
-        this.outActiveEditorChange(activeEditor, oldActiveEditor);
+        if (!noTrigger) {
+            this.outActiveEditorChange(activeEditor, oldActiveEditor);
+        }
         return true;
     },
 
@@ -454,6 +483,7 @@ Amm.Table.Cell.prototype = {
             if (this._endEdit() === false) return;
         }
         this._editing = editing;
+        if (this.editingClassName) this.setClassName(this._editing, this.editingClassName);
         var has = this._table.getEditingCells().hasItem(this, true);
         if (this._table) {
             if (editing) {
@@ -574,10 +604,7 @@ Amm.Table.Cell.prototype = {
     
     focusEditor: function() {
         if (this._activeEditor) {
-            var t = this;
-            window.setTimeout(function() {
-                t._activeEditor.focus();
-            }, 100);
+            this._activeEditor.focus();
         }
     },
     

@@ -33,10 +33,6 @@ Amm.Builder.PROBLEM_CONSOLE = 1;
 
 Amm.Builder.PROBLEM_HTML = 2;
 
-Amm.Builder.TOP_LEVEL_ROOT = 'root';
-
-Amm.Builder.problemReportMode = Amm.Builder.PROBLEM_SILENT;
-
 Amm.Builder._scanId = 1;
 
 Amm.Builder.prototype = {
@@ -45,8 +41,6 @@ Amm.Builder.prototype = {
 
     selector: null,
     
-    problemReportMode: undefined, // use global
-    
     sel: '[data-amm-id], [data-amm-e], [data-amm-v], [data-amm-x]',
 
     selIgnore: '[data-amm-dont-build], [data-amm-dont-build] *, [data-amm-built]',
@@ -54,7 +48,7 @@ Amm.Builder.prototype = {
     // 'root' is Amm.Root
     topLevelComponent: null,
     
-    // whether to save all created top-level elements to this.elements
+    // whether to save all created elements to this.elements
     rememberElements: false,
     
     // whether to save issued problems
@@ -174,7 +168,7 @@ Amm.Builder.prototype = {
         return rootNodes;
     },
     
-    getExtData: function(entry, path, defaultValue) {
+    _getExtData: function(entry, path, defaultValue) {
         if (defaultValue === undefined) defaultValue = Amm.Builder._EXT_NOT_FOUND;
         if (!(path instanceof Array)) path = ('' + path).split('.');
         var curr = entry, prop, currPath = [].concat(path);
@@ -195,7 +189,7 @@ Amm.Builder.prototype = {
             return new Amm.Builder.Ref(json, htmlElement);
         }
         if ('$ext' in json) {
-            var data = this.getExtData(window, json.$ext);
+            var data = this._getExtData(window, json.$ext);
             if (data === Amm.Builder._EXT_NOT_FOUND) throw Error("Cannot resolve '$ext' " + json.$ext);
             if (json['$resolve']) json = data;
             else return data;

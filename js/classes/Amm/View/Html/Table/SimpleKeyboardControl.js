@@ -24,8 +24,6 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
     
     requiredElementClass: 'Amm.Table.Table',
 
-
-    
     escapeCancels: true,
     
     focusedCellBecomesActive: true,
@@ -37,14 +35,16 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
     navigateBetweenSections: true,
     
     whenEditingTabThroughEditableCellsOnly: true,
-
-
     
+    interceptFocus: true,
+
     _observesHtmlElement: false,
     
     editAndTypeOnStartTyping: true,
     
     _preventClickToEdit: false,
+    
+    _focusoutTimeoutSet: false,
     
     _handleDom_mousedown: function(event) {
         if (!this.clickOnActiveCellActivatesEditor) return;
@@ -66,16 +66,15 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
         }
     },
     
-    _focusoutTimeoutSet: false,
-    
     _handleDom_focusout: function(event) {
         var t = this;
         if (this._focusoutTimeoutSet) return;
         this._focusoutTimeoutSet = true;
         window.setTimeout(function() {
             t._focusoutTimeoutSet = false;
+            var activeElement = Amm.View.Html.getFocusedNode();
             var tableHasFocus = 
-                    document.activeElement && jQuery(document.activeElement).parents().filter(t._htmlElement).length;
+                    activeElement && jQuery(activeElement).parents().filter(t._htmlElement).length;
             if (!tableHasFocus && t.stopEditingOnFocusLost) {
                 if (t._element.editingCells.length === 1) {
                     t._element.editingCells[0].setEditing(false);
@@ -85,6 +84,9 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
     },
     
     _findAdjacent: function(rowOrCell, reverse, callback, mode, last) {
+        if (!callback) callback = function(item) { 
+            return item.getCanActivate(); 
+        };
         var adj = rowOrCell, res;
         do {
             adj = adj.findAdjacent(reverse, callback, mode);
@@ -131,11 +133,25 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
         if (!cell) return; // no active cell - cannot navigate
         
         var editing = cell && cell.getEditing();
-        var activeNode = document.activeElement;
+        var activeElement = Amm.View.Html.getFocusedNode();
         
         // consider active element only if it's inside our table
-        if (activeNode && !Amm.findElement(activeNode, function(e) {return e === table;})) {
-            activeNode = null;
+        if (activeElement && !Amm.findElement(activeElement, function(e) {return e === table;})) {
+            activeElement = null;
+        }
+        
+        if (char === "Tab" && this.interceptFocus && !cell.getEditing()) {
+            var otherCell = cell.findAdjacent(
+                event.shiftKey, // reverse
+                function(cell) { return cell.getCanActivate(); },
+                Amm.Table.ADJACENT_ANY_SECTION
+            );
+            if (otherCell) {
+                event.preventDefault();
+                event.stopPropagation();
+                otherCell.setActive(true);
+                return;
+            }
         }
         
         if (char === "F2") { // F2
@@ -156,8 +172,8 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
                 cell.setEditing(true);
                 return;
             }
-            if (editing && activeNode) {
-                if (activeNode.tagName === 'INPUT' && (activeNode.type === 'text' || activeNode.type === 'password')) {
+            if (editing && activeElement) {
+                if (activeElement.tagName === 'INPUT' && (activeElement.type === 'text' || activeElement.type === 'password')) {
                     cell.confirmEdit();
                     return;
                 }
@@ -178,17 +194,17 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
             }
         }
         
-        if (cell.getEditing() && activeNode) {
+        if (cell.getEditing() && activeElement) {
             
             // TODO: ensure this element is actually inside table active cell
             
-            if (activeNode.tagName === 'INPUT' && (activeNode.type === 'text' || activeNode.type === 'password') || activeNode.tagName === 'TEXTAREA') {
-                if (activeNode.selectionStart !== activeNode.selectionEnd) return; // some text selected
+            if (activeElement.tagName === 'INPUT' && (activeElement.type === 'text' || activeElement.type === 'password') || activeElement.tagName === 'TEXTAREA') {
+                if (activeElement.selectionStart !== activeElement.selectionEnd) return; // some text selected
                 
-                if (activeNode.selectionStart !== 0 
+                if (activeElement.selectionStart !== 0 
                     && (char === "ArrowLeft" || char === "ArrowUp" || char === "Home")) return;
             
-                if (activeNode.selectionStart !== activeNode.value.length 
+                if (activeElement.selectionStart !== activeElement.value.length 
                     && (char === "ArrowRight" || char === "ArrowDown" || char === "End")) return;
             }
         }
@@ -204,9 +220,11 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
             // left
             reverse = true;
             toTheLast = event.ctrlKey;
+            if (editing && this.whenEditingTabThroughEditableCellsOnly) editableOnly = true;
         } else if (char === "ArrowRight") {
             // right
             toTheLast = event.ctrlKey;
+            if (editing && this.whenEditingTabThroughEditableCellsOnly) editableOnly = true;
         } else if (char === "ArrowUp") {
             rowNav = true; // up
             reverse = true;
@@ -263,7 +281,7 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
         } else {
             if (toTheLast && toTheLast !== "AllCells") adjacentMode = Amm.Table.ADJACENT_SAME_ROW;
             var cb = null;
-            if (editableOnly) cb = function(cell) { return cell.isEditable(); };
+            if (editableOnly) cb = function(cell) { return cell.isEditable() && cell.getCanActivate(); };
             nextCell = this._findAdjacent(cell, reverse, cb, adjacentMode, toTheLast);
         }
         var item = cell.getItem();

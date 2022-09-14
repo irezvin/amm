@@ -136,7 +136,7 @@ MemStor.prototype = {
         var rec = recs[0];
         var oldData = rec.mm.getData();
         rec.mm.update(data);
-        res = this._coreStore(rec);
+        var res = this._coreStore(rec);
         if (res.success) rec.mm.hydrate(rec.mm.getData());
         else rec.mm.hydrate(oldData);
         return res;

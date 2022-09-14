@@ -44,7 +44,7 @@ Amm.View.Html.Select.prototype = {
         if (!this._selectView._element) return;
         var cv = this._selectView._collectionView;
         var i, l;
-        if (!cv) return Amm.View.Html.Input.prototype.getVValue.call(this);
+        if (!cv) return Amm.View.Html.Input.prototype.setVValue.call(this);
         if (this._element.getMultiple()) {
             for (i = 0, l = this._htmlElement.options.length; i < l; i++) {
                 var item = cv.getHtmlElementItem(this._htmlElement.options[i]);
@@ -126,10 +126,10 @@ Amm.View.Html.Select.prototype = {
                 if (item.getDisabled()) r.attr('disabled', 'disabled');
                 if (item.getSelected()) r.attr('selected', 'selected');
                 if (!item.getVisible()) return r.wrap('<span>').parent()[0];
-                else return r[0];
+                return r;
             },
-            updateItemHtml: function(item, node) {
-                var wasSpan = false;
+            updateItemHtml: function(item, nodes) {
+                var wasSpan = false, node = nodes[0];
                 if (node.tagName === 'SPAN') {
                     wasSpan = true;
                     node = node.firstChild;
@@ -145,13 +145,21 @@ Amm.View.Html.Select.prototype = {
                 }
                 jQuery(node).html(item.getLabel());
                 if (!item.getVisible()) {
-                    if (!wasSpan) node = jQuery(node).wrap('<span></span>').parent()[0];
-                    else node = node.parentNode;
+                    if (!wasSpan) nodes = jQuery(node).wrap('<span></span>').parent();
+                    else nodes = node.parentNode;
                 } else if (wasSpan) {
                     node.parentNode.removeChild(node);
+                    nodes = [node];
                 }
-                return node;
-            }
+                return nodes;
+            },
+            detachNodes: function(nodes) {
+                var cnt = jQuery(nodes);
+                // We need to remove selected elements last. During one-by-one removal 
+                // of items from select w/ size=1, non-selected options become selected.
+                cnt.not(':selected').detach();
+                cnt.detach();
+            },
         };
         this._collectionView = new Amm.View.Html.Collection(proto);
     },

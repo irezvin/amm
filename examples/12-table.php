@@ -4,6 +4,15 @@
     require(__DIR__.'/top.inc.php');
 ?> 
     <link rel="stylesheet" type="text/css" href="tbl2.css" />
+    
+    <style type="text/css">
+        
+        .draggableColumn, .resizableColumn, .draggableRow, .resizableRow {
+            touch-action: none;
+        }
+        
+    </style>
+    
     <script type='text/javascript'>
         
         getDefaultItems = function() {

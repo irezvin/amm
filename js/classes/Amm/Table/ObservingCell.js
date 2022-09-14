@@ -137,7 +137,7 @@ Amm.Table.ObservingCell.prototype = {
     _cleanup_ObservingCell: function() {
         this._unobserve();
         this.setItem(null);
-        this.setSource(null); 
+        this.setSource(null);
     },
 
     setValueVisible: function(valueVisible) {
@@ -173,7 +173,7 @@ Amm.Table.ObservingCell.prototype = {
                             data_amm_value: true,
                         },
                         {
-                            _id: 'displayParentView',
+                            _id: 'cellContentNode',
                             $: 'div',
                             'class': 'cellItems',
                         }
@@ -187,15 +187,15 @@ Amm.Table.ObservingCell.prototype = {
             htmlElement: nodes.cellView
         });
         
-        new Amm.View.Html.DisplayParent({
+        new Amm.View.Html.Table.CellContent({
             element: this,
-            htmlElement: nodes.displayParentView,
+            htmlElement: nodes.cellContentNode,
         });
         
         return res;
         
-    }
-
+    },
+    
 };
 
 Amm.extend(Amm.Table.ObservingCell, Amm.Table.Cell);

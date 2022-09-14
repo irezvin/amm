@@ -50,7 +50,15 @@ Amm.Table.Section.prototype = {
     _getDefaultDisplayChildrenPrototype: function() {
         var res = Amm.Trait.DisplayParent.prototype._getDefaultDisplayChildrenPrototype.call(this);
         res.undefaults = {displayOrder: -1};
+        var t = this;
+        res.on__itemsChange = function(rows, oldRows) {
+            t.notifyRowsChange(rows, oldRows);
+        };
         return res;
+    },
+    
+    notifyRowsChange: function(rows, oldRows) {
+        if (this._component) this._component.notifySectionRowsChange(this, rows, oldRows);
     },
     
     setRows: function(rows) {

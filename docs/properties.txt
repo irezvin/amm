@@ -267,6 +267,16 @@ Sample2.number = 'zzz'
 | Array      | Array        | массив объектов со значениями каждого свойства у каждого объекта            |
 
 
+В случае, если getProperty() вызывается с массивом в качестве первого аргумента, и возвращает массив, то у этого массива есть метод getProperty(property, defaultValue, args), а в качестве object всегда использует this. Это позволяет создавать цепочки вызовов getProperty вроде
+
+{{{code: lang="js" linenumbers="False"
+var recordStates = Amm.getProperty(records, 'mm').getProperty('state'); 
+// аналогично:
+var metas = Amm.getProperty(records, 'mm'); 
+recordStates = Amm.getProperty(metas, 'state'); 
+}}}
+
+
 ==== Amm.setProperty: function(object, property, value, throwIfNotFound, args) ====
 
 Устанавливает значение свойства property объекта object в значение value. По аналогии с Amm.getProperty можно установить значения а) у множества объектов (если object это массив); б) у нескольких свойств (если value === undefined, а property это хеш); в) нескольких свойств у множества объектов.

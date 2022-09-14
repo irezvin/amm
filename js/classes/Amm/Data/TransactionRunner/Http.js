@@ -189,7 +189,7 @@ Amm.Data.TransactionRunner.Http.prototype = {
         if (payload.key !== null) {
             if (this.keyToUri) {
                 // no key path => append key
-                if (!this.keyPath) res.setUri(res.getUri().replace(/\/$/g, '') + '/' + payload.key);
+                if (!this.keyPath) res.setUri(res.getUri(Amm.Remote.Uri.PART_PATH).replace(/\/$/g, '') + '/' + payload.key, Amm.Remote.Uri.PART_PATH);
                 else {
                     res.setUri(payload.key, this.keyPath);
                 }

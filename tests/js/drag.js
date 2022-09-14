@@ -391,7 +391,7 @@
         var oldCoords = clientXY(itemCNode);
         
         startDrag(rpt1.displayChildren[2]);
-        drag(rpt1.displayChildren[2], 10, 10);
+        drag(rpt1.displayChildren[2], 7, 7);
         
         assert.ok(con.getSession(), 'Session started');
         

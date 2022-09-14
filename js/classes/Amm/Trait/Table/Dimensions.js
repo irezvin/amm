@@ -5,6 +5,8 @@ Amm.Trait.Table.Dimensions = function() {
     this._observedOffsetColumns = [];
     this._observedSizeRows = [];
     this._observedOffsetRows = [];
+    this._rowsToAdjust = [];
+    this._columnsToAdjust = [];
 };
 
 Amm.Trait.Table.Dimensions.prototype = {
@@ -22,6 +24,12 @@ Amm.Trait.Table.Dimensions.prototype = {
     _posObserved: false,
     
     _sizeObserved: false,
+    
+    _rowsToAdjust: null,
+    
+    _columnsToAdjust: null,
+    
+    _adjustSubscribed: false,
     
     _checkObservePos() {
         var l = this._observedOffsetRows.length + this._observedOffsetColumns.length;
@@ -72,6 +80,7 @@ Amm.Trait.Table.Dimensions.prototype = {
     
     setColumnSize: function(column, size) {
         this.outSetColumnSize(column, size);
+        if (size === null) this._shouldAdjustColumn(column);
     },
     
     outGetColumnSizes: function(columns, ret) {
@@ -150,6 +159,7 @@ Amm.Trait.Table.Dimensions.prototype = {
     
     setRowSize: function(row, size) {
         this.outSetRowSize(row, size);
+        if (size === null) this._shouldAdjustRow(row);
     },
     
     outGetRowSizes: function(rows, ret) {
@@ -216,6 +226,179 @@ Amm.Trait.Table.Dimensions.prototype = {
         if (idx < 0) return;
         this._observedOffsetRows.splice(idx, 1);
         this._checkObservePos();
+    },
+    
+    adjustColumns: function(columns) {
+        if (!columns) columns = this.columns.getItems();
+        else if (columns['Amm.Table.Column']) columns = [columns];
+        this.outResetAutoColumns(columns);
+        var sizes = [];
+        this.outGetColumnSizes(columns, sizes);
+        this.outAdjustColumns(columns, sizes);
+    },
+    
+    outResetAutoColumns: function(columns) {
+        return this._out('resetAutoColumns', columns);
+    },
+    
+    outAdjustColumns: function(columns, sizes) {
+        return this._out('adjustColumns', columns, sizes);
+    },
+    
+    adjustRows: function(rows) {
+        if (!rows) rows = this.getAllRows();
+        else if (rows['Amm.Table.Row']) rows = [rows];
+        this.outResetAutoRows(rows);
+        var sizes = [];
+        this.outGetRowSizes(rows, sizes);
+        this.outAdjustRows(rows, sizes);
+    },
+    
+    outResetAutoRows: function(rows) {
+        return this._out('resetAutoRows', rows);
+    },
+    
+    outAdjustRows: function(rows, sizes) {
+        this._out('adjustRows', rows, sizes);
+    },
+    
+    _hasMultipleViewsChange_TableDimensions: function(hasMultipleViews) {
+        var action = hasMultipleViews? 'subscribe' : 'unsubscribe';
+        this[action]('cellValueChange', this._tableDimensionsCellChange, this);
+        //this[action]('cellClassNameChange', this._tableDimensionsCellChange, this);
+        
+        this[action]('rowVisibleChange', this._tableDimensionsRowColChange, this);
+        this[action]('rowEnabledChange', this._tableDimensionsRowColChange, this);
+        //this[action]('rowClassNameChange', this._tableDimensionsRowColChange, this);
+        
+        this[action]('columnVisibleChange', this._tableDimensionsRowColChange, this);
+        this[action]('columnEnabledChange', this._tableDimensionsRowColChange, this);
+        
+        this[action]('enabledColumnsChange', this._subscribeAdjustAll, this);
+        this[action]('sectionRowsChange', this._subscribeAdjustAll, this);
+        
+        Amm.getRoot()[hasMultipleViews? 'defer' : 'cancelDeferred'](
+            this._adjustRegisteredRowColumns,
+            this,
+            true
+        );
+    },
+    
+    _tableDimensionsCellChange: function(cell) {
+        var row = cell.row, column = cell.column;
+        if (!cell.row) {
+            console.log('wtf', cell);
+            return;
+        }
+        if (!row.getVisible() || !column.getVisible()) return;
+        if (!row.getEnabled() || !column.getEnabled()) return;
+        if (row.getAutoSize()) this._shouldAdjustRow(row);
+        if (column.getAutoSize()) this._shouldAdjustColumn(column);
+    },
+    
+    _tableDimensionsRowColChange: function(rowOrColumn) {
+        if (rowOrColumn['Amm.Table.Column']
+            && Amm.event.name === 'columnVisibleChange' 
+        ) { // column visibility changes often cause multi-view tables contents to get out of sync
+            this._subscribeAdjustAll();
+            return;
+        }
+        if (!rowOrColumn.getVisible() || rowOrColumn.getEnabled()) return;
+        if (!rowOrColumn.getAutoSize()) return;
+        if (rowOrColumn['Amm.Table.Row']) this._shouldAdjustRow(rowOrColumn);
+        else this._shouldAdjustColumn(rowOrColumn);
+    },
+    
+    _shouldAdjustRow: function(row) {
+        if (row._shouldAdjust) return;
+        row._shouldAdjust = true;
+        this._rowsToAdjust.push(row);
+        if (!this._adjustSubscribed) this._subscribeAdjust();
+    },
+    
+    _shouldAdjustColumn: function(column) {
+        if (column._shouldAdjust) return;
+        column._shouldAdjust = true;
+        this._columnsToAdjust.push(column);
+        if (!this._adjustSubscribed) this._subscribeAdjust();
+    },
+    
+    _subscribeAdjustAll: function() {
+        if (this._adjustSubscribed === 'all') return;
+        if (this._adjustSubscribed === true) {
+            Amm.getRoot().cancelDeferred(this._adjustRegisteredRowColumns, this);
+        }
+        this._adjustSubscribed = 'all';
+        Amm.getRoot().defer(this._adjustRegisteredRowColumns, this, true);
+    },
+    
+    _subscribeAdjust: function() {
+        if (this._adjustSubscribed) return;
+        this._adjustSubscribed = true;
+        Amm.getRoot().defer(this._adjustRegisteredRowColumns, this);
+    },
+    
+    _adjustRegisteredRowColumns: function(all) {
+        var i, l;
+        
+        // we always adjust first columns, then rows, because column sizes 
+        // affect row heights due to wrapping
+        
+        if (all) {
+            var rows = this.getAllRows(), columns = this.columns;
+            this._rowsToAdjust = [];
+            this._columnsToAdjust = [];
+            for (i = 0, l = columns.length; i < l; i++) {
+                if (columns[i].getAutoSize() && columns[i].getVisible() && columns[i].getEnabled()) {
+                    this._columnsToAdjust.push(columns[i]);
+                }
+            }
+            for (i = 0, l = rows.length; i < l; i++) {
+                if (rows[i].getAutoSize() && rows[i].getVisible() && rows[i].getEnabled()) {
+                    this._rowsToAdjust.push(rows[i]);
+                }
+            }
+        }
+        
+        if (!this._rowsToAdjust.length && !this._columnsToAdjust.length) {
+            console.log('nothing to adjust?!');
+            return;
+        }
+        
+        var r = this._rowsToAdjust;
+        var c = this._columnsToAdjust;
+
+        this._rowsToAdjust = [];
+        this._columnsToAdjust = [];
+
+        //console.log('adjusting', r.length, 'rows', c.length, 'columns');
+        
+        try {
+            for (i = 0, l = c.length; i < l; i++) {
+                c[i]._shouldAdjust = false;
+            }
+            if (l) this.adjustColumns(c);
+            for (i = 0, l = r.length; i < l; i++) {
+                r[i]._shouldAdjust = false;
+            }
+            if (l) this.adjustRows(r);
+        } finally {
+            this._adjustSubscribed = false;
+        }
+    },
+    
+    fixColumnSizes: function() {
+        var c = this.columns.getItems();
+        for (var i = 0, l = c.length; i < l; i++) {
+            this.setColumnSize(c[i], this.getColumnSize(c[i]));
+        }
+    },
+    
+    fixRowSizes: function() {
+        var r = this.getAllRows();
+        for (var i = 0, l = r.length; i < l; i++) {
+            this.setRowSize(r[i], this.getRowSize(r[i]));
+        }
     },
     
 };

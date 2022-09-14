@@ -1,6 +1,7 @@
 /* global Amm */
 
 Amm.View.Abstract.Collection = function(options) {
+    this._showItems = [];
     Amm.View.Abstract.call(this, options);
 };
 
@@ -35,6 +36,10 @@ Amm.View.Abstract.Collection.prototype = {
     _collectionProperty: null,
     
     _colEv: null,
+    
+    _shouldShowItemCallback: null,
+    
+    _shouldShowItemCallbackScope: null,
     
     _canObserveCollection: function() {
         var res = (this._collection && (!this._requiresElement || this._element));
@@ -151,8 +156,50 @@ Amm.View.Abstract.Collection.prototype = {
             }
         }
         return res;
-    }
+    },
+
+    setShouldShowItemCallback: function(shouldShowItemCallback, scope) {
+        if (!shouldShowItemCallback) shouldShowItemCallback = null;
+        var oldShouldShowItemCallback = this._shouldShowItemCallback;
+        if (oldShouldShowItemCallback === shouldShowItemCallback) return;
+        this._shouldShowItemCallback = shouldShowItemCallback;
+        if (scope !== undefined) this.setShouldShowItemCallbackScope(scope);
+        return true;
+    },
+
+    getShouldShowItemCallback: function() { return this._shouldShowItemCallback; },
+
+    setShouldShowItemCallbackScope: function(shouldShowItemCallbackScope) {
+        if (!shouldShowItemCallbackScope) shouldShowItemCallbackScope = null;
+        var oldShouldShowItemCallbackScope = this._shouldShowItemCallbackScope;
+        if (oldShouldShowItemCallbackScope === shouldShowItemCallbackScope) return;
+        this._shouldShowItemCallbackScope = shouldShowItemCallbackScope;
+        return true;
+    },
+
+    getShouldShowItemCallbackScope: function() { return this._shouldShowItemCallbackScope; },
     
+    /**
+     * Returns array with items that have to be shown.
+     */
+    _filterItems: function(items) {
+        var res = [];
+        for (var i = 0, l = items.length; i < l; i++) {
+            if (this._shouldShowItem(items[i])) {
+                res.push(items[i]);
+            }
+        }
+        return res;
+    },
+    
+    /**
+     * Returns true/false if item has to be shown according to `shouldShowItemCallback`
+     */
+    _shouldShowItem: function(item) {
+        if (!this._shouldShowItemCallback) return true;
+        return !!this._shouldShowItemCallback.call(this._shouldShowItemCallbackScope || this, item);
+    },
+
     // _handleCollection<Event> methods are defined in the concrete 
     // child classes because level of Collection events' support may 
     // differ with the implementation

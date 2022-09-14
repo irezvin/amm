@@ -486,7 +486,7 @@ Amm.Data.Transaction.prototype = {
      * @param {object} tr.transactionResult Out - will be used as Amm.Data.TransactionResult
      */
     outParseResponse: function(unparsedResponse, tr) {
-        return this._out(unparsedResponse, tr);
+        return this._out('parseResponse', unparsedResponse, tr);
     },
     
     cleanup: function() {

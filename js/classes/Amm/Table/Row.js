@@ -27,6 +27,8 @@ Amm.Table.Row.prototype = {
     _tableActiveProp: 'activeRow',
     
     _size: null,
+
+    _autoSize: true,
     
     _offset: null,
     
@@ -45,7 +47,7 @@ Amm.Table.Row.prototype = {
             $: 'tr',
             data_amm_v: [
                 {
-                    class: 'v.DisplayParent'
+                    class: 'v.Table.Row'
                 },
                 {
                     class: 'v.Visual',
@@ -96,6 +98,17 @@ Amm.Table.Row.prototype = {
 
     outEnabledChange: function(enabled, oldEnabled) {
         this._out('enabledChange', enabled, oldEnabled);
+        if (this._table) this._table.notifyRowEnabledChange(this, enabled, oldEnabled);
+    },
+    
+    outVisibleChange: function(visible, oldVisible) {
+        Amm.Trait.Visual.prototype.outVisibleChange.call(this, visible, oldVisible);
+        if (this._table) this._table.notifyRowVisibleChange(this, visible, oldVisible);
+    },
+    
+    outClassNameChange: function(className, oldClassName) {
+        Amm.Trait.Visual.prototype.outClassNameChange.call(this, className, oldClassName);
+        if (this._table) this._table.notifyRowClassNameChange(this, className, oldClassName);
     },
     
     setTable: function(table) {
@@ -253,6 +266,7 @@ Amm.Table.Row.prototype = {
         if (oldSize === size) return;
         this._size = size;
         this.outSizeChange(size, oldSize);
+        this.setAutoSize(size === null);
         if (!this._lockSetSize && this._enabled && this._table) {
             this._table.setRowSize(this, size);            
         }
@@ -280,6 +294,22 @@ Amm.Table.Row.prototype = {
 
     outSizeChange: function(size, oldSize) {
         this._out('sizeChange', size, oldSize);
+    },
+    
+    setAutoSize: function(autoSize) {
+        autoSize = !!autoSize;
+        var oldAutoSize = this._autoSize;
+        if (oldAutoSize === autoSize) return;
+        this._autoSize = autoSize;
+        this.outAutoSizeChange(autoSize, oldAutoSize);
+        if (autoSize) this.setSize(null);
+        return true;
+    },
+
+    getAutoSize: function() { return this._autoSize; },
+
+    outAutoSizeChange: function(autoSize, oldAutoSize) {
+        this._out('autoSizeChange', autoSize, oldAutoSize);
     },
     
     _subscribeFirst_sizeChange: function() {

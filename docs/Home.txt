@@ -87,7 +87,7 @@ TODO:
 * Утилитарный класс (Amm)
 * Поставщик событий ([[events|WithEvents]])
 * Выражение (Expression)
-* Строитель (Builder)
+* Строитель ([[Builder]])
 * Массив и коллекция (Array, Collection)
 * Преобразователь массивов (ArrayMapper, Filter, Sorter, Instantiator)
 

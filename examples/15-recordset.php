@@ -294,12 +294,12 @@
         <h1>Recordset example</h1>
         <div id="rs" data-amm-id="rs" data-amm-e="{
              prop__recordset: {
-                __construct: 'Amm.Data.RecordSet',
+                __construct: 'Amm.Data.Recordset',
                 deleteImmediately: true,
                 multiTransactionOptions: {
                     maxRunning: 1
                 },
-                limit: 5,
+                limit: 3,
                 mapper: {
                     __construct: 'Amm.Data.Mapper',
                     id: 'addressMapper'
@@ -429,7 +429,7 @@
              builderSource: '#buttonProto > .buttons',
         }"></div>
         
-        <!--div data-amm-e="{
+        <div data-amm-e="{
         }" data-amm-v="[v.Visual, {
             class: Amm.View.Html.Expressions,
             map: {
@@ -439,7 +439,7 @@
         }]">
             <span class="transactionState"></span>
             <span class="navigationLocked"></span>
-        </div-->
+        </div>
         <div 
             class="records"
             data-amm-id="records"
@@ -466,7 +466,7 @@
                     <input type="text" data-amm-v="[v.Input]" />
                 </label>
             </div>
-            <div data-amm-x="Amm.View.Html.Variants.build" data-amm-id="@records" style="display: none">
+            <div data-amm-x="v.Variants.build" data-amm-id="@records" style="display: none">
                 <div
                     data-amm-dont-build="" 
                     data-amm-default="" 

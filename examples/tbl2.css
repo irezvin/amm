@@ -26,7 +26,7 @@ table.data th, table.data td {
 }
 
 table.data div.cellContent {
-    padding: .5em;
+    padding: 5px;
     max-width: 100%;
     max-height: 100%;
     overflow: hidden;
@@ -67,11 +67,11 @@ td.hl2 {
 
 .data input[type=text] {
     background: none;
-    margin: -0.5em;
-    padding: 0.5em;
+    margin: -5px;
+    padding: 5px;
     border: none;
-    width: calc(100% + 1em);
-    height: calc(100% + 1em);
+    width: calc(100% + 10px);
+    height: calc(100% + 10px);
 }
 
 .activeRow > *:first-child {
@@ -80,7 +80,7 @@ td.hl2 {
 
 .activeRow > *:first-child .cellContent {
     border-left: 2px solid orangered;
-    padding-left: calc(.5em - 2px);
+    padding-left: calc(5px - 2px);
 }
 
 .data thead th.activeColumn {
@@ -89,12 +89,12 @@ td.hl2 {
 
 .data thead th.activeColumn .cellContent {
     border-top: 2px solid orangered;
-    padding-top: calc(.5em - 2px);
+    padding-top: calc(5px - 2px);
 }
 
 .data td.active .cellContent, .data th.active .cellContent {
     border: 2px solid orangered;
-    padding: calc(.5em - 2px);
+    padding: calc(5px - 2px);
 }
 
 th {
@@ -183,5 +183,90 @@ th.draggableRow.active, th.draggableColumn.active > div:first-child {
     height: 100%;
 } 
 
+/*div#tbl {
+    max-height: 600px;
+    border: 1px solid red;
+    overflow: scroll;
+    position: relative;
+}
+
+thead {
+    position: sticky;
+    inset-block-start: 0;
+    background-color: black;
+}
+*/
+
+.scrollableTableContainer, .scrollableTableContainer .scrollableTableHorizontal, .scrollableTableContainer .scrollableTableVertical {
+    width: 600px;
+    height: 300px;
+}
+
+.scrollableTableContainer .mainTable {
+    width: max-content;
+}
+
+.scrollableTableContainer {
+    overflow: hidden;
+    border: 1px solid silver;
+    position: relative;
+}
+
+.scrollableTableContainer table {
+    height: initial;
+    layout: auto;
+}
+
+.scrollableTableContainer .vFix, .scrollableTableContainer .hFix, .scrollableTableContainer .cFix {
+    position: absolute;
+    background-color: black;
+}
+
+.scrollableTableContainer .vFix {
+    left: 0;
+    z-index: 1;
+}
+
+.scrollableTableContainer .hFix {
+    top: 0;
+    z-index: 1;
+}
 
 
+/*.scrollableTableContainer .vFix, .scrollableTableContainer .hFix {
+    z-index: 1;    
+}*/
+
+.scrollableTableContainer .cFix {
+    left: 0;
+    top: 0;
+    z-index: 2;
+}
+
+.scrollableTableInner {
+    width: 100%;
+    height: 100%;
+    overflow: scroll;
+    scrollbar-gutter: stable;
+    scrollbar-width: auto;
+}
+
+div.vFix {
+    overflow-x: hidden;
+}
+
+.vFixInner, .hFixInner {
+    position: relative;
+}
+
+div.hFix {
+    overflow-y: hidden;
+}
+
+.scrollableTablePadding {
+    display: inline-block;
+}
+
+table.data.xAbsoluteEdit td.valueHidden .cellContent > .value {
+    display: none;
+}

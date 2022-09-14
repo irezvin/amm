@@ -1,0 +1,26 @@
+<div data-amm-dont-build="" data-et="{assign: {$model: this.model}}">
+    <h2><a href="{{$model.url}}">{{$model.title}}</a></h2>
+    <div class="badges" data-et-if="$model.badges && $model.badges.length">
+        <div 
+            data-et-foreach="{
+                src: $model.badges, 
+                item: $badge, 
+                filter: $badge.enabled
+            }" 
+            class="badge-{{$badge.classname}}"
+        >{{$badge.title}}
+        </div>        
+    </div>
+    <input type="text" placeholder="0" 
+        data-et-proto="{
+            v: v.Input, 
+            e: {},
+            sync: {value: '$model.amount'}
+        }" />
+    <button 
+        disabled="{{$model.amount? null: disabled}}" 
+        onclick="Amm.Extemp.getVar(this, 'model').addToCart();"
+    >
+        Add to cart
+    </button>
+</div>

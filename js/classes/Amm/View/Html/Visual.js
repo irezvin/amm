@@ -13,6 +13,8 @@ Amm.View.Html.Visual.prototype = {
     
     delay: undefined,
     
+    extraClassName: '',
+    
     setVVisible: function(visible) {
         visible = !!visible;
         // prevent bug that forces items to have 'display: block' or 'display: inline' on initialization
@@ -54,11 +56,18 @@ Amm.View.Html.Visual.prototype = {
     },
     
     setVClassName: function(className) {
+        if (this.extraClassName) {
+            className = Amm.Util.alterClassName(className, true, this.extraClassName);
+        }
         jQuery(this._htmlElement).attr('class', className);
     },
 
     getVClassName: function() {
-        return jQuery(this._htmlElement).attr('class');
+        var res = jQuery(this._htmlElement).attr('class');
+        if (this.extraClassName) {
+            res = Amm.Util.alterClassName(res, false, this.extraClassName);
+        }
+        return res;
     },
     
     cleanup: function() {

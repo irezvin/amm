@@ -9,9 +9,11 @@
  * - other element values are passed to corresponding setters
  */
 Amm.View.Abstract = function(options) {
+    this.parentView = Amm.View.Abstract.parentView;
     Amm.callMethods(this, '_preInit_', options);
     Amm.ElementBound.call(this, options);
     Amm.init(this, options, ['element', 'elementPath']);
+    if (options && 'id' in options) this.id = options.id;
     if (!this.id) this.id = Amm.getClass(this);
 };
 
@@ -56,6 +58,10 @@ Amm.View.Abstract.prototype = {
     _initDone: false,
     
     id: null,
+    
+    // Is filled in with Amm.View.Abstract.parentView; views that create elements with default views
+    // may use Amm.View.Abstract.pushParentView() to fill-in that property
+    parentView: null,
     
     getIsReady: function() {
         return this.getObserving();
@@ -162,8 +168,28 @@ Amm.View.Abstract.prototype = {
      */
     getSuggestedTraits: function() {
         return [];
+    },
+    
+    _cleanup_abstractView: function() {
+        this.parentView = null;
     }
     
+};
+
+Amm.View.Abstract.parentView = null;
+
+Amm.View.Abstract._parentViewStack = [];
+
+Amm.View.Abstract.pushParentView = function(view) {
+    this._parentViewStack.push(this.parentView);
+    this.parentView = view;
+};
+
+Amm.View.Abstract.popParentView = function() {
+    if (!this._parentViewStack.length) {
+        throw Error("Call to popParentView() without prior pushParentView()");
+    }
+    if (this._parentViewStack.length) this.parentView = this._parentViewStack.pop();
 };
 
 Amm.extend(Amm.View.Abstract, Amm.ElementBound);

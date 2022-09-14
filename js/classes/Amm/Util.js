@@ -194,6 +194,7 @@ Amm.Util = {
         var parts = ('' + part).split(/ +/);
         if (parts.length > 1) {
             for (var i = 0, l = parts.length; i < l; i++) {
+                if (!parts[i]) continue;
                 res = this.alterClassName(res, classNameOrToggle, parts[i]);
             }
             return res;

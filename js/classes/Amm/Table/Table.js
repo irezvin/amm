@@ -14,6 +14,7 @@ Amm.Table.Table = function(options) {
     }
     
     this._enabledColumns = new Amm.Collection();
+    this._enabledColumns.subscribe('itemsChange', this.notifyEnabledColumnsChange, this);
     var t = this;
     this._editingCells = new Amm.Collection({
         on__onCanAccept: function(cell, problem) {
@@ -31,8 +32,12 @@ Amm.Table.Table = function(options) {
         }
     });
     
+    this._beginInit();
+    
     Amm.Element.call(this, options);
+    
     if (columns) this.setColumns(columns);
+    
     this._enabledColumnsMapper = new Amm.ArrayMapper({
         src: this.getColumns(undefined, true),
         dest: this._enabledColumns,
@@ -79,7 +84,10 @@ Amm.Table.Table = function(options) {
     });
     
     if (items) this.setItems(items);
+    if (this._items) this._rowMapper.setSrc(this._items);
     this.subscribe('activeCellAddressChange', this._selfActiveCellAddressChange, this);
+    this._endInit();
+    
 };
 
 Amm.Table.Table._SYNC_SOURCE_CELL = 'cell';
@@ -138,7 +146,7 @@ Amm.Table.Table.FIND_CLOSEST = 1;
 Amm.Table.Table.FIND_ACTIVATABLE = 2;
 
 Amm.Table.Table.prototype = {
-
+    
     'Amm.Table.Table': '__CLASS__', 
 
     _items: null,
@@ -233,7 +241,11 @@ Amm.Table.Table.prototype = {
 
     _reuseCellInstances: true,
     
+    _hasMultipleViews: false,
+    
     extraViews: null,
+    
+    twinView: false,
 
     _syncActiveCellEditor: 
             Amm.Table.Table.EDITOR_ACTIVATES_CELL 
@@ -348,7 +360,9 @@ Amm.Table.Table.prototype = {
     },
     
     outItemsChange: function(items, oldItems) {
-        this._rowMapper.setSrc(items);
+        if (this._rowMapper) {
+            this._rowMapper.setSrc(items);
+        }
         return this._out('itemsChange', items, oldItems);
     },
 
@@ -377,19 +391,19 @@ Amm.Table.Table.prototype = {
     
     constructDefaultViews: function() {
         var views = [
-                {
-                    class: 'v.Visual'
-                },
-                {
-                    class: 'v.DisplayParent'
-                },
-                {
-                    class: 'v.Table.DragDrop'
-                },
-                {
-                    class: 'v.Table.Dimensions'
-                },
-            ];
+            {
+                class: 'v.Table.Table'
+            },
+            {
+                class: 'v.Visual'
+            },
+            {
+                class: 'v.Table.DragDrop'
+            },
+            {
+                class: 'v.Table.Dimensions'
+            },
+        ];
         var extraViews = this.extraViews;
         if (extraViews && typeof extraViews === 'object') {
             if (!(extraViews instanceof Array)) {
@@ -399,11 +413,116 @@ Amm.Table.Table.prototype = {
         } else if (extraViews) {
             extraViews = [extraViews];
         }
-        if (extraViews && extraViews.length) views = views.concat(extraViews);
-        var res = Amm.dom({
-            $: 'table',
-            data_amm_v: views
-        });
+        if (extraViews && extraViews.length) {
+            views = views.concat(extraViews);
+        }
+
+        var domDef = [
+            {   
+                $: 'table',
+                data_amm_id: '__parent',
+                data_amm_v: views
+            }
+        ];
+        
+        if (this.twinView) {
+            
+            var views2 = Amm.copy(views);
+            var views3 = Amm.copy(views);
+            var views4 = Amm.copy(views);
+            
+            views[0].adjustOnInit = true;
+            views[1].extraClassName = 'mainTable';
+            
+            views2[0].onlySection = Amm.Table.Section.TYPE.HEADER;
+            views2[0].focusPriority = 1;
+            views2[1].extraClassName = ' vFixInner vFixInnerTop';
+    
+            views3[0].focusPriority = 1;
+            views3[0].onlyFirstCells = 1;
+            views3[1].extraClassName = 'hFixInner hFixInnerLeft';
+            
+            views4[0].focusPriority = 2;
+            views4[0].onlyFirstCells = 1;
+            views4[0].onlySection = Amm.Table.Section.TYPE.HEADER;
+            views4[1].extraClassName = 'hFixLeft vFixTop cFix';
+            
+            domDef = {
+                $: 'div',
+                // TODO: understand why wrapping the element default views into
+                // outer element without any view or data_amm_id makes everything rendered,
+                // but not added to the DOM
+                data_amm_id: '__parent',
+                data_amm_v: {
+                    'class': 'v.Visual',
+                    'extraClassName': 'scrollableTableContainer'
+                },
+                $$: [
+                    {
+                        $: 'table',
+                        data_amm_id: '__parent',
+                        data_amm_v: views4,
+                    },
+                    {
+                        $: 'div',
+                        'class': 'vFix vFixTop',
+                        onscroll: function(event) {
+                            var jq = jQuery(this), left = jq.scrollLeft();
+                            var p = jQuery(this).parent();
+                            if (left) {
+                                jq.scrollLeft(0);
+                                p.find('.scrollableTableInner').scrollLeft(left);
+                            }
+                        },
+                        $$: {
+                            $: 'table',
+                            data_amm_id: '__parent',
+                            data_amm_v: views2,
+                        }
+                    },
+                    {
+                        $: 'div',
+                        'class': 'hFix hFixLeft',
+                        onscroll: function(event) {
+                            var jq = jQuery(this), top = jq.scrollTop();
+                            var p = jQuery(this).parent();
+                            if (top) {
+                                jq.scrollTop(0);
+                                p.find('.scrollableTableInner').scrollTop(top);
+                            }
+                        },
+                        $$: {
+                            $: 'table',
+                            data_amm_id: '__parent',
+                            data_amm_v: views3,
+                        }
+                    },
+                    {
+                        $: 'div',
+                        'class': 'scrollableTableInner',
+                        onscroll: function(event) {
+                            console.log('onscroll');
+                            var jq = jQuery(this), left = jq.scrollLeft(), top = jq.scrollTop();
+                            var p = jQuery(this).parent();
+                            p.find('.hFixInner').css('top', -top + "px");
+                            p.find('.vFixInner').css('left', -left + "px").scrollLeft(0);
+                        },
+                        $$: {
+                            $: 'div',
+                            'class': 'scrollableTablePadding',
+                            $$: {
+                                    $: 'table',
+                                    data_amm_id: '__parent',
+                                    data_amm_v: views 
+                            }
+                        }
+                    }
+                ],
+            };
+        
+        }
+
+        var res = Amm.dom(domDef);
         return res;
     },
     
@@ -592,7 +711,7 @@ Amm.Table.Table.prototype = {
             this._handleActiveCellCanActivateChange, true);
             
         if (this._syncActiveCellEditor) {
-            this._applySyncAciveCellEditor(activeCell, oldActiveCell);
+            this._applySyncActiveCellEditor(activeCell, oldActiveCell);
         }
     },
     
@@ -610,7 +729,7 @@ Amm.Table.Table.prototype = {
         this.setActiveCellAddress(this._lastActiveCellAddress, true);        
     },
     
-    _applySyncAciveCellEditor: function(activeCell, oldActiveCell) {
+    _applySyncActiveCellEditor: function(activeCell, oldActiveCell) {
         var oldActiveCellEditing = oldActiveCell && oldActiveCell.getEditing();
         if (this._syncActiveCellEditor & Amm.Table.Table.DEACTIVATION_CONFIRMS_EDITOR) {
             if (oldActiveCell && oldActiveCellEditing) oldActiveCell.confirmEdit();
@@ -937,7 +1056,103 @@ Amm.Table.Table.prototype = {
     outReuseCellInstancesChange: function(reuseCellInstances, oldReuseCellInstances) {
         this._out('reuseCellInstancesChange', reuseCellInstances, oldReuseCellInstances);
     },
+    
+    notifyViewReady: function(view) {
+        Amm.Element.prototype.notifyViewReady.call(this, view);
+        if (view['Amm.View.Html.Table.Table']) {
+            this.setHasMultipleViews (this.getUniqueSubscribers('Amm.View.Html.Table.Table').length > 1);
+        }
+    },
+    
+    setHasMultipleViews: function(hasMultipleViews) {
+        hasMultipleViews = !!hasMultipleViews;
+        var oldHasMultipleViews = this._hasMultipleViews;
+        if (oldHasMultipleViews === hasMultipleViews) return;
+        this._hasMultipleViews = hasMultipleViews;
+        this._callOwnMethods('_hasMultipleViewsChange', hasMultipleViews, oldHasMultipleViews);
+        return true;
+    },
 
+    getHasMultipleViews: function() { return this._hasMultipleViews; },
+    
+    getAllRows: function() {
+        var res = [].concat(this.header.rows.getItems(), this.rows.getItems(), this.footer.rows.getItems());
+        return res;
+    },
+    
+    notifyCellValueChange: function(cell, value, oldValue) {
+        this.outCellValueChange(cell, value, oldValue);
+    },
+    
+    outCellValueChange: function(cell, value, oldValue) {
+        return this._out('cellValueChange', cell, value, oldValue);
+    },
+    
+    notifyCellClassNameChange: function(cell, className, oldClassName) {
+        this.outCellClassNameChange(cell, className, oldClassName);
+    },
+    
+    outCellClassNameChange: function(cell, className, oldClassName) {
+        return this._out('cellClassNameChange', cell, className, oldClassName);
+    },
+    
+    notifyRowVisibleChange: function(row, visible, oldVisible) {
+        this.outRowVisibleChange(row, visible, oldVisible);
+    },
+    
+    outRowVisibleChange: function(row, visible, oldVisible) {
+        return this._out('rowVisibleChange', row, visible, oldVisible);
+    },
+    
+    notifyRowEnabledChange: function(row, enabled, oldEnabled) {
+        this.outRowEnabledChange(row, enabled, oldEnabled);
+    },
+    
+    outRowEnabledChange: function(row, enabled, oldEnabled) {
+        return this._out('rowEnabledChange', row, enabled, oldEnabled);
+    },
+    
+    notifyRowClassNameChange: function(row, className, oldClassName) {
+        this.outRowClassNameChange(row, className, oldClassName);
+    },
+    
+    outRowClassNameChange: function(row, className, oldClassName) {
+        return this._out('rowClassNameChange', row, className, oldClassName);
+    },
+    
+    notifyColumnVisibleChange: function(column, visible, oldVisible) {
+        this.outColumnVisibleChange(column, visible, oldVisible);
+    },
+    
+    outColumnVisibleChange: function(column, visible, oldVisible) {
+        return this._out('columnVisibleChange', column, visible, oldVisible);
+    },
+    
+    notifyColumnEnabledChange: function(column, enabled, oldEnabled) {
+        this.outColumnEnabledChange(column, enabled, oldEnabled);
+    },
+    
+    outColumnEnabledChange: function(column, enabled, oldEnabled) {
+        return this._out('columnEnabledChange', column, enabled, oldEnabled);
+    },
+    
+    notifyEnabledColumnsChange: function(columns, oldColumns) {
+        return this.outEnabledColumnsChange(columns, oldColumns);
+    },
+    
+    outEnabledColumnsChange: function(columns, oldColumns) {
+        return this._out('enabledColumnsChange', columns, oldColumns);
+    },
+    
+    notifySectionRowsChange: function(section, rows, oldRows) {
+        this.outSectionRowsChange(section, rows, oldRows);
+    },
+    
+    outSectionRowsChange: function(section, rows, oldRows) {
+        return this._out('sectionRowsChange', section, rows, oldRows);
+    }
+    
+    
 };
 
 Amm.createProperty(Amm.Table.Table.prototype, 'items', null, null, {enumerable: false});

@@ -42,6 +42,7 @@ Amm.View.Html.Drag.Source.prototype = {
     _regMousedown: function() {
         var t = this;
         this._mouseDownHandler = function(event) {
+            if (event.button && event.button !== 1) return;
             t.getDragControllerView().registerDragIntent(event, t);
         };
         if (this._handleSelector) {
@@ -73,13 +74,15 @@ Amm.View.Html.Drag.Source.prototype = {
          * current view handles them. In that case dragEnd will occur before dragStart, and 
          * this._element.getDragSession() will be null (or will not be active).
          */
-        if (!this._element.getDragSession() || !this._element.getDragSession().getActive()) return;
+        var sess = this._element.getDragSession();
+        if (!sess || !sess.getActive() || sess.getSourceView() !== this) return;
         if (this.disablePointerEvents) {
             this._pointerEvents = jQuery(this._htmlElement).css('pointerEvents');
             jQuery(this._htmlElement).css('pointerEvents', 'none');
         } else {
             this._pointerEvents = false;
         }
+        return true;
     },
     
     _handleElementDragEnd: function() {

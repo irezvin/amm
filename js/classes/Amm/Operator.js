@@ -307,7 +307,9 @@ Amm.Operator.prototype = {
                 stillHaveChecked = this['_' + this.OPERANDS[i] + 'Observe'] === Amm.Operator.CONTENT_PERIODICALLY_CHECKED;
                 if (stillHaveChecked) break;
             }
-            if (!stillHaveChecked) this._setNonCacheable(this._nonCacheable & ~Amm.Operator.NON_CACHEABLE_CONTENT);
+            if (!stillHaveChecked) {
+                this._setNonCacheable(this._nonCacheable & ~Amm.Operator.NON_CACHEABLE_CONTENT);
+            }
         }
         
         return res;

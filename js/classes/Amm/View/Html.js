@@ -149,3 +149,46 @@ Amm.View.Html.findOuterHtmlElement = function(element, all) {
     }
     return all? outermost : null;
 };
+
+Amm.View.Html._lastFocusedNode = null;
+Amm.View.Html._newFocusedNode = null;
+Amm.View.Html.deferredFocusNode = function() {
+    // focus changed by other means - don't disrupt it
+    var h = Amm.View.Html;
+    if (!h._newFocusedNode) return;
+    if (document.activeElement && document.activeElement != h._lastFocusedNode) {
+        //console.log('cancelling: focus changed to', document.activeElement);
+        if (h._newFocusedNode) jQuery(h).blur();
+        return;
+    }
+    var f = function() {
+        jQuery(h._newFocusedNode).focus();
+        h._newFocusedNode = null;
+    };
+    f();
+    //window.setTimeout(f, 0);
+};
+
+Amm.View.Html.focusNode = function(node) {
+    //console.log('focusing node', node);
+    //if (!node.parentNode) console.trace();
+    if (document.activeElement === node) return;
+    this._lastFocusedNode = document.activeElement;
+    var currentNewFocus = this._newFocusedNode;
+    if (currentNewFocus === node) {
+        //console.log("Focusing to the same");
+        return;
+    }
+    if (currentNewFocus) {
+        if (this._newFocusedNode !== currentNewFocus) {
+            //console.log("changed during blur event handling - cancel");
+            return; // changed during blur event handling
+        }
+    }
+    this._newFocusedNode = node;
+    Amm.getRoot().defer(Amm.View.Html.deferredFocusNode, Amm.View.Html);
+};
+
+Amm.View.Html.getFocusedNode = function() {
+    return this._newFocusedNode || document.activeElement;
+};

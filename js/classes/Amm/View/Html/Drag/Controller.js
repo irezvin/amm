@@ -38,7 +38,7 @@ Amm.View.Html.Drag.Controller.prototype = {
     
     _startHtmlElement: null,
     
-    _startView: null,
+    _sourceView: null,
     
     _cursorStylesheet: null,
     
@@ -57,6 +57,7 @@ Amm.View.Html.Drag.Controller.prototype = {
         if (oldState === state) return;
         if (state === Amm.View.Html.Drag.Controller.STATE.IDLE) {
             this._unregHandler();
+            this._dragSourceView = null;
         } else {
             this._regHandler();
         }
@@ -109,7 +110,7 @@ Amm.View.Html.Drag.Controller.prototype = {
             });
             var dst = this._vector.getLength();
             if (dst >= this.dragStartThreshold) {
-                this._element.notifyDragStart(this._vector, this._startView, this._startHtmlElement, event);
+                this._element.notifyDragStart(this._vector, this._sourceView, this._startHtmlElement, event);
                 if (this._element.getDragging()) {
                     this.setState(Amm.View.Html.Drag.Controller.STATE.DRAG);
                 }
@@ -178,8 +179,12 @@ Amm.View.Html.Drag.Controller.prototype = {
         this._startX = event.pageX;
         this._startY = event.pageY;
         this._startHtmlElement = event.target;
-        this._startView = dragSourceView;
+        this._sourceView = dragSourceView;
         this.setState(Amm.View.Html.Drag.Controller.STATE.INTENT);
+    },
+    
+    getDragSourceView: function() {
+        return this._sourceView;
     },
     
     _handleElementSessionChange: function(session, oldSession) {

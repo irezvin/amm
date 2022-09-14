@@ -3,7 +3,7 @@
 Amm.DomHolder = function() {
 };
 
-Amm.DomHolder.find = function(selector, inside, throwIfNotFound, retArr) {
+Amm.DomHolder.find = function(selector, inside, throwIfNotFound, retArr, requirements, scope) {
     var att = Amm.domHolderAttribute, res = [], lst = {};
     jQuery(selector)[inside? 'find' : 'closest']('[' + att + ']').each(function(idx, domNode) {
         var ids = domNode.getAttribute(att).split(' ');
@@ -12,6 +12,10 @@ Amm.DomHolder.find = function(selector, inside, throwIfNotFound, retArr) {
     for (var i in lst) if (lst.hasOwnProperty(i)) {
         var elm = Amm.getItem(i, throwIfNotFound);
         if (!elm) continue;
+        if (typeof requirements === 'function') {
+            var callRet = requirements.call(scope || window, elm);
+            if (!callRet) continue;
+        } else if (requirements && !Amm.meetsRequirements(elm, requirements)) continue;
         res.push(elm);
         if (retArr && retArr.push) retArr.push(lst[i]);
     }
@@ -22,7 +26,6 @@ Amm.DomHolder.prototype = {
     
     'Amm.DomHolder': '__CLASS__',
     
-    // temp. false - until I'll sort this out
     _domExclusive: true, 
     
     _notifyDomNodeConflict: function(domNode, otherDomHolder) {

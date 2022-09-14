@@ -30,6 +30,7 @@ Amm.Table.WithActive.prototype = {
         this._active = active;
         if (this._lockActive) return;
         var table = this.getTable();
+        this.outActiveChange(active, oldActive);
         if (table && this._tableActiveProp) {
             this._lockActive++;
             var curr = Amm.getProperty(table, this._tableActiveProp);
@@ -41,7 +42,6 @@ Amm.Table.WithActive.prototype = {
             this._lockActive--;
             active = this._active;
         }
-        this.outActiveChange(active, oldActive);
         return true;
     },
 

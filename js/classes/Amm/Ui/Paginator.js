@@ -24,7 +24,7 @@ Amm.Ui.Paginator.prototype = {
     },
     
     setRecordsPerPage: function(recordsPerPage) {
-        if (recordsPerPage === null) recordsPerPage = 0;
+        if (recordsPerPage === null || recordsPerPage === undefined) recordsPerPage = 20;
         recordsPerPage = parseInt(recordsPerPage);
         if (isNaN(recordsPerPage) || recordsPerPage <= 0) {
             throw Error("`recordsPerPage` must be a number greater than 0");
@@ -83,7 +83,7 @@ Amm.Ui.Paginator.prototype = {
     },
 
     setNumRecords: function(numRecords) {
-        if (numRecords === null) numRecords = 0;
+        if (numRecords === null || numRecords === undefined) numRecords = 0;
         numRecords = parseInt(numRecords);
         if (isNaN(numRecords) || numRecords < 0) {
             throw Error("`numRecords` must be a number not less than 0");

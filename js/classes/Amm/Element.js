@@ -21,6 +21,12 @@ Amm.Element = function(options) {
     var expressions;
     var traits = this._getDefaultTraits(options), hasTraits = options.traits;
     var views = [];
+    var component;
+
+    if ('component' in options) {
+        component = options.component;
+        delete options.component;
+    }
 
     if ('expressions' in options) { // we should init expressions last
         expressions = options.expressions;
@@ -83,6 +89,7 @@ Amm.Element = function(options) {
     if (inProps.length) this._initInProps(inProps);
     if (expressions) this.setExpressions(expressions);
     if (onHandlers) this._initOnHandlers(onHandlers);
+    if (component) this.setComponent(component);
     this._endInit();
     if (views.length) {
         for (var i = 0, l = views.length; i < l; i++) {

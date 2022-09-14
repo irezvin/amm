@@ -41,8 +41,9 @@ Amm.View.Html.Input.prototype = {
                 if (jQuery(t._htmlElement).is(':focus')) return;
                 // may happen when element got cleaned up while waiting for deferred event
                 if (!t._element) return; 
-                if (t._element.getFocusedView() === t)
+                if (t._element.getFocusedView() === t) {
                     t._element.setFocusedView(null);
+                }
             };
             this._blurTimeoutId = window.setTimeout(this._blurTimeoutHandler, 1);
             return true;
@@ -59,10 +60,10 @@ Amm.View.Html.Input.prototype = {
             var val = this.getVValue();
             if (val !== undefined) this._element.setValue(val);
         }
-        var q = jQuery(this._htmlElement);        
+        var q = jQuery(this._htmlElement);
         if (q[0]) {
             if (focused && !q.is(':focus')) {
-                q.focus();
+                Amm.View.Html.focusNode(this._htmlElement);
             }
             else if (!focused && q.is(':focus')) q.blur();
         }
@@ -75,9 +76,7 @@ Amm.View.Html.Input.prototype = {
     _handleElementFocus: function() {
         var fv = this._element.getFocusedView();
         if (!fv || fv === this) {
-            Amm.getRoot().defer(function() {
-                this._htmlElement.focus();
-            }, this);
+            Amm.View.Html.focusNode(this._htmlElement);
         }
     },
     

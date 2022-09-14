@@ -190,7 +190,7 @@ Amm = {
      * can specify any number of overriders
      */
     override: function(object, overrider, _) {
-        for (var a = 0, l = arguments.length; a < l; a++) {
+        for (var a = 1, l = arguments.length; a < l; a++) {
             for (var i in arguments[a]) {
                 if (arguments[a].hasOwnProperty(i)) object[i] = arguments[a][i];
             }
@@ -559,6 +559,9 @@ Amm = {
             for (var i = 0; i < object.length; i++) {
                 r.push(this.getProperty(object[i], property, defaultValue));
             }
+            r.getProperty = function(property, defaultValue, args) {
+                return Amm.getProperty(this, property, defaultValue, args);
+            };
             return r;
         }
         if (property instanceof Array) {
@@ -993,7 +996,7 @@ Amm = {
      * Returns element of that view
      */
     findElement: function(domNode, requirements, scope) {
-        var res;
+        var res = null;
         while (domNode) {
             res = null;
             var nodes = [];
@@ -1005,6 +1008,7 @@ Amm = {
                 var callRet = requirements.call(scope || window, res);
                 if (callRet) break;
             } else if (Amm.meetsRequirements(res, requirements)) break;
+            res = null;
             domNode = nodes.length? nodes[0].parentNode : null;
         }
         return res;
@@ -1355,7 +1359,7 @@ Amm = {
             && (typeof object === 'object') 
             && ('nodeType' in object)
             && ('parentNode' in object);
-    }
+    },
     
 };
 

@@ -81,7 +81,7 @@
         sel1.setValue('b');
         assert.deepEqual(jQuery('#sel1b').val(), 'b', 'HTML value follows object value');
         assert.deepEqual(jQuery('#sel1b').val(), 'b', 'Second view is in-sync after element value changed');
-        
+
         sel1.getOptionsCollection().reject[0];
         sel1.getOptionsCollection()[1].setDisabled(true);
         sel1.getOptionsCollection()[2].setSelected(true);
@@ -283,8 +283,8 @@
        
         var fx = jQuery('#qunit-fixture');
         
-        fx.html('<select />');
-       
+        fx.html('<select autocomplete="off" />');
+        
         var s1 = new Amm.Element({
             traits: ['Amm.Trait.Select'],
             multiple: false,
@@ -358,7 +358,7 @@
         assert.ok(fx.find('select span option[value=a]').length, 'hidden option was added into span element');
         e.options[0].setVisible(true);
         assert.equal(fx.find('select span option[value=a]').length, 0, 'visible option was removed from span element');
-        assert.equal(fx.find('select option[value=a]').length, 1, 'visible option remains children of select element');
+        assert.equal(fx.find('select option[value=a]').length, 1, 'visible option remains child of select element');
         Amm.cleanup(e);
         
     });

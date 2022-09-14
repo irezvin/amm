@@ -1,7 +1,7 @@
 nbproject
 build/.cache
 build/amm-compressed.js
-planning
+# planning
 mong
 examples/todo.json
 commit.txt

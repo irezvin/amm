@@ -114,11 +114,12 @@ Amm.View.Html.Table.DragDrop.prototype = {
     _handleElementDragStart: function() {
         
         var args = Array.prototype.slice.call(arguments);
-        Amm.View.Html.Drag.Source.prototype._handleElementDragStart.apply(this, args);
+        if (!Amm.View.Html.Drag.Source.prototype._handleElementDragStart.apply(this, args)) return;
         
         this._isRow = this._isColumn = this._isDrag = this._isResize = false;
         
         var s = this._element.getDragSession();
+        
         // determine drag type
         var node = s.getStartNativeItem();
         var dragAction = Amm.Trait.Table.DragDrop.ACTION.NONE, dragObject;
@@ -206,7 +207,7 @@ Amm.View.Html.Table.DragDrop.prototype = {
             || dragAction === Amm.Trait.Table.DragDrop.ACTION.RESIZE_ROW) {
             this._handleElementDragVectorChange(s.getVector());
         }
-
+        return true;
     },
     
     _handleElementDragNativeItemChange: function(dragNativeItem) {
@@ -216,7 +217,7 @@ Amm.View.Html.Table.DragDrop.prototype = {
         if (relatedTarget && relatedTarget.table !== this._element || relatedTarget === this._dragObject) {
             relatedTarget = null;
         }
-        if (relatedTarget && this._isRow && relatedTarget.row.section !== this._dragObject.row.section) {
+        if (relatedTarget && this._isRow && this._dragObject && relatedTarget.row.section !== this._dragObject.row.section) {
             // we cannot swap rows in same sections
             relatedTarget = null;
         }
@@ -253,6 +254,7 @@ Amm.View.Html.Table.DragDrop.prototype = {
     },
     
     _handleElementDragEnd: function() {
+        if (!(this._isDrag || this._isResize)) return;
         var args = Array.prototype.slice.call(arguments);
         Amm.View.Html.Drag.Source.prototype._handleElementDragEnd.apply(this, args);
         this.deleteShadow();
@@ -305,7 +307,15 @@ Amm.View.Html.Table.DragDrop.prototype = {
         if (!this._isDrag || (!this._isRow && !this._isColumn)) return;
         var obj = this._element.getDragObject();
         if (!obj) return;
-        var cntView = obj.findView(null, 'Amm.View.Html.Visual');
+        // find draggable view that's inside current view
+        var views = obj.getUniqueSubscribers('Amm.View.Html.Visual');
+        var cntView = null;
+        for (var i = 0, l = views.length; i < l; i++) {
+            if (jQuery(views[i].getHtmlElement()).parents().is(this._htmlElement)) {
+                cntView = views[i];
+                break;
+            }
+        }
         if (!cntView) throw Error("Cannot determine container view for drag object");
         var node = cntView.getHtmlElement();
         if (!node) throw Error("Container view of drag object doesn't have HTML element");

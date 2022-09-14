@@ -15,6 +15,8 @@ Amm.Drag.Session.prototype = {
     _source: null,
 
     _startNativeItem: null,
+    
+    _sourceView: null,
 
     _vector: null,
     
@@ -140,6 +142,20 @@ Amm.Drag.Session.prototype = {
 
     outStartNativeItemChange: function(startNativeItem, oldStartNativeItem) {
         this._out('startNativeItemChange', startNativeItem, oldStartNativeItem);
+    },
+    
+    setSourceView: function(sourceView) {
+        var oldSourceView = this._sourceView;
+        if (oldSourceView === sourceView) return;
+        this._sourceView = sourceView;
+        this.outSourceViewChange(sourceView, oldSourceView);
+        return true;
+    },
+
+    getSourceView: function() { return this._sourceView; },
+
+    outSourceViewChange: function(sourceView, oldSourceView) {
+        this._out('sourceViewChange', sourceView, oldSourceView);
     },
     
     setVector: function(vector) {

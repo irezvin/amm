@@ -26,6 +26,8 @@ Amm.Table.Column.prototype = {
     _tableActiveProp: 'activeColumn',
     
     _size: null,
+
+    _autoSize: true,
     
     _offset: null,
     
@@ -81,6 +83,12 @@ Amm.Table.Column.prototype = {
 
     outEnabledChange: function(enabled, oldEnabled) {
         this._out('enabledChange', enabled, oldEnabled);
+        if (this._component) this._component.notifyColumnEnabledChange(this, enabled, oldEnabled);
+    },
+    
+    outVisibleChange: function(visible, oldVisible) {
+        Amm.Trait.Visual.prototype.outVisibleChange.call(this, visible, oldVisible);
+        if (this._component) this._component.notifyColumnVisibleChange(this, visible, oldVisible);
     },
     
     configureCellProto: function(ret, row) {
@@ -172,6 +180,7 @@ Amm.Table.Column.prototype = {
         if (oldSize === size) return;
         this._size = size;
         this.outSizeChange(size, oldSize);
+        this.setAutoSize(size === null);
         if (!this._lockSetSize && this._enabled && this._component) {
             this._component.setColumnSize(this, size);            
         }
@@ -201,6 +210,22 @@ Amm.Table.Column.prototype = {
         this._out('sizeChange', size, oldSize);
     },
     
+    setAutoSize: function(autoSize) {
+        autoSize = !!autoSize;
+        var oldAutoSize = this._autoSize;
+        if (oldAutoSize === autoSize) return;
+        this._autoSize = autoSize;
+        this.outAutoSizeChange(autoSize, oldAutoSize);
+        if (autoSize) this.setSize(null);
+        return true;
+    },
+
+    getAutoSize: function() { return this._autoSize; },
+
+    outAutoSizeChange: function(autoSize, oldAutoSize) {
+        this._out('autoSizeChange', autoSize, oldAutoSize);
+    },
+
     _subscribeFirst_sizeChange: function() {
         if (this._component) this._component.observeColumnSize(this);
     },
