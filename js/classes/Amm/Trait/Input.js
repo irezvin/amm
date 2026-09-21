@@ -129,6 +129,16 @@ Amm.Trait.Input.prototype = {
     
     outActualizeValue: function() {
         this._out('actualizeValue');
+    },
+    
+    outBeginTyping: function(text, feedback) {
+        this._out('beginTyping', text, feedback);
+    },
+    
+    beginTyping: function(text) {
+        var feedback = {handled: false};
+        this.outBeginTyping(text, feedback);
+        return feedback.handled;
     }
 
 };

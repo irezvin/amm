@@ -1,0 +1,19 @@
+2024-09-16 Notes
+
+-   Table with a cloned header
+    -   we can't call scrollIntoView on the cloned th cell, since those are tied to the position of the main table;
+        the call has to be made on the _table's_ cell, to trigger scrolling
+    -   a table cell that is "hidden" under the cloned side won't be revealed that way – from the main table's point of
+        view it's already in the visible area; this case needs to be handled separately
+
+My wishlist (in random order):
+
+-   Playing with the table
+    -   Fix the quirk with twin + scroll into view on focus
+    -   Make the paginator' page switch when navigating past the first/last row
+
+-   Widgets
+    -   editor for the table (only once there's positioning)
+    -   sorter in a cell (trait + view for head column?)
+    -   filter column + filter widget
+    -   a widget for adequate autocomplete? – but that's a whole sub-project

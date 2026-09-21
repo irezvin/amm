@@ -116,6 +116,8 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
     
     _handleDom_keydown: function(event) {
         
+        // TODO: carefully break down this abomination into several methods
+        
         var key = event.keyCode;
         var char = event.key;
         var handled = false;
@@ -187,9 +189,16 @@ Amm.View.Html.Table.SimpleKeyboardControl.prototype = {
         ) {
             var editor = cell.findEditor();
             if (editor && editor.findView(null, 'Amm.View.Html.Input')) {
+                
                 cell.setEditing(true);
-                editor.setValue(char);
-                event.preventDefault();
+                editor.beginTyping(); // calling without argument so it only focuses & selects text
+                
+                // Turned out when we don't do event.preventDefault() here, focusing the input
+                // & letting the event complete is enough to have the typed-in character 
+                // replace the text inside the input field. Leaving this below for clarity
+                
+                //event.preventDefault();
+                
                 return;
             }
         }

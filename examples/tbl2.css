@@ -65,9 +65,10 @@ td.hl2 {
     color: darkgreen;
 }
 
-.data input[type=text] {
+.data input[type=text], .data textarea {
     background: none;
-    margin: -5px;
+    display: block;    
+    margin: -5px -5px -30px -5px;
     padding: 5px;
     border: none;
     width: calc(100% + 10px);
@@ -178,7 +179,7 @@ th.draggableRow.active, th.draggableColumn.active > div:first-child {
 ,   table.data th
 ,   table.data td
 ,   table.data .cellContent
-,   table.data .cellContent .cellItems 
+,   table.data .cellContent .cellItems:has(> *) 
 {
     height: 100%;
 } 
@@ -267,6 +268,6 @@ div.hFix {
     display: inline-block;
 }
 
-table.data.xAbsoluteEdit td.valueHidden .cellContent > .value {
+table.data td.valueHidden .cellContent > .value {
     display: none;
 }

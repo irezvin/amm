@@ -156,6 +156,26 @@ Amm.View.Html.Input.prototype = {
     
     getUpdateOnKeyUp: function() {
         return !!this._eventName.match(/\bkeyup\b/);
+    },
+    
+    _handleElementBeginTyping: function(text, feedback) {
+        var focusedView = this._element.getFocusedView();
+        if (focusedView && focusedView !== this) {
+            return;
+        }
+        if (document.activeElement !== this._htmlElement) {
+            this._htmlElement.focus();
+            if (document.activeElement !== this._htmlElement) {
+                return;
+            }
+        }
+        this._htmlElement.select();
+        if (typeof text === 'string') {
+            document.execCommand('insertText', false, text);
+        }
+        if (feedback instanceof Object) {
+            feedback.handled = true;
+        }
     }
 
 };

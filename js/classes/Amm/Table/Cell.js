@@ -46,10 +46,12 @@ Amm.Table.Cell.prototype = {
     
     _tableActiveProp: 'activeCell',
     
+    _updateOnActiveEditorValueChange: true,
+
     cancelEditOnUpdateValue: true,
     
     editingClassName: 'editing',
-
+    
     _getDefaultTraits: function (options) {
         return [Amm.Trait.Visual, Amm.Trait.Component, Amm.Trait.DisplayParent];
     },
@@ -365,6 +367,13 @@ Amm.Table.Cell.prototype = {
     
     },
     
+    _updateValueOnEditorChange: function() {
+        if (this._cancelEdit) {
+            return;
+        }
+        this.updateValue();
+    },
+    
     updateValue: function(value, editor) {
         if (!arguments.length) {
             editor = this.getActiveEditor();
@@ -409,7 +418,14 @@ Amm.Table.Cell.prototype = {
             if (oldActiveEditor !== this._activeEditor) {
                 this.outActiveEditorChange(this._activeEditor, oldActiveEditor);
             }
+            // it may happen that editor-provided value may differ from model one, i.e. 0 and "0";
+            // we don't want to cancel while initializing the editor
+            var savedCancelEditOnUpdateValue = this.cancelEditOnUpdateValue;
+            this.cancelEditOnUpdateValue = false;
+            
             editor.setValue(this.getValue());
+            
+            this.cancelEditOnUpdateValue = savedCancelEditOnUpdateValue;
         } catch (e) {
             this._editing = false;
             this._oldActiveEditor = this._activeEditor;
@@ -453,6 +469,9 @@ Amm.Table.Cell.prototype = {
         this._activeEditor = activeEditor;
         if (!noTrigger) {
             this.outActiveEditorChange(activeEditor, oldActiveEditor);
+        }
+        if (this._updateOnActiveEditorValueChange) {
+            Amm.subUnsub(activeEditor, oldActiveEditor, this, 'valueChange', this._updateValueOnEditorChange);
         }
         return true;
     },
@@ -626,6 +645,28 @@ Amm.Table.Cell.prototype = {
         if (colIndex === null) return null;
         var res = sectionType.slice(0, 1).toLowerCase() + (rowIndex + 1) + 'c' + (colIndex + 1);
         return res;
+    },
+    
+
+    setUpdateOnActiveEditorValueChange: function(updateOnActiveEditorValueChange) {
+        var oldUpdateOnActiveEditorValueChange = this._updateOnActiveEditorValueChange;
+        if (oldUpdateOnActiveEditorValueChange === updateOnActiveEditorValueChange) return;
+        this._updateOnActiveEditorValueChange = updateOnActiveEditorValueChange;
+        if (this._activeEditor) {
+            if (this._updateOnActiveEditorValueChange) {
+                this._activeEditor.subscribe('valueChange', this._updateValueOnEditorChange, this);
+            } else {
+                this._activeEditor.unsubscribe('valueChange', this._updateValueOnEditorChange, this);
+            }
+        }
+        this.outUpdateOnActiveEditorValueChangeChange(updateOnActiveEditorValueChange, oldUpdateOnActiveEditorValueChange);
+        return true;
+    },
+
+    getUpdateOnActiveEditorValueChange: function() { return this._updateOnActiveEditorValueChange; },
+
+    outUpdateOnActiveEditorValueChangeChange: function(updateOnActiveEditorValueChange, oldUpdateOnActiveEditorValueChange) {
+        this._out('updateOnActiveEditorValueChangeChange', updateOnActiveEditorValueChange, oldUpdateOnActiveEditorValueChange);
     },
     
 };

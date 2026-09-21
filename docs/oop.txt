@@ -65,7 +65,7 @@ SampleApp = {
 
 }
 
-SampleApp.SampleClass.SubClass = function()	
+SampleApp.SampleClass.SubClass = function() {};
 Amm.registerNamespace ('SampleApp', SampleApp);
 
 }}}
@@ -91,7 +91,7 @@ Amm.getFunction('SampleApp.SampleClass.SubClass')
 
 {{{code: lang="js" linenumbers="False"
 //>
-Amm.getFunction('SampleApp.SampleClass') === Amm.getFunction(SampleApp.SampleClass
+Amm.getFunction('SampleApp.SampleClass') === Amm.getFunction(SampleApp.SampleClass);
 
 //< true
 }}}
@@ -125,7 +125,7 @@ SampleApp.SampleClass.prototype = {
 	* возвращает
 		* строку - класс объекта **object**
 		* если не может определить - возвращает null
-	* работает так: находит в объекте член со значением ''"__CLASS__"'' и возвращает его ключ
+	* работает так: находит в объекте член со значением "__CLASS__" и возвращает его ключ
 
 === Amm.is: function(item, className, throwIfNot) ===
 	* возвращает true, если объект **item** относится к классу **className**, //либо унаследован от него//
@@ -317,7 +317,7 @@ Amm.is(htmlCollection, 'Amm.View.Abstract.Collection')
 
 ==== Дополнительные функции наследования ====
 
-* **constructor.beforeExtend: **function (subClass, parentClass, dontIndicateParent): boolean
+* **constructor.beforeExtend:** function (subClass, parentClass, dontIndicateParent): boolean
 * **constructor.afterExtend**: function (subClass, parentClass, dontIndicateParent)
 
 Если добавить в функцию-конструктор (не в прототип!) предка методы beforeExtend и/или afterExtend, то Amm.extend выполнит эти методы до и после модификации прототипа потомка соотвественно.
@@ -327,7 +327,6 @@ Amm.is(htmlCollection, 'Amm.View.Abstract.Collection')
 Сами функции beforeExtend/afterExtend не попадают в конструктор-потомок (но, если нужно, они могут себя туда вписать сами).
 
 ==== Интерфейсы ====
-
 Интерфейсы позволяют сообщить о том, что объект поддерживает тот или иной набор методов.
 В настоящее время нет никаких проверок на то, так это или нет - если мы находим в объекте метку интерфейса, мы принимаем это "на веру". 
 * Amm.is() позволяет проверять, имеет ли объект тот или иной интерфейс.
@@ -384,7 +383,6 @@ Amm.is(instance, "Boring")
 }}}
 
 ==== Requirements ====
-
 В некоторых случаях нам бывает нужно проверить, соответствуют ли методы объекта определенному набору требований.
 
 === Amm.meetsRequirements(object, requirements, paramName) ===
@@ -400,7 +398,6 @@ Amm.is(instance, "Boring")
 * **paramName**: undefined|string - если задано, то выбрасывать исключение, в сообщении об ошибке указать это имя параметра (аналогичнго Amm.is())
 
 === Пример ===
-
 {{{code: lang="js" linenumbers="False"
 MyListClass = function() {}
 MyListClass.prototype = {
@@ -433,7 +430,6 @@ Amm.meetsRequirements (mySecondList, ['WithList', ["getList", "setList"]])
 
 
 ===== Amm.createClass(name, parent, proto, constructorFn) =====
-
 Эта функция позволяет быстро генерировать классы со [[properties|свойствами]], наследованием и всеми нужными членами в прототипе.
 
 * **name**: string|null - имя нового класса в формате Namespace.SubNameSpace.ClassName. При этом все namespaces должны существовать ДО создания класса, а ClassName в самом глубоком Namespace, наоборот, не должен быть определен. Если не задано, то имя не назначается (и в прототип не добавляется '''Namespace.SubNameSpace.ClassName': __CLASS__''
@@ -450,7 +446,7 @@ Amm.meetsRequirements (mySecondList, ['WithList', ["getList", "setList"]])
 
 {{{code: lang="js" linenumbers="False"
 var GuyClass = Amm.createClass('GuyClass', 'Amm.WithEvents', { 
-	prop__name: null, 
+	prop__name: null,
 	prop__birthDate: null
 });
 

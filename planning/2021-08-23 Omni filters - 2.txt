@@ -34,6 +34,8 @@ ValueCriterion :=
     [ {min: interval1min, max: interval1max}, value, {min: interval1min, max: interval2max}, value ] ] - combine intervals    
     { not: valueCriterion } - invert
     { and: [valueCriterion, valueCriterion] } - combine using and
+    { or: [valueCriterion, valueCriterion] } - combine using or
+    { like: "string" } - search using SQL LIKE (php version translates into regexp)
     { rx: "/regExp/flags" } 
     { empty: true / false }
     { exists: true / false }

@@ -79,14 +79,18 @@ Amm.View.Html.DisplayParent.prototype = {
                     } else {
                         inst = [];
                     }
+                    
                     var views = Amm.constructMany(inst, 'Amm.View.Html', {element: item}, false, true);
-                    for (var j = 0, l = views.length; j < l; j++) {
-                        var elem = views[j].getHtmlElement();
-                        if (!elem) continue; // wtf
-                        // we are interested in outermost nodes only
-                        if (elem.parentNode) continue; 
-                        this._htmlElement.appendChild(elem);
-                        if (!res) res = elem;
+                    
+                    if (!res) {
+                        for (var j = 0, l = views.length; j < l; j++) {
+                            var elem = views[j].getHtmlElement();
+                            if (!elem) continue; // wtf
+                            // we are interested in outermost nodes only
+                            if (elem.parentNode) continue; 
+                            res = elem;
+                            break
+                        }
                     }
                 }
             }

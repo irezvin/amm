@@ -466,13 +466,9 @@ Amm.Table.Table.prototype = {
                     {
                         $: 'div',
                         'class': 'vFix vFixTop',
-                        onscroll: function(event) {
-                            var jq = jQuery(this), left = jq.scrollLeft();
-                            var p = jQuery(this).parent();
-                            if (left) {
-                                jq.scrollLeft(0);
-                                p.find('.scrollableTableInner').scrollLeft(left);
-                            }
+                        data_amm_v: {
+                            'class': 'v.Table.Scrollable',
+                            scrollType: 'HORIZONTAL',
                         },
                         $$: {
                             $: 'table',
@@ -483,13 +479,9 @@ Amm.Table.Table.prototype = {
                     {
                         $: 'div',
                         'class': 'hFix hFixLeft',
-                        onscroll: function(event) {
-                            var jq = jQuery(this), top = jq.scrollTop();
-                            var p = jQuery(this).parent();
-                            if (top) {
-                                jq.scrollTop(0);
-                                p.find('.scrollableTableInner').scrollTop(top);
-                            }
+                        data_amm_v: {
+                            'class': 'v.Table.Scrollable',
+                            scrollType: 'VERTICAL',
                         },
                         $$: {
                             $: 'table',
@@ -500,12 +492,10 @@ Amm.Table.Table.prototype = {
                     {
                         $: 'div',
                         'class': 'scrollableTableInner',
-                        onscroll: function(event) {
-                            console.log('onscroll');
-                            var jq = jQuery(this), left = jq.scrollLeft(), top = jq.scrollTop();
-                            var p = jQuery(this).parent();
-                            p.find('.hFixInner').css('top', -top + "px");
-                            p.find('.vFixInner').css('left', -left + "px").scrollLeft(0);
+                        data_amm_v: {
+                            'class': 'v.Table.Scrollable',
+                            scrollType: 'MAIN',
+                            scrollCellIntoViewOnActivate: true,
                         },
                         $$: {
                             $: 'div',

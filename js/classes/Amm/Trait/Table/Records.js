@@ -1,9 +1,3 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /* global Amm */
 
 Amm.Trait.Table.Records = function(options) {
@@ -66,6 +60,5 @@ Amm.Trait.Table.Records.prototype = {
     _endInit_tableRecordset: function() {
         if (this._mapper && !this._recordset) this.setRecordset({});
     },
-    
     
 };

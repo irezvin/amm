@@ -314,6 +314,11 @@ Amm.View.Html.Collection.prototype = {
         
         var nextNode;
         if (oldNodes.length) nextNode = oldNodes[oldNodes.length - 1].nextSibling;
+        
+        if (oldNodes.indexOf(nextNode) >= 0) {
+            console.warn('Amm.View.Html.Collection: _items order not matching DOM elements order', this);
+            nextNode = null;
+        }
         if (!nextNode) {
             for (var j = index + insert.length, ll = this._items.length; j < ll; j++) {
                 if (this._items[j].length > 1 && this._items[j][1].parentNode === this._htmlElement) {

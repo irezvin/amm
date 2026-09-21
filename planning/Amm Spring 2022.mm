@@ -26,12 +26,12 @@
 <node CREATED="1645044505862" ID="ID_1086222923" MODIFIED="1645044513792" TEXT="&#x432;&#x43e;&#x437;&#x43c;&#x43e;&#x436;&#x43d;&#x43e;&#x441;&#x442;&#x44c; &quot;collapse&quot; &#x441;&#x43e;&#x43e;&#x431;&#x449;&#x435;&#x43d;&#x438;&#x439;-&#x434;&#x443;&#x431;&#x43b;&#x435;&#x439;"/>
 <node CREATED="1645044514113" ID="ID_337443401" MODIFIED="1645044527520" TEXT="&#x432;&#x43e;&#x437;&#x43c;&#x43e;&#x436;&#x43d;&#x43e;&#x441;&#x442;&#x44c; &#x441;&#x441;&#x44b;&#x43b;&#x43a;&#x438; &#x432; &#x441;&#x43e;&#x43e;&#x431;&#x449;&#x435;&#x43d;&#x438;&#x44f;&#x445;-&#x434;&#x443;&#x431;&#x43b;&#x44f;&#x445; &#x43d;&#x430; &#x440;&#x435;&#x43b;&#x435;&#x432;&#x430;&#x43d;&#x442;&#x43d;&#x44b;&#x435; control&apos;&#x44b;"/>
 </node>
-<node CREATED="1645045309016" FOLDED="true" ID="ID_245991747" MODIFIED="1645168696464" TEXT="RecordStatusView">
+<node CREATED="1645045309016" FOLDED="true" ID="ID_245991747" MODIFIED="1725919415648" TEXT="RecordStatusView">
 <node CREATED="1645045341710" ID="ID_752134192" MODIFIED="1645045345529" TEXT="map record status to class"/>
 <node CREATED="1645045346210" ID="ID_1018560370" MODIFIED="1645045351145" TEXT="map record status to html"/>
 <node CREATED="1645045351472" ID="ID_1663509376" MODIFIED="1645045581549" TEXT="link to &quot;selected records&quot; or &quot;selected keys&quot; collection; reflect when record is selected (see &quot;selection feature&quot; below)"/>
 </node>
-<node COLOR="#66ff00" CREATED="1645044346456" ID="ID_453499067" MODIFIED="1645168927076" TEXT="Popup">
+<node COLOR="#66ff00" CREATED="1645044346456" ID="ID_453499067" MODIFIED="1725919366815" TEXT="Popup">
 <node CREATED="1645045021336" ID="ID_1670125905" MODIFIED="1645045034423" TEXT="&#x447;&#x442;&#x43e;&#x431;&#x44b; &#x437;&#x430;&#x442;&#x435;&#x43c; &#x43c;&#x43e;&#x436;&#x43d;&#x43e; &#x431;&#x44b;&#x43b;&#x43e; &#x441;&#x43c;&#x435;&#x43d;&#x438;&#x442;&#x44c; &#x440;&#x435;&#x430;&#x43b;&#x438;&#x437;&#x430;&#x446;&#x438;&#x44e; &#x43d;&#x430; popper &#x438; &#x442;.&#x43f;."/>
 <node CREATED="1645045041065" ID="ID_1033648544" MODIFIED="1645045050819" TEXT="&#x43f;&#x43e;&#x43a;&#x430; &#x441;&#x438;&#x43b;&#x44c;&#x43d;&#x43e; &#x43d;&#x435; &#x437;&#x430;&#x43b;&#x443;&#x43f;&#x430;&#x442;&#x44c;&#x441;&#x44f;; z-index &#x438; &#x432;&#x441;&#x451;"/>
 </node>
@@ -41,10 +41,10 @@
 </node>
 <node CREATED="1645045132096" ID="ID_1992042839" MODIFIED="1645045204367" TEXT="Cell with record status: when record has errors, focusing cell will show pop-up with record error info"/>
 <node CREATED="1645044277908" ID="ID_317486055" MODIFIED="1645045278903" TEXT="Amm.Trait.Table.RecordSet"/>
-<node CREATED="1645044816068" FOLDED="true" ID="ID_687295667" MODIFIED="1645168700487" TEXT="SortColumn">
+<node CREATED="1645044816068" FOLDED="true" ID="ID_687295667" MODIFIED="1725919392588" TEXT="SortColumn">
 <node CREATED="1645044858368" ID="ID_1195646670" MODIFIED="1645044883099" TEXT="&#x43f;&#x43e;&#x43a;&#x430;: click on sort element toggles sort"/>
 </node>
-<node CREATED="1645044303744" FOLDED="true" ID="ID_1113042891" MODIFIED="1645168699881" TEXT="FilterRow">
+<node CREATED="1645044303744" FOLDED="true" ID="ID_1113042891" MODIFIED="1725919402981" TEXT="FilterRow">
 <node CREATED="1645044843576" ID="ID_472150224" MODIFIED="1645044854316" TEXT="&#x43f;&#x43e;&#x43a;&#x430; &#x441;&#x434;&#x435;&#x43b;&#x430;&#x435;&#x43c; &#x43f;&#x440;&#x43e;&#x441;&#x442;&#x43e; &#x432;&#x432;&#x43e;&#x434; &#x434;&#x43b;&#x44f; omni-filter"/>
 </node>
 <node CREATED="1645044587306" ID="ID_1410628092" MODIFIED="1645044809952" TEXT="?RecordStatusDisplay"/>

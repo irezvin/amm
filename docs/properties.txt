@@ -6,7 +6,6 @@ Creation-Date: 2020-09-17T09:26:20+03:00
 Created четвер 17 вересня 2020
 
 ===== "Свойства" в стиле Amm =====
-
 "Свойство" (property) это комбинация из:
 * setter'а (set<Property>)
 * getter'а (get<Property>)
@@ -25,7 +24,6 @@ changeEvent должен срабатывать только в случае, е
 ===== Пример реализации свойства =====
 
 Чтобы создать класс с минимально функционирующим свойством "value", нужен следующий код:
-
 {{{code: lang="js" linenumbers="False"
 ClassWithValue = function(options) {
 	Amm.WithEvents.call(this, options);
@@ -96,7 +94,6 @@ Sample.setValue('30')
 Утилита выдает "protected"-члены для свойств _propName1, _propName2... в начале (значение по умолчанию - null), после чего get-, set- и out-методы для каждого свойства. (Код практически идентичен приведенному выше).
 
 Чтобы сразу поместить это определение в буфер обмена, можно использовать xclip:
-
 {{{code: lang="sh" linenumbers="False"
 #!/bin/bash
 php /path/to/mk.php -p $* | xclip -i -selection clipboard
@@ -113,7 +110,6 @@ php /path/to/mk.php -p $* | xclip -i -selection clipboard
 В getter можно добавить отложенную инициализацию или отложенные вычисления, которые не будут производиться до того, как значение свойства понадобится.
 
 ===== Функции Amm для создания свойств =====
-
 Если нам нужно быстро опредить несколько свойств, не загромождая решение стандартным (boilerplate) кодом вроде указанного выше, можно использовать метод
 
 ==== Amm.createProperty(target, propName, defaultValue, onChange, defineProperty) ====
@@ -127,7 +123,7 @@ php /path/to/mk.php -p $* | xclip -i -selection clipboard
 	* Если метод-setter уже определен, этот параметр игнорируется
 	* **function onChange(value, old, propName)**: будет вызвано, если новое значение не равно предыдущему, но до срабатывания события. В функции можно установить внутренний член обратно в значение old, в этом случае событие не сработает
 	* Если onChange - объект, то в нем может быть два ключа: before и after.
-	* **function onChange.before (value, old, propName) **- срабатывает до сравнения значения с внутренней переменной. 
+	* **function onChange.before (value, old, propName)** - срабатывает до сравнения значения с внутренней переменной. 
 	* если onChange.before возвращает любой результат, кроме undefined, то это станет новым значением value: value := onChange.before(value)
 	* **function onChange.after** - то же самое, что function onChange(), описанная выше
 * **defineProperty:** boolean - если TRUE, то будет создано javascript-свойство с именем propName при помощи object.defineProperty. У свойства определены методы get и set, которые вызывают функции с именами getter'а и setter'а соответственно. Поскольку в замыкании участвуют имена функций, а не сами функции, полиморфизм при наследовании или последующей перегрузке методов не нарушается (см. раздел "Использование object.defineProperty: что нужно учесть" ниже). Правда, метод или методы в onChange переопределить или вызвать  в потомке не получится - можно переопределить только setter целиком.
@@ -135,7 +131,6 @@ php /path/to/mk.php -p $* | xclip -i -selection clipboard
 ==== Пример ====
 
 В примере ниже мы создаем свойство не у объекта, а у его прототипа, чтобы оно появлялось у всех экземпляров.
-
 {{{code: lang="js" linenumbers="False"
 var ClassWithNumber = function(options) {
     Amm.WithEvents.call(this, options);
@@ -192,7 +187,6 @@ Sample.number = 'xxx'
 
 ==== Пример с наследованием ====
 (продолжая предыдущий)
-
 {{{code: lang="js" linenumbers="False"
 
 var ClassWithInt = function(options) { return ClassWithNumber.call(this, options); };
@@ -261,10 +255,10 @@ Sample2.number = 'zzz'
 Типы возвращаемых значений:
 | тип object<| тип property<| результат                                                                  <|
 |:-----------|:-------------|:----------------------------------------------------------------------------|
-| object     | string       | одиночное значение object.get<Property>() или default                       |
-| Array      | string       | массив значений свойства property для каждого объекта в массиве [object]    |
 | object     | Array        | object, где ключи совпадают с именами свойств, а значения - с их значениями |
+| Array      | string       | массив значений свойства property для каждого объекта в массиве [object]    |
 | Array      | Array        | массив объектов со значениями каждого свойства у каждого объекта            |
+| object     | string       | одиночное значение object.get<Property>() или default                       |
 
 
 В случае, если getProperty() вызывается с массивом в качестве первого аргумента, и возвращает массив, то у этого массива есть метод getProperty(property, defaultValue, args), а в качестве object всегда использует this. Это позволяет создавать цепочки вызовов getProperty вроде

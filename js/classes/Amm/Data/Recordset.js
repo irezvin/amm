@@ -1237,6 +1237,11 @@ Amm.Data.Recordset.prototype = {
         if (this._skipNavFetchCheck) return;
         var possible = isFetch? this.getCanFetch() : this.getCanNavigate();
         if (possible) return;
+        if (!possible && isFetch && this.getTransaction()) {
+            this.getTransaction().cancel();
+            possible = this.getCanFetch();
+            if (possible) return;
+        }
         var op = isFetch? 'fetch' : 'navigation';
         var err = '';
         if (opDescr) err = 'Cannot ' + opDescr + '() at the moment - ';

@@ -1,0 +1,65 @@
+# Amm ideas: towards a product
+
+Ideas are in random order and of random effort/importance
+
+- Create documentation
+    - concepts
+    - tutorials
+    - API docs
+    - examples
+- Modernize code & tooling
+    - get rid of PHP for building, use npm & its ecosystem
+    - get rid of jQuery
+    - get rid of qUnit
+    - use latest ECMAscript constructs
+    - add unit (non-integration) tests
+    - consider switching to Typescript?
+- Expression improvements
+    - Exp inspector
+    - Objects & Arrays
+    - Object transformers
+    - More sugar: safe access, destructuring, comments
+    - Exp sharing via contexts
+    - Exp compiler to JS
+- Async views
+- Feature for async events? does it make sense?
+- Array mapper improvements
+    - Multiple: maps one source object to 0..N dest objects
+    - Recursive: iterates over sub-objects
+- Dataset improvements
+    - I forgot which, but they seemed to be important
+- Better server data access arch
+    - better mapper, transactions, transformers architecture
+    - think on adapter layer that supports all bells and whistles expected by our data model
+    - think on hybrid arch (part local, part remote), sync - probably out of scope
+- Data table
+    - fix scroll-into-view with fixed sides
+    - editor island
+    - column header (filter) island
+    - delayed rendering support
+- Expression template
+    - dynamic expression-like template that generates DOM
+- Proper CSS loading mechanism
+    - think on styling, theming etc
+- Widget views' building approach
+    - i.e. we have different libraries: bootstrap, material etc
+    - same widgets (elements) will have different views when same controls are built using different library (different set of "default views")
+    - maybe different extra traits as well?
+- Widgets library
+    - proper combobox/A.C. - hardest one
+    - splitter - should remember state
+    - tabs
+    - accordion
+    - draggable layout
+    - calendar/date picker
+    - dialog window
+    - draggable window?
+    - tree view
+    - table with expandable details (treeble?)
+    - action list
+    - sidebar (using action list)
+    - dropdown menu (same)
+    - connect buttons to actions
+    - vcl-like anchor-based elements resizing
+    - kanban view
+    - calendar view

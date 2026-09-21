@@ -4,7 +4,6 @@ Amm.View.Html.Table.Cell = function(options) {
     Amm.View.Html.Visual.call(this, options);
 };
 
-
 Amm.View.Html.Table.Cell.prototype = {
 
     'Amm.View.Html.Table.Cell': '__CLASS__',
@@ -79,21 +78,23 @@ Amm.View.Html.Table.Cell.prototype = {
     _handleElementBeginEdit: function() {
         var jq = jQuery(this._htmlElement).find('.cellContent');
         if (!jq.length) return;
-        this._savedWidth = jq[0].style.width || '';
-        this._savedHeight = jq[0].style.height || '';
-        // innerWidth is fixed to lesser value since otherwise
-        // multi-view auto-adjusting algo won't adjust whole column (its' width
-        // already matches required width)
-        jq.innerWidth(jq.innerWidth() - .4);
-        jq.innerHeight(jq.innerHeight() - .4);
+        var jqp = jq.parent();
+        this._savedWidth = jqp[0].style.width || '';
+        this._savedHeight = jqp[0].style.height || '';
+        this._savedContentHeight = jq[0].style.height || '';
+        jqp.innerWidth(jqp.innerWidth());
+        jqp.innerHeight(jqp.innerHeight());
     },
     
     _handleElementEndEdit: function() {
         var jq = jQuery(this._htmlElement).find('.cellContent');
-        jQuery(this._htmlElement).find('.cellContent').css('width', this._savedWidth);
-        jQuery(this._htmlElement).find('.cellContent').css('height', this._savedHeight);
+        var jqp = jq.parent();
+        jqp.css('width', this._savedWidth);
+        jqp.css('height', this._savedHeight);
+        jq.css('height', this._savedContentHeight);
         this._savedWidth = '';
         this._savedHeight = '';
+        this._savedContentHeight = '';
     },
     
     setVActiveEditor: function(editor) {
