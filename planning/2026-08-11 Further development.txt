@@ -1,4 +1,4 @@
-Reasons why I've put the project was into a 4-year hiatus:
+Reasons why I've put the project into a 4-year hiatus:
 
 -   very low chance of success due to React and, to lesser extent,
     Vue & Angular being a de-facto standard in a front-end development;
@@ -6,10 +6,6 @@ Reasons why I've put the project was into a 4-year hiatus:
 
 -   no sane person is going to invest in learning (or even more,
     in contributing to) an obscure one-man project;
-
--   given I have a "proper" 8 to 5 job now, I'm even more constrained
-    on resources (although I must admit that a parenting is much easier now
-    as well);
 
 -   thought that with the widespread use of agentic tools, the frameworks
     and libraries that were lucky enough to become part of the training data
