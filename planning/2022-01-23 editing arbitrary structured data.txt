@@ -1,0 +1,40 @@
+2022-01-23 editing the data of the arbitrary structure
+
+One of the primary use cases for the Amm, and the sooner we achieve this,
+the more useful the framework will be.
+
+There are two tasks:
+
+-   DSL to define the structure (we can restrict that to ModelMeta),
+-   the editor o.
+
+Data structure:
+
+-   fields (**type**, caption, description, validation)
+    -   should we introduce repository of the types?
+-   the field can be
+    -   simple
+    -   array of the values
+    -   array of the objects of a single type
+    -   array of the objects of different types
+-   "applicability" of the field (is shown, validated, availalble for input)
+    can depend on different fields' values (for simplicity - on the presence
+    of any value in the other field, or of that value matching something)
+
+Additional info for the interface:    
+
+-   types and settings of the controls
+-   order of the controls
+-   in the future - hints for the UI auto-layout
+
+At the moment, we have everything needed for this. The question that remains is:
+is Data.Model enough w/o Data.Record; probably it is, since our records don't
+have the persistence, and we get the result structure as a whole.
+
+After that I'll be able to integrate Amm into Avancore to enter complex data
+that look familiar to Joomla's "params". Like settings of themes and plugins 
+for my flexible site builder project // dropped as well - it's 2026.
+
+// 27.09.26 - Avancore probably going to be sunsetted formally (is de-facto
+// long abandoned) and the best ideas will go into my other not yet started, Pallur
+

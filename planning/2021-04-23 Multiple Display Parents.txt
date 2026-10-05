@@ -1,6 +1,6 @@
 2021-04-23
 
-Как сделать множество displayParents?
+How to implement multiple displayParents?
 
 -   Visual.allDisplayParents: array (get/set/change), unique items
 -   displayParent is primary

@@ -1,0 +1,20 @@
+2020-10-01
+==========
+
+Non-destuctive initializers
+
+Currently some of Amm constructors and Amm.init delete fields from the `options` opject.
+This makes `options` unusable after the first use. Amm.override({}, options) solves this,
+but not in the case of a nested prototypes. Deep copying doesn't solve this either.
+
+Solutions:
+
+A.  fully clone _all_ options in _every_ constructor
+
+B.  clone only before potentially destructive operation, set flag __cloned__: true
+
+C.  keep registry of problematic keys, pass it around, and then process somehow 
+    // I absolutely cannot remember what I meant by that - 02.10.26
+
+D.  Amm.init: don't consider keys such as foo__ problematic.
+    // Why did I do that at all - 02.10.26?    

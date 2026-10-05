@@ -1,10 +1,10 @@
 2020-09-22
 
-Amm: улучшение конструкторов для Expression и Element
+Amm: Expression & Element constructor improvements
 
 -   Expression
-    -   реестр выражений definition => instance
-    -   если есть, повторно используем, добавляя новый контекст
+    -   expression registry (map: definition => instance)
+    -   if it exists, re-use instance by adding a new context
         -   Amm.Expression.Context
             -   cannot create multiple contexts or switch context
             -   contextId
@@ -12,20 +12,22 @@ Amm: улучшение конструкторов для Expression и Element
             -   methods:
                 this.expression.setContextId(this.contextId)
                 return this.expression.<methodName>(args)
-    -   уничтожаем, только если закончились контексты (частично поддерживается)
-    -   проверить, как работают контексты для write-expressions 
-    -   тесты
+    -   delete instance only when no more contexts exist (partially supported)
+    -   check how contexts perform for write-expressions
+    -   tests
 -   Element
-    -   если в конструкторе известны Traits, создаем конструктор и прототип с этим набором Traits, 
-        и возвращаем созданный с ним экземпляр
-    -   сейчас код инициализации находится в __augment, эти методы должны корректно вызываться
-        конструктором
-    -   предполагаем, что "родной" new будет работать быстрее
-    -   в developer tools будут чище отображаться свойства
-    -   свойства traits будут идти в начале прототипа (как при наследовании)
-+   Перед этой капитальной работой пишем тесты для изменений, которые уже есть // done @ 01.10
-    +   проверить expression + range
-    +   список тестов (он же changelog к новому commit'у)    
+    -   if the prototype array has known Traits definitions, build & cache pre-defined
+        JS constructor w/ prototype with those Traits, and return "new" instance
+        created with it
+    -   since the traits' init code lives in  __augment, these methods should
+        be called by the synthetic constructor
+    -   that's based on assumption that js-native synthetic constructor performs better,
+        we need to test that concept    
+    -   also we'll have cleaner picture in Dveloper tools-
+    -   traits' properties should appear first in the object' prototype (as with the inheritance)
++   Before this, let's write tests for changes that we already have // done @ 01.10
+    +   check the expression + range combo
+    +   tests list (doubling as the changelog for the next commit)    
         +   Amm.extend: inherit properties with setters & getters
         +   Amm.copy() for creating deep copies of hashes
         +   Added Amm.Builder.Ref.toJSON which serializes instance which may be useful in Amm.html()

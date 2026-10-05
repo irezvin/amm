@@ -1,8 +1,10 @@
 2022-01-04
 
+// I don't think I'm going to resume Avancore work - 28.09.26
+
 2022
 ====
--   1: аяксовый дашборд на Amm/Avancore
+-   1: cool ajax dashboard using Amm/Avancore
 
     -   Avancore:
         -   Chaining URL Mapper (CURLM)
@@ -20,7 +22,7 @@
             -   proper URLs (rq: CURLM)
 
     -   Amm:
-        -   закончить recordset
+        -   finish recordset
         -   record status / recordset status / errors display
         -   data navigator control
         -   table record features
@@ -36,18 +38,19 @@
 
 -   2: usability & standards
     -   Amm:
-        -   упростить bootstrapping новых решений?
-            -   интеграция с module loaders и package managers в js
-        -   реализация как пакета composer и/ли npm
-    -   Avancore
+        -   simplify bootstrapping of the new projects
+            -   better integrate with module loaders and package managers in js
+        -   implement as a composer an/or npm package
+    -   Avancore 
         -   namespaces
-            -   движок
-            -   сгенерированный код
-            -   найти утилиту перехода на namespaces
-        -   интеграция с composer
+            -   engine
+            -   generated code
+            -   find or develop a tool to switch to the namespaces
+        -   composer integration
 
 2022-01-10
 ==========
-Цели, которых я хотел бы добиться в программе-минимум (прилагательные не абсолютны):
--   быстрая разработка ui для удобного редактирования данных сложной структуры
+Minimal set of the goals:
+-   provide a way for a quick development of UIs for usable editing
+    of the complex data structures
 -   

@@ -1,12 +1,12 @@
 2022-02-20
 
--   Пытаемся клонировать заголовок таблицы
+-   Attempting to clone the table header
 
-    Убрать затык с тем, чтобы два view в createDefaultViews, потому 
-    что мы не можем вместо data-amm-id передать view-у ссылку на текущий элемент
-    (который создает defaultViews)
+    Need to fix issue with having two views in the `createDefaultViews`,
+    since we can't instead of using data-amm-id provide a reference
+    to the current element (one that creates `defaultViews`) to the `view`
 
-    Сейчас в таблице:
+    Currently in the table:
 
             var res = Amm.dom(
                 {   
@@ -16,7 +16,7 @@
             );
 
 
-    когда делаем
+    when we are doing
 
             var res = Amm.dom([
                 $: 'div',
@@ -32,98 +32,104 @@
                 ]
             ]);
         
-    вот так не катит. Пишет returns 5 top-level elements.
-    А когда ставлю data-amm-id, то ошибки нет. Но таблица не появляется.
-    Дать возможность "сообщить" views, что речь идет об этом элементе (раз),
-    и дать возможность, может быть, связать views друг с другом, чтобы "сообщить",
-    что они семантически относятся к одному и тому же элементу, но id ему при этом
-    не назначать! 
+    it doesn't work. Errors out with "returns 5 top-level elements" notice.
+    When I'm adding `data-amm-id`, there is no error... but the table doesn't
+    appear. I need to provide ability to make `views` aware about the element (one),
+    and probably link `views` together so they are aware that they are semantically
+    linked to the same element, but without assigning `id` to one!
 
--   ** Пересмотреть builder, сделать его удобным **
-    Как минимум, задокументировать все аспекты, которые есть сейчас, 
-    и как builder работает, потому что иначе я обречен каждый раз это вспоминать 
-    и разбираться заново.
+-   ** Review `builder`, make it more ergonomic **
+
+    At least I need to document all quirks that exist now,
+    how the builder works, otherwise I'm doomed to remember and re-explore
+    its behavior again and again.
     
-        id='__parent' - специальное значение id
+        id='__parent' - special value for the id
+
+-   Let display parent view or collection view be able to decide,
+    which elements should be displayed, and which not, using the event
+    or the callback, because for the header/side cloning we need to duplicate
+    only head sections!
     
--   Сделать, чтобы display parent view или collection view мог решать,
-    какие элементы выводить, а какие нет, например, при помощи event-а?
-    или callback'а? потому что нам для header cloning нужно четко дублировать 
-    только head section!
+    (or maybe just move it to a separate view and that's it)
     
-    (а может запихнуть тупо её отдельный view и всё)
-    
--   2) отчет об ошибках, control с ошибками
-    -- Trait сообщает, что его элемент вывел ошибку, и регистрируется
+-   2) validation report, control with the validation messages
+        --  Trait should report, that its' element shown the message, and
+            registers itself
 
 2022-02-21
 
->   Когда у DisplayParent есть два view:
+>   When a DisplayParent has two views:
     
-    +   view работает так: находит у элемента node;
-        если не нашел, создает;
-        убирает его из прежнего dom-узла и засовывает в свой!
-    +   нужно или заново создавать себе,
-    -   или клонировать тот, что нашел, вместе с его view!
+    +   view works this way: finds node of the element;
+        if it doesn't find one, creates;
+        removes it from previous dom-node, and puts into own one!
+    +   need or create it again for oneself...
+    -   or clone one that was found, including its' view! // I can't decipher this
         
--   Замечания по итогам "двух view" у таблицы
+-   Takeaways from implementing "twin view" based table
     
-    -   сделать абсолютно универсальную поддержку множества view у любых 
-        элементов может быть сложно, так как есть нюансы. 
+    -   it can be hard to develop universal support of several views of
+        arbitrary elements due to different edge cases.
         
-        Например:
-        -   общие ресурсы, которые могут быть только у одного view 
-            (фокус - первое, что приходит в голову; scrollIntoView;
-            чьи берем координаты?)
-            -   предлагаемое решение: views-aware element (VAE)
-                -   focusedView (как уже было сделано для input'ов); 
+        Examples of such edge cases:
+
+        -   resource that can be acquired by only one view at the moment
+            (focused node is one example; scrollIntoView: which views to scroll to?)
+            -   proposal: views-aware element (VAE)
+                -   focusedView (was already done for `input`s); 
                 -   primaryDimensionsView, primaryPositionView;
                 -   syncPositionBetweenViews, syncDimensionsBetweenViews 
                 -   и т.п.
-        -   у displayParent'а два view. Мы засовываем элемент, у которого есть
-            один view, в этот displayParent. Один html-узел можно показать, 
-            а как быть со вторым?
-                -   клонировать view и узел, но чтобы это работало,
-                    любые view должны надежно клонироваться
+        -   displayParent'а has two views. We add an element that has *one* view
+            into that displayParent. We can display one DOM node that way,
+            and what do we have to do with another? (non-existent)
+            -   proposal: clone view and DOM node, but for that to happen,
+                all views should be cloneable
                     
-    >   фокус.
+    >   focus.
     
-        Активация ячейки меняет фокус. 
-        
-        Навигация по таблице меняет активную ячейку, которая меняет фокус.
-        При этом всегда будет фокусироваться элемент внутри первого view, 
-        т.к. он первый реагирует на событие. А на практике должен реагировать 
-        тот, на который кликнули
-        
-        -   есть два варианта, оба предполагают view-aware-view (VAV):
-        
-            X   а)  VAE: у таблицы есть activeTableView; 
-                    клики и фокусировка на элементах устанавливают это свойство; 
+        Cell activation changes focus. 
+
+        Table navigation changes active cell, changing the focused node.
+        That will cause to node of the first view to be focused, since
+        it reacts to the event first. But proper way is that **the node
+        that was interacted with (clicked) should receive the focus**.
                 
-            +   б)  мы можем устанавливать focus у view, который относится 
-                    к view таблицы, у которого уже есть focus сейчас (то есть 
-                    надо искать view таблицы с фокусом, и если такой есть, 
-                    и в нем есть другой view нашего элемента, не ставить 
-                    focus себе!!)
-                +   похоже на а), только у нас activeTableView каждый раз
-                    определяется динамически;
-                ?   плюс можно, если document.activeElement нет, смотреть
-                    window.event.target (а такой заполняется)?
+        -   both proposed solution are based on view-aware-view (VAV):
+        
+            X   A.  View aware element: table has activeTableView; 
+                    clicking and focusing (interaction) set this property; 
+                
+            +   B.  we can set focus the Cell view that is related to the 
+                    Table view that already has focus.
+
+                    From viewpoint of the TD 1 of TABLE 1, it checks if
+                    there are other views of same cell (i.e. TD 2 of TABLE 2),
+                    and if table view of TABLE2 has the focus, we skip
+                    request to focus TD 1, giving the way to TD 2 to acquire
+                    the focus.
+            
+                +   somewhat lookalike to A, but "activeTableView" is determined
+                    dynamically every time;
+
+                ?   plus maybe, given the empty document.activeElement at the moment,
+                    we can check for window.event.target (is this a thing)?
                     
     -   editor
         
-        Логично, чтобы он появлялся там же, где и фокус, а не в первой ячейке,
-        но для этого нужно правильно назначать parent'а (а также скрывать 
-        cell content в view, а не в cell!)
+        It makes sense to show it in the focused view and not in the first view,
+        but for that, we need to properly assign the `parent`, and hide
+        cell content in the view, and not in the cell!
         
     >   Amm.View.Collection.shouldShowItemCallback: function(item)
         
 >   Amm.View.Html.Collection / DisplayParent: 
- 
-    сейчас расчитано из четкого соответствия, что каждому item'у соответствует одна
-    node, и их индексы совпадают. Это делает частичный вывод невозможным,
-    и item'ы с несколькими нодами невозможными.
-    
+
+    currently is built with assumption that every item has one node,
+    and their indexes' match. It makes partial display impossible, as well as
+    showing the items that have other number of nodes than 1 (0 or 2+)
+     
     _shownItems: [ [item[, node[, node...]]] ]
     
     findShownItem: function(itemOrNode) - returns index of _shownItems

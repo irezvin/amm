@@ -1,0 +1,34 @@
+2020-10-05 strategy
+
+Priority tasks:
+
+-   build the non-destructing initializers (what we have now is heresy bordering with instanity)
+
+-   finish tests for the model, transactions, record collections, working of the models that
+    have collections as their properties (incl. transactions with embedded collections)
+    -   finish testing of forms interaction with the records
+    -   error catcher
+    -   understand how associations (should) work. Maybe they need a special type of metadata
+        (link to the parent, persistence methods etc)
+    -   recursive checks for associations. What if we have it already?
+    -   recursive saving
+        -   functioning of a collection with the partially changed records
+    
+-   milestone: to-do example but with the Amm.Data.Record
+
+-   "state" (in the url or the localStorage)
+    
+-   test, finish Amm.Remote.Mapper
+
+-   menu, !!table!!, tabs??? controls
+
+-   out moonshot: Avancore admin area
+
+    -   avancore: need restish api
+    -   state of the table, filters is persisted
+    -   ajax
+    -   goal: end of spring 2021 // too optimistic -- 14.12.2020
+    
+Reactivity:
+
+-   html-expressions + element-constructing-expressions (at some point)

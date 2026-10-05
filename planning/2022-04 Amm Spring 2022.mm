@@ -1,39 +1,39 @@
 <map version="1.0.1">
 <!-- To view this file, download free mind mapping software FreeMind from http://freemind.sourceforge.net -->
-<node CREATED="1645044247172" ID="ID_136198011" MODIFIED="1645044258110" TEXT="Amm Spring 2022">
+<node CREATED="1645044247172" ID="ID_136198011" MODIFIED="1790106802475" TEXT="Amm Spring 2022">
 <node COLOR="#66ff00" CREATED="1645045603818" ID="ID_643534485" MODIFIED="1645168875178" POSITION="right" TEXT="MultipleDisplayParent + ViewCloning">
-<node CREATED="1645045611582" ID="ID_32232385" MODIFIED="1645168753930" TEXT="&#x43f;&#x43e;&#x442;&#x43e;&#x43c;&#x443; &#x447;&#x442;&#x43e; &#x434;&#x430;&#x432;&#x43d;&#x43e; &#x432;&#x438;&#x441;&#x438;&#x442; &#x44d;&#x442;&#x430; &#x437;&#x430;&#x434;&#x430;&#x447;&#x430; (&#x441; &#x43f;&#x440;&#x43e;&#x448;&#x43b;&#x43e;&#x439; &#x432;&#x435;&#x441;&#x43d;&#x44b;, &#x430; &#x43e;&#x431;&#x434;&#x443;&#x43c;&#x44b;&#x432;&#x430;&#x442;&#x44c; &#x43d;&#x430;&#x447;&#x430;&#x43b; &#x435;&#x449;&#x435; &#x440;&#x430;&#x43d;&#x44c;&#x448;&#x435;)"/>
-<node CREATED="1645045629363" ID="ID_1716008154" MODIFIED="1645168753933" TEXT="&#x43f;&#x43e;&#x442;&#x43e;&#x43c;&#x443; &#x447;&#x442;&#x43e; &#x445;&#x43e;&#x447;&#x435;&#x442;&#x441;&#x44f; &#x43f;&#x435;&#x440;&#x435;&#x43a;&#x43b;&#x44e;&#x447;&#x438;&#x442;&#x44c;&#x441;&#x44f;"/>
-<node COLOR="#66ff00" CREATED="1645168409304" ID="ID_1700950246" MODIFIED="1645168884448" TEXT="! &#x41d;&#x435; &#x444;&#x430;&#x43a;&#x442;, &#x447;&#x442;&#x43e; &#x438;&#x43c;&#x435;&#x43d;&#x43d;&#x43e; &#x44d;&#x442;&#x43e; &#x43c;&#x435;&#x448;&#x430;&#x435;&#x442; &#x43c;&#x43d;&#x435; &#x441;&#x434;&#x435;&#x43b;&#x430;&#x442;&#x44c; &quot;sticky headers&quot;">
+<node CREATED="1790106350253" ID="ID_1768392982" MODIFIED="1790106371375" TEXT="this thing bothers me for too long"/>
+<node CREATED="1790106374140" ID="ID_441624431" MODIFIED="1790106385503" TEXT="interesing task to switch to"/>
+<node COLOR="#66ff00" CREATED="1645168409304" ID="ID_1700950246" MODIFIED="1790106447917" TEXT="! Not sure this really blocks &quot;sticky headers&quot;">
 <node COLOR="#66ff00" CREATED="1645168437093" ID="ID_1421253896" MODIFIED="1645168884447" TEXT="Sticky Headers">
-<node CREATED="1645168442088" ID="ID_1458286925" MODIFIED="1645168753933" TEXT="&#x41c;&#x43e;&#x434;&#x435;&#x43b;&#x44c;: &#x434;&#x443;&#x431;&#x43b;&#x438;&#x440;&#x43e;&#x432;&#x430;&#x442;&#x44c; &#x437;&#x430;&#x433;&#x43e;&#x43b;&#x43e;&#x432;&#x43e;&#x43a; &#x442;&#x430;&#x431;&#x43b;&#x438;&#x446;&#x44b; &#x432; &#x43e;&#x442;&#x434;&#x435;&#x43b;&#x44c;&#x43d;&#x43e;&#x43c; &#x44d;&#x43b;&#x435;&#x43c;&#x435;&#x43d;&#x442;&#x435;">
-<node CREATED="1645168526240" ID="ID_1833334666" MODIFIED="1645168753933" TEXT="&#x441;&#x434;&#x435;&#x43b;&#x430;&#x442;&#x44c; &#x43a;&#x43b;&#x43e;&#x43d; view, &#x43d;&#x43e; &#x43e;&#x442;&#x434;&#x435;&#x43b;&#x44c;&#x43d;&#x44b;&#x439; &#x441;&#x43b;&#x443;&#x447;&#x430;&#x439;"/>
+<node CREATED="1790106461126" ID="ID_1849294400" MODIFIED="1790106473388" TEXT="Model: repeat table header in the separate element">
+<node CREATED="1790106475706" ID="ID_1579012041" MODIFIED="1790106485629" TEXT="Special case for view clone"/>
 </node>
-<node CREATED="1645168461034" ID="ID_1036312025" MODIFIED="1645168753933" TEXT="&#x41f;&#x440;&#x43e;&#x430;&#x43d;&#x430;&#x43b;&#x438;&#x437;&#x438;&#x440;&#x43e;&#x432;&#x430;&#x442;&#x44c; HandsOnTable, &#x442;&#x430;&#x43c; &#x44d;&#x442;&#x43e; &#x43f;&#x440;&#x430;&#x432;&#x438;&#x43b;&#x44c;&#x43d;&#x43e; &#x441;&#x434;&#x435;&#x43b;&#x430;&#x43d;&#x43e;; &#x432;&#x43d;&#x438;&#x43c;&#x430;&#x442;&#x435;&#x43b;&#x44c;&#x43d;&#x43e; &#x43f;&#x43e;&#x441;&#x43c;&#x43e;&#x442;&#x440;&#x435;&#x442;&#x44c; &#x43d;&#x430; &#x440;&#x430;&#x437;&#x43c;&#x435;&#x442;&#x43a;&#x443;"/>
+<node CREATED="1790106490151" ID="ID_1462935282" MODIFIED="1790106514158" TEXT="Analyze HandsOnTable, they got this right; check the layout &amp; DOM tree"/>
 </node>
 </node>
 </node>
 <node CREATED="1645044258771" ID="ID_1778866507" MODIFIED="1645168558460" POSITION="right" TEXT="Table + RecordSet">
 <node COLOR="#66ff00" CREATED="1645044314953" ID="ID_1636721472" MODIFIED="1645168884444" TEXT="ErrorControl">
-<node COLOR="#66ff00" CREATED="1645044321814" ID="ID_1120567943" MODIFIED="1645168884445" TEXT="&#x432;&#x43e;&#x437;&#x43c;&#x43e;&#x436;&#x43d;&#x43e;&#x441;&#x442;&#x44c; &#x421;&#x41a;&#x420;&#x42b;&#x422;&#x418;&#x42f; &#x441;&#x43e;&#x43e;&#x431;&#x449;&#x435;&#x43d;&#x438;&#x439;, &#x43a;&#x43e;&#x442;&#x43e;&#x440;&#x44b;&#x435; &#x423;&#x416;&#x415; &#x412;&#x42b;&#x412;&#x41e;&#x414;&#x42f;&#x422;&#x421;&#x42f; &#x432; &#x434;&#x440;&#x443;&#x433;&#x438;&#x445; control&apos;&#x430;&#x445;!">
-<node COLOR="#66ff00" CREATED="1645168600702" ID="ID_763045022" MODIFIED="1645168884446" TEXT="&#x43f;&#x440;&#x435;&#x434;&#x43b;&#x43e;&#x436;&#x435;&#x43d;&#x438;&#x435;: control &quot;&#x441;&#x43e;&#x43e;&#x431;&#x449;&#x430;&#x435;&#x442;&quot; &#x43a;&#x443;&#x434;&#x430;-&#x442;&#x43e; (&#x43c;&#x43e;&#x434;&#x435;&#x43b;&#x438;?!) &#x43e; &#x442;&#x43e;&#x43c;, &#x447;&#x442;&#x43e; &#x432;&#x44b;&#x432;&#x435;&#x43b; &#x43e;&#x448;&#x438;&#x431;&#x43a;&#x443;">
-<node CREATED="1645168665418" ID="ID_1564313713" MODIFIED="1645168679681" TEXT="&#x43a;&#x43b;&#x44e;&#x447;/&#x43f;&#x443;&#x442;&#x44c; &#x432; errors"/>
-<node CREATED="1645168679930" ID="ID_54816196" MODIFIED="1645168688690" TEXT="&#x441;&#x441;&#x44b;&#x43b;&#x43a;&#x430; &#x43d;&#x430; &#x44d;&#x43b;&#x435;&#x43c;&#x435;&#x43d;&#x442;"/>
+<node COLOR="#66ff00" CREATED="1645044321814" ID="ID_1120567943" MODIFIED="1790106552634" TEXT="feature to HIDE messages that ALREADY SHOWN in the different controls!">
+<node COLOR="#66ff00" CREATED="1645168600702" ID="ID_763045022" MODIFIED="1790106579814" TEXT="idea: control &quot;rings&quot; somewhere (to the Model?!) that it has shown error message">
+<node CREATED="1645168665418" ID="ID_1564313713" MODIFIED="1790106593719" TEXT="key/path in the `errors` hash"/>
+<node CREATED="1645168679930" ID="ID_54816196" MODIFIED="1790106597903" TEXT="element reference"/>
 </node>
 <node CREATED="1645168616269" ID="ID_1721422643" MODIFIED="1645168641851" TEXT="modelMeta.afterErrorsShown"/>
-<node CREATED="1645168631100" ID="ID_1139810854" MODIFIED="1645168661889" TEXT="&#x434;&#x438;&#x441;&#x43f;&#x435;&#x442;&#x447;&#x435;&#x440; &#x43e;&#x448;&#x438;&#x431;&#x43e;&#x43a; &#x43f;&#x43e;&#x434;&#x43f;&#x438;&#x441;&#x44b;&#x432;&#x430;&#x435;&#x442;&#x441;&#x44f; &#x43d;&#x430; &#x44d;&#x442;&#x43e; &#x441;&#x43e;&#x43e;&#x431;&#x449;&#x435;&#x43d;&#x438;&#x435;"/>
+<node CREATED="1645168631100" ID="ID_1139810854" MODIFIED="1790106625443" TEXT="errors&apos; dispatcher (is this a thing?) subscribes to this event"/>
 </node>
-<node CREATED="1645044505862" ID="ID_1086222923" MODIFIED="1645044513792" TEXT="&#x432;&#x43e;&#x437;&#x43c;&#x43e;&#x436;&#x43d;&#x43e;&#x441;&#x442;&#x44c; &quot;collapse&quot; &#x441;&#x43e;&#x43e;&#x431;&#x449;&#x435;&#x43d;&#x438;&#x439;-&#x434;&#x443;&#x431;&#x43b;&#x435;&#x439;"/>
-<node CREATED="1645044514113" ID="ID_337443401" MODIFIED="1645044527520" TEXT="&#x432;&#x43e;&#x437;&#x43c;&#x43e;&#x436;&#x43d;&#x43e;&#x441;&#x442;&#x44c; &#x441;&#x441;&#x44b;&#x43b;&#x43a;&#x438; &#x432; &#x441;&#x43e;&#x43e;&#x431;&#x449;&#x435;&#x43d;&#x438;&#x44f;&#x445;-&#x434;&#x443;&#x431;&#x43b;&#x44f;&#x445; &#x43d;&#x430; &#x440;&#x435;&#x43b;&#x435;&#x432;&#x430;&#x43d;&#x442;&#x43d;&#x44b;&#x435; control&apos;&#x44b;"/>
+<node CREATED="1645044505862" ID="ID_1086222923" MODIFIED="1790106640114" TEXT="ability to &quot;collapse&quot; repeating messages"/>
+<node CREATED="1645044514113" ID="ID_337443401" MODIFIED="1790106675394" TEXT="ability to link repeating messages to the relevant fields"/>
 </node>
-<node CREATED="1645045309016" FOLDED="true" ID="ID_245991747" MODIFIED="1725919415648" TEXT="RecordStatusView">
+<node CREATED="1645045309016" FOLDED="true" ID="ID_245991747" MODIFIED="1790106688021" TEXT="RecordStatusView">
 <node CREATED="1645045341710" ID="ID_752134192" MODIFIED="1645045345529" TEXT="map record status to class"/>
 <node CREATED="1645045346210" ID="ID_1018560370" MODIFIED="1645045351145" TEXT="map record status to html"/>
 <node CREATED="1645045351472" ID="ID_1663509376" MODIFIED="1645045581549" TEXT="link to &quot;selected records&quot; or &quot;selected keys&quot; collection; reflect when record is selected (see &quot;selection feature&quot; below)"/>
 </node>
 <node COLOR="#66ff00" CREATED="1645044346456" ID="ID_453499067" MODIFIED="1725919366815" TEXT="Popup">
-<node CREATED="1645045021336" ID="ID_1670125905" MODIFIED="1645045034423" TEXT="&#x447;&#x442;&#x43e;&#x431;&#x44b; &#x437;&#x430;&#x442;&#x435;&#x43c; &#x43c;&#x43e;&#x436;&#x43d;&#x43e; &#x431;&#x44b;&#x43b;&#x43e; &#x441;&#x43c;&#x435;&#x43d;&#x438;&#x442;&#x44c; &#x440;&#x435;&#x430;&#x43b;&#x438;&#x437;&#x430;&#x446;&#x438;&#x44e; &#x43d;&#x430; popper &#x438; &#x442;.&#x43f;."/>
-<node CREATED="1645045041065" ID="ID_1033648544" MODIFIED="1645045050819" TEXT="&#x43f;&#x43e;&#x43a;&#x430; &#x441;&#x438;&#x43b;&#x44c;&#x43d;&#x43e; &#x43d;&#x435; &#x437;&#x430;&#x43b;&#x443;&#x43f;&#x430;&#x442;&#x44c;&#x441;&#x44f;; z-index &#x438; &#x432;&#x441;&#x451;"/>
+<node CREATED="1645045021336" ID="ID_1670125905" MODIFIED="1790106711755" TEXT="ability to change implementation later (i.e. to Popper etc)"/>
+<node CREATED="1645045041065" ID="ID_1033648544" MODIFIED="1790106722915" TEXT="start small (z-index &amp; that&apos;s it)"/>
 </node>
 <node CREATED="1645045206440" ID="ID_1074907860" MODIFIED="1645045215726" TEXT="Cell annotations (using popups)"/>
 <node CREATED="1645044459605" ID="ID_1401225463" MODIFIED="1645044474469" TEXT="Cell with pop-up for error">
@@ -81,8 +81,8 @@
 </node>
 </node>
 <node COLOR="#66ff00" CREATED="1645044412249" ID="ID_947474455" MODIFIED="1645168960227" TEXT="Popup + ActionList = Pop-up menu">
-<node COLOR="#ff0000" CREATED="1645169152530" ID="ID_599250690" MODIFIED="1645169194045" TEXT="TODO: &#x43d;&#x430;&#x443;&#x447;&#x438;&#x442;&#x44c;&#x441;&#x44f; flow layout">
-<node CREATED="1645169169952" ID="ID_1079522527" MODIFIED="1645169176753" TEXT="&#x448;&#x430;&#x43f;&#x43a;&#x430;, 100% &#x441;&#x435;&#x440;&#x435;&#x434;&#x438;&#x43d;&#x44b;, &#x43f;&#x43e;&#x434;&#x432;&#x430;&#x43b;"/>
+<node COLOR="#ff0000" CREATED="1645169152530" ID="ID_599250690" MODIFIED="1790106738216" TEXT="TODO: learn flow layout">
+<node CREATED="1645169169952" ID="ID_1079522527" MODIFIED="1790106748519" TEXT="header, 100% body, footer"/>
 </node>
 </node>
 <node CREATED="1645044383397" ID="ID_91030052" MODIFIED="1645044944432" TEXT="Dialog">

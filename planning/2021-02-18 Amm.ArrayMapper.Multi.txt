@@ -1,53 +1,58 @@
 2021-02-18 Amm.ArrayMapper.Multi
 ================================
 
-Задачи
-------
+Tasks
+-----
 
--   для каждого проходящего фильтр исходного объекта извлекаются группы от 0 до N объектов
-    (группы идут в порядке, определенном sorter)
-    
--   для этого используется Amm.ArrayMapper.Extractor extends Amm.ArrayMapper.AbstractExtractor
+-   for every source object that passed the filter, the groups from 0 to N object are extracted
+    (groups appear in the order that is defined by the `sorter`)
+
+-   to achieve that, we use Amm.ArrayMapper.Extractor extends Amm.ArrayMapper.AbstractExtractor     
     -   src - property or expression (null means return the object)
     -   onExtract - event(srcObject, retValue)
-    -   expandCollections - t/f - если результат это коллекция,
-        то наблюдается и возвращается её содержимое
-    -   addSrcToResult: [{never | before | after} {ifAny | ifMatch | ifNone}]:
-        добавлять ли исходный объект в список объектов-результатов
-            -   never: нет
-            -   before: в начало списка
-            -   after: в конец списка
-            -   ifAny: всегда
-            -   ifMatch: только если есть объекты-результаты
-            -   ifNone: только если нет объектов-результатов
+    -   expandCollections - t/f - if the result is collection, it's observed, and the contents
+        is returned
+    -   addSrcToResult: never | ({before | after} {ifAny | ifMatch | ifNone}):
+        do we add the source object to the list of result objects
+            -   never
+
+            -   before: to the start of the list
+            -   after: to the end of the list
+
+            -   ifAny: always
+            -   ifMatch: only for non-empty result set
+            -   ifNone: only when there is no other objects in result set
     
 -   Amm.ArrayMapper.MultiExtractor extends Amm.ArrayMapper.AbstractExtractor
-    -   filter (либо автоматом берет у ArrayMapper'а)
-    -   matches (синхронизируются с фильтрами)
+    -   filter (may be borrowed from ArrayMapper)
+    -   matches (synchronized with the filter)
     -   extractors (assoc array: matchValue => extractor)
     -   defaultExtractor
     
--   если есть instantiator, каждый объект группы попадает в него
--   все получившиеся объекты попадают в dest
--   порядок групп соответствует порядку объектов
--   порядок объектов в группах исходный
+-   if `instantiator` is present, each object of dest group goes through it
+-   all resulting objects appear in the `dest`
+-   groups order matches the objects order
+-   order of the objects in the group is the original one
 
--   возможность передавать filter и sorter (), использующие expressions, дополнительные значения
-    для каждого объекта (extraVars), на которые мы сможем ссылаться
+-   ability to provide extra values to expression-using `filter` и `sorter`
+    for every object (`extraVars`), which we can reference in the expressions
 
--   в будущем, возможно, будут добавлены destFilter, destSorter, которые будут
-    фильтровать/сортировать объекты в группах (у обоих будут переменные, такие как 
-    исходный объект, его номер, значение match у srcFilter)
-    
-    -   внимание! У sorter нужно добавить метод onCompare, который используется, когда меняется
-        состав наблюдаемых объектов или их matches. destSorter будет, в первую очередь,
-        убеждаться, что объекты идут в порядке своих групп, а уже затем сравнивать их matches.
-        Это позволит нам обойтись одним sorter'ом на все результаты.
+-   maybe in the future `destFilter`, `destSorter` will be added to filter/sort
+    objects in the groups (both will have additional variables such as
+    source object, it's index, `match` values in the `srcFilter`)
+
+    -   important! `sorter` needs `onCompare` extra method, called when the list
+        of the observed objects or their `matches` change. `destSorter` will
+        first ensure, that the order of the objects in the groups didn't change,
+        and only after that compare their matches. It will allow us to use a single
+        sorter for all results.
         
-План
+Plan
 ----
     
->   FilterSorter переименовать в MultiObserver (Extractor тоже будет от него происходить)
+>   Rename `FilterSorter` rename to `MultiObserver` (`Extractor` will have it
+    as an ancestor)
+
         -   objects -> matches
         -   compareMatches(match, match)
         -   outMatchesChange(objects, matches, changeInfo)
@@ -66,19 +71,20 @@
             -   changeinfo contains spliceInfo
 
 -   MultiObserver.Observer <- MultiObserver.Expression 
-        <-  Filter.ExpressionCondition (основа; props переименовать в vars)
+        <-  Filter.ExpressionCondition (base; props rename to vars)
         <-  Sorter.Expression
         
 2021-10-14
 
-Дополнение
+Addition
 
--   почему не Amm.Instantiator.Multi returns array 0..N?
+-   why not implementing Amm.Instantiator.Multi returns array 0..N?
 
--   насколько сложно переделать обычный ArrayMapper в Multi?
-    -   Хранить не dest item, а dest items - [0..N]
-    -   У dest item есть src index, src subindex (индекс в src entry' dest items)
-    -   Instantiator это подкласс ObjectMapper'а, у которого есть событие needRemap, возвр от 0 
-        до неск объектов, и предоставояет метод dispose (плюс begin/end update)
-    -   Разница в логике ArrayMapper в том, что он не должен выкидывать из коллекции назначения 
-        экземпляры, возвращенные повторно
+-   how hard will it be to change a simple ArrayMapper to Multi?
+    -   Instead of `dest item`, store `dest items` - [0..N]
+    -   A dest item has src index, src subindex (index in src entry' dest items)
+    -   Instantiator is a subsclass of ObjectMapper that has event `needRemap`, 
+        returning from 0 to several objects, and providing a method `dispose`
+        (plus `beginUpdate`/`endUpdate`).
+    -   Difference with ArrayMapper logic is that it doesn't have to remove
+        duplicates from the dest collection // why? - 29.09.26

@@ -1,0 +1,136 @@
+2022-02-16 Ideas of late 2021 - early 2022
+
+2020-12-01
+==========
+
+-   Amm.Data.FieldMeta: feature to pass parameters to the validators,
+    and re-validate when these parameters changed (or pass some hash that,
+    when changed, indicates we need to re-validate the target field)
+
+
+2021-02-11
+==========
+
+Questions and ideas that popped up during the table development
+
+-   think on properly updating input values (for example, the value
+    has changed, but the `blur` event wasn't fired yet; now we use
+    workaround a-la input.actualizeValue, but maybe there is a sense
+    of developing something else)
+
+-   allow Traits to
+    a.  extend the classes
+    b.  be dynamically assigned to the element
+
+        // 27.09.26: these are completely opposite; extending the classes
+        // might improve debugging and performance,
+        // but what's the use case of b?
+    
+-   new Amm.Element: when the `prototype` includes the class identifier
+    via the __CLASS__ property, если в прототипе прописан класс, return the instance
+    of that class (in javascript, the `new` operartor can return arbitrary instance
+    instead of `this`, which looks handy)
+    
+-   new Amm.Expression: returns "secondary instance", where all methods are passed
+    to "primary instance" with a different contextId -- that's the expressions
+    re-use I contemplated for some time
+    
+2021-08-23
+==========
+    
+-   amm.view.html.drag.move (requires drag source & dimensions)
+    -   move constraints?
+    
+-   amm.view.html.drag.resize (requires drag source & dimensions)
+    -   resize constraints?
+
+-   omni filter
+
+-   amm.view.html.trait.dimensions:
+    -   defaultAnimationDuration
+    -   moveAnimationDuration
+    -   resizeAnimationDuration
+    -   moveAnimationThreshold (null disables): 
+        if the movement is longer than threshold, animation is enabled
+    -   resizeAnimationThreshold:
+        if the resize is longer than threshold, animation is enabled
+
+-   amm.trait.drag.sidePanel
+    -   axis: h/v
+    -   resizable
+    -   panelSize
+    -   minPanelSize
+    -   maxPanelSize
+    -   collapsable
+    -   collapseSize
+    -   collapsedClass
+    -   nonCollapsedClass
+    
+-   amm.view.html.drag.sidePanel (requires resize)    
+
+2021-10-14
+==========
+
+?   Array: add new events
+
+    -   spliceInfo: event splice with the extra parameter `spliceInfo`
+        spliceInfo is
+            insert   [ insertIndex, insertIndex, ... ]
+            cut      [ cutIndex, cutIndex, ... ]
+            reinsert [ [cutIndex, insertIndex], ... ]
+        // 27.09.26: should make this structure deep-immutable
+            
+    -   pan:
+        removal of some elements from one end, and adding some (different)
+        elements to another as a single action, leaving some number
+        of elements inside untouched
+        -   cutFromTail: true/false 
+            -   true: elements where removed from the tail of the array,
+                added to the head;
+            -   false: vice versa
+        -   cut: [ item, item... ] - removed items
+        -   insert: [ item, item... ] - added items
+    
+2022-01-19
+==========
+    
+-   we miss special controls, such as 
+    -   "record status" 
+        -   new
+        -   verbatim
+        -   persistent
+        -   deleteIntent
+        -   deleted
+        -   transaction in progress
+        -   errors
+    -   "recordset status"
+        -   numUncommitted
+        -   numWithErrors
+        -   activeMultiTransaction - the collection already has that? 
+            alongside the defaults?
+    -   data navigator
+        -   nav buttons: first/prevPage/prev/next/nextPage/last
+        -   tr buttons: new/revert/delete/commit
+        -   absoluteIndex
+            
+-   Amm.Trait.Repeater: I lost at least an hour to remember 
+    how it should be used. It deserves making a proper example in Zim
+    notebook or in the code comments! // how about doing that 5 years later
+    
+?   Introduce a Builder Extension that might allow creation of ad-hoc
+    control prototypes (maybe in reduced/concealed scope, like in a detached
+    DOM tree or something). But what if we already have this?
+
+    -   options.builderSource
+    -   accept Amm.Builder.Ref
+    -   TODO: document how to use the `ref` feature
+    !   now that when I try to merge the `ref` and the `default view` features, 
+        the element proto sort-of calculated, but the node mentioned in the `ref`
+        of `builderSource`, disappears somewhere;        
+        -   the builder calculates the proto correctly, but then for some reason
+            there are no views!
+        -   the best outcome is to let Amm.View.Html.Default to override 
+            views that already exist with additional inner DOM nodes
+            (data-amm-override="css selector"?),
+            or the Builder must do that on its own between the cloning
+            and calculation of the proto.

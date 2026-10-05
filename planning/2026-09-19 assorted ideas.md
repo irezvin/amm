@@ -50,6 +50,7 @@ Ideas are in random order and of random effort/importance
     - splitter - should remember state
     - tabs
     - accordion
+    - tree-based auto-layout
     - draggable layout
     - calendar/date picker
     - dialog window

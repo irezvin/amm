@@ -31,7 +31,7 @@ ValueCriterion :=
     value
     [value1, value2, value3] - OR (or "in") criterion
     { min: foo, max: bar } - range (both min and max are optional)
-    [ {min: interval1min, max: interval1max}, value, {min: interval1min, max: interval2max}, value ] ] - combine intervals    
+    [ {min: interval1min, max: interval1max}, value, {min: interval1min, max: interval2max}, value ]s - combine intervals    
     { not: valueCriterion } - invert
     { and: [valueCriterion, valueCriterion] } - combine using and
     { or: [valueCriterion, valueCriterion] } - combine using or

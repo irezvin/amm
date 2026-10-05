@@ -3,23 +3,23 @@
 
 Sticky header and footer, overlay
 
--   Фиксированный верх с position: sticky
+-   Fixed top with position: sticky
 
-    Фиксированный заголовок делается очень просто:
+    Fixed header is made relatively simply:
     https://www.w3docs.com/snippets/html/how-to-create-a-table-with-a-fixed-header-and-scrollable-body.html
 
-    -   вся таблица в div
-    -   у div ограничена высота, scroll
+    -   all table is inside a div
+    -   div has height restricted, scroll enabled
     -   thead: top: 0, position: sticky
 
--   Фиксирование любых элементов при помощи краев (используется в handsontable)
+-   Fixing of arbitrary elements using the sides (implemented in handsontable)
 
-    i   Div'ы с клонами размещаются поверх таблицы.
-        Их можно скрывать, когда прокрутка доходит до конца (или оставлять, без разницы).
+    i   Divs with clones are placed over the table.
+        We can hide them when scrolling to the end, or leave.
 
-        Для клонирования мне нужно клонировать представления, _в том числе_ представления DisplayParent'ов 
-        с подчиненными Visual. То есть DisplayParent должен поддерживать клонирование.
+        For cloning I need to clone the views, including views of the `DisplayParent`s
+        with the `Visual` children. It means the `DisplayParent` must support cloning.
 
-    -   клонирование представлений
-    -   моя боль: у элемента может быть разное количество displayParent'ов
-    -   клонирование представлений (а не элементов) достаточно простое
+    -   cloning of the views
+    -   pain point: element can have multiple `displayParent`s
+    -   cloning of the views looks easier than the cloning of the elements

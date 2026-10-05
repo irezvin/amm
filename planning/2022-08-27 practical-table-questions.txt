@@ -1,53 +1,54 @@
-2022-08-27 Практические вопросы по таблице (аяксовое редактирование БД)
+2022-08-27 Практические вопросы по таблице (аяксовое редактирование БД) s
 
--   в списке столбцов из-за new 'RegExp' в выражении стоит таймер - нет "кеширования"
-    ?   может, использовать cnew (caching new)?
-    
-        -   достаточно сложно отлаживать cacheability - я долго ковырялся
-            
+-   in my prototype table solution with columns filter, due to 'new RegExp',
+    the expression isn't cacheable, and the timer is used. 
+    ? Proposed solution: introduce cnew keyword (short from "caching new").
+
+
+    -   it's quite hard to debug cacheability - I dug into this for quite long
+
             class: ui.Paginator,
             in__numRecords: 'tbl.fetcher.response.totalRecords || 0'
-
             
-            -   1) tbl.fetcher оказалось некешируемым, потому что 
-                у таблицы вначале инициализировался компонент (tbl начинало
-                возвращаться), и на тот момент свойства fetcher еще не было!
+            -   1) tbl.fetcher turned out to be non-cacheable as well, because
+                for the table, the `component` property was initialized first 
+                (`tbl` started to be found), and at that moment the `fetcher`
+                property of the table object didn't exit yet!
 
-                то есть мы зависим от порядка инициализации ((
-                решил только сделав, что у всех элементов свойство component
-                инициализируется последним. А правильно ли это?
+                That means we are dependent on the initialization order.
+                I solved that edge case by forcing `component` property 
+                to be initialized last. Looks like a kludge.
             
-                ?   object.propertyAdded('propertyName')??? - давно думаю
+                ?   object.propertyAdded('propertyName')??? - thinking about that
+                    for some time
                     
-            -   2) response.totalRecords - не кешируемое, так как response 
-                это обычный хеш (пришлось добавить !!)
+            -   2) response.totalRecords - noncacheable, since the `response`
+                is a simple hash (needed to add `!!` to force cacheability)
                 
-        -   RegExp.exec с сабпаттернами возвращает массив, содержимое которого
-            non-observable :( пришлось добавить !!
+        -   RegExp.exec with subpatterns returns non-observable array,
+            needed to use `!!` again
             
             new 'RegExp'(columnFilter.value, 'i')).exec(this.component.src.caption || this.component.src.id)!!
             
-            !   пользователь фреймворка никогда не поймет, что так нужно сделать
+            !   user of the framework will never figure it out 
+                on their own
         
 >   twin view:
-    +   синхронизация высоты строк:
-        +   когда меняем ширину столбца, смотрим на высоту таблицы; если поменялась,
-            пересинхронизируем высоту строк
-    +   почему некоторые редакторы не 100% высоты?!
-        i   потому что у mainTable стояла height: auto (точнее, некорректный
-            height: initial), который не давал выставлять содержимое ячеек 
-            под 100%
-    +   делаем широкую колонку совсем узкой, пользуемся постраничником, - 
-        рассинхронизируется ширина столбцов в фиксированной шапке, adjustColumns()
-        не помогает -- помогает, я им неправильно пользуюсь --
-            сделал, что всегда выставляется ширина колонки, даже если 
-            наша больше или равна целевой
-    -   синхронизация таблиц: как вариант, использовать resizeObserver и intersectionObserver,
-        и если размеры таблиц по ширине (шапки/главной) или высоте (края/главной)
-        расходятся, вызывать adjust...
--   выставляем размеры
-    -   когда у таблицы появляются новые строки, то должны применяться размеры,
-        если ширина столбцов не auto
-        
-        -   тут фундаментальная проблема
-
+    +   row heights' synchronization:
+        +   while changing the column width, observing the table height;
+            if it's changed, re-sync row heights
+    +   why some editors don't have 100% height?!
+        i   since .mainTable had { height: auto } (precisely, { height: initial }),
+            which didn't allow to set cell content height to 100%
+    +   narrow width w/ paginator: columns widths in the fixed header 
+        is out of sync, adjustColumns() doesn't help -- actually it does,
+        I was holding it wrong
+            made that the column width is always set, even if our one
+            is wider or equal to required width
+    -   tables' sync: condsider using resizeObserver & intersectionObserver,
+        and if main/fixed tables width/height differs, call adjust...
+-   settings sizes
+    -   when new rows are added, need to apply sizes if the column widths'
+        isn't auto
+        -   there is a fundamental problem here
+            // ..but I was too lazy to specify which one - 25.09.26
