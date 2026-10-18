@@ -2,7 +2,7 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.6
 Creation-Date: 2020-10-05T22:22:24+03:00
 
-====== Dependency injection при помощи Amm.constructInstance и Amm.override ======
-Created понеділок 05 жовтня 2020
+====== Dependency injection using the Amm.constructInstance and Amm.override ======
+Created Monday October 05 2020
 
 

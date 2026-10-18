@@ -27,7 +27,7 @@ Questions and ideas that popped up during the table development
         // but what's the use case of b?
     
 -   new Amm.Element: when the `prototype` includes the class identifier
-    via the __CLASS__ property, если в прототипе прописан класс, return the instance
+    via the __CLASS__ property, if the `class` is present, return the instance
     of that class (in javascript, the `new` operartor can return arbitrary instance
     instead of `this`, which looks handy)
     

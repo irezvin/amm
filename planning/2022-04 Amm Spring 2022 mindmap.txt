@@ -1,0 +1,76 @@
+Amm Spring 2022
+    - green🟩 MultipleDisplayParent + ViewCloning
+        - this thing bothers me for too long
+        - interesing task to switch to
+        - green🟩  ! Not sure this really blocks "sticky headers"
+            - green🟩  Sticky Headers
+                - Model: repeat table header in the separate element
+                    - Special case for view clone
+                - Analyze HandsOnTable, they got this right; check the layout & DOM tree
+    - Table + RecordSet
+        - green🟩  ErrorControl
+            - green🟩 feature to HIDE messages that ALREADY SHOWN in the different controls!
+                - green🟩  idea: control "rings" somewhere (to the Model?!) that it has shown error message
+                    - key/path in the `errors` hash
+                    - element reference
+                - modelMeta.afterErrorsShown
+                - errors' dispatcher (is this a thing?) subscribes to this event
+            - ability to "collapse" repeating messages
+            - ability to link repeating messages to the relevant fields
+        - RecordStatusView
+            - map record status to class
+            - map record status to html
+            - link to "selected records" or "selected keys" collection; reflect when record is selected (see "selection feature" below)
+        - green🟩 Popup
+            - ability to change implementation later (i.e. to Popper etc)
+            - start small (z-index & that's it)
+        - Cell annotations (using popups)
+        - Cell with pop-up for error
+            - Pop-up on focus
+        - Cell with record status: when record has errors, focusing cell will show pop-up with record error info
+        - Amm.Trait.Table.RecordSet
+        - SortColumn
+            - пока: click on sort element toggles sort
+        - FilterRow
+            - пока сделаем просто ввод для omni-filter
+        - ?RecordStatusDisplay
+        - ?Recordset: fetch throttling
+        - green🟩 ActionList
+            - Action
+                - caption
+                - description
+                - icon
+                - shortcut
+                - enabled?
+                - checked?
+                - radioGroup
+                - groupId
+                - MultiAction extends Action
+                    - actions[]
+                    - actionable
+                        - yes: has action
+                        - no: serves only as parent for sub-items
+            - ActionView
+                - showIcon?
+                - showCaption?
+                - showShortcut?
+                - blah-blah-blah
+            - MultiActionView
+                - DropDown
+                - ComboButton
+                    - rememberLastChoice
+        - green🟩  Popup + ActionList = Pop-up menu
+            - red🟥 TODO: learn flow layout
+                - header, 100% body, footer
+        - Dialog
+            - global depth stack, feature to move dialogs up/down the stack
+            - show/hide columns?
+            - filter?
+        - Selection
+            - Selection feature ("Ctrl", "Shift", "Ctrl-Shift" modes)
+            - Table: drag-to-select
+            - Feature to "copy" selected cells (no pasting?)
+        - ?Recordset: SelectionFeature
+            - Able to remember keys, not records
+            - Default mode: none + remember selected; all + remember de-selected
+            - Should survive pagination and/or change of filters

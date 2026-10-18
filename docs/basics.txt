@@ -2,20 +2,21 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.6
 Creation-Date: 2021-02-26T11:04:30+02:00
 
-====== Особенности и плюсы использования простейшего подмножества ecmascript ======
+====== Advantages of using the basic ecmascript subset ======
 
 Created Friday 26 February 2021
 
-* минимальная зависимость от утилит (php-скрипт сборки и uglifyjs)
-* в "развернутом" (множество script-тегов) виде не нужен файл с "map", легко читать и пользоваться сообщениями об ошибках - они сразу указывают на нужное место в коде
-* нет компиляции
-	* легко отлаживать
-	* легко вносить изменения и обновлять страницу
-* в исходном javascript-коде везде используются полные имена классов (в html-дереве они могут быть сокращенными)
-	* легко определять, что от чего зависит
-	* переименовывать классы относительно легко (поиск и замена по всему дереву и перенос/переименование файлов)
-* любой класс моментально находится из-за однозначного соответствия: Amm.Operator.Range.Condition будет находиться в файле Amm.Operator.Range.Condition.js
-* отсутствие строгой типизации упрощает работу и дает возможность для множественного наследования и traits, в том числе динамических
-* вместо строгой типизации используется строгая проверка на классы: везде, где метод ожидает значение определенного класса, есть проверка при помощи Amm.is
-* там, где это важно, есть проверки типа и значений параметров
-* нет "магии" и "convention over configuration"; я надеюсь, это упрощает понимание того, что происходит, при чтении кода
+* minimal dependency on the build tools (only php build script and uglifyjs)
+* easy-to-read non-compressed code in its simple form (multiple `script` tags);
+  easy to find a mistake because it immediately shows at the source line;
+* no compile step
+  * easy to debug
+  * easy to make changes and update the page
+* JS source always mentions the full class names
+  * it's easy to trace the dependencies
+  * it's relatively easy to rename the classes (global search and replace plus changing the file name)
+* any class can be easily found due to direct mapping between classes and files: Amm.Operator.Range.Condition is located in Amm/Operator/Range/Condition.js
+* absence of strict typing eases the work and provides us with multiple inheritance and trais, including the dynamic ones
+* instead of the strict typing, we use strict class checks using Amm.is() where we know what class we expecting.
+* in places where it's critical, parameters' type and bound checks are in place
+* there is no "magic" and "convention over configuration"; I hope it simplifies reading the code.

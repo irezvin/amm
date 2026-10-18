@@ -29,7 +29,7 @@
 //  The item below was done @12.2021 by involving Amm.Data.Mapper, that doubles as 
     Instantiator, and being a MetadataProvider for all Model instances.
     Hypothetically, a ConcreteMetaProvider extends Amm.WithEvents might be introduced,
-    that's created on the ourside, and the dependency is injected in theh Instantiator'е,
+    that's created on the ourside, and the dependency is injected in the Instantiator,
     in case if we need to do the same for Model. (Note from 22.09.2026: while I thought
     I had a remote what I meant here at the very beginning, I felt completely lost when
     finishing the paragraph.)

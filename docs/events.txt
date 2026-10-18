@@ -2,135 +2,136 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.6
 Creation-Date: 2020-09-14T09:49:12+03:00
 
-====== События (events) ======
+====== Events ======
 Created Monday 14 September 2020
 
-В Amm взаимодействие между объектами осуществляется, преимущественно, при помощи observer pattern: объект генерирует событие, о котором уведомляется любое количество подписчиков. Логика реакции на событие содержится в методе-обработчике.
 
-===== out<EventName> - стандартное название для методов событий =====
+In the Amm, interaction between the objects is done using the Observer Pattern: object generates an event that multiple subscribers are then notified about. Logic of reacting to the event is contained in the handler method.
 
-Для того, чтобы в исходном коде было легко найти, какие события поддерживаются тем или иным классом, названия всех методов, генерирующих события, начинается с "out", и заканчивается именем события с заглавной буквы. Сами имена событий должны начинаться со строчной буквы. Параметры метода это параметры события, которые будут переданы обработчикам.
+===== out<EventName> - standard name for event-generating method =====
 
-Внутри самого метода обычно находится вызов метода this._out('eventName', arg1, arg2...), который реализует обращение к подписчикам (он определен в Amm.WithEvents).
+To ease locating what events are supported by a particular class in the source code, names of every event-generating method start with "out" prefix, and ends with the name of the event (with the first captial letter). Parameters of the method are parameters of the event.
 
-Типичное определение события выглядит так: 
+The body of such methods are usually one-liner this._out('eventName', arg1, arg2...), that implements calling the observers (_out is defined in Amm.WithEvents).
+
+Typical definition of the event looks like this:
 
 {{{code: lang="js" linenumbers="False"
-outValueChange: function(value, oldValue) { // здесь название события с большой буквы
-    return this._out('valueChange', value, oldValue); // здесь - с маленькой
+outValueChange: function(value, oldValue) { // name of the event starts with the capital letter here
+    return this._out('valueChange', value, oldValue); // but with lowercase one here
 }
 }}}
 
 ===== Amm.WithEvents =====
 
-Почти вся работа с событиями реализована в классе Amm.WithEvents; все классы, которые генерируют события, унаследованы от этого класса.
+Almost all event-related code is located in Amm.WithEvents; all event-generating classes are descendants of this class.
 
-Важно! Параметры методов subscribe, getSubscribers и unsubscribe совпадают по положению и смыслу. Но, в отличие от subscribe(), в getSubscribers() и unsubscribe() в качестве любого параметра можно передать undefined, что при поиске или отписке интерпретируется как "любой".
+Important to know: parameters of ''subscribe'', ''getSubscribers'' and ''unsubscribe'' methods are the same. But the core difference of ''getSubscribers()'' and ''unsubscribe()'' from ''subscribe()'' is that the former two can accept ''undefined'' as any of the arguments, that means "any" - so, for example, ''foo.unsubscribe('valueChange')'' will unsubscribe all subscribers to that event.
 
-==== Amm.WithEvents.hasEvent (eventName) ====
-* возвращает true, если объект поддерживает событие с именем **eventName**, false, если нет
-* **eventName** - строка - имя события (с маленькой буквы!)
-* по сути, этот метод проверяет, чтобы в данном объекте был метод "out + 'EventName'"
+==== Amm.WithEvents.prototype.hasEvent (eventName) ====
+* returns true, if object supports event with the name **eventName**, and false, if not
+* **eventName** - string - name of the event (starting from the lowercase!)
+* implementation just checks that the method "out + 'EventName'" is present in the current object
 
-==== Amm.WithEvents.subscribe(eventName, handler, scope, extra) ====
-* подписывает обработчик handler объекта scope на событие eventName; при вызове обработчика будет передан параметр extra, если он был передан
-* **eventName: string** - имя события. В большинстве случаев подписка на несуществующее событие вызывает исключение с текстом "No such event: 'eventName'". В некоторых классах можно подписываться на произвольные события. См. ниже: //Amm.WithEvents.strictEvents, Amm.WithEvents._handleMissingEvent()//
-* **handler: string|function|object** - строка или функция (или любой объект с методом "apply") - собственно, обработчик
-	* если функция, то она вызывается со scope в качестве this (или с объектом, который генерировал событие, если scope === null)
-	* если объект, вызывается его метод handler.apply(scope, [arg1, arg2, ...extra])
-	* если строка, то вызывается метод объекта scope с данным именем
-		* если такого метода нет, будет сгенерировано исключение
-* **scope** - объект-подписчик, то есть объект, который будет в качестве this во время вызова данного обработчика; если не задан
-* **extra** - дополнительный параметр (любой). Если не задан, то передается null
-* если подписчик с теми же значениями handler, scope и extra уже был зарегистрирован, повторно он не добавляется
-* возвращает true, если добавился новый подписчик, undefined, если такой уже был.
+==== Amm.WithEvents.prototype.subscribe(eventName, handler, scope, extra) ====
+* subscribers the hanlder method **handler** of the object **scope** to the event **eventName**; the ''extra'', if supplied, will be added as the last argument when calling the handler.
+* **eventName: string** - name of the event. Attempt to subscribe at non-existent event triggers an exception with the text "No such event: 'eventName'". In some classes it is possible to subscribe to arbitrary events. See below: //Amm.WithEvents.strictEvents, Amm.WithEvents._handleMissingEvent()//
+* **handler: string|function|object** - string or function (or any object that has ''apply()'' method) - the handler
+	* if it's a function, it's called with ''scope'' as the ''this'' (or, if ''scope'' is null, with the event-emitting object as the ''this'')
+	* if it's an object, method ''handler.apply.apply(scope, [arg1, arg2, ...extra])'' is called
+	* if it's a string, method of the ''scope'' object with the matching name (''scope[handler]'') will be called
+		* if scope doesn't have such method, exception will be triggered
+* **scope** - the subscriber-object, that will serve as ''this'' during the event handling call
+* **extra** - additional argument (any) sent as the last argument to the handler. If not supplied, ''null'' is used.
+* the function is idempotent: if subscriber with the exact same values of ''handler'', ''scope'' and ''extra'' is already registered, it won't be registered again
+* returns ''true'' if new subscriber was added, and ''undefined'' if it wasn't (because it already existed).
 
-==== Amm.WithEvents.getSubscribers(eventName, handler, scope, extra) ====
-* находит подписчиков на события данного объекта
-	* eventName, handler, scope, extra имеют почти тот же смысл, что в subscribe()
-	* если в качестве eventName, handler, scope и extra передается undefined, то находятся любые подписчики, сравнение с данным критерием не осуществляется
-	* например, Amm.WithEvents.getSubscribers(undefined, undefined, someObject) находит все подписки с someObject в качестве scope - для всех событий, методов и extra
-	* Amm.WithEvents.getSubscribers() возвращает список всех подписчиков
-* **eventName: string|undefined** - имя события либо undefined для поиска любых событий
-* **handler: function|object|string|undefined** - функция-обработчик, объект-обработчик, имя метода либо undefined, чтобы найти все совпадения
-* **scope: object|null|undefined** - объект-подписчик (this при обработке), либо null для поиска обработчиков, при подписке которых scope не был задан, либо undefined для поиска всех совпадений
+==== Amm.WithEvents.prototype.getSubscribers(eventName, handler, scope, extra) ====
+* returns subscribers to the events of the object
+	* ''eventName'', ''handler'', ''scope'', ''extra'' have the same sense as with ''subscribe()'', except for how ''undefined'' values are handled
+	* if ''undefined'' is supplied as eventName, handler, scope, or extra, then the filtering by the given argument is not made, and all subscribers disregarding to what the value of specified handler' part is, are returned
+	* for example, Amm.WithEvents.getSubscribers(undefined, undefined, someObject) finds all subscribers with ''scope === someObject'' - for any ''events'', ''methods'' and ''extra''
+	* Amm.WithEvents.getSubscribers() returns all subscribers
+* **eventName: string|undefined** - name of the event or ''undefined'' to match all events
+* **handler: function|object|string|undefined** - function handler, object handler, method name, or ''undefined'', to match any handler
+* **scope: object|null|undefined** - scope object, or ''null'' to find handlers without defined scope, or ''undefined'' to match any scope
 * **extra: mixed|null|undefined**
-	* **mixed** - будут возвращены подписки с данным значением extra
-	* **null**, чтобы найти подписчиков с не заданным либо null extra
-	* **undefined** для всех совпадений 
-* возвращает массив массивов, по одному массиву на каждую подписку
-	* информация о подписке имеет формат [handler, scope, extra, eventName, index]
-	* где eventName - имя события
-	* index - порядковый номер данной подписки среди подписок на eventName
-	* важно! порядок в данном массиве отличается от порядка в subscribe/unsubscribe/getSubscribers
-* если данного события нет, или подписок нет, возвращает пустой массив
+	* **mixed** - subscribers with matching ''extra'' will be returned
+	* **null** - subscribed without extra defined at subscribtion (or with ''null'' explicitly provided) will be returned
+	* **undefined** to match any ''extra''
+* returns array of arrays, where every sub-array corresponds to one subscription
+	* the format is [handler, scope, extra, eventName, index]
+	* ''eventName'' - name of the event
+	* ''index'' - ordinal number of this subscription amonth all subscription to event ''eventName''
+	* important! order in this array is different from the order of the arguments of subscribe/unsubscribe/getSubscribers
+* if there is no such event, or there are no subscribers, empty array is returned
 
-==== Amm.WithEvents.unsubscribe (eventName, handler, scope, extra) ====
-* отписывает подписчиков, совпадающих указанными в eventName, handler, scope, extra критериями
-* смысл и семантика параметров тот же, что в getSubscribers (собственно, потому что unsubscribe вызывает  getSubscribers())
-* возвращает такой же массив, как getSubscribers()
-* если такого события нет, возвращается пустой массив, исключение не генерируется
+==== Amm.WithEvents.prototype.unsubscribe (eventName, handler, scope, extra) ====
+* unsubscribes all subscribers that match the provided eventName, handler, scope, extra criteria
+* semantics of the arguments is the same as for getSubscribers (since ''unsubscribe()'' uses ''getSubscribers()'' under the hood)
+* returns the same array as in ''getSubscribers()''
+* returns empty array if there is no such event, doesn't generate the exception
 
-==== Amm.WithEvents.unsubscribeByIndex (eventName, index) ====
-* отписывает подписку с порядковым номером **index** на событие **eventName**
-* **eventName: string** - имя события
-* **index: number** - порядковый номер (последнее значение в подмассиве-результате из getSubscribers)
-* возвращает массив, аналогичный getSubscribers(), с информацией об отписанных подписках
-	* если такого события нет, возвращается пустой массив, исключение не генерируется
+==== Amm.WithEvents.prototype.unsubscribeByIndex (eventName, index) ====
+* unsubscribes subscription with given **index** to the event **eventName**
+* **eventName: string** - event name, required, cannot be ''undefined''
+* **index: number** - order of the subscription within this 'eventName'' (last value in the result subarray returned by ''getSubscribers()'')
+* result is the same as for getSubscribers() or unsubscribe(), but has at most one element
+	* if there is no such event, the exception isn't thrown
 
-==== Amm.WithEvents.getUniqueSubscribers (classOrInterface, eventName) ====
-* находит уникальные объекты-подписчики (scope) на одно или все события данного объекта
+==== Amm.WithEvents.prototype.getUniqueSubscribers (classOrInterface, eventName) ====
+* returns unique ''scope'' objects of subscription to a single or all events of the given object
 * **classOrInterface: undefined|string|array:** 
-	* **undefined**: возвращаются любые подписчики
-	* **string|Array**: возвращаются те, которые относятся к указанному классу/интерфейсу или одному из нескольких указанных классов/интерфейсов
+	* **undefined**: returns all scopes
+	* **string|Array**: returns scopes that match given class/interface or one of provided classes/interfaces, if the Array of strings is provided
 * **eventName: undefined|string**
-	* undefined - возвращаются подписчики на все события
-	* string - возвращаются подписчики только на данное событие
-* возвращает уникальные не-null объекты-подписчики на событие eventName,  либо пустой массив, если такого события нет
-* например, 
-	* чтобы найти все views для элемента element, нужно вызвать element.getUniqueSubscribers('Amm.View.Abstract')
-	* чтобы найти все выражения, которые подписаны на любое из свойств данного элемента, нужно вызвать element.getUniqueSubscribers('Amm.Expression')
+	* undefined - returns scopes for all events
+	* string - returns scopes only for provided event
+* returns unique non-null subscriber scopes to the event ''eventName'', or empty array, if there is no such event, or no subscribers
+* for example 
+	* to find all Views of the element, call ''element.getUniqueSubscribers('Amm.View.Abstract')''
+	* to find all Expressions, subscribed to any properties of the given element, call ''element.getUniqueSubscribers('Amm.Expression')''
 
-==== Amm.WithEvents._out(eventName, args...) ====
-* вызывает функции-обработчики, подписанные на событие **eventName**
-	* описание семантики см. в Amm.WithEvents.subscribe()
-* все дополнительные параметры (arg1, arg2 и т.д.) передаются обработчикам
-* кроме того, каждому обработчику передается параметр extra метода subscribe(), если он был предоставлен при подписке
-* в ходе обработки событий заполняется объект Amm.event(описание ниже)
+==== Amm.WithEvents.prototype._out(eventName, args...) ====
+* calls handler functions, subscribed to the event **eventName**
+	* for semantics, see the description of Amm.WithEvents.subscribe()
+* all extra arguments (arg1, arg2 and so on) are passed to the handlers
+* also, every handler receives ''extra'' parameter of ''subscribe()'' call, if it was provided during the subscription - or null otherwise
+* during the method invocation, Amm.event object gets populated with the event-related information (the description is below)
 
 ==== Amm.event ====
-* глобальный объект, который содержит информацию о текущем обрабатываемом событии. Может быть полезен, если мы используем какие-то универсальные обработчики, реагирующие на разнотипные события или события из многих источников
-* **Amm.event.origin**: **object** - объект, сгенерировавший событие
-* **Amm.event.name**: **string** - имя текущего события
-* **Amm.event.args**: **Array** - параметры (включая extra в конце)
-* **Amm.event.parent**: **object** - структура event с информацией о событии, во время обработки которого было сгенерировано текущее событие (null, если мы обрабатываем самое внешнее событие)
+* global object, that contains information about the currently handled event. Might be useful, if we use a universal handlers that react to events of different types - from different sources.
+* **Amm.event.origin**: **object** - object that triggered the event
+* **Amm.event.name**: **string** - name of the current event
+* **Amm.event.args**: **Array** - arguments that will be passed to the handler functions (including the trailing extra)
+* **Amm.event.parent**: **object** - ''event'' structure with the information of the event, during the handling of which the current event was triggered (null for the most outermost event)
 
-==== Amm.WithEvents(options, initOnHandlersOnly): конструктор ====
-* **options: object|null|undefined** - объект-прототип экземпляра WithEvents
-	* options передается в Amm.init(this)
-	* в options могут быть специальные ключи в формате on__<eventName>
-	* **внимание!** options модифицируется в ходе выполнения - ключи ''on__'' удаляются из него
-* **options.on__eventName: function|Array**: создает подписчиков на события на этапе инициализации объекта
-	* **function** - аналогично this.subscribe(eventName, options.on__eventName)
-	* **Array [handler, scope, extra]** - предполагается от одного до трех элементов (см. subscribe)
-* **initOnHandlersOnly: boolean** - если true, Amm.init для установки свойств не вызывается, устанавилваются только обработчики, прописанные в ключах вида on__eventName
+==== Amm.WithEvents(options, initOnHandlersOnly): constructor ====
+* **options: object|null|undefined** - options (proto hash) of the WithEvents instance
+	* options are passed to Amm.init(this)
+	* options can contain special keys in the form on__<eventName>
+	* **important!** options hash is modified during the execution - by deleting on__ keys - to avoid passing it to the constructor part that sets the properties
+* **options.on__eventName: function|Array**: creates subscribers to the events during the instance creation
+	* **function** - same as this.subscribe(eventName, options.on__eventName)
+	* **Array [handler, scope, extra]** - from one to three elements are expected (see Amm.WithEvents.prototype.subscribe)
+* **initOnHandlersOnly: boolean** - if true, Amm.init isn't called to set properties of the instance, only on__ handlers are set - intended for usage in the inherited classes for fine-grained control of the objects' initialization stages.
 
-==== Вызов конструктора WithEvents при наследовании ====
+==== Calling WithEvents constructor during the inheritance ====
 
-**Во-первых,** все методы Amm.WithEvents ожидают, чтобы у объекта был инициализирован массив _subscribers. А назначение событий может происходить достаточно рано - в т.ч. в ходе инициализации.
+**First,** all methods of Amm.WithEvents expect the ''_subscribers'' array to exist. The event assignment can happen quite early - incl. during the initialization.
 
-**Во-вторых**, по-умолчанию Amm.WithEvents пытается установить все [[properties|свойства,]] переданные в options, при помощи Amm.init. Если мы будем вызывать WithEvents рано в конструкторе, то какие-то структуры, необходимые для этого, могут быть еще не инициализированы.
+**Second,** by default Amm.WithEvents attempts to set all [[properties]] passed to the ''options'' with ''Amm.init()''. If we will call WithEvents early in the constructor, then some structured needed for this might not be initialized yet.
 
-Есть два решения:
-а) В самом начале конструктора-наследника вызвать Amm.WithEvents с пустыми значениями, чтобы создать _subscribers, а в конце вызвать с options
+There are two possible solutions:
+a. Very early in the descendant constructor call ''Amm.WithEvents()'' with empty values, to create _subscribers, and leter call it with options
 
-б) В начале задействовать initOnHandlersOnly === true: вызвать Amm.WithEvents(options, true), а в конце - просто Amm.init(this, options)
+b. At the very start, use ''initOnHandlersOnly'' parameter: call Amm.WithEvents(options, true), and later - just call Amm.init(this, options) (given that on__ keys will be removed from ''option'' on call that inits handlers)
 
-==== Надежный метод получения параметра extra в обработчике события ====
-* extra является всегда последним параметром метода-обработчика.
-* параметр extra всегда передается, даже если он не был задан при подписке (это будет null)
-* получать значение extra ненадёжно, так как в спецификации события могут появиться новые параметры
-* поэтому лучше получать extra так:
+==== Future-proof method of receiving ''extra'' param in the event handler ====
+* ''extra'' is always the last method of the handler function.
+* ''extra'' is always sent, even if it wasn't provided during the subscription (in that case it's null)
+* in case we specify ''extra'' in the parameter list, we risk mismatch, in case the event is later extended with additional arguments
+* therefore, it's recommended to receive the last parameter like this:
 
 {{{code: lang="js" linenumbers="False"
 function handlerFn(eventArg1, eventArg2) {
@@ -139,40 +140,38 @@ function handlerFn(eventArg1, eventArg2) {
 }
 }}}
 
-Этот способ надежен и всегда будет возвращать значение параметра подписки "extra".
+==== Helper (internal) properties and methods to work with subscription/unsubscription to events of the current object ====
 
-==== Вспомогательные (внутренние) методы для работы с подпиской/отпиской на события данного объекта ====
+=== Amm.WithEvents.prototype.strictEvents ===
+* **boolean**, default === true
+* if set to false, non-existing events will be created on first subsciption attempts; _handleMissingEvent() won't be used
 
-=== Amm.WithEvents.strictEvents ===
-* **boolean**
-* если true, subscribe() будет вести себя так, как будто несуществующее событие существует, то есть зарегистрирует обработчик и вернет true (_handleMissingEvent() при этом не выполняется)
+=== Amm.WithEvents.prototype._handleMissingEvent: function(eventName, handler, scope, extra) ===
+* blank template method to be overriden in subsclasses when needed;
+* called when subscribing to non-existent events when this.strictEvents === true;
+* same arguments as for subscribe();
+* return value tells subscribe() how to behave:
+	* **undefined**: event not found, subscribe() should generate exception
+	* **true**: subscribe() will register the handler
+	* **false**: subscribe() won't fail (and will report that the event was registered), but won't do anything, assuming that _handleMissingEvent did all the work
 
-=== Amm.WithEvents._handleMissingEvent: function(eventName, handler, scope, extra) ===
-* шаблонный метод без кода, при необходимости нужно переопределять в подклассах
-* вызывается в случае, если при strictEvents === true subscribe() передает имя несуществующего события
-* параметры те же, что в subscribe()
-* **возвращает** значение, сообщающее subscribe(), как вести себя дальше:
-	* **undefined**: событие не найдено, subscribe() сгенерирует исключение
-	* **true**: всё ок, передаю управление - subscribe() работает так, как если бы событие существовало
-	* **false**: я всё сделал сам - subscribe() возвращает true сразу же (предполагается, что _handleMissingEvent зарегистрировал всё необходимое)
+=== Amm.WithEvents.prototype._subscribeFirst_<eventName>() ===
+* if method with the matching name exists, it will be called when number of subscriptions to this event changes from zero to non-zero
+* is useful if we need to initialize some structures dedicated solely for the purpose of this event
 
-=== Amm.WithEvents._subscribeFirst_<eventName>() ===
-* если такой метод есть, то он вызывается при первой подписке на событе eventName. 
-* это полезно для того, чтобы инициализировать какие-то структуры, которые понадобятся, если у нас никогда не было подписчиков на такое событие
+=== Amm.WithEvents.prototype._unsubscribeLast_<eventName>() ===
+* vice-versa: called when number of subscribers for given event changes from non-zero to zero
+* useful to remove the structures that were created for the purpose of the event - i.e. in _subscribeFirst_<eventName>()
 
-=== Amm.WithEvents._unsubscribeLast_<eventName>() ===
-* вызывается, если отписался последний подписчик на событие eventName
-* полезно для того, чтобы убрать структуры, которые мы создавали в _subscribeFirst_<eventName>()
+===== Examples =====
 
-===== Примеры =====
+==== Creating new class with own events ====
 
-==== Создание нового класса со своими событиями ====
-
-**Примечание.** В примере ниже мы напрямую вызываем методы .out<Event> экземпляра. Это неправильно, обект должен сам генерировать события в ходе своей внутренней логики (своих методов), но здесь показан принцип работы, а не высокий тон программирования.
+**Footnote.** In the example below we directly call .out<Event> methods of the instances. It's not corrent, the object should generate the events on its' own, but here it's done for the illustrative purpose.
 
 {{{code: lang="js" linenumbers="False"
 SchoolClass = function(options) {
-           // поскольку у нас нет специальной логики в конструкторе, этого достаточно
+	// since we don't have any special logic in the constructor, that's enough
 	Amm.WithEvents.call(this, options);
 };
 
@@ -204,7 +203,7 @@ newClass.hasEvent('dayStart');
 //>
 newClass.hasEvent('DayStart'); 
 
-//< false // имена событий не могут быть с большой буквы
+//< false // names of events cannot start from the upper-case letter
 
 //>
 newClass.hasEvent('someNonExistentEvent');
@@ -212,7 +211,7 @@ newClass.hasEvent('someNonExistentEvent');
 
 //>
 newClass.getUniqueSubscribers();
-//< [] // обработчиков пока нет
+//< [] // no handlers yet
 
 MyHandlerObject = {
 	handleDayStart: function(date) {
@@ -222,7 +221,7 @@ MyHandlerObject = {
 		console.log('lesson', lessonName, duration);
 	},
 	displayExtra: function() {
-		// пример того, как мы получаем значение extra
+		// example how to get ''extra'' value
 		var extra = arguments[arguments.length - 1];
 		if (extra !== undefined) console.log("extra is", extra);
 	},
@@ -233,13 +232,13 @@ MyHandlerObject = {
 
 newClass.subscribe('dayStart', MyHandlerObject.handleDayStart, MyHandlerObject);
 
-// второй способ: передаем название метода, а не сам метод
+// second way: provide name of the method instead of the method
 newClass.subscribe('lesson', 'handleLesson', MyHandlerObject);
 
-// передаем extra
+// provide extra
 newClass.subscribe('lesson', myHandlerObject.displayExtra, myHandlerObject, 'A boring thing');
 
-// другое значение extra
+// provide a different extra
 newClass.subscribe('lesson', myHandlerObject.displayExtra, myHandlerObject, 'Whatever');
 
 //>
@@ -268,7 +267,7 @@ newClass.outLesson('math', '30m');
 //<< 'A boring thing'
 //<< 'Whatever'
 
-// отписываемся от всех подписок с extra === 'A boring thing'
+// unsubscribing all handlers with extra === 'A boring thing'
 
 //>
 newClass.unsubscribe(undefined, undefined, undefined, 'A boring thing')
@@ -277,7 +276,7 @@ newClass.unsubscribe(undefined, undefined, undefined, 'A boring thing')
 //<     [function displayExtra, myHandlerObject, 'A boring thing', 'lesson', 1]
 //< ]
 
-// теперь срабатывает только один обработчик:
+// only one handler now fires:
 
 //>
 newClass.outLesson('math', '30m');
@@ -285,7 +284,7 @@ newClass.outLesson('math', '30m');
 //<< 'lesson', 'math', '30m'
 //<< 'Whatever'
 
-// отписываемся от всех подписок, где scope === 'myHandlerObject'
+// unsubscribing all handlers with scope === 'myHandlerObject'
 //>
 newClass.unsubscribe(undefined, myHandlerObject)
 
@@ -298,14 +297,14 @@ newClass.unsubscribe(undefined, myHandlerObject)
 
 //<<
 
-// Также можно прописать обработчики в объкте-прототипе (см.)
+// Let's define handlers in the options
 
 var anotherClass = new SchoolClass({
 
-	// сразу передаем обработчик
+	// provide a handler function
 	on__dayStart: function(date): { console.log ("DS", date); },
 
-	// указываем scope и extra:
+	// set scope and extra:
 	on__lesson: [ myHandlerObject.displayExtra, myHandlerObject, 'Lesson goes brrr' ]
 });
 

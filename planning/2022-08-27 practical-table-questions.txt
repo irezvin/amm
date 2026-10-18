@@ -1,4 +1,4 @@
-2022-08-27 Практические вопросы по таблице (аяксовое редактирование БД) s
+2022-08-27 Practical table-related questions (ajax DB editing)
 
 -   in my prototype table solution with columns filter, due to 'new RegExp',
     the expression isn't cacheable, and the timer is used. 

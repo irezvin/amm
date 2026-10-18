@@ -1,11 +1,11 @@
 <map version="1.0.1">
 <!-- To view this file, download free mind mapping software FreeMind from http://freemind.sourceforge.net -->
-<node CREATED="1645044247172" ID="ID_136198011" MODIFIED="1790106802475" TEXT="Amm Spring 2022">
-<node COLOR="#66ff00" CREATED="1645045603818" ID="ID_643534485" MODIFIED="1645168875178" POSITION="right" TEXT="MultipleDisplayParent + ViewCloning">
+<node CREATED="1645044247172" ID="ID_136198011" MODIFIED="1791477238544" TEXT="Amm Spring 2022">
+<node COLOR="#66ff00" CREATED="1645045603818" ID="ID_643534485" MODIFIED="1791477257736" POSITION="right" TEXT="[green] MultipleDisplayParent + ViewCloning">
 <node CREATED="1790106350253" ID="ID_1768392982" MODIFIED="1790106371375" TEXT="this thing bothers me for too long"/>
 <node CREATED="1790106374140" ID="ID_441624431" MODIFIED="1790106385503" TEXT="interesing task to switch to"/>
-<node COLOR="#66ff00" CREATED="1645168409304" ID="ID_1700950246" MODIFIED="1790106447917" TEXT="! Not sure this really blocks &quot;sticky headers&quot;">
-<node COLOR="#66ff00" CREATED="1645168437093" ID="ID_1421253896" MODIFIED="1645168884447" TEXT="Sticky Headers">
+<node COLOR="#66ff00" CREATED="1645168409304" ID="ID_1700950246" MODIFIED="1791477267769" TEXT="[green]  ! Not sure this really blocks &quot;sticky headers&quot;">
+<node COLOR="#66ff00" CREATED="1645168437093" ID="ID_1421253896" MODIFIED="1791477269749" TEXT="[green]  Sticky Headers">
 <node CREATED="1790106461126" ID="ID_1849294400" MODIFIED="1790106473388" TEXT="Model: repeat table header in the separate element">
 <node CREATED="1790106475706" ID="ID_1579012041" MODIFIED="1790106485629" TEXT="Special case for view clone"/>
 </node>
@@ -14,9 +14,9 @@
 </node>
 </node>
 <node CREATED="1645044258771" ID="ID_1778866507" MODIFIED="1645168558460" POSITION="right" TEXT="Table + RecordSet">
-<node COLOR="#66ff00" CREATED="1645044314953" ID="ID_1636721472" MODIFIED="1645168884444" TEXT="ErrorControl">
-<node COLOR="#66ff00" CREATED="1645044321814" ID="ID_1120567943" MODIFIED="1790106552634" TEXT="feature to HIDE messages that ALREADY SHOWN in the different controls!">
-<node COLOR="#66ff00" CREATED="1645168600702" ID="ID_763045022" MODIFIED="1790106579814" TEXT="idea: control &quot;rings&quot; somewhere (to the Model?!) that it has shown error message">
+<node COLOR="#66ff00" CREATED="1645044314953" ID="ID_1636721472" MODIFIED="1791477277804" TEXT="[green]  ErrorControl">
+<node COLOR="#66ff00" CREATED="1645044321814" ID="ID_1120567943" MODIFIED="1791477275824" TEXT="[green] feature to HIDE messages that ALREADY SHOWN in the different controls!">
+<node COLOR="#66ff00" CREATED="1645168600702" ID="ID_763045022" MODIFIED="1791477272449" TEXT="[green]  idea: control &quot;rings&quot; somewhere (to the Model?!) that it has shown error message">
 <node CREATED="1645168665418" ID="ID_1564313713" MODIFIED="1790106593719" TEXT="key/path in the `errors` hash"/>
 <node CREATED="1645168679930" ID="ID_54816196" MODIFIED="1790106597903" TEXT="element reference"/>
 </node>
@@ -31,7 +31,7 @@
 <node CREATED="1645045346210" ID="ID_1018560370" MODIFIED="1645045351145" TEXT="map record status to html"/>
 <node CREATED="1645045351472" ID="ID_1663509376" MODIFIED="1645045581549" TEXT="link to &quot;selected records&quot; or &quot;selected keys&quot; collection; reflect when record is selected (see &quot;selection feature&quot; below)"/>
 </node>
-<node COLOR="#66ff00" CREATED="1645044346456" ID="ID_453499067" MODIFIED="1725919366815" TEXT="Popup">
+<node COLOR="#66ff00" CREATED="1645044346456" ID="ID_453499067" MODIFIED="1791477263630" TEXT="[green] Popup">
 <node CREATED="1645045021336" ID="ID_1670125905" MODIFIED="1790106711755" TEXT="ability to change implementation later (i.e. to Popper etc)"/>
 <node CREATED="1645045041065" ID="ID_1033648544" MODIFIED="1790106722915" TEXT="start small (z-index &amp; that&apos;s it)"/>
 </node>
@@ -49,7 +49,7 @@
 </node>
 <node CREATED="1645044587306" ID="ID_1410628092" MODIFIED="1645044809952" TEXT="?RecordStatusDisplay"/>
 <node CREATED="1645044917291" ID="ID_561890877" MODIFIED="1645044936586" TEXT="?Recordset: fetch throttling"/>
-<node COLOR="#66ff00" CREATED="1645044374875" ID="ID_1296057662" MODIFIED="1645168918966" TEXT="ActionList">
+<node COLOR="#66ff00" CREATED="1645044374875" ID="ID_1296057662" MODIFIED="1791477282124" TEXT="[green] ActionList">
 <node CREATED="1645168963671" ID="ID_1526836937" MODIFIED="1645169105044" TEXT="Action">
 <node CREATED="1645168970345" ID="ID_1395163752" MODIFIED="1645168972231" TEXT="caption"/>
 <node CREATED="1645168972470" ID="ID_1961075162" MODIFIED="1645168974753" TEXT="description"/>
@@ -80,8 +80,8 @@
 </node>
 </node>
 </node>
-<node COLOR="#66ff00" CREATED="1645044412249" ID="ID_947474455" MODIFIED="1645168960227" TEXT="Popup + ActionList = Pop-up menu">
-<node COLOR="#ff0000" CREATED="1645169152530" ID="ID_599250690" MODIFIED="1790106738216" TEXT="TODO: learn flow layout">
+<node COLOR="#66ff00" CREATED="1645044412249" ID="ID_947474455" MODIFIED="1791477284104" TEXT="[green]  Popup + ActionList = Pop-up menu">
+<node COLOR="#ff0000" CREATED="1645169152530" ID="ID_599250690" MODIFIED="1791477286849" TEXT="[red] TODO: learn flow layout">
 <node CREATED="1645169169952" ID="ID_1079522527" MODIFIED="1790106748519" TEXT="header, 100% body, footer"/>
 </node>
 </node>

@@ -5,96 +5,105 @@ Creation-Date: 2022-02-21T09:25:00+02:00
 ====== Amm.Builder ======
 Created Monday 21 February 2022
 
-Amm.Builder это класс, который ищет опции элементов и их представлений в атрибутах DOM, и создает экземпляры элементов и/или представлений.
+Amm.Builder is a class that searches for constructor options of Amm.Elements and their Views in the DOM attributes, and creates instances of the elements and/or views.
 
-===== Интерфейс =====
+===== Interface =====
 
-==== Конструктор ====
+==== Constructor ====
 Amm.Bulder = function([selector, ][options])
-* selector: корневой узел или корневые узлы, откуда начинаем сканирование (CSS-селектор, либо объект jQuery с узлами)
-* options: устанавливаем свойства Builder-а
+* selector: root node, or several root nodes, from which we start the DOM processing (CSS selector, or a jQuery node list)
+* options: Builder properies
 
-==== Свойства ====
-* **selector** - описан выше - узлы верхнего уровня, с которых начать сканирование
-* **reportMode** - как сообщать о проблемах; битовая маска; по умолчанию PROBLEM_CONSOLE | PROBLEM_HTML (то есть и то, и то):
-	* Amm.Builder.PROBLEM_SILENT - никак
-	* Amm.Builder.PROBLEM_CONSOLE - писать warning в консоль
-	* Amm.Builder.PROBLEM_HTML - создавать атрибут data-amm-warning в проблемных узлах
-* **sel**: какие узлы в узлах верхнего уровня анализировать на предмет опций для элементов и представлений. По умолчанию это все узлы с атрибутами **data-amm-id**, **data-amm-e**, **data-amm-v**, **data-amm-x**.
-* **selIgnore**: какие узлы (внутри узлов верхнего уровня) игнорировать. По умолчанию, это все элементы с атрибутами **data-amm-dont-build** и их потомки, элементы с атрибутами **data-amm-built** и **data-amm-iid** (или см. Amm.domHolderAttribute)
-* **topLevelComponent**:  Amm.Element либо 'root'; null - всем "элементам верхнего уровня" (что это такое? тем, у которых нет компонента? Или тем, которые не созданы внутри других элементов?) устанавливать указанный компонент-владелец ('root' означает, в качестве владельца будет указываться Amm.Root)
-* **rememberElements**: boolean; false - добавлять ли в массив elements все элементы
-* **elements**: Array - заполняется, если rememberElements включен
-* **topLevel**: Array - всегда заполняется "элементами верхнего уровня"
-* **rememberProblems**: boolean; false заполнять ли сообщения об ошибках в this.problems
-* **problems**: Array - реестр ошибок (заполняется, если включен rememberProblems)
+==== Properties ====
+* **selector** - described above - top-level DOM nodes to process (CSS selector string, or a jQuery node list)
+* **reportMode** - how to report the problems; is a bitmask; default value: PROBLEM_CONSOLE | PROBLEM_HTML (meaning do both thinkgs):
+	* Amm.Builder.PROBLEM_SILENT - ignore
+	* Amm.Builder.PROBLEM_CONSOLE - produce the warnings in a Javascript console
+	* Amm.Builder.PROBLEM_HTML - create attribute data-amm-warning with the warning text in the problematic nodes
+* **sel**: which top-level nodes should be searched for the presence of the ''options'' of Elements and Views. By default it's all nodes with any of the attributes **data-amm-id**, **data-amm-e**, **data-amm-v**, or **data-amm-x**.
+* **selIgnore**: which nodes we should ignore inside the top-level nodes. By default it's the nodes with the attribute **data-amm-dont-build** and their descendants, elements with the attributes **data-amm-built** and **data-amm-iid** (see ''Amm.domHolderAttribute'').
+* **topLevelComponent**:  Amm.Element or 'root'; null - all "top-level elements" (what is this? ones without the component? or ones those definitions weren't found inside nodes of the other elements? TODO - check) will have this element set as a parent ('root' means that the Amm.Root will become the parent element).
+* **rememberElements**: boolean; false - should we add created elements to the Array provided as the ''elements'' argument
+* **elements**: Array - filled-in if ''rememberElements'' is true
+* **topLevel**: Array - always filled in by the "top level elements"
+* **rememberProblems**: boolean; false: should the issues be recorded in ''problems'' argument
+* **problems**: Array - problems registry
 
-==== Методы ====
+==== Methods ====
 
 === calcPrototypes: function() ===
-Сканирует дерево, но вместо самих элементов возвращает их "прототипы" (хеши options с классами). Эквивалентно this.build(true)
+Scans the tree, but returns ''options'' of elements instead of instantiating then. Same as this.build(true)
 
 === calcViewPrototypes: function(forElementOrPrototype) ===
-Сканирует дерево конкретно для поиска "прототипов" представлений. Вовзращает Array с нулем или несколькими "прототипами". Если forElementOrPrototype заполнен, то оттуда будет взято **id**, чтобы выделить только views, относящиеся к данному id, и игнорировать другие. **Ведет себя так, как будто узлы в selector'е находятся внутри узла, общего для данного элемента.**
+Scans the DOM tree solelty to search the ''options'' of the Views. Returns Array with null or several ''options''. If ''forElementOrPrototype'' is provided, **id** from there will be used to locate only views that are relevant to that ''id'', and ignore others. **Behaves in a way, as if the nodes of ''selector'' are located inside the node relevant to the provided element.**
 
 === build: function(prototypesOnly) ===
-Сканирует дерево, возвращает или элементы, или их "прототипы" (если prototypesOnly == TRUE).
+Scans the DOM tree; returns elements or their ''options'' (if the ''prototypesOnly'' is TRUE).
 
 === clear() ===
-"Сбрасывает" переменные свойства Bulder'а (elements, topLevel, problems) в первоначальное состояние
+"Resets" the Bulder state (elements, topLevel, problems) to a blank state.
 
-===== Принцип работы =====
-* находит
-* создает
-* бла-бла-бла
-* чтобы builder'ы не мешали друг другу
+===== Mode of the operation =====
+* finds
+* creates
+* ??? 
+* profit
+* so that differnet Builder's aren't interfering with each other
 
-===== Особенности "Amm json" =====
-* Во-первых, это "relaxed json": комментарии, одинарные и двойные кавычки; кавычки в ключах и простых значениях необязательны
-* если объект создается при помощи Amm.dom(), то данные и экземпляры передаются напрямую (без перевода в json и обратно)
-* $ext: можно подставить любой глобальный объект (указывается путь, начиная с window)
-* $ref: можно дать ссылку на узел относительно данного узла DOM
+TODO: expand this, obviously. Esp. when I'm finally satisfied with the Builder.
 
-===== Способы задать связь между view и element =====
+===== "Amm json" flavor =====
+* First, it's a "relaxed json", closer to one in the Javascript: comments allowed; single quotes can be used along with the double quotes; quotes inside the keys and simple one-word values are optional.
+* if the node is created using Amm.dom(), data and instances are sent by-reference (without converting to json and back)
+* $ext: any global JS object can be referenced by supplying the path, starting with the window
+* $ref: link to the other DOM node can be provided, relative to the current DOM node
 
-==== При помощи иерархии DOM ====
-**Элементы и представления "верхнего уровня": что это //вообще// такое?**
+===== Ways to link a View and an Element =====
 
-==== При помощи data-amm-id ====
-id может быть использован
-* локальный
-* глобальный (с "@")
-* __parent - спецзначение, означает "элемент, относящийся к узлу, внутри которого данный узел"
+==== Using the DOM hierarchy ====
+**"Top-level" Elements and Views: what the heck is that?** //...even more puzzling in 2026...//
 
-==== При помощи Amm.Builder.Ref ====
+==== Using data-amm-id ====
+id can be used
+* locally
+* globally (with "@")
+* __parent - special value, means "element related to the node, inside which is the current node"
 
-===== Смысл атрибута amm-element-id или свойства "id" элемента =====
+==== Using Amm.Builder.Ref ====
 
-===== Когда задействуется Builder =====
-* при инициализации Amm
-* если в конструкторе элемента есть определение, заданное при помощи DOM
-	* в т.ч. строка, которая похожа на HTML-код, или объект jquery
-	* builderSource
-* если getDefaultViews вовзращает DOM
+===== Meaning of the amm-element-id attribute or "id" property of the Element =====
 
-===== Особенности создания элементов и представлений =====
+===== When the Builder is applied =====
+* during the Amm initialization
+* when the element constructor receives DOM instead of ''option''
+	* HTML-looking string or jQuery object
+	* DOM node
+	* array of DOM nodes
+	* Amm.Builder.Ref
+	* ...check Amm.Builder.isPossibleBuilderSource for understanding what can be passed.
+* if getDefaultViews() returns the DOM
 
-В Amm элементы не обязательно должны иметь представления, и эти представления (Views) не обязательно должны иметь соответствующие узлы DOM. Хотя в базовой реализации, как правило, так и есть - большинство применяемых на практике Views являются наследниками "частичного" класса Amm.View.Html.
+===== Specifics of Elements and Views instantiation =====
 
-Что касается Html views, то элемент может иметь представления, разбросанные по всему DOM, они не обязательно должны быть сгруппированы где-то вместе в дереве. Поэтому в некоторых случаях у элемента может не быть одного внешнего узла DOM.
+In the Amm, Elements are not required to have Views. The Views are not required to be related to DOM nodes, although in the basic implementation they usually related to working with the DOM and are decendants of Amm.View.Html.
 
-В Amm элемент не должен "знать" о своих представлениях (несмотря на созданные для удобства методы вроде Amm.Element.prototype.findView() и используемый в "виджетах" метод constructDefaultViews(); представления подписываются на элемент и наблюдают его свойства, и, в большинстве случаев, никак не знают друг о друге и не взаимодействуют друг с другом. Исключение - случаи, когда views должны управлять общим уникальным ресурсом, вроде фокуса в input'ах: если у одного поля есть несколько views, и может быть фокус, то фокус должен быть у одного и только одного view.
+Regarding the Html Views, the element can have related nodes scattered around the whole document tree, and they are **not** necessarily required to be grouped in a common place. Also in some cases Elements can have no DOM nodes. (The most simple case is the absence of the Views.)
 
-У Views есть требования к классу, интерфейс, а следовательно, наличию тех или иных Traits элементов. Большинство Trait не имеют смысла без соответствующего View (хотя, являясь частью элемента, обычно "не знают" о views), и View, расчитанный на определенный интерфейс, вроде Field, не будет работать без Traits, его реализовывающих. Поэтому все объявления приходится делать в парах: добавлять элементу и соответствующий view, и соответствующий trait. Поскольку некоторые View подразумевают только один вид Trait, то у views (любых) есть метод getSuggestedTraits(), который "предлагает" Builder'у добавить те или иные Traits элементу при создании.
+In the Amm, the Element isn't usually aware of its Views, despite some helpers such as Amm.Element.prototype.findView() and used in the "widgets" constructDefaultViews() method; Views are subscribed to the Elements and observe its properties and events, and, in most cases, are oblivious to each other. Exeption is the case, when views should juggle a common resource, such as input focus: when the element has several views, only one can be focused, obviously. # TODO: add a class for managing shared resources - 08.10.26
 
-Формально создание элементов осуществляется так:
-* создается экземпляр элемента вместе с Traits
-* создаются Views, которые получают и ссылки на экземпляр элемента, и ссылки на DOM-узлы.
+Views have requirements to the class of the element in the form of the Interface, which implies the Element has particular Traits. Most Traits don't make sense without the complementing View (of course, being part of the Element, they are still not view-aware), and View that is build to observe a particular interface, such as Field, won't work without Traits that implement it. Therefore, most declarations are done in pairs: adding both specific Trait to the Element, and the View aware of that Trait.
 
-Для удобтва в конструкторе элемента можно предоставить ключ views с "прототипами" или экземплярами views, которые будут ассоциированы с элементом в конце работы конструктора.
+Since some the Views expect only one type of Trait, there is a method View.prototype.getSuggestedTraits(), which tells the Builder which Traits should be added to the built' element definition.
 
-Но, несмотря на то, что для работы View нужны и элемент, и dom-узел, их оба можно предоставить уже после создания самого view. Плюс, их можно менять (можно "отключить" view от одного элемента и назначить другому, то же самое с dom-узлами), хотя это обычно не делается; плюс view теоретически может какое-то время существовать без элемента - он просто не будет обновляться.
+The element building is done in such sequence:
+* instance of the Element with the necessary Traits
+* instances of Views that receive both Element instance and the DOM nodes.
 
-На практике есть несколько способов создания элементов, а именно:
-* View first: сначала определяются узлы DOM, которые относятся к views одного и того же елемента; создаются views; после их опроса определяются, какие нужны traits; создается элемент с нужными traits и options
-* Element first: создаем экземпляр элемента, вызываем его constructDefaultViews, затем создаем views. В этом случае getDefaultTraits() не используется, в опциях конструктора нужно сразу указывать Traits
+For convenience, view definitions or view instances can be provided in ''views'' key of the Element' constructor ''options'' hash.
+
+Despite the View needs both Element and the DOM node in most cases for proper functioning, they can be provided to the view instance some time **after** it is created. Plus, theoretically the View can be detached from one Element and attached to another, same for the DOM nodes, but such feature is not used often; also, View can exist without the Element, it just won't be updated.
+
+So there are two approaches to creating the Elements:
+
+* View first: define DOM nodes, that define the Views; Views define, what Traits are needed; Element is then created with the necessary Traits and options.
+* Element first: we create Element instance, call its constructDefaultViews, and create views. In that case getDefaultTraits() cannot be used, and the Traits must be specified in the constructor options.

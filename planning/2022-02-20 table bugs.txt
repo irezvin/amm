@@ -80,8 +80,8 @@
                 -   focusedView (was already done for `input`s); 
                 -   primaryDimensionsView, primaryPositionView;
                 -   syncPositionBetweenViews, syncDimensionsBetweenViews 
-                -   и т.п.
-        -   displayParent'а has two views. We add an element that has *one* view
+                -   etc
+        -   displayParent has two views. We add an element that has *one* view
             into that displayParent. We can display one DOM node that way,
             and what do we have to do with another? (non-existent)
             -   proposal: clone view and DOM node, but for that to happen,

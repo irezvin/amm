@@ -18,7 +18,7 @@ Question that popped up after looking at where I stopped:
         i   did two ugly hacks -- 01.06.2022
         -   to get rid of the ugliness, we need to
         
-            + A:make a cell another display parent view у ячейки (i.e. Amm.View.Html.CellItems
+            + A:make a cell another display parent view of the cell (i.e. Amm.View.Html.CellItems
             extends Amm.View.Html.DisplayParent)
                 
             - B:end doing constructDefaultViews by default and create some element-linked object,
@@ -29,7 +29,7 @@ Question that popped up after looking at where I stopped:
             Table Template (Amm.View.Html.Table.Template) knows, what HTML markup should be created
             for cells, rows, columns etc.
 
-    +   finish shouldShowItemCallback у collection view; feature to show only specific sections
+    +   finish shouldShowItemCallback of the collection view; feature to show only specific sections
         of the table clones (header, footer) // re-written collectionView 21.03
         
         +   fix big: exception raised when clicking a cell, editor doesnt show up

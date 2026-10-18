@@ -2,39 +2,41 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.6
 Creation-Date: 2020-10-05T22:06:34+03:00
 
-====== Стандартный способ создания объектов (Amm.constructInstance) ======
-Created понеділок 05 жовтня 2020
+====== Standardized approach to creation of the objects (Amm.constructInstance) ======
+Created Monday October 05, 2020
 
-Как было описано [[options|здесь]], большинство конструкторов в Amm и решениях на базе Amm могут принимать хеш options со значениями свойств, которые устанавливаются при создании (учитывая, что многие классы унаследованы от WithEvents, то и обработчики событий тоже).
+As it was described [[options|here]], most constructors in Amm and derived solutions can accept ''options'' hash with the property values that are set upon creation. (And given that many classes extend Amm.WithEvents, event handlers can be set that way too.)
 
-Если в options добавить ключ ''class'', который бы позволял найти конструктор объекта, то массив options становится полноценным определением объекта. Это и сделано в методах //Amm.constructInstance()// и //Amm.constructMany()//.
+By adding ''class'' key to the ''options'', which specifies the instance's constructor, the hash turns into the self-sufficient specification of the created instance: we can locate the constructor, and have its arguments.
 
-Здесь важно отличать опции и экземпляр класса.
+That's how methods //Amm.constructInstance()// and //Amm.constructMany()// operates.
 
-**Опции **- это объект options с, возможно, свойством class, указывающим на конструктор.
-**Экземпляр класса** - это уже готовый результат работы конструктора, для которого Amm.getClass(instance) возвращает непустой результат.
+It is important to differentiate between the options, and the instance of the class.
 
-(В названиях свойств и методов Amm также часто встречается термин "prototype", обычно он означает options с class, а не прототип javascript, если не оговорено иное).
+**Options** is an object (a hash) with the future instance properties, sometimes including the ''class'' property, pointing to the constructor.
+**Instance of a class** is a finished result of a constructor function work, for which Amm.getClass(instance) returns a non-empty result.
+
+(In Amm terminology - comments, methods and property names - often appears "prototype" term, that usually means ''options'' hash plus the ''class'' property; not to be confused with Javascript prototype, unless stated otherwise.)
 
 ===== Amm.constructInstance: function(options, baseClass, defaults, setToDefaults, requirements) =====
 
-Создает и конфигурирует экземпляр по описанию-хешу options и/или убеждается, что экземпляр класса соответствует необходимым требованиям. 
+Creates and configures instance using the ''options'' hash and/or makes sure that the supplied instance meets the requirements. 
 
-Возвращает созданный/переданный экземпляр либо выбрасывает исключение.
+Returns created or supplied instance, or throws an exception.
 
-* **options**:  object|string - опции будущего экземпляра, экземпляр класса либо имя класса. 
-	* Если предоставлена строка, то это аналогично значению { class: options }, то есть строка интерпретируется как имя класса. 
-	* Если options это экземпляр, то конструктор не вызывается, а лишь производится установка defaults - свойств по умолчанию - и проверка требований
-* **baseClass**: undefined|function|string - конструктор по умолчанию / обязательный базовый класс
-	* если options.class не задан, создается экземпляр класса baseClass;
-	* созданный или предоставленный экземпляр проверяется на то, чтобы он относился (в т.ч. при помощи наследования) к baseClass при помощи Amm.is(). Если этого нет, то выбрасывается исключение.
-* **defaults**: object - т.н. "опции по умолчанию", которые добавляются к options, если в options не установлены аналогичные ключи
-* **setToDefaults**: boolean - устанавливать ли defaults экземпляру, если он был предоставлен вместо options
-* **requirements**: если задан, экземпляр будет проверен на соответствие требованиям при помощи Amm.meetsRequirements(instance, requirements)
+* **options**:  object|string - options of the constructed instance, the instance, or the class name.
+	* If the string is provided, it's the same as supplying { "class": options }, meaning the string is interpreted as the class name.
+	* If ''options'' is an instance, the constructor isn't called, only the ''defaults'' are set, and ''requirements'' are checked - if they were provided.
+* **baseClass**: undefined|function|string - default constructor which doubles as a mandatory base class.
+	* if ''options.class'' isn't provided, ''baseClass'' is used as default constructor;
+	* created or supplied instance is checked to be instance of (or descendant of) a ''baseClass'' using ''Amm.is()''. If it's not the case, exception is triggered.
+* **defaults**: object - so called "default options", which are added to the ''options'', except for the keys that are already there (''options'' keys take precedence over ones in ''defaults'').
+* **setToDefaults**: boolean - should we set properties of ''defaults'' to the instance that was supplied instead of the ''options'' hash.
+* **requirements**: if provided, instance is checked to fulfill ''Amm.meetsRequirements(instance, requirements)'', and exception is thrown if it isn't.
 
-==== Пример ====
+==== Example ====
 
-Для начала создадим два класса: человек (Person) с свойствами name, birthDate и occupation, и сотрудник (Employee) - класс-наследник, у которого будут также свойства position и salary.
+Let's define two classes: ''Person'' with the ''name'', ''birthDate'' and ''occupation'' properties, and ''Employee'' - descendant, with additional ''position'' and ''salary'' properties.
 
 {{{code: lang="js" linenumbers="False"
 var Sample = {};
@@ -53,12 +55,10 @@ Amm.createClass('Sample.Employee', 'Sample.Person', {
 });
 }}}
 
-
 ===== Amm.constructMany: function(manyOptions, baseClass, defaults, keyToProperty, setToDefaults, requirements) =====
 
-Создает/конфигурирует/проверяет множество экземпляров при помощи Amm.constructInstance(). Может прописывать каждому экземпляру его ключ или индекс. Всегда возвращает массив (Array).
+Creates/configures/checks multiple instances using Amm.constructInstance(). Can assign key or index for every instance. Always returns a javascript Array.
 
 * **manyOptions**: object|Array
 * **keyToProperty**: string
-* **baseClass, defaults, setToDefaults, requirements** - см. Amm.constructInstance()
-
+* **baseClass, defaults, setToDefaults, requirements** - see ''Amm.constructInstance()''.

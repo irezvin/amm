@@ -1,0 +1,43 @@
+Better records editing with Amm & Avancore
+    - Amm: frontend
+        - L-0
+            - Drag and Drop
+                - done✅ Row & Column Resizing
+                - done✅ Row & Column Reorder
+                    - Feature to disable/enable rows dragging
+                    - Row & col reorder is handled by table
+                - Selected rows, columns, cells collection
+                - Select cells by dragging
+            - Context menus
+                - Action lists?...
+                - Show, hide columns
+            - Sort, filter UI
+                - Amm.Trait.Table.SortableColumn
+                - Amm.Trait.Table.FilterColumn
+            - Record editing support
+                - Error message annotation
+                    - per-field
+                    - per-record
+                - Amm.Data.Collection
+                    - don't overwrite dirty or non-persistend records when updating data
+            - Table state persistence
+        - L-1
+            - Dialog windows
+                - Defining dialogs should be simple!
+    - Avancore: backend
+        - L-0
+            - Features to integrate table
+                - Uniform initialization of controls, SQL parts
+                    - done✅ Branch before big changes
+                        - done✅ Make dev branch main (how?)
+                - Table is control
+                - Action list is control
+                - Manager-integrating control
+                - ? Left menu is control
+            - CRUD RESTish API
+                - Rework validators to support export to JSON
+                    - Also add validators to form controls
+                - Better context params mapping
+            - User prefs API
+            - ? Autocomplete API
+        - L-1

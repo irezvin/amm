@@ -5,11 +5,11 @@ Creation-Date: 2020-09-21T16:13:43+03:00
 ====== options ======
 Created Monday 21 September 2020
 
-Создание объектов в Amm неразрывно связано с их конфигурированием. У объекта, который мы создали, нужно установить свойства в нужные значения, а также назначить обработчики событий и связать этот объект с другими объектами.
+Creating of the objects in Amm is always tied to their set-up. Object that we just created needs its properties set, event handlers assigned, other objects associated.
 
-===== Параметр //options// в типовом конструкторе Amm.<className>(//options//) =====
+===== Argument //options// in the typical constructor Amm.<className>(//options//) =====
 
-Большинство конструкторов в Amm принимают хеш "опций", то есть пар property: value, которые устанавливаются при инициализации.
+Most constructors in Amm accept ''options'' hash - {property: value} pairs that are set during the initialization.
 
 {{{code: lang="js" linenumbers="False"
 var options = {
@@ -24,15 +24,13 @@ var options = {
 var Instance = new Namespace.SomeClass(options);
 }}}
 
-
-Даже те конструкторы, которые допускают другие наборы параметров, в большинстве случаев проверяют стандартную форму вызова (один параметр - объект) - например, Amm.Expression:
+Even the constructors that can work with the different sets of arguments, usually allow standard form of calling (singleArgThatIsAHash) - as Amm.Expression:
 
 {{{code: lang="js" linenumbers="False"
 var expr = new Amm.Expression("'Number of products: ' + this.component.products.length", this);
 }}}
 
-
-аналогично следующему коду:
+is the same as calling:
 
 {{{code: lang="js" linenumbers="False"
 var expr = new Amm.Expression({
@@ -41,43 +39,42 @@ var expr = new Amm.Expression({
 });
 }}}
 
+**Important to know: the order of the setting properties matches the order of them being defined in the ''options'' hash.** 
 
+Event while Amm objects are usually insensitive to the order of setting the properties, in some cases they are.
 
-**Важно: порядок установки свойств обычно такой, в котором они перечислены в массиве options.** 
+To set properties in the constructor according to the ''options'' argument, Amm.init() is used.
 
-Хотя в Amm инициализация объектов, по возможности, сделана так, чтобы не зависеть от порядка установки свойств, но в отдельных случаях порядок инициализации может иметь значение.
+If the constructor needs to dictate own order of setting the properties, they can be set in groups in the constructor by calling Amm.init() with one group of the options or with parameter ''propNames'' then with another.
 
-Если конструктору нужно определить свой порядок назначения свойств, осуществляется инициализация по частям (т.е. конструктор вызывает Amm.init() сначала с одним набором опций или с параметром propNames, затем с другим).
+Also in the ''options'' //methods// can be overriden, including the private ones; it's done for small "ad hoc" patching of the standard classes' behavior.
 
-Для установки опций в конструкторе вызывается метод Amm.init().
+==== Special keys in the ''options'' used solely by the constructors ====
 
-Также в массиве опций в конструкторе можно переопределять //методы//, в т.ч. частные; это сделано для упрощения мелких, сделанных "на месте" изменений в поведение стандартных классов.
+Some classes (mostly Amm.WithEvents and Amm.Element) support special options that don't have the matching properties, and are used in the constructor only.
 
-==== Специальные ключи в options, используемые только конструктором ====
-
-Ряд классов (в основном это Amm.WithEvents и Amm.Element) поддерживают специальные опции, которые не имеют соответствующих свойств, и устанавливаются только в конструкторе.
-
- У Amm.WithEvents это ключи ''on__<event>''; у Amm.Element это еще Traits, определяющий навыки элемента и действующий при создании; Views для определения представлений (на самом деле представления могут передавать информацию о требуемых навыках и автоматически назначать их элементу); ''prop__<property>'' или ''props: {property: value}'' -  для создания свойств; exprproperty для создания вычисляемых свойств; ''in__<property>: expression'', ''sync__<property>: expression'' для создания входных и двусторонних выражений. Подробная информация обо всех этих опциях описана в Amm.Element.
+ For Amm.WithEvents it's ''on__<event>'' keys; for Amm.Element it's also: ''traits'', that defines what traits augment the element at the construction time; ''views'' to define the view objects (they can supply their Trait information to the element if ''traits'' option isn't provided); ''prop__<property>'' or ''props: {property: value}'' - to defined the properites; ''expr__<property>'' to create a calculated properties; ''in__<property>: expression'', ''sync__<property>: expression'' to create receiving and two-way expression. More info on these options can be obtained from the Amm.Element class.
 
 ===== Amm.init: function(object, options, propNames, noSuchPropertyCallback) =====
-Устанавливает свойства либо публичные переменные объекта **object** из набора пар **property: value** объекта **options**. Также позволяет добавить новые //методы// либо переопределяет существующие (как публичные, так и защищенные).
 
-* **object**: object - объект, свойства которого нужно установить 
-* **options**: object - объект с опциями (пары свойство-значение) {key: value}
-	* key: имя свойства (должен быть setter либо имя публичного члена)
-	* value: значение свойства
-* **propNames**: undefined|Array - устанавливает только свойства с именами из массива propNames, при этом удаляя их (delete) из хеша options. Это разрушающий метод, применяемый для того, чтобы в начале конструктора установить ряд свойств, и при следующем прогоне их уже не устанавливать, поэтому в конструкторе, который использует //Amm.init()// с propNames, рекомендуется в начале клонировать массив options при помощи ''Amm.extend({}, options)'' и работать уже с клоном.
-* **noSuchPropertyCallback**: object|function(key, value) - функция, которая будет вызвана (с this := object) в случае, если такого свойства (члена или setter'а) нет; если она вернет true, то исключение не будет сгенерировано
+Sets properties or public members of the **object** from **property: value** pairs of the **options** hash. Also allows to add new //methods// or override the existing ones (both public and protected).
 
-Исключения генерируются в случаях, если
-* свойства (члена или setter'а) нет в объекте object, и значение - не функция
-* свойство начинается с "_", и значение - не функция
+* **object**: object - object to set properties of
+* **options**: object - hash with the options {key: value}
+	* key: property name (setter or public member must exist)
+	* value: property value
+* **propNames**: undefined|Array - sets only properties mentioned in ''propNames'' array, deleting them from the ''options'' hash. This is mutating method, used to set some properties at the start of the constructor, and don't set them again later. It's recommended to clone the ''options'' hash in the constructors that use //Amm.init()// + ''propNames'' to avoid mutating the options hash received by the constructor.
+* **noSuchPropertyCallback**: object|function(key, value) - function that will be called in the case if some property cannot be found (scope: this := object); if it returns ''true'', exception won't be thrown
 
-Если значение - функция,  то свойство назначается (как правило, это член-функция) не зависимо от того, была функция с таким ключом в объекте раньше, или нет, "защищенная" она (начинается с "_") или нет. Это сделано для того, чтобы "на коленке" (ad-hoc) менять поведение объектов. Так как передать функции через json или relaxed json невозможно, это достаточно безопасный метод.
+Exception are generated when
+* property (public member or setter) is missing in the object, and the value isn't a function
+* property name begins with "_", and the value isn't a function
 
-==== Примеры использования Amm.init ====
+If the value is a function, it's assinged disregarding to whether such member or setter exist or not, without the check for "_" prefix. The purpose is to modify the object behavior ad-hoc way. Since functions cannot be defined using json or relaxed json, this approach is considered safe.
 
-Ниже приведен намеренно идиотский пример класса "мебель" с тремя свойствами: тип (стол или стул), ширина и высота в миллиметрах. Ширина меньше 500 может быть только у стульев, а высота больше 800 - только у столов. Проверка сделана в setter'ах. Поскольку нам нужно знать тип до назначения ширины или высоты, мы вызываем init два раза: сначала только для типа, затем - для всего остального (так как первый вызов разрушающий, мы предварительно клонируем объект). Чтобы упростить код и не приходилось делать повторные проверки при изменении type, мы даем установить type только один раз.
+==== Examples of using Amm.init ====
+
+Below is a deliberately dumbed-down example of the "furniture" class with the three properties: type (table or chair), width and height in the millimeters. Only chairs can have width below 500, and only tables can have height over 800. Setters are responsible for the validation. Since we need to know the type in advance, we need to assign it before the dimensions, so Amm.init will be called twice: for the ''type'' first, and then for everything else. To avoid mutation of the argument, we will clone the options first. To simplify logic, we don't allow to change the ''type'' later.
 
 {{{code: lang="js" linenumbers="False"
 var Furniture = function(options) {
@@ -85,14 +82,13 @@ var Furniture = function(options) {
 	if (typeof options !== 'object') 
 		throw Error("`options` must be an object");
 	
-	// делаем глубокую копию
+	// make a deep copy
 	var appliedOptions = Amm.clone({}, options); 
 
-	// вначале инициализируем свойство type
+	// assign type first
 	Amm.init(this, appliedOptions, ['type']); 
 	
-	// тот же массив, но уже без type - инициализируем 
-	// остальные свойства
+	// after that, init everything else, but without the type
 	Amm.init(this, appliedOptions); 
 }
 
@@ -120,4 +116,5 @@ var chair = new Furniture ({height: 300, width: 400, type: 'chair'});
 var table = new Furniture ({width: 600, height: 900, type: 'table'});
 
 }}}
-**TODO: сделать Amm.init(), Amm.WithEvents() и подобные функции без побочных эффектов (точнее, клонировать только раз, и только когда разрушение понадобилось). После этого обновить документацию.**
+
+**TODO: make Amm.init(), Amm.WithEvents() and similar without the side effects (clone only once, and when the destruction is required). Update the docs afterwards.**

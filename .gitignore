@@ -10,3 +10,4 @@ update-tags
 .tags
 tags
 .vscode
+*.local.*

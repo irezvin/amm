@@ -3,31 +3,32 @@ Wiki-Format: zim 0.6
 Creation-Date: 2020-09-17T09:26:20+03:00
 
 ====== properties ======
-Created четвер 17 вересня 2020
+Created Thursday, September 17, 2020
 
-===== "Свойства" в стиле Amm =====
-"Свойство" (property) это комбинация из:
-* setter'а (set<Property>)
-* getter'а (get<Property>)
-* changeEvent'а (out<Property>Change)
+===== "Properties" of the Amm flavor =====
+"Property" is a combination of:
+* setter (set<Property>)
+* getter (get<Property>)
+* changeEvent (out<Property>Change)
 
-changeEvent должен срабатывать только в случае, если значение не совпадает с предыдущим. При этом под "не совпадает" рекомендуется понимать точное (===) совпадение.
+changeEvent should fire only in the case when new value doesn't equal old one. By equal usually strict equality is meant (===).
 
-**Внимание!** В идентификаторах методов get..., set..., out...Change имя свойства пишется с заглавной буквы.
+**Important!** In the method names get..., set..., out...Change, the property name starts with the capital letter.
 
-Доступ к свойствам в реализации Amm осуществляется при помощи setter'ов и getter'ов:
+Access to the properties in Amm implementation is done using setters and getters:
 * value = instance.get<Property>()
 * instance.set<Property>(value)
 
-В прикладных приложениях можно упростить доступ, определяя javascript-подобные свойства при помощи object.defineProperty (см. ниже).
+In the framework-based apps the creation of the properties can be simplified using object.defineProperty, or Amm.createProperty.
 
-===== Пример реализации свойства =====
+===== Example of the property implementation =====
 
-Чтобы создать класс с минимально функционирующим свойством "value", нужен следующий код:
+To create a class with the minimally implemented "value" property, the following code is needed:
 {{{code: lang="js" linenumbers="False"
 ClassWithValue = function(options) {
 	Amm.WithEvents.call(this, options);
 }
+
 ClassWithValue.prototype = {
 	
 	'ClassWithValue': '__CLASS__',
@@ -71,66 +72,64 @@ Sample.setValue(30)
 //>
 Sample.setValue(30)
 
-//<< // консоль ничего не выдает
+//<< // nothing is shown in the console
 
 //>
 Sample.setValue('30')
 
-// << 'value changed from', 30, 'to', '30' // поскольку сравнение строгое
+// << 'value changed from', 30, 'to', '30' // since the comparison is strict
 {{{code: lang="js" linenumbers="False"
 
-===== Генерация кода для свойств при помощи утилиты командной строки =====
+===== Generating the property boilerplates using the command line tool =====
 
-Реализация свойства из примера выше - простейшая возможная, при этом уже достаточно громоздкая.
-Чтобы создать такую простую реализацию, можно использовать утилиту mk.php, которая находится в директории проекта Amm.
+The implementation above is simple, but already cumbersome. To ease creation of such code, a tool mk.php from Amm project dir can be used.
 
-Формат вызова:
+Call format:
 
 {{{code: lang="sh" linenumbers="False"
 #>
 ./mk.php -p <propName1> [<propName2> <propName3> ...]
 }}}
 
-Утилита выдает "protected"-члены для свойств _propName1, _propName2... в начале (значение по умолчанию - null), после чего get-, set- и out-методы для каждого свойства. (Код практически идентичен приведенному выше).
+The tool returns "protected" members for the properties _propName1, _propName2... at the start of the code (default value is null), and get-, set- and out-methods in the code that follow next. (The code is very close to the example above).
 
-Чтобы сразу поместить это определение в буфер обмена, можно использовать xclip:
+To immediately copy this definition to the clipboard, ''xclip'' can be used:
 {{{code: lang="sh" linenumbers="False"
 #!/bin/bash
 php /path/to/mk.php -p $* | xclip -i -selection clipboard
 }}}
 
+===== What to do in the setter and getter (part 1) =====
 
-===== Что делать в setter'е и getter'е (часть 1) =====
+What is sometimes added manually to the setter implementation:
 
-В setter можно добавить:
+* coercing the argument to the required type. For example, if we except boolean value, me might convert argument to it with value = !!value. It saves us from generating change event for the semantially identical values.
+* typecheck. Exception needs to be generated //before// changing the member value and generating the event.
 
-* приведение параметра к нужному типу. Например, если параметр предполагается только булевый, можно написать value = !!value. Это исключит генерацию событий при семантически одинаковых значениях.
-* проверку значения параметров. Исключение нужно генерировать //до// того, как член-значение изменен и событие сгенерировано.
+We can add delayed initialization or delayed evaluation to the getter, that don't need to be done unless we retrieve the value with it.
 
-В getter можно добавить отложенную инициализацию или отложенные вычисления, которые не будут производиться до того, как значение свойства понадобится.
-
-===== Функции Amm для создания свойств =====
-Если нам нужно быстро опредить несколько свойств, не загромождая решение стандартным (boilerplate) кодом вроде указанного выше, можно использовать метод
+===== Using Amm to create the properties =====
+If we need to quickly define couple of properties without writing a boilerplace from the above, ''Amm.createProperty'' can be used.
 
 ==== Amm.createProperty(target, propName, defaultValue, onChange, defineProperty) ====
-* создает getter, setter и changeEvent, а также член-значение для реализации свойства **propName**
-* может вызвать object.defineProperty для этого свойства, чтобы сделать его доступным при помощи target.<PropName> или target[propName]
-* если методы getter, setter, changeEvent либо член-значение уже есть, они //не// переопределяются
-* **target**: **object** - объект, в котором мы создаем реализацию свойства
-* **propName**: string - имя свойства (со строчной буквы)
-* **defaultValue**: mixed - значение свойства по умолчанию (будет использовано undefined, если опущено)
-* **onChange: undefined|function|object** - опциональная функция, которая будет вызываться только в случае, если новое значение в setter'е не сопадает со старым.
-	* Если метод-setter уже определен, этот параметр игнорируется
-	* **function onChange(value, old, propName)**: будет вызвано, если новое значение не равно предыдущему, но до срабатывания события. В функции можно установить внутренний член обратно в значение old, в этом случае событие не сработает
-	* Если onChange - объект, то в нем может быть два ключа: before и after.
-	* **function onChange.before (value, old, propName)** - срабатывает до сравнения значения с внутренней переменной. 
-	* если onChange.before возвращает любой результат, кроме undefined, то это станет новым значением value: value := onChange.before(value)
-	* **function onChange.after** - то же самое, что function onChange(), описанная выше
-* **defineProperty:** boolean - если TRUE, то будет создано javascript-свойство с именем propName при помощи object.defineProperty. У свойства определены методы get и set, которые вызывают функции с именами getter'а и setter'а соответственно. Поскольку в замыкании участвуют имена функций, а не сами функции, полиморфизм при наследовании или последующей перегрузке методов не нарушается (см. раздел "Использование object.defineProperty: что нужно учесть" ниже). Правда, метод или методы в onChange переопределить или вызвать  в потомке не получится - можно переопределить только setter целиком.
+* creates  getter, setter and changeEvent, also "protected" member field to implement property **propName**
+* can call object.defineProperty for the property, to make it available using target.<PropName> or target[propName]
+* if getter, setter, changeEvent, or member field already exist, they won't be overwritten, so we can still create some of them by hand
+* **target**: **object** - object to have the property added
+* **propName**: string - property name (startin with the lowercase letter)
+* **defaultValue**: mixed - default value (''undefined'' will be used, if the ''defaultValue'' is not provided)
+* **onChange: undefined|function|object** - optional function that will be called in the case, when new value in the setter isn't equal to the old one
+	* If the setter already present in the prototype, this parameter is ignored
+	* **function onChange(value, old, propName)**: is called if the new value is not equal (===) to the old one, but before triggering the event. To avoid triggering the event, the function can set the member field to the new value.
+	* If onChange is an object, it can have two keys: ''before'' and ''after''.
+	* **function onChange.before (value, old, propName)** - is called before the internal comparison. 
+	* if ''onChange.before'' returns anything except the ''undefined'', it becomes the new value: value := onChange.before(value)
+	* **function onChange.after** - the same meaning as function-valued onChange(), described above
+* **defineProperty:** boolean - if TRUE, javascript property with the name ''propName'' will be created using object.defineProperty. Methods get and set will be added, calling getter and setter respective methods. Since the closure uses the names of the functions and not the functions themselves, polymorphism is adhered in the descendant classes. The only shortcoming is that onChange method/methods cannot be overridden in the descendant - only the whole setter can be re-defined.
 
-==== Пример ====
+==== Example ====
 
-В примере ниже мы создаем свойство не у объекта, а у его прототипа, чтобы оно появлялось у всех экземпляров.
+In the example below we create property not of an instance, but of a prototype, to let the instances have this property:
 {{{code: lang="js" linenumbers="False"
 var ClassWithNumber = function(options) {
     Amm.WithEvents.call(this, options);
@@ -177,7 +176,7 @@ Sample.number = '20.5'
 //>
 Sample.number
 
-//< 20.5 // преобразовано в число
+//< 20.5 // converted to a number
 
 //>
 Sample.number = 'xxx'
@@ -185,13 +184,14 @@ Sample.number = 'xxx'
 //<< Uncaught Error: Please specify proper number; given: 'xxx'
 }}}
 
-==== Пример с наследованием ====
-(продолжая предыдущий)
+==== Example with the inheritance ====
+(continuing the example above)
+
 {{{code: lang="js" linenumbers="False"
 
 var ClassWithInt = function(options) { return ClassWithNumber.call(this, options); };
 
-// класс, который округляет значение свойства
+// class that rounds the property values
 ClassWithInt.prototype = {
     'ClassWithInt': '__CLASS__',
     _number: 0,
@@ -217,55 +217,61 @@ Sample2.number = 20.1
 //>
 Sample2.number
 
-//<20 // сработало округление при помощи Math.round()
+//<20 // rounding worked using the Math.round()
 
 //>
 Sample2.number = '20.7'
 Sample2.number
 
-//< 21 // сработало преобразование и округление
+//< 21 // conversion and rounding was applied
 
 //>
 Sample2.number = 'zzz'
 
-//<< Uncaught error: Please specify proper number; given: 'zzz' // сработал код класса-предка
+//<< Uncaught error: Please specify proper number; given: 'zzz' // ancestor code was triggered
 
 }}}
 
-===== Функции Amm для работы со свойствами =====
+===== Amm functions that work with the properties =====
 
 ==== Amm.detectProperty: function(object, property, outCaps) ====
-Возвращает **true**, если для свойства **property** в объекте **object** определены getter, setter и changeEvent; **false**, если какое-либо из этих условий не соблюдается. Заполняет в объекте outCaps информацию об именах методов-accessor'ов и идентификаторе события.
-* **object**: object - объект, который мы исследуем на наличие свойства
-* **property**: string - имя свойства
-* **outCaps**: undefined|object - хеш, в который будут записаны следующие ключи, //независимо от результата, который вернула функция//
-	* **outCaps.getterName**: string|null - имя функции-getter'а, если она найдена (get<Property>); null, если нет
-	* **outCaps.setterName:** string|null - имя функции-setter'а, если она найдена (set<Property>); null, если нет
-	* **outCaps.eventName:** string|null - имя события <property>Change, если у данного объекта есть метод hasEvent, и object.hasEvent(eventName) вернул true; null, если нет
+Returns **true**, if for property **property** of the object **object** are defined getter, setter and changeEvent; **false**, if any of these parts is missing.  // Note @2026-10-18: that's complicates adding read-only properties
+
+Fills-out outCaps with the info of the accessor methods.
+
+* **object**: object - object that we check for the presence of the property
+* **property**: string - name of the property
+* **outCaps**: undefined|object - hash to put the keys into //independent of the outcome of the check//
+	* **outCaps.getterName**: string|null - name of the getter function, if found (get<Property>); null, if not found
+	* **outCaps.setterName:** string|null - name of the setter function, if found (set<Property>); null, if not found
+	* **outCaps.eventName:** string|null - name of the event <property>Change, if object.hasEvent(eventName) returns true; null, if not found
 
 ==== Amm.getProperty: function(object, property, defaultValue, args) ====
-Возвращает значение одного или нескольких свойств для одного или нескольких объектов.
-* **object**: object|[object, object...] - объект или объекты, значения свойств которых нужно получить
-* **property**: string|[string, string...] - имя свойства / имена свойств, значения которых нужно получить
-	* значение "class" является спеицальным названием свойства и вернет Amm.getClass(object) - только при условии, если у объекта нет свойства с названием class
-* **defaultValue**: undefined|mixed - значение по умолчанию, которое будет возвращено, если данного свойства нет
-* **args**: undefined|mixed|Array - один или несколько параметров метода-getter'а (если мы получаем несколько свойств, все getter'ы будут получать одни и те же параметры)
-* returns mixed|object|[mixed]|[object] - значение одного или нескольких свойств для одного или нескольких объектов
+Returns value(s) of one or several properties for one or several objects.
+* **object**: object|[object, object...] - object or objects to get the property/properties of 
+* **property**: string|[string, string...] - name(s) of the property(ies) to get value(s) of
+	* value "class" is a reserved name of the property and returns Amm.getClass(object) - only if the object doesn't have a property with the called "class"
+* **defaultValue**: undefined|mixed - default value to return if the property isn't found
+* **args**: undefined|mixed|Array - one or many getter args (if we want to retrieve multiple property values, all getters will receive the same args)
+* returns mixed|object|[mixed]|[object] - value of one or many properties for one or many objects
 
-Типы возвращаемых значений:
-| тип object<| тип property<| результат                                                                  <|
+Types of returned properties:
+| object    <| property    <| result                                                                     <|
 |:-----------|:-------------|:----------------------------------------------------------------------------|
-| object     | Array        | object, где ключи совпадают с именами свойств, а значения - с их значениями |
-| Array      | string       | массив значений свойства property для каждого объекта в массиве [object]    |
-| Array      | Array        | массив объектов со значениями каждого свойства у каждого объекта            |
-| object     | string       | одиночное значение object.get<Property>() или default                       |
+| object     | Array        | hash with property names and their values   								  |
+| Array      | string       | array* of the values of property value for every item in object Array       |
+| Array      | Array        | array* of hashes of property: value pairs for every object    	          |
+| object     | string       | singular value of object.get<Property>(), or default value                  |
 
 
-В случае, если getProperty() вызывается с массивом в качестве первого аргумента, и возвращает массив, то у этого массива есть метод getProperty(property, defaultValue, args), а в качестве object всегда использует this. Это позволяет создавать цепочки вызовов getProperty вроде
+Note for "array*" above:
+
+in the case when getProperty() receives an array of object as the first arg, and returns Array, that Array instance has additional method added: getProperty(property, defaultValue, args), that calls Amm.getProperty(this, property, defaultValue, args). That allows to chain the calls like this:
 
 {{{code: lang="js" linenumbers="False"
 var recordStates = Amm.getProperty(records, 'mm').getProperty('state'); 
-// аналогично:
+
+// same as:
 var metas = Amm.getProperty(records, 'mm'); 
 recordStates = Amm.getProperty(metas, 'state'); 
 }}}
@@ -273,28 +279,28 @@ recordStates = Amm.getProperty(metas, 'state');
 
 ==== Amm.setProperty: function(object, property, value, throwIfNotFound, args) ====
 
-Устанавливает значение свойства property объекта object в значение value. По аналогии с Amm.getProperty можно установить значения а) у множества объектов (если object это массив); б) у нескольких свойств (если value === undefined, а property это хеш); в) нескольких свойств у множества объектов.
+Sets ''property'' of the ''object'' to the ''value''. Same as with the Amm.getProperty, we can set value(s) a. of many objects; b. of many properties (if the hash is given) and ''value'' === undefined; c) of multiple properties of multiple objects.
 
-* **object**: object|[object, object...] - объект или объекты, свойства которых нужно установить
-* **property**: string|object - имя свойства, либо объект с парами {property: value} для установки нескольких свойств
-* **value**: mixed|undefined - значение свойства (должно быть undefined для использования property во второй форме)
-* **throwIfNotFound**: boolean - если true, то при отсутствии у объекта нужного свойства (точнее, нужного setter'а) сработает исключение
-* **args**: undefined|mixed|Array - ноль, один или массив аргументов setter'а
-* ничего не возвращает
+* **object**: object|[object, object...] - object or objects to set the properies of
+* **property**: string|object - name of property, or hash with {property: value} pairs
+* **value**: mixed|undefined - value to set (needs to be undefined for multiple-property form)
+* **throwIfNotFound**: boolean - if true, not finding a property will result in an exception
+* **args**: undefined|mixed|Array - zero/one/multiple arguments to the setter(s)
+* returns noting
 
-===== Другие способы создания свойств =====
+===== Other approaches to defining properties =====
 
-* свойства prop__ либо хеш "props" объекта-опций у Amm.Element
-* мета-свойства у Amm.Data.Model
+* prop__ or "props" hash of Amm.Element options array
+* meta-properties of Amm.Data.Model
 
-===== Параметры свойств: что делать в setter'е и getter'е (часть 2) =====
+===== Property arguments: what to do in the setter and getter (part 2) =====
 
-Одним из "расширений" смысла понятия "свойство" для Amm является то, что у setter'а и getter'а могут быть параметры. Это называется параметрами свойств. У большинства свойств параметров нет. Предполагается, что, когда они поддерживаются, параметры позволяют менять не значение свойства целиком, а какую-либо его часть.
+One of the extensions of the ''property'' idea in Amm is that both setter and getter can have arguments. This is called property arguments. Most properties don't have the arguments; but when they do, it's assumed that the argument allows to get/set not the property in full, but some of its parts.
 
-Примером параметра свойства является параметр part свойства className у Amm.Trait.Visual.
-Если className установить без параметра, то это будет целиком класс html-элемента. Если className(part) := true, то это идентично jQuery.addClass(part), а className(part) := false идентично jQuery.removeClass(part). Точно также getClassName(part) возвращает true, если данный идентификатор класс есть в общем классе элемента.
+Example of the property argument is ''className'' of Amm.Trait.Visual.
+If we set ''className'' w/o argument, it's going to update the whole ''class' attribute of the DOM node. If className(part) := true, it's identical to jQuery.addClass(part), and className(part) := false identical to jQuery.removeClass(part). Getting getClassName(part) returns true, if this substring is present in the whole ''class' of the element.
 
-Например:
+Example:
 
 {{{code: lang="js" linenumbers="False"
 //>
@@ -316,30 +322,30 @@ foo.getClassName("empty")
 //< true
 
 //>
-foo.setClassName(false, "empty") // убрали "empty"
+foo.setClassName(false, "empty") // removed "empty"
 foo.getClassName()
 
 //< "table"
 
 //>
-foo.setClassName(true, "empty") // добавили "empty"
+foo.setClassName(true, "empty") // added "empty"
 foo.getClassName()
 
 //< "table empty"
 }}}
 
 
-Важно учитывать следующие моменты:
+It's important to keep the following in mind:
 
-* параметры являются необязательными
-* у setter'а устанавливаемое значение всегда является //первым// параметром; то есть уточняющие параметры идут //после// обязательного устанавливаемого значения
-* поведение события out<Property>Change() не меняется в зависимости от того, использовались ли параметры при установке свойств
+* arguments are not required
+* setter has always the provided value as the //first// argument; additional (proeprty) arguments follow //after// the necessary value-to-set argument;
+* behavior of out<Property>Change() event isn't affected by the arguments.
 
-===== Синтаксис доступа к свойствам из Amm.Expression =====
+===== Syntax of accessing properites from Amm.Expression =====
 
 * object.property
-* object.property::firstArg::secondArg - с параметрами (значения параметров - либо идентификаторы-строки, либо константы)
-* object.property::{expression, expression} - с выражениями в качестве параметров
-* object[expression] - выражение в качестве имени свойства
-* object[expression]{expression, expression} - выражения в качестве имени и параметров свойства
+* object.property::firstArg::secondArg - with the parameters (values of the arguments are string identifiers, or constants)
+* object.property::{expression, expression} - expressions used as the arguments
+* object[expression] - expression used as the property name
+* object[expression]{expression, expression} - expressions are used both and property names and property arguments
 

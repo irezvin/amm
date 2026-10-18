@@ -34,7 +34,7 @@ Tasks
 -   groups order matches the objects order
 -   order of the objects in the group is the original one
 
--   ability to provide extra values to expression-using `filter` и `sorter`
+-   ability to provide extra values to expression-using `filter` and `sorter`
     for every object (`extraVars`), which we can reference in the expressions
 
 -   maybe in the future `destFilter`, `destSorter` will be added to filter/sort
