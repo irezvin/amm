@@ -3,20 +3,20 @@
 javascript-based and function-based expressions
 ===============================================
 
--   Idea of "functional" and "half-functional" expressions was born on dawn of Expression-related work.
-    Something akin to the current Expression FunctionHandler`s current implementation
-    single method to access all observed properties, i.e. g(object, property), g.r(array, rangeSpec),
+-   Idea of "functional" and "half-functional" expressions was born at the dawn of Expression-related work.
+    Something akin to the current Expression FunctionHandler's implementation
+    single method to access all observed properties, e.g. g(object, property), g.r(array, rangeSpec),
     while g() keeps count of accessed objects, and subscribes to them. Vice versa, already subscribed
     objects that weren't accessed during the last run, are unsubscribed.
 
     First option: fully functional method similar to FunctionHandlers (javascript).
     Second option: compile Expression to a js function (or build a network of js function closures).
     
-    Requirement:
+    Requirements:
         -   single point of entry for all event handlers, because reference to a same variable or property
             can appear multiple times;
         -   option to get rid of in-memory object tree after the compilation;
-        -   simplier code than one in the Expressions.
+        -   simpler code than one in the Expressions.
 
 2021-11-18 
 ==========

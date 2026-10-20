@@ -6,13 +6,13 @@ Creation-Date: 2020-09-14T09:49:12+03:00
 Created Monday 14 September 2020
 
 
-In the Amm, interaction between the objects is done using the Observer Pattern: object generates an event that multiple subscribers are then notified about. Logic of reacting to the event is contained in the handler method.
+In the Amm, interaction between the objects is done using the Observer Pattern: object generates an event that multiple subscribers are then notified about. The logic of reacting to the event is contained in the handler method.
 
 ===== out<EventName> - standard name for event-generating method =====
 
-To ease locating what events are supported by a particular class in the source code, names of every event-generating method start with "out" prefix, and ends with the name of the event (with the first captial letter). Parameters of the method are parameters of the event.
+To ease locating what events are supported by a particular class in the source code, names of every event-generating method start with the "out" prefix and end with the name of the event (with the first capital letter). Parameters of the method are parameters of the event.
 
-The body of such methods are usually one-liner this._out('eventName', arg1, arg2...), that implements calling the observers (_out is defined in Amm.WithEvents).
+The body of such methods is usually one-liner this._out('eventName', arg1, arg2...), that implements calling the observers (_out is defined in Amm.WithEvents).
 
 Typical definition of the event looks like this:
 
@@ -34,7 +34,7 @@ Important to know: parameters of ''subscribe'', ''getSubscribers'' and ''unsubsc
 * implementation just checks that the method "out + 'EventName'" is present in the current object
 
 ==== Amm.WithEvents.prototype.subscribe(eventName, handler, scope, extra) ====
-* subscribers the hanlder method **handler** of the object **scope** to the event **eventName**; the ''extra'', if supplied, will be added as the last argument when calling the handler.
+* subscribes the handler method **handler** of the object **scope** to the event **eventName**; the ''extra'', if supplied, will be added as the last argument when calling the handler.
 * **eventName: string** - name of the event. Attempt to subscribe at non-existent event triggers an exception with the text "No such event: 'eventName'". In some classes it is possible to subscribe to arbitrary events. See below: //Amm.WithEvents.strictEvents, Amm.WithEvents._handleMissingEvent()//
 * **handler: string|function|object** - string or function (or any object that has ''apply()'' method) - the handler
 	* if it's a function, it's called with ''scope'' as the ''this'' (or, if ''scope'' is null, with the event-emitting object as the ''this'')
@@ -49,7 +49,7 @@ Important to know: parameters of ''subscribe'', ''getSubscribers'' and ''unsubsc
 ==== Amm.WithEvents.prototype.getSubscribers(eventName, handler, scope, extra) ====
 * returns subscribers to the events of the object
 	* ''eventName'', ''handler'', ''scope'', ''extra'' have the same sense as with ''subscribe()'', except for how ''undefined'' values are handled
-	* if ''undefined'' is supplied as eventName, handler, scope, or extra, then the filtering by the given argument is not made, and all subscribers disregarding to what the value of specified handler' part is, are returned
+	* if ''undefined'' is supplied as eventName, handler, scope, or extra, then the filtering by the given argument is not made, and all subscribers regardless of what the value of the specified handler's part is, are returned
 	* for example, Amm.WithEvents.getSubscribers(undefined, undefined, someObject) finds all subscribers with ''scope === someObject'' - for any ''events'', ''methods'' and ''extra''
 	* Amm.WithEvents.getSubscribers() returns all subscribers
 * **eventName: string|undefined** - name of the event or ''undefined'' to match all events
@@ -57,12 +57,12 @@ Important to know: parameters of ''subscribe'', ''getSubscribers'' and ''unsubsc
 * **scope: object|null|undefined** - scope object, or ''null'' to find handlers without defined scope, or ''undefined'' to match any scope
 * **extra: mixed|null|undefined**
 	* **mixed** - subscribers with matching ''extra'' will be returned
-	* **null** - subscribed without extra defined at subscribtion (or with ''null'' explicitly provided) will be returned
+	* **null** - subscriptions made without extra (or with ''null'' explicitly provided) will be returned
 	* **undefined** to match any ''extra''
 * returns array of arrays, where every sub-array corresponds to one subscription
 	* the format is [handler, scope, extra, eventName, index]
 	* ''eventName'' - name of the event
-	* ''index'' - ordinal number of this subscription amonth all subscription to event ''eventName''
+	* ''index'' - ordinal number of this subscription among all subscriptions to event ''eventName''
 	* important! order in this array is different from the order of the arguments of subscribe/unsubscribe/getSubscribers
 * if there is no such event, or there are no subscribers, empty array is returned
 
@@ -75,12 +75,12 @@ Important to know: parameters of ''subscribe'', ''getSubscribers'' and ''unsubsc
 ==== Amm.WithEvents.prototype.unsubscribeByIndex (eventName, index) ====
 * unsubscribes subscription with given **index** to the event **eventName**
 * **eventName: string** - event name, required, cannot be ''undefined''
-* **index: number** - order of the subscription within this 'eventName'' (last value in the result subarray returned by ''getSubscribers()'')
+* **index: number** - order of the subscription within this ''eventName'' (last value in the result subarray returned by ''getSubscribers()'')
 * result is the same as for getSubscribers() or unsubscribe(), but has at most one element
 	* if there is no such event, the exception isn't thrown
 
 ==== Amm.WithEvents.prototype.getUniqueSubscribers (classOrInterface, eventName) ====
-* returns unique ''scope'' objects of subscription to a single or all events of the given object
+* returns unique ''scope'' objects of subscriptions to a single or all events of the given object
 * **classOrInterface: undefined|string|array:** 
 	* **undefined**: returns all scopes
 	* **string|Array**: returns scopes that match given class/interface or one of provided classes/interfaces, if the Array of strings is provided
@@ -120,15 +120,15 @@ Important to know: parameters of ''subscribe'', ''getSubscribers'' and ''unsubsc
 
 **First,** all methods of Amm.WithEvents expect the ''_subscribers'' array to exist. The event assignment can happen quite early - incl. during the initialization.
 
-**Second,** by default Amm.WithEvents attempts to set all [[properties]] passed to the ''options'' with ''Amm.init()''. If we will call WithEvents early in the constructor, then some structured needed for this might not be initialized yet.
+**Second,** by default Amm.WithEvents attempts to set all [[properties]] passed to the ''options'' with ''Amm.init()''. If we will call WithEvents early in the constructor, then some structures needed for this might not be initialized yet.
 
 There are two possible solutions:
-a. Very early in the descendant constructor call ''Amm.WithEvents()'' with empty values, to create _subscribers, and leter call it with options
+a. Very early in the descendant constructor call ''Amm.WithEvents()'' with empty values, to create _subscribers, and later call it with options
 
 b. At the very start, use ''initOnHandlersOnly'' parameter: call Amm.WithEvents(options, true), and later - just call Amm.init(this, options) (given that on__ keys will be removed from ''option'' on call that inits handlers)
 
 ==== Future-proof method of receiving ''extra'' param in the event handler ====
-* ''extra'' is always the last method of the handler function.
+* ''extra'' is always the last argument of the handler function.
 * ''extra'' is always sent, even if it wasn't provided during the subscription (in that case it's null)
 * in case we specify ''extra'' in the parameter list, we risk mismatch, in case the event is later extended with additional arguments
 * therefore, it's recommended to receive the last parameter like this:
@@ -144,10 +144,10 @@ function handlerFn(eventArg1, eventArg2) {
 
 === Amm.WithEvents.prototype.strictEvents ===
 * **boolean**, default === true
-* if set to false, non-existing events will be created on first subsciption attempts; _handleMissingEvent() won't be used
+* if set to false, non-existing events will be created on first subscription attempts; _handleMissingEvent() won't be used
 
 === Amm.WithEvents.prototype._handleMissingEvent: function(eventName, handler, scope, extra) ===
-* blank template method to be overriden in subsclasses when needed;
+* blank template method to be overridden in subclasses when needed;
 * called when subscribing to non-existent events when this.strictEvents === true;
 * same arguments as for subscribe();
 * return value tells subscribe() how to behave:
@@ -167,7 +167,7 @@ function handlerFn(eventArg1, eventArg2) {
 
 ==== Creating new class with own events ====
 
-**Footnote.** In the example below we directly call .out<Event> methods of the instances. It's not corrent, the object should generate the events on its' own, but here it's done for the illustrative purpose.
+**Footnote.** In the example below we directly call .out<Event> methods of the instances. It's not correct, the object should generate the events on its own, but here it's done for the illustrative purpose.
 
 {{{code: lang="js" linenumbers="False"
 SchoolClass = function(options) {
@@ -176,10 +176,10 @@ SchoolClass = function(options) {
 };
 
 SchoolClass.prototype = {
-	'SchoolClass': __CLASS__,
+	'SchoolClass': '__CLASS__',
 	id: null,
 	outDayStart: function(date) {
-		return this._out('schoolDayStart', date);
+		return this._out('dayStart', date);
 	},
 	outLesson: function(lessonName, duration) {
 		return this._out('lesson', lessonName, duration);

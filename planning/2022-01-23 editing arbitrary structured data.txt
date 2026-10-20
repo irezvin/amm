@@ -17,7 +17,7 @@ Data structure:
     -   array of the values
     -   array of the objects of a single type
     -   array of the objects of different types
--   "applicability" of the field (is shown, validated, availalble for input)
+-   "applicability" of the field (is shown, validated, available for input)
     can depend on different fields' values (for simplicity - on the presence
     of any value in the other field, or of that value matching something)
 

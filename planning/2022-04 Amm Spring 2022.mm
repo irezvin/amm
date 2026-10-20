@@ -41,11 +41,11 @@
 </node>
 <node CREATED="1645045132096" ID="ID_1992042839" MODIFIED="1645045204367" TEXT="Cell with record status: when record has errors, focusing cell will show pop-up with record error info"/>
 <node CREATED="1645044277908" ID="ID_317486055" MODIFIED="1645045278903" TEXT="Amm.Trait.Table.RecordSet"/>
-<node CREATED="1645044816068" FOLDED="true" ID="ID_687295667" MODIFIED="1725919392588" TEXT="SortColumn">
-<node CREATED="1645044858368" ID="ID_1195646670" MODIFIED="1645044883099" TEXT="&#x43f;&#x43e;&#x43a;&#x430;: click on sort element toggles sort"/>
+<node CREATED="1645044816068" ID="ID_687295667" MODIFIED="1792529760479" TEXT="SortColumn">
+<node CREATED="1645044858368" ID="ID_1195646670" MODIFIED="1792529768312" TEXT="for now: click on sort element toggles sort"/>
 </node>
-<node CREATED="1645044303744" FOLDED="true" ID="ID_1113042891" MODIFIED="1725919402981" TEXT="FilterRow">
-<node CREATED="1645044843576" ID="ID_472150224" MODIFIED="1645044854316" TEXT="&#x43f;&#x43e;&#x43a;&#x430; &#x441;&#x434;&#x435;&#x43b;&#x430;&#x435;&#x43c; &#x43f;&#x440;&#x43e;&#x441;&#x442;&#x43e; &#x432;&#x432;&#x43e;&#x434; &#x434;&#x43b;&#x44f; omni-filter"/>
+<node CREATED="1645044303744" ID="ID_1113042891" MODIFIED="1792529800046" TEXT="FilterRow">
+<node CREATED="1645044843576" ID="ID_472150224" MODIFIED="1792529825505" STYLE="fork" TEXT="for now, just make an input for omni-filter"/>
 </node>
 <node CREATED="1645044587306" ID="ID_1410628092" MODIFIED="1645044809952" TEXT="?RecordStatusDisplay"/>
 <node CREATED="1645044917291" ID="ID_561890877" MODIFIED="1645044936586" TEXT="?Recordset: fetch throttling"/>

@@ -11,7 +11,7 @@ Created Thursday, September 17, 2020
 * getter (get<Property>)
 * changeEvent (out<Property>Change)
 
-changeEvent should fire only in the case when new value doesn't equal old one. By equal usually strict equality is meant (===).
+changeEvent should fire only when the new value differs from the old one. By equal usually strict equality is meant (===).
 
 **Important!** In the method names get..., set..., out...Change, the property name starts with the capital letter.
 
@@ -19,7 +19,7 @@ Access to the properties in Amm implementation is done using setters and getters
 * value = instance.get<Property>()
 * instance.set<Property>(value)
 
-In the framework-based apps the creation of the properties can be simplified using object.defineProperty, or Amm.createProperty.
+In the framework-based apps the creation of the properties can be simplified using Object.defineProperty, or Amm.createProperty.
 
 ===== Example of the property implementation =====
 
@@ -103,20 +103,20 @@ php /path/to/mk.php -p $* | xclip -i -selection clipboard
 
 What is sometimes added manually to the setter implementation:
 
-* coercing the argument to the required type. For example, if we except boolean value, me might convert argument to it with value = !!value. It saves us from generating change event for the semantially identical values.
+* coercing the argument to the required type. For example, if we expect a boolean value, we might convert argument to it with value = !!value. It saves us from generating change event for the semantically identical values.
 * typecheck. Exception needs to be generated //before// changing the member value and generating the event.
 
 We can add delayed initialization or delayed evaluation to the getter, that don't need to be done unless we retrieve the value with it.
 
 ===== Using Amm to create the properties =====
-If we need to quickly define couple of properties without writing a boilerplace from the above, ''Amm.createProperty'' can be used.
+If we need to quickly define couple of properties without writing a boilerplate from the above, ''Amm.createProperty'' can be used.
 
 ==== Amm.createProperty(target, propName, defaultValue, onChange, defineProperty) ====
 * creates  getter, setter and changeEvent, also "protected" member field to implement property **propName**
 * can call object.defineProperty for the property, to make it available using target.<PropName> or target[propName]
 * if getter, setter, changeEvent, or member field already exist, they won't be overwritten, so we can still create some of them by hand
 * **target**: **object** - object to have the property added
-* **propName**: string - property name (startin with the lowercase letter)
+* **propName**: string - property name (starting with the lowercase letter)
 * **defaultValue**: mixed - default value (''undefined'' will be used, if the ''defaultValue'' is not provided)
 * **onChange: undefined|function|object** - optional function that will be called in the case, when new value in the setter isn't equal to the old one
 	* If the setter already present in the prototype, this parameter is ignored
@@ -171,7 +171,7 @@ Sample.number = 30.5
 //>
 Sample.number = '20.5'
 
-//<< 'number changed from', 30, 'to', 20.5
+//<< 'number changed from', 30.5, 'to', 20.5
 
 //>
 Sample.number
@@ -217,7 +217,7 @@ Sample2.number = 20.1
 //>
 Sample2.number
 
-//<20 // rounding worked using the Math.round()
+//< 20 // rounding worked using the Math.round()
 
 //>
 Sample2.number = '20.7'
@@ -228,14 +228,14 @@ Sample2.number
 //>
 Sample2.number = 'zzz'
 
-//<< Uncaught error: Please specify proper number; given: 'zzz' // ancestor code was triggered
+//<< Uncaught Error: Please specify proper number; given: 'zzz' // ancestor code was triggered
 
 }}}
 
 ===== Amm functions that work with the properties =====
 
 ==== Amm.detectProperty: function(object, property, outCaps) ====
-Returns **true**, if for property **property** of the object **object** are defined getter, setter and changeEvent; **false**, if any of these parts is missing.  // Note @2026-10-18: that's complicates adding read-only properties
+Returns **true**, if for property **property** of the object **object** are defined getter, setter and changeEvent; **false**, if any of these parts is missing.  // Note @2026-10-18: that complicates adding read-only properties
 
 Fills-out outCaps with the info of the accessor methods.
 
@@ -250,7 +250,7 @@ Fills-out outCaps with the info of the accessor methods.
 Returns value(s) of one or several properties for one or several objects.
 * **object**: object|[object, object...] - object or objects to get the property/properties of 
 * **property**: string|[string, string...] - name(s) of the property(ies) to get value(s) of
-	* value "class" is a reserved name of the property and returns Amm.getClass(object) - only if the object doesn't have a property with the called "class"
+	* value "class" is a reserved name of the property and returns Amm.getClass(object) - only if the object doesn't have a property with the name "class"
 * **defaultValue**: undefined|mixed - default value to return if the property isn't found
 * **args**: undefined|mixed|Array - one or many getter args (if we want to retrieve multiple property values, all getters will receive the same args)
 * returns mixed|object|[mixed]|[object] - value of one or many properties for one or many objects
@@ -281,12 +281,12 @@ recordStates = Amm.getProperty(metas, 'state');
 
 Sets ''property'' of the ''object'' to the ''value''. Same as with the Amm.getProperty, we can set value(s) a. of many objects; b. of many properties (if the hash is given) and ''value'' === undefined; c) of multiple properties of multiple objects.
 
-* **object**: object|[object, object...] - object or objects to set the properies of
+* **object**: object|[object, object...] - object or objects to set the properties of
 * **property**: string|object - name of property, or hash with {property: value} pairs
 * **value**: mixed|undefined - value to set (needs to be undefined for multiple-property form)
 * **throwIfNotFound**: boolean - if true, not finding a property will result in an exception
 * **args**: undefined|mixed|Array - zero/one/multiple arguments to the setter(s)
-* returns noting
+* returns nothing
 
 ===== Other approaches to defining properties =====
 
@@ -298,7 +298,7 @@ Sets ''property'' of the ''object'' to the ''value''. Same as with the Amm.getPr
 One of the extensions of the ''property'' idea in Amm is that both setter and getter can have arguments. This is called property arguments. Most properties don't have the arguments; but when they do, it's assumed that the argument allows to get/set not the property in full, but some of its parts.
 
 Example of the property argument is ''className'' of Amm.Trait.Visual.
-If we set ''className'' w/o argument, it's going to update the whole ''class' attribute of the DOM node. If className(part) := true, it's identical to jQuery.addClass(part), and className(part) := false identical to jQuery.removeClass(part). Getting getClassName(part) returns true, if this substring is present in the whole ''class' of the element.
+If we set ''className'' w/o argument, it's going to update the whole ''class'' attribute of the DOM node. If className(part) := true, it's identical to jQuery.addClass(part), and className(part) := false identical to jQuery.removeClass(part). Getting getClassName(part) returns true, if this substring is present in the whole ''class'' of the element.
 
 Example:
 
@@ -338,14 +338,14 @@ foo.getClassName()
 It's important to keep the following in mind:
 
 * arguments are not required
-* setter has always the provided value as the //first// argument; additional (proeprty) arguments follow //after// the necessary value-to-set argument;
+* the setter always has the provided value as the //first// argument; additional (property) arguments follow //after// the necessary value-to-set argument;
 * behavior of out<Property>Change() event isn't affected by the arguments.
 
-===== Syntax of accessing properites from Amm.Expression =====
+===== Syntax of accessing properties from Amm.Expression =====
 
 * object.property
 * object.property::firstArg::secondArg - with the parameters (values of the arguments are string identifiers, or constants)
 * object.property::{expression, expression} - expressions used as the arguments
 * object[expression] - expression used as the property name
-* object[expression]{expression, expression} - expressions are used both and property names and property arguments
+* object[expression]{expression, expression} - expressions are used both as property names and as property arguments
 

@@ -2,10 +2,10 @@
 
 -   in my prototype table solution with columns filter, due to 'new RegExp',
     the expression isn't cacheable, and the timer is used. 
-    ? Proposed solution: introduce cnew keyword (short from "caching new").
+    ? Proposed solution: introduce cnew keyword (short for "caching new").
 
 
-    -   it's quite hard to debug cacheability - I dug into this for quite long
+    -   it's quite hard to debug cacheability - I dug into this for quite a long time
 
             class: ui.Paginator,
             in__numRecords: 'tbl.fetcher.response.totalRecords || 0'
@@ -13,7 +13,7 @@
             -   1) tbl.fetcher turned out to be non-cacheable as well, because
                 for the table, the `component` property was initialized first 
                 (`tbl` started to be found), and at that moment the `fetcher`
-                property of the table object didn't exit yet!
+                property of the table object didn't exist yet!
 
                 That means we are dependent on the initialization order.
                 I solved that edge case by forcing `component` property 
@@ -30,7 +30,7 @@
             
             new 'RegExp'(columnFilter.value, 'i')).exec(this.component.src.caption || this.component.src.id)!!
             
-            !   user of the framework will never figure it out 
+            !   a user of the framework will never figure it out 
                 on their own
         
 >   twin view:
@@ -45,9 +45,9 @@
         I was holding it wrong
             made that the column width is always set, even if our one
             is wider or equal to required width
-    -   tables' sync: condsider using resizeObserver & intersectionObserver,
+    -   tables' sync: consider using resizeObserver & intersectionObserver,
         and if main/fixed tables width/height differs, call adjust...
--   settings sizes
+-   setting sizes
     -   when new rows are added, need to apply sizes if the column widths'
         isn't auto
         -   there is a fundamental problem here

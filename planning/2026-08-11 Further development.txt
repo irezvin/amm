@@ -16,25 +16,25 @@ Reasons why I've put the project into a 4-year hiatus:
 
 But hey, what the hell, I thought. First of all, this project serves
 two purposes: 1) check if my vision of a reactive framework is viable;
-2) provide me a constant source of food for thoughts, that I can toy with
-inside my head when I'm bored - and, as a psychoteraupeutic device,
+2) provide me a constant source of food for thought, that I can toy with
+inside my head when I'm bored - and, as a psychotherapeutic device,
 it already works quite good.
 
 Secondly, now, when we have abundance of subsidized (still) and relatively
 reliable LLM-enabled agents, I can offload the tasks to them, and finally
 get the job done. It took me 900 hours of pure coding to get to the current
-state of things, and I cannot imagine how much more were put into thinking
+state of things, and I cannot imagine how much more was put into thinking
 about the design decisions. Those 900 hours were spread over 5 calendar
 years, when I sat in the evenings with a laptop, coding, instead of playing
 games, scrolling news, or just sleeping (and I must admit, sleep is the
 best drug). In 2026, I can fire off Claude and tell "rewrite everything
-in Typescript, make sure the tests pass", and (if my 20 bucks are enough)
+in TypeScript, make sure the tests pass", and (if my 20 bucks are enough)
 I'll get a working solution in a couple of hours. I can make it do all the
 less-interesting (but still important work) such as writing documentation,
-converting the tests from QUnit to Playwright, or replacing JQuery with
+converting the tests from QUnit to Playwright, or replacing jQuery with
 native (and modern!) DOM methods.
 
-Even more, I can make attempts at such changes, and discard the results when
+What's more, I can make attempts at such changes, and discard the results when
 I'm not satisfied with the outcome - maybe I'll spend some tokens in vain,
 but it's still going to be a small fraction of what my (virtual) hourly
 time costs.
@@ -50,6 +50,6 @@ And what about "unpopular" and "obscure" points? Again, AI comes to rescue.
 At this moment, we can throw a brownfield project that scores 5/5
 on obscurity and "legacy-ness" scale into an agentic tool of choice,
 and expect it to come up with sensible solutions. Therefore, I think that
-with anough amount of documentation an clear enough code, Ammm can be
+with enough documentation and clear enough code, Amm can be
 quickly picked up by any agentic tools' user (that means literally by any
 developer in the remaining half of the decade).

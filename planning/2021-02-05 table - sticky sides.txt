@@ -12,14 +12,14 @@ Sticky header and footer, overlay
     -   div has height restricted, scroll enabled
     -   thead: top: 0, position: sticky
 
--   Fixing of arbitrary elements using the sides (implemented in handsontable)
+-   Fixing of arbitrary elements using the sides (implemented in Handsontable)
 
     i   Divs with clones are placed over the table.
-        We can hide them when scrolling to the end, or leave.
+        We can hide them when scrolling to the end, or leave them.
 
         For cloning I need to clone the views, including views of the `DisplayParent`s
         with the `Visual` children. It means the `DisplayParent` must support cloning.
 
     -   cloning of the views
-    -   pain point: element can have multiple `displayParent`s
+    -   pain point: an element can have multiple `displayParent`s
     -   cloning of the views looks easier than the cloning of the elements

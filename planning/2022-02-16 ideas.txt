@@ -13,9 +13,9 @@
 
 Questions and ideas that popped up during the table development
 
--   think on properly updating input values (for example, the value
+-   think about properly updating input values (for example, the value
     has changed, but the `blur` event wasn't fired yet; now we use
-    workaround a-la input.actualizeValue, but maybe there is a sense
+    workaround a la input.actualizeValue, but maybe there is a sense
     of developing something else)
 
 -   allow Traits to
@@ -28,7 +28,7 @@ Questions and ideas that popped up during the table development
     
 -   new Amm.Element: when the `prototype` includes the class identifier
     via the __CLASS__ property, if the `class` is present, return the instance
-    of that class (in javascript, the `new` operartor can return arbitrary instance
+    of that class (in javascript, the `new` operator can return arbitrary instance
     instead of `this`, which looks handy)
     
 -   new Amm.Expression: returns "secondary instance", where all methods are passed
@@ -61,7 +61,7 @@ Questions and ideas that popped up during the table development
     -   panelSize
     -   minPanelSize
     -   maxPanelSize
-    -   collapsable
+    -   collapsible
     -   collapseSize
     -   collapsedClass
     -   nonCollapsedClass
@@ -82,10 +82,10 @@ Questions and ideas that popped up during the table development
             
     -   pan:
         removal of some elements from one end, and adding some (different)
-        elements to another as a single action, leaving some number
+        elements to the other end as a single action, leaving some number
         of elements inside untouched
         -   cutFromTail: true/false 
-            -   true: elements where removed from the tail of the array,
+            -   true: elements were removed from the tail of the array,
                 added to the head;
             -   false: vice versa
         -   cut: [ item, item... ] - removed items
@@ -113,8 +113,8 @@ Questions and ideas that popped up during the table development
         -   tr buttons: new/revert/delete/commit
         -   absoluteIndex
             
--   Amm.Trait.Repeater: I lost at least an hour to remember 
-    how it should be used. It deserves making a proper example in Zim
+-   Amm.Trait.Repeater: I lost at least an hour remembering 
+    how it should be used. It deserves a proper example in Zim
     notebook or in the code comments! // how about doing that 5 years later
     
 ?   Introduce a Builder Extension that might allow creation of ad-hoc
@@ -125,7 +125,7 @@ Questions and ideas that popped up during the table development
     -   accept Amm.Builder.Ref
     -   TODO: document how to use the `ref` feature
     !   now that when I try to merge the `ref` and the `default view` features, 
-        the element proto sort-of calculated, but the node mentioned in the `ref`
+        the element proto is sort of calculated, but the node mentioned in the `ref`
         of `builderSource`, disappears somewhere;        
         -   the builder calculates the proto correctly, but then for some reason
             there are no views!

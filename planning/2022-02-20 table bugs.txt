@@ -18,7 +18,7 @@
 
     when we are doing
 
-            var res = Amm.dom([
+            var res = Amm.dom({
                 $: 'div',
                 $$: [
                     {   
@@ -30,7 +30,7 @@
                         data_amm_v: views
                     },
                 ]
-            ]);
+            });
         
     it doesn't work. Errors out with "returns 5 top-level elements" notice.
     When I'm adding `data-amm-id`, there is no error... but the table doesn't
@@ -54,7 +54,7 @@
     (or maybe just move it to a separate view and that's it)
     
 -   2) validation report, control with the validation messages
-        --  Trait should report, that its' element shown the message, and
+        --  Trait should report, that its element has shown the message, and
             registers itself
 
 2022-02-21
@@ -64,7 +64,7 @@
     +   view works this way: finds node of the element;
         if it doesn't find one, creates;
         removes it from previous dom-node, and puts into own one!
-    +   need or create it again for oneself...
+    +   or create it again for oneself...
     -   or clone one that was found, including its' view! // I can't decipher this
         
 -   Takeaways from implementing "twin view" based table
@@ -93,10 +93,10 @@
 
         Table navigation changes active cell, changing the focused node.
         That will cause to node of the first view to be focused, since
-        it reacts to the event first. But proper way is that **the node
+        it reacts to the event first. But the proper way is that **the node
         that was interacted with (clicked) should receive the focus**.
                 
-        -   both proposed solution are based on view-aware-view (VAV):
+        -   both proposed solutions are based on view-aware-view (VAV):
         
             X   A.  View aware element: table has activeTableView; 
                     clicking and focusing (interaction) set this property; 
@@ -110,7 +110,7 @@
                     request to focus TD 1, giving the way to TD 2 to acquire
                     the focus.
             
-                +   somewhat lookalike to A, but "activeTableView" is determined
+                +   somewhat look-alike to A, but "activeTableView" is determined
                     dynamically every time;
 
                 ?   plus maybe, given the empty document.activeElement at the moment,
@@ -126,9 +126,9 @@
         
 >   Amm.View.Html.Collection / DisplayParent: 
 
-    currently is built with assumption that every item has one node,
-    and their indexes' match. It makes partial display impossible, as well as
-    showing the items that have other number of nodes than 1 (0 or 2+)
+    is currently built on the assumption that every item has one node,
+    and their indexes match. It makes partial display impossible, as well as
+    showing the items that have a different number of nodes than 1 (0 or 2+)
      
     _shownItems: [ [item[, node[, node...]]] ]
     

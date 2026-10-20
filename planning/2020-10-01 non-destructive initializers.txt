@@ -1,11 +1,11 @@
 2020-10-01
 ==========
 
-Non-destuctive initializers
+Non-destructive initializers
 
-Currently some of Amm constructors and Amm.init delete fields from the `options` opject.
+Currently some Amm constructors and Amm.init delete fields from the `options` object.
 This makes `options` unusable after the first use. Amm.override({}, options) solves this,
-but not in the case of a nested prototypes. Deep copying doesn't solve this either.
+but not in the case of nested prototypes. Deep copying doesn't solve this either.
 
 Solutions:
 

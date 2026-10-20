@@ -16,14 +16,14 @@ Amm: Expression & Element constructor improvements
     -   check how contexts perform for write-expressions
     -   tests
 -   Element
-    -   if the prototype array has known Traits definitions, build & cache pre-defined
+    -   if the prototype hash has known Traits definitions, build & cache pre-defined
         JS constructor w/ prototype with those Traits, and return "new" instance
         created with it
     -   since the traits' init code lives in  __augment, these methods should
         be called by the synthetic constructor
     -   that's based on assumption that js-native synthetic constructor performs better,
         we need to test that concept    
-    -   also we'll have cleaner picture in Dveloper tools-
+    -   also we'll have cleaner picture in Developer tools
     -   traits' properties should appear first in the object' prototype (as with the inheritance)
 +   Before this, let's write tests for changes that we already have // done @ 01.10
     +   check the expression + range combo
@@ -41,7 +41,7 @@ Amm: Expression & Element constructor improvements
             using Object.defineProperty
         *   Amm.Element: it is possible to define property prop__<foo> and assign it using <foo>: value
             in options during instantiation
-        *   Amm.Elemnet: onHandlers are initialized last
+        *   Amm.Element: onHandlers are initialized last
         *   Amm.Trait.Field: fixed local errors sometimes not showing up
         +   Amm.Data.ModelMeta.getLocalErrors(): added support for partial or suppressed validation
         +   Amm.Data.ModelMeta.checkFields(fields) method that validates only fields and doesn't
@@ -49,11 +49,11 @@ Amm: Expression & Element constructor improvements
         +   Amm.Data.FieldMeta.change: function that is called when field is changed
         +   Amm.Data.ModelMeta: compute() public method, outCompute() event
         +   Amm.Data.ModelMeta: update({field: value, field2: value2}) method that updates several 
-            fields in semi-atomical fashion        
-        *   Amm.Data.Model: its and bound ModelMeta's events aren't triggered until Model's 
+            fields in semi-atomic fashion        
+        *   Amm.Data.Model: its and its bound ModelMeta's events aren't triggered until Model's 
             constructor finishes work
         *   Amm.Data.ModelMeta, Amm.Data.Model: constructors now create shallow clones of options 
         +   Amm.Data.ModelMeta: anyChange event that is executed during data, errors, state, 
             properties list change, or during any change in sub-models 
-            (sub-model is Amm.DAta.Model or Amm.Data.Collection that is referenced from model property)
+            (sub-model is Amm.Data.Model or Amm.Data.Collection that is referenced from model property)
         +   Amm.Data.Collection with anyChange event

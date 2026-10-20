@@ -42,7 +42,7 @@ Ideas are in random order and of random effort/importance
 - Proper CSS loading mechanism
     - think on styling, theming etc
 - Widget views' building approach
-    - i.e. we have different libraries: bootstrap, material etc
+    - i.e. we have different libraries: Bootstrap, Material etc
     - same widgets (elements) will have different views when same controls are built using different library (different set of "default views")
     - maybe different extra traits as well?
 - Widgets library

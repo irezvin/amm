@@ -2,7 +2,7 @@
 
 Priority tasks:
 
--   build the non-destructing initializers (what we have now is heresy bordering with instanity)
+-   build the non-destructing initializers (what we have now is heresy bordering on insanity)
 
 -   finish tests for the model, transactions, record collections, working of the models that
     have collections as their properties (incl. transactions with embedded collections)
@@ -22,9 +22,9 @@ Priority tasks:
 
 -   menu, !!table!!, tabs??? controls
 
--   out moonshot: Avancore admin area
+-   our moonshot: Avancore admin area
 
-    -   avancore: need restish api
+    -   avancore: need RESTish API
     -   state of the table, filters is persisted
     -   ajax
     -   goal: end of spring 2021 // too optimistic -- 14.12.2020

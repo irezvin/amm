@@ -29,13 +29,13 @@
 //  The item below was done @12.2021 by involving Amm.Data.Mapper, that doubles as 
     Instantiator, and being a MetadataProvider for all Model instances.
     Hypothetically, a ConcreteMetaProvider extends Amm.WithEvents might be introduced,
-    that's created on the ourside, and the dependency is injected in the Instantiator,
+    that's created on the outside, and the dependency is injected in the Instantiator,
     in case if we need to do the same for Model. (Note from 22.09.2026: while I thought
     I had a remote what I meant here at the very beginning, I felt completely lost when
     finishing the paragraph.)
 
 +   Important!! Amm.Data.Model.mm: if the multiple Models or Records have the same prototype,
-    they share *common* instance of FieldMeta provider (this behavior can be overriding
+    they share *common* instance of FieldMeta provider (this behavior can be overridden
     by some options' key). We need this for cases such as
     
         var people = new Amm.Data.Collection({
@@ -57,7 +57,7 @@
             })
         });
 
-    at the moment, *every* collection item' instance will have FieldMeta re-created 
+    at the moment, *every* collection item's instance will have FieldMeta re-created 
     (contrary to the case of using the Mapper). But according to the common sense
     they should share one.
     

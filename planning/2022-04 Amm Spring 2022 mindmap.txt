@@ -1,7 +1,7 @@
 Amm Spring 2022
     - green🟩 MultipleDisplayParent + ViewCloning
         - this thing bothers me for too long
-        - interesing task to switch to
+        - interesting task to switch to
         - green🟩  ! Not sure this really blocks "sticky headers"
             - green🟩  Sticky Headers
                 - Model: repeat table header in the separate element
@@ -30,9 +30,9 @@ Amm Spring 2022
         - Cell with record status: when record has errors, focusing cell will show pop-up with record error info
         - Amm.Trait.Table.RecordSet
         - SortColumn
-            - пока: click on sort element toggles sort
+            - for now: click on sort element toggles sort
         - FilterRow
-            - пока сделаем просто ввод для omni-filter
+            - for now, just make an input for omni-filter
         - ?RecordStatusDisplay
         - ?Recordset: fetch throttling
         - green🟩 ActionList

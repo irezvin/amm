@@ -10,7 +10,7 @@ My wishlist (in random order):
 
 -   Playing with the table
     -   Fix the quirk with twin + scroll into view on focus
-    -   Make the paginator' page switch when navigating past the first/last row
+    -   Make the paginator switch pages when navigating past the first/last row
 
 -   Widgets
     -   editor for the table (only once there's positioning)

@@ -2,7 +2,7 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.6
 Creation-Date: 2021-02-26T11:15:59+02:00
 
-====== Project structue and building ======
+====== Project structure and building ======
 Created Friday 26 February 2021
 
 File tree in Amm looks like this:
@@ -25,7 +25,7 @@ How the single-file build is done:
 * main build routine argument is the name of the "root" namespace (`Amm` in our case)
 * all classes have the format RootNamespace.SubIdent.SubSubIdent and so on (starting with capital letters, dot-separated)
 * first type of dependency: names of the classes
-	* presence of "Class.Name.SubName.prototype" string means that the class Class.Name.SubName is defined here, and that it requires files Class.js, Class/Name.js, Class.SubName.js etc.
-* second type of dependency: inheritance. String "Amm.extends(Child.Class.Name, Parent.Class.Name)" means that **before** the file, where it was mentioned, we need to include Parent/Class/Name.js
-* third type: forced dependency (rare case). To force including something, add a comment like "// Amm.extends(...)", to trigger inheritance-type dependency without actuall executing the code.
+	* presence of "Class.Name.SubName.prototype" string means that the class Class.Name.SubName is defined here, and that it requires files Class.js, Class/Name.js, Class/Name/SubName.js etc.
+* second type of dependency: inheritance. String "Amm.extend(Child.Class.Name, Parent.Class.Name)" means that **before** the file, where it was mentioned, we need to include Parent/Class/Name.js
+* third type: forced dependency (rare case). To force including something, add a comment like "// Amm.extend(...)", to trigger inheritance-type dependency without actually executing the code.
 

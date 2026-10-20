@@ -5,11 +5,11 @@ Creation-Date: 2020-10-05T22:06:34+03:00
 ====== Standardized approach to creation of the objects (Amm.constructInstance) ======
 Created Monday October 05, 2020
 
-As it was described [[options|here]], most constructors in Amm and derived solutions can accept ''options'' hash with the property values that are set upon creation. (And given that many classes extend Amm.WithEvents, event handlers can be set that way too.)
+As described [[options|here]], most constructors in Amm and derived solutions can accept ''options'' hash with the property values that are set upon creation. (And given that many classes extend Amm.WithEvents, event handlers can be set that way too.)
 
 By adding ''class'' key to the ''options'', which specifies the instance's constructor, the hash turns into the self-sufficient specification of the created instance: we can locate the constructor, and have its arguments.
 
-That's how methods //Amm.constructInstance()// and //Amm.constructMany()// operates.
+That's how methods //Amm.constructInstance()// and //Amm.constructMany()// operate.
 
 It is important to differentiate between the options, and the instance of the class.
 
@@ -31,7 +31,7 @@ Returns created or supplied instance, or throws an exception.
 	* if ''options.class'' isn't provided, ''baseClass'' is used as default constructor;
 	* created or supplied instance is checked to be instance of (or descendant of) a ''baseClass'' using ''Amm.is()''. If it's not the case, exception is triggered.
 * **defaults**: object - so called "default options", which are added to the ''options'', except for the keys that are already there (''options'' keys take precedence over ones in ''defaults'').
-* **setToDefaults**: boolean - should we set properties of ''defaults'' to the instance that was supplied instead of the ''options'' hash.
+* **setToDefaults**: boolean - whether to set properties of ''defaults'' to the instance that was supplied instead of the ''options'' hash.
 * **requirements**: if provided, instance is checked to fulfill ''Amm.meetsRequirements(instance, requirements)'', and exception is thrown if it isn't.
 
 ==== Example ====

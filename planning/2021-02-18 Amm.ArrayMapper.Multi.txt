@@ -39,7 +39,7 @@ Tasks
 
 -   maybe in the future `destFilter`, `destSorter` will be added to filter/sort
     objects in the groups (both will have additional variables such as
-    source object, it's index, `match` values in the `srcFilter`)
+    source object, its index, `match` values in the `srcFilter`)
 
     -   important! `sorter` needs `onCompare` extra method, called when the list
         of the observed objects or their `matches` change. `destSorter` will
@@ -50,7 +50,7 @@ Tasks
 Plan
 ----
     
->   Rename `FilterSorter` rename to `MultiObserver` (`Extractor` will have it
+>   Rename `FilterSorter` to `MultiObserver` (`Extractor` will have it
     as an ancestor)
 
         -   objects -> matches
@@ -68,7 +68,7 @@ Plan
         
         <-  Extractor: 
             -   matches are arrays of arbitrary length (perhaps objects)
-            -   changeinfo contains spliceInfo
+            -   changeInfo contains spliceInfo
 
 -   MultiObserver.Observer <- MultiObserver.Expression 
         <-  Filter.ExpressionCondition (base; props rename to vars)
@@ -78,12 +78,12 @@ Plan
 
 Addition
 
--   why not implementing Amm.Instantiator.Multi returns array 0..N?
+-   why not implement Amm.Instantiator.Multi that returns an array of 0..N objects?
 
 -   how hard will it be to change a simple ArrayMapper to Multi?
     -   Instead of `dest item`, store `dest items` - [0..N]
     -   A dest item has src index, src subindex (index in src entry' dest items)
-    -   Instantiator is a subsclass of ObjectMapper that has event `needRemap`, 
+    -   Instantiator is a subclass of ObjectMapper that has event `needRemap`, 
         returning from 0 to several objects, and providing a method `dispose`
         (plus `beginUpdate`/`endUpdate`).
     -   Difference with ArrayMapper logic is that it doesn't have to remove

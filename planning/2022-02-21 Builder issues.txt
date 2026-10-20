@@ -4,7 +4,7 @@ Working with Builder
 
 -   Amm.Element.prototype.findView: should we remove id as a first parameter,
     or make it second one?
-    ?   how often do we use `view`s `id`? looks like almost never
+    ?   how often do we use `view`'s `id`? looks like almost never
     ?   remove Amm.View.Abstract.id? What it was added for?
     
 -   Amm.Builder.elements vs Amm.Builder.topLevel

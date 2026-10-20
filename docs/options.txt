@@ -5,7 +5,7 @@ Creation-Date: 2020-09-21T16:13:43+03:00
 ====== options ======
 Created Monday 21 September 2020
 
-Creating of the objects in Amm is always tied to their set-up. Object that we just created needs its properties set, event handlers assigned, other objects associated.
+Creating an object in Amm always goes together with setting it up. Object that we just created needs its properties set, event handlers assigned, other objects associated.
 
 ===== Argument //options// in the typical constructor Amm.<className>(//options//) =====
 
@@ -17,14 +17,14 @@ var options = {
 	prop2: value2,
 	on__someEvent: function() { /* ... */ },
 	_doOnSomething: function() {
-		Namespace.SomeClass.prototype.call(this);
+		Namespace.SomeClass.prototype._doOnSomething.call(this);
 		// extra code
 	}
 };
 var Instance = new Namespace.SomeClass(options);
 }}}
 
-Even the constructors that can work with the different sets of arguments, usually allow standard form of calling (singleArgThatIsAHash) - as Amm.Expression:
+Even constructors that can work with different sets of arguments usually also allow the standard call form with a single hash argument (singleArgThatIsAHash), like Amm.Expression:
 
 {{{code: lang="js" linenumbers="False"
 var expr = new Amm.Expression("'Number of products: ' + this.component.products.length", this);
@@ -41,19 +41,19 @@ var expr = new Amm.Expression({
 
 **Important to know: the order of the setting properties matches the order of them being defined in the ''options'' hash.** 
 
-Event while Amm objects are usually insensitive to the order of setting the properties, in some cases they are.
+Even though Amm objects are usually insensitive to the order of setting the properties, in some cases they are.
 
 To set properties in the constructor according to the ''options'' argument, Amm.init() is used.
 
 If the constructor needs to dictate own order of setting the properties, they can be set in groups in the constructor by calling Amm.init() with one group of the options or with parameter ''propNames'' then with another.
 
-Also in the ''options'' //methods// can be overriden, including the private ones; it's done for small "ad hoc" patching of the standard classes' behavior.
+Also in the ''options'' //methods// can be overridden, including the private ones; it's done for small "ad hoc" patching of the standard classes' behavior.
 
 ==== Special keys in the ''options'' used solely by the constructors ====
 
 Some classes (mostly Amm.WithEvents and Amm.Element) support special options that don't have the matching properties, and are used in the constructor only.
 
- For Amm.WithEvents it's ''on__<event>'' keys; for Amm.Element it's also: ''traits'', that defines what traits augment the element at the construction time; ''views'' to define the view objects (they can supply their Trait information to the element if ''traits'' option isn't provided); ''prop__<property>'' or ''props: {property: value}'' - to defined the properites; ''expr__<property>'' to create a calculated properties; ''in__<property>: expression'', ''sync__<property>: expression'' to create receiving and two-way expression. More info on these options can be obtained from the Amm.Element class.
+ For Amm.WithEvents it's ''on__<event>'' keys; for Amm.Element it's also: ''traits'', that define what traits augment the element at the construction time; ''views'' to define the view objects (they can supply their Trait information to the element if ''traits'' option isn't provided); ''prop__<property>'' or ''props: {property: value}'' - to define the properties; ''expr__<property>'' to create calculated properties; ''in__<property>: expression'', ''sync__<property>: expression'' to create receiving and two-way expressions. More info on these options can be obtained from the Amm.Element class.
 
 ===== Amm.init: function(object, options, propNames, noSuchPropertyCallback) =====
 
@@ -63,18 +63,18 @@ Sets properties or public members of the **object** from **property: value** pai
 * **options**: object - hash with the options {key: value}
 	* key: property name (setter or public member must exist)
 	* value: property value
-* **propNames**: undefined|Array - sets only properties mentioned in ''propNames'' array, deleting them from the ''options'' hash. This is mutating method, used to set some properties at the start of the constructor, and don't set them again later. It's recommended to clone the ''options'' hash in the constructors that use //Amm.init()// + ''propNames'' to avoid mutating the options hash received by the constructor.
+* **propNames**: undefined|Array - sets only properties mentioned in ''propNames'' array, deleting them from the ''options'' hash. This is a mutating method, used to set some properties at the start of the constructor, and don't set them again later. It's recommended to clone the ''options'' hash in the constructors that use //Amm.init()// + ''propNames'' to avoid mutating the options hash received by the constructor.
 * **noSuchPropertyCallback**: object|function(key, value) - function that will be called in the case if some property cannot be found (scope: this := object); if it returns ''true'', exception won't be thrown
 
-Exception are generated when
+Exceptions are generated when
 * property (public member or setter) is missing in the object, and the value isn't a function
 * property name begins with "_", and the value isn't a function
 
-If the value is a function, it's assinged disregarding to whether such member or setter exist or not, without the check for "_" prefix. The purpose is to modify the object behavior ad-hoc way. Since functions cannot be defined using json or relaxed json, this approach is considered safe.
+If the value is a function, it's assigned regardless of whether such a member or setter exists, without the check for "_" prefix. The purpose is to modify the object behavior ad-hoc way. Since functions cannot be defined using json or relaxed json, this approach is considered safe.
 
 ==== Examples of using Amm.init ====
 
-Below is a deliberately dumbed-down example of the "furniture" class with the three properties: type (table or chair), width and height in the millimeters. Only chairs can have width below 500, and only tables can have height over 800. Setters are responsible for the validation. Since we need to know the type in advance, we need to assign it before the dimensions, so Amm.init will be called twice: for the ''type'' first, and then for everything else. To avoid mutation of the argument, we will clone the options first. To simplify logic, we don't allow to change the ''type'' later.
+Below is a deliberately dumbed-down example of the "furniture" class with the three properties: type (table or chair), width and height in millimeters. Only chairs can have width below 500, and only tables can have height over 800. Setters are responsible for the validation. Since we need to know the type in advance, we need to assign it before the dimensions, so Amm.init will be called twice: for the ''type'' first, and then for everything else. To avoid mutation of the argument, we will clone the options first. To simplify logic, we don't allow to change the ''type'' later.
 
 {{{code: lang="js" linenumbers="False"
 var Furniture = function(options) {
@@ -93,14 +93,14 @@ var Furniture = function(options) {
 }
 
 Furniture.prototype = {
-	'Furniture': '__CLASS__';
+	'Furniture': '__CLASS__'
 }
 
 Amm.createProperty(Furniture.prototype, 'type', undefined, function(type) {
 	if (this.type && this.type !== type)
 		throw Error("Can set furniture type only once");
 	if (type !== 'chair' && type !== 'table')
-		throw Error("`type` must be either 'chair' or 'table');
+		throw Error("`type` must be either 'chair' or 'table'");
 }, true);
 
 Amm.createProperty(Furniture.prototype, 'width', undefined, function(width) {

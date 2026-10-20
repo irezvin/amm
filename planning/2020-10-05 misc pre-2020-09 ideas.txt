@@ -1,7 +1,7 @@
 2020-10-05
 
-Below is the list of not implemented yet as of early September, 2020 improvements of Amm,
-that was collected from the different files.
+Below is the list of Amm improvements not yet implemented as of early September 2020,
+collected from different files.
 
 2018-07-04 
 
@@ -9,7 +9,7 @@ that was collected from the different files.
 -   Expression
     -   support read-only properties (`get` w/o `set` or `out`) - make sure that it works
         and is not timer-observed
-    -   array & json expressions
+    -   array & JSON expressions
         -   "skip" special value or keyword - omits key from result
         -   if const, cache the value
     -   'is' construct - like instanceof, but use Amm.is; accepts arrays too;
@@ -18,7 +18,7 @@ that was collected from the different files.
     -   string templates (``) - see ECMA spec
     -   Fully cache expressions; create new context for re-use - described in-depth 2020-09-22
     -   Arrays and hashes generation
-        -   Loop: like range, but creates new array from the inside properties,
+        -   Loop: like range, but creates new array from the inner properties,
             except the case when `skip` special value is returned.
         -   Make useful changeinfo, to avoid triggering redundant events on loops
         -   Other option: same, but the hash is created instead of the array,
@@ -45,8 +45,8 @@ that was collected from the different files.
 
 2019-10-10
 
--   it's now impossible to create a filter, in which the expression condition
-    returns own value. It will be handy to convert a value of some property
+-   it's now impossible to create a filter in which the expression condition
+    returns its own value. It will be handy to convert a value of some property
     directly into match value, like this:
     
         f = new Amm.MultiObserver.Filter({
@@ -61,7 +61,7 @@ that was collected from the different files.
 
 2019-10-14
 
--   give the builder extensions (data-amm-x) ability to stop recursive builder's
+-   give the builder extensions (data-amm-x) the ability to stop recursive builder's
     work (to avoid adding data-amm-dont-build)
 
 2019-10-19
@@ -70,14 +70,14 @@ that was collected from the different files.
     from the collection during setItems, splice
     -   how ArrayMapper + protected dest objects should behave?
     
-    protectedPropery is a collection property that denotes name of the property of inside
-    objects that mean that particular object shouldn't be deleted from the collection
+    protectedPropery is a collection property that denotes name of the property of the objects inside
+    the collection that mean that particular object shouldn't be deleted from the collection
     when items are replaced.
     
     Example: 
     
     coll.setProtectedProperty('dontDelete');
-    coll.items[0].setDontDelete(true); // of course, this property should exit in advance
+    coll.items[0].setDontDelete(true); // of course, this property should exist in advance
     coll.setItems([]); // regular collection will fully clear here....
     coll.length; // 1 // ...but coll.items[0] is left, because !!coll.items[0].getDontDelete()
     
@@ -108,7 +108,7 @@ that was collected from the different files.
 
     -   one Display Child can have multiple Display Parents
         (given the number of linked Amm.View.Html.Visual that have the elements
-        in a different containers)
+        in different containers)
         
     -   child: primaryDisplayParent (set/get); first one becomes the primary
         by default (if the view doesn't have `isPrimary`: true);
@@ -157,10 +157,10 @@ that was collected from the different files.
     -   `autoParent` extension for the builder: searches component in the DOM
         hierarchy, links to it;
     -   Amm.Trait.LocateComponent, Amm.View.(Abstract|Html).LocateComponent
-        -   by a timer or through a DOM observation locates DOM node
+        -   by a timer or through a DOM observation locates the DOM node
             of an enclosing component; once found, the link to the parent
             component is established, and observation is stopped;
-        -   observeHtml: true/false: enable non-stop onbservation.
+        -   observeHtml: true/false: enable non-stop observation.
     
 2020-03-04
 
@@ -193,7 +193,7 @@ that was collected from the different files.
     toggle different css classes; require 'ClassName' trait
     
 -   Model QOL: if the setter triggers an exception (outside of the event handler),
-    its' message is set to localErrors($field)
+    its message is set to localErrors($field)
     -   we can do this in the Field
     -   or we can do this in the Data.Model
     ?   how to behave during the repeat model validation? should we set value
@@ -216,6 +216,6 @@ that was collected from the different files.
 -   Amm.Data.Model:
     -   extend metadata to work with the separate fields
     -   expr: Amm.Expression
-    -   we VERY need to implement assications and joint computation
+    -   we VERY need to implement associations and joint computation
         of the whole graph
     -   don't validate and persist the calculated fields

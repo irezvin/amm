@@ -1,12 +1,12 @@
 2022-03-18 Antiwar therapy
 
-Question that popped up after looking at where I stopped:
+Questions that popped up after looking at where I stopped:
 
 >   Table with the twin view:
     +   fix dragDrop
         +   currently only first view' "ghost" moves (even if we started dragging
             the second one)
-        +   incoorect positioning after the drag is done (while dragging,
+        +   incorrect positioning after the drag is done (while dragging,
             highlighting is correct) - for some reason, "drop from the inside"
             is always triggered, even if the highlight shows that we are on the
             outside (it's related both to the rows and the columns)
@@ -21,7 +21,7 @@ Question that popped up after looking at where I stopped:
             + A:make a cell another display parent view of the cell (i.e. Amm.View.Html.CellItems
             extends Amm.View.Html.DisplayParent)
                 
-            - B:end doing constructDefaultViews by default and create some element-linked object,
+            - B:stop doing constructDefaultViews by default and create some element-linked object,
                 i.e. Amm.Template, that's going to react to constructDefaultViews(element);
                 if the element's Template is missing, Template of a parent component
                 is used.
@@ -32,7 +32,7 @@ Question that popped up after looking at where I stopped:
     +   finish shouldShowItemCallback of the collection view; feature to show only specific sections
         of the table clones (header, footer) // re-written collectionView 21.03
         
-        +   fix big: exception raised when clicking a cell, editor doesnt show up
+        +   fix big: exception raised when clicking a cell, editor doesn't show up
     -   when the cell has several views, adjust width/height to the biggest one 
         (lots of questions here)
         
@@ -57,7 +57,7 @@ Question that popped up after looking at where I stopped:
 2022-06-08
 ==========
 
--   Did "parentView" thingy, but now it works only with the `displayParent`s
+-   Did the "parentView" thingy, but now it works only with the `displayParent`s
     that create views for the children
 -   It will be good for Builder to correctly process the hierarchy as well, 
     but to do that, we need to create views from top to the bottom, 
@@ -87,14 +87,14 @@ Question that popped up after looking at where I stopped:
     the fixed cells on the left/on the top/in the corner (should we
     introduce focusPriority property for that?)    
     
--   Need to make that DOM-returning constructDefaultViews() belongs
+-   Need to make the DOM-returning constructDefaultViews() belong
     to the view, and not to the element, since we gravely break
     the separation of concerns here; but here the chicken-and-egg
     problem appears: we create Amm.View.Html.Table, that creates
-    own structure with the paramters (in the constructor?) including
+    own structure with the parameters (in the constructor?) including
     several more views/clones.
 
--   Need to solve challenge of automatic linking views of containers/content
+-   Need to solve the challenge of automatic linking views of containers/content
     w/o staticDisplayParent, when everything is built from the bottom up.
     
     

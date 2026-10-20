@@ -15,7 +15,7 @@ Created Tuesday 08 September 2020
 * Amm.meetsRequirements (object, requirements, paramName)
 * multiple inheritance
 
-===== namepaces =====
+===== namespaces =====
 
 In Amm, the string constants can be used as the class names (to be able to specify the classes using the JSON configuration).
 
@@ -31,16 +31,16 @@ In Amm, the string constants can be used as the class names (to be able to speci
 === **Amm.getFunction**(strName, dontThrow) ===
 	* searches for a function and returns it
 	* strName - name of the function
-		* if the value of type ''function'' is provided in place of ''strName'', it is be returned immediately
-		* then searching for exact match of ''strName'', registered using ''registerFunction'' before, and return it if found
-		* then try interpreting strName as a comma separated path, and search in the registered namespaces
+		* if the value of type ''function'' is provided in place of ''strName'', it is returned immediately
+		* then search for an exact match of ''strName'', registered earlier using ''registerFunction'', and return it if found
+		* then try interpreting strName as a dot-separated path, and search in the registered namespaces
 		* not found - throw an exception
 	* dontThrow - if true, exception won't be thrown in the absence of the result, and ''null'' is returned
-	* anywhere, where Amm accepts a class name, ''Amm.getFunction()'' is used to search for the class' constructor.
+	* wherever Amm accepts a class name, ''Amm.getFunction()'' is used to search for the class' constructor.
 
 To let Amm know, where to search for a class, a ''namespace'' needs to be registered. 
 
-By default the three namespaces exist:
+By default, three namespaces exist:
 
 * **"Amm"** - all classes are there or in the nested classes/namespaces;
 * **"v"** - shortcut for Amm.View.Html;
@@ -99,15 +99,15 @@ Amm.getFunction('SampleApp.SampleClass') === Amm.getFunction(SampleApp.SampleCla
 
 ===== class names, inheritance and interfaces =====
 
-In lots of places in Amm there are checks that the argument is an instance if required class. Since Javascripts instanceof doesn't support the Amm flavor of inheritance. // TODO: use the proper JS inheritance
+In lots of places in Amm there are checks that the argument is an instance of the required class. Since javascript's instanceof doesn't support the Amm flavor of inheritance, this is done differently. // TODO: use the proper JS inheritance
 
 So, to implement that, Amm objects have special properties to denote the name of the class of the object.
 
 ==== Creating a simpliest class ====
 
-The prototype must have a property "Namespace.Class.Name" with the name ''"__CLASS__".''
+The prototype must have a property "Namespace.Class.Name" with the value ''"__CLASS__".''
 
-For example, we use SampleApp from the former example to create the descendant of Amm.WithEvents.Proper creation of the basic class with Amm is done like this: 
+For example, we use SampleApp from the former example to create the descendant of Amm.WithEvents. Proper creation of the basic class with Amm is done like this: 
 
 {{{code: lang="js" linenumbers="False"
 SampleApp.SampleClass = function(options) {
@@ -165,7 +165,7 @@ Amm.is(obj, 'Amm.WithEvents')
 
 
 === Using Amm.is for checking the function arguments' classes ===
-Using Amm.is(item, className, throwIfNot) with a parameter name instead of  throwIfNot is handy to check for the types early in the function call; for example, this function expects for Amm.WithEvents:
+Using Amm.is(item, className, throwIfNot) with a parameter name instead of throwIfNot is handy to check for the types early in the function call; for example, this function expects an Amm.WithEvents:
 
 {{{code: lang="js" linenumbers="False"
 function listEventHandlers(inspectedObject, eventName) {
@@ -179,7 +179,7 @@ listEventHandlers(new Amm.Builder.Ref, "someEvent")
 //< Uncaught Error: inspectedObject must be an instance of Amm.WithEvents; given: Amm.Builder.Ref
 }}}
 
-that means, for methods with multiple parameters, error messages will report what parameters are incorrect.
+that means, for methods with multiple parameters, error messages will report which parameters are incorrect.
 
 This approach is used everywhere in the Amm, where class checks take place.
 
@@ -193,11 +193,11 @@ To subclass a class, we have a method
 	* **parentClass**: function - ancestor constructor
 	* **dontIndicateParent**: don't update ancestor class property from ''__CLASS__'' to ''__PARENT__''
 
-As with the many other libraries, this method adds members of the ancestor to the prototype of the descendant, if they arent's already in place.
+As with many other libraries, this method adds members of the ancestor to the prototype of the descendant, if they aren't already in place.
 
 Also, if in the ancestor prototype exists the member with the value ''__CLASS__'', it will be replaced with the value ''__PARENT__''.
 
-What Amm.is(object, className) does - is checking for condition
+What Amm.is(object, className) does is check the condition
 
 {{{code: lang="js" linenumbers="False"
 object[className] === "__CLASS__" || object[className] === "__PARENT__"
@@ -209,7 +209,7 @@ This way ''is()'' supports the inheritance.
 
 {{{code: lang="js" linenumbers="False"
 SampleApp.SampleClass = function(options) {
-	Amm.WithEvents.prototype.call(this, options);
+	Amm.WithEvents.call(this, options);
 }
 
 SampleApp.SampleClass.prototype = {
@@ -262,7 +262,7 @@ Amm.is(obj, SampleApp.SampleClass) // no quotes - use the constructor directly
 
 ==== Multiple inheritance ====
 
-Nothing stops us from calling Amm.extend multiple times; parent classes will be registered every time. It's important not to forget to call all parent constructors in the descendant one. We still have one class name (returned by ''Amm.getClass()'' and correctly working ''Amm.is()'' for all ancestor classes:
+Nothing stops us from calling Amm.extend multiple times; parent classes will be registered every time. It's important not to forget to call all parent constructors in the descendant one. We still have one class name (returned by ''Amm.getClass()'') and correctly working ''Amm.is()'' for all ancestor classes:
 
 === Example ===
 
@@ -325,7 +325,7 @@ The functions beforeExtend/afterExtend won't be inherited by the descendant cons
 
 ==== Interfaces ====
 
-Interfaces allow to let others know that the object supports particular set of the methods. At the present time it is not enforced - if we locate an interface tag in the ojbect, we trust his word on it.
+Interfaces allow objects to let others know that the object supports particular set of the methods. At the present time it is not enforced - if we locate an interface tag in the object, we trust its word on it.
 * Amm.is() checks for interfaces;
 * Amm.extend() copies interface tags along with the prototypes.
 
@@ -339,11 +339,11 @@ Interfaces have simple names like "Focusable" or "MetaProvider".
 * **commonWithObject** - second object; if provided, the list will have only the interfaces that both objects have // Note: what was the use case?
 
 === Amm.hasInterfaces(object, interfaces, throwIfNot) ===
-* returns true, if the object implements **object** //every// interface from the **interfaces** list
+* returns true, if the object implements //every// interface from the **interfaces** list
 * **interfaces**: string|Array - one to many interfaces
 * **throwIfNot**: 
 	* bool - if we should throw an exception if the object doesn't fulfill the requirements
-	* string - if the param ''throw'' is a string, it will be used as a paramter name in the exception text to make it more readable (like Amm.is())
+	* string - if the param ''throwIfNot'' is a string, it will be used as a parameter name in the exception text to make it more readable (like Amm.is())
 
 === Example ===
 
@@ -366,12 +366,12 @@ Amm.hasInterfaces(instance, "Boring")
 //< true
 
 //>
-Amm.hasInterface(instance, ["Dummy", "Boring"])
+Amm.hasInterfaces(instance, ["Dummy", "Boring"])
 
 //< true
 
 //>
-Amm.hasInterface(instance, ["Dummy", "Boring", "Other"])
+Amm.hasInterfaces(instance, ["Dummy", "Boring", "Other"])
 
 //< false
 
@@ -392,18 +392,19 @@ In some cases we need to check, if the object meets some conditions, in the runt
 	* in the full form it's a array of an arrays
 		* format: [ [rq1, rq2], [rq3, rq4], rq5, ... ] where rqX is a class, interface, or method name
 	* check returns TRUE only if the object satisfies all conditions from any of the sub-arrays. For example above it's (rq1 AND rq2) OR (rq3 AND rq4) OR rq5
-	* if sub-array has only one requirement, it can be provided directly
-	* string: "Ns.ClassName" is the sanme as Ns.ClassName
+	* if a sub-array has only one requirement, it can be provided directly
+	* string: "Ns.ClassName" is the same as Ns.ClassName
 * **paramName**: undefined|string - if provided, generate an exception using ''paramName'' in the text for readability (as in Amm.is())
 
 === Example ===
 {{{code: lang="js" linenumbers="False"
 MyListClass = function() {}
 MyListClass.prototype = {
-	getList(): function() { return []; },
-	setList(): function ( reuturn []; }
+	getList: function() { return []; },
+	setList: function() { return []; }
 }
-MySecondListClass = function() {
+MySecondListClass = function() {}
+MySecondListClass.prototype = {
         "WithList": "__INTERFACE__"
 }
 
@@ -412,7 +413,7 @@ myList = new MyListClass()
 mySecondList = new MySecondListClass()
 
 //>
-Amm.meetsRequirements (myList, [["getList", "setList, "deleteList"]])
+Amm.meetsRequirements (myList, [["getList", "setList", "deleteList"]])
 
 //< false // since myList doesn't have the method deleteList(), and we need all three
 
@@ -432,13 +433,13 @@ Allows to (relatively) quickly create classes with the sets of [[properties]], i
 
 // Note@2026-10-18: how about creating a lazy class declaration using the callbacks? If we check using Amm.is with a callback of non-created class yet, is() always returns false - class isn't "loaded" yet.
 
-* **name**: string|null - name of new class in the format Namespace.SubNameSpace.ClassName. All namespaces must exist and be registered before using them in the class declaration. The class created must NOT be registered on the contraty. If not provided, the name isn't set (and the prototype doesn't get the tag '''Namespace.SubNameSpace.ClassName': __CLASS__'').
-* **parent**: function|null - path to the ancestor class, or its constructor. Null can be provided if the we don't inherit anytihng.
+* **name**: string|null - name of new class in the format Namespace.SubNameSpace.ClassName. All namespaces must exist and be registered before using them in the class declaration. The class created must NOT be registered beforehand. If not provided, the name isn't set (and the prototype doesn't get the tag ''"Namespace.SubNameSpace.ClassName": "__CLASS__"'').
+* **parent**: function|null - path to the ancestor class, or its constructor. Null can be provided if the we don't inherit anything.
 * **proto**: object|null - prototype of the new class. May have property definitions, as described below.
 * **proto.prop__<propName>**: property definition
 	* a. proto.prop__<propName>: defaultValue, where defaultValue isn't an object: creates a property, getter, setter, change event, and class member with the name propName (Object.defineProperty)
-	* b. prop.prop__<propName>: object - allows to specify separate params for Amm.createProperty. Keys: defaultValue, onChange, defineProperty.
-* **constructorFn: function|null** - constructor for the new class. If not provided, default constructor is given:
+	* b. proto.prop__<propName>: object - allows to specify separate params for Amm.createProperty. Keys: defaultValue, onChange, defineProperty.
+* **constructorFn: function|null** - constructor for the new class. If not provided, a default constructor is provided:
 	* call the parent constructor with the same arguments, if we inherited anything;
 	* if we don't have an ancestor, by default it's function(options) { Amm.init(this, options); }
 

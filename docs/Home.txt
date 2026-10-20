@@ -13,14 +13,14 @@ During the development process the terms transformed into
 
 Views -> Elements (and Traits) -> Model
 
-The goal of the project was to create all-purpose solution that would allow creating simple solution without any javascript code, and more complex ones with the small additions of the custom javascript code.
+The goal of the project was to create an all-purpose solution that would allow creating simple solutions without any javascript code, and more complex ones with small additions of custom javascript code.
 
-The framework could have various application from adding dynamics to small dialogs to creating complex dialog systems and SPAs (admin areas, checkouts, questionaries, dashboards).
+The framework could have various applications, from adding dynamics to small dialogs to creating complex dialog systems and SPAs (admin areas, checkouts, questionnaires, dashboards).
 
 Following design decisions were made:
-* ECMA 5.1 (pre-2015) for maximum compatibility (plus I didn't know ECMA 2015 well at that moment)
+* ECMAScript 5.1 (pre-2015) for maximum compatibility (plus I didn't know ECMAScript 2015 well at that moment)
 * jQuery for DOM manipulation (subject to change in the future)
-* Amm-based solutions - code plus structure - should be as obvious and readable as possible, to keep understandable and serviceable
+* Amm-based solutions - code plus structure - should be as obvious and readable as possible, to keep them understandable and maintainable
 * feature-richness and saving developer time have priority over the compactness and lightness of the framework (therefore it's not compact and lightweight)
 * any incorrect call leads to exception (fail early)
 
@@ -31,8 +31,8 @@ Coordination between the different objects is done using subscription to the eve
 The most common type of the event is changing the object property (''<property>Change'').
 
 Interaction between the objects is done using two approaches.
-* In case when the roles of the interacting objects are known in advance (i.e. in the pair Trait-View, or in the pair Container-Content) subscription to the events and their handling is dictated by the source code;
-* For other cases, there is multi-purpose and flexible tool for linking the objects - Expressions, allowing to set properies of one objects according to the properties of other objects, and reacting to the changes along the whole chain.
+* In the case when the roles of the interacting objects are known in advance (i.e. in the pair Trait-View, or in the pair Container-Content) subscription to the events and their handling is dictated by the source code;
+* For other cases, there is a multi-purpose and flexible tool for linking the objects - Expressions, allowing to set properties of one objects according to the properties of other objects, and reacting to the changes along the whole chain.
 
 ===== Ideology =====
 
@@ -40,25 +40,25 @@ Interaction between the objects is done using two approaches.
 
 One of the downsides of jQuery-based and other widgets is that after creating one, it's often hard to fully control it from the application.
 
-In Amm every widget has a corresponding model - an Element - that has all necessary properties, methods, and events. Element is abstract and, preferably, platform-independent. It is both "remote control" for the widget, and its implementation, that can exist and function independently of its view.
+In Amm every widget has a corresponding model - an Element - that has all necessary properties, methods, and events. An Element is abstract and, preferably, platform-independent. It is both "remote control" for the widget, and its implementation, that can exist and function independently of its view.
 
-For example, if I'm creating an element with the ''Select'' trait, I always have access to the list of the options with a single or multiple choice, event if I didnt' bind this element to some DOM node. This element will correctly behave, and generate necessary events.
+For example, if I'm creating an element with the ''Select'' trait, I always have access to the list of the options with a single or multiple choice, even if I didn't bind this element to some DOM node. This element will correctly behave, and generate necessary events.
 
 Same, if I create an element with the ''Input'' trait, I'll have working combination of value / readOnly / enabled properties at my disposal.
 
-All widgets in Amm are implemented this way: internal working logic comes first, then comes the View that connectes the logic-bearing component with the DOM-based, or different, presentation.
+All widgets in Amm are implemented this way: internal working logic comes first, then comes the View that connects the logic-bearing component with the DOM-based, or different, presentation.
 
 ==== Dynamics and mutability ====
 
-One of the directions of the effort was to give the framework user ability to dynamically change property values and releations between elements in the runtime. We can move elements inside the composition hierarchies. We can dynamically create elements, delete elements, and change their identifiers. When possible, I aimed at making these changes tolerant to the sequence of the execution. I intended to create components that can be toyed with in creative ways, without a single intended approach.
+One of the directions of the effort was to give the framework user ability to dynamically change property values and relations between elements at runtime. We can move elements inside the composition hierarchies. We can dynamically create elements, delete elements, and change their identifiers. When possible, I aimed at making these changes tolerant of the order of execution. I intended to create components that can be toyed with in creative ways, without a single intended approach.
 
-==== Bottom-to-the-top orgranization ====
+==== Bottom-up organization ====
 
-Hierarchy of the elements, that are combined into the components, is built from the bottom to the top. In contrary to the DOM nodes, we are allowed to have multiple elements with the repeating IDs; they can still address their neighbours inside a common parent, using the IDs. Element can be also found by the DOM nodes, since many elements register themselves using the DOM attributes.
+Hierarchy of the elements, that are combined into the components, is built from the bottom to the top. Unlike DOM nodes, elements are allowed to have duplicate IDs; they can still address their neighbours inside a common parent, using the IDs. Element can be also found by the DOM nodes, since many elements register themselves using the DOM attributes.
 
-==== Flexibility of the objects' organisation ====
+==== Flexibility of the objects' organization ====
 
-One Element can have muliple Traits and any number of Views at the same time. Ad-hoc links between Elements can be established using the Expressions. Different Traits can implement own logic, subscribing to the events of the different elements. Views also subscribe to own Elements' events. Usually it's common to particular type of Views to require the Element to have matching type of Traits; if this list of the View is known in advance, the Traits will be assigned to the element automatically.
+One Element can have multiple Traits and any number of Views at the same time. Ad-hoc links between Elements can be established using the Expressions. Different Traits can implement their own logic, subscribing to the events of the different elements. Views also subscribe to their own Elements' events. It is common for a particular type of View to require the Element to have matching Traits; if this list of the View is known in advance, the Traits will be assigned to the element automatically.
 
 TODO: 
 * flexibility of the Traits
@@ -67,7 +67,7 @@ TODO:
 
 * [[build|File structure and packaging]] 
 * [[basics|Specifics and advantages of using the basic ecmascript subset]]
-* [[oop|Amm-flavored OOP]] ([[oop]])
+* [[oop|Amm-flavored OOP]]
 * [[events|Events]]
 * [[properties|Properties]]
 * [[options|Options]]
@@ -89,7 +89,7 @@ TODO:
 * Expression
 * [[Builder]]
 * Array, Collection
-* Array tranformation classes: ArrayMapper, Filter, Sorter, Instantiator
+* Array transformation classes: ArrayMapper, Filter, Sorter, Instantiator
 
 ===== Basic Traits and Views =====
 

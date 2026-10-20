@@ -19,7 +19,7 @@ Better records editing with Amm & Avancore
                     - per-field
                     - per-record
                 - Amm.Data.Collection
-                    - don't overwrite dirty or non-persistend records when updating data
+                    - don't overwrite dirty or non-persistent records when updating data
             - Table state persistence
         - L-1
             - Dialog windows

@@ -8,8 +8,8 @@
 
     <div data-amm-v="{
         class: Amm.View.Html.Template,
-        templateId: "globalTemplateId",
-        extends: "parentTemplate",
+        templateId: 'globalTemplateId',
+        extends: 'parentTemplate',
         
         fullOverride: true 
         /*
@@ -18,7 +18,7 @@
             override ancestor's `parts`
         */        
     }"
-         data-amm-e="{/* element defintion */}">
+         data-amm-e="{/* element definition */}">
          
             {{expr: expressionOrProperty}}
          
@@ -26,7 +26,7 @@
             content: contentProperty, 
             attr.foo: fooProperty,
             attr.bar: barProperty,
-        }""></div>
+        }"></div>
         <div data-amm-if="expression"></div>
         <div data-amm-for="arrayOrCollection" data-amm-val="varName"></div>
         <div data-amm-assign="expression" varName="var"> <!-- assignment will work only inside -->
@@ -36,7 +36,7 @@
             <div data-amm-default=""></div>
         </div>
         <div data-amm-part="partId">
-            {{parent}} <!-- this means parent template' part with same name will be inserted here -->
+            {{parent}} <!-- this means parent template's part with same name will be inserted here -->
         </div> <!-- parts can be overridden in child views -->
         
         {{part: partName}}
@@ -84,6 +84,6 @@
 -   Questions to solve
 
     -   creation of elements and views
-    -   how to prevent the CPU melting and RAM from boiling out
+    -   how to prevent the CPU from melting and the RAM from boiling away
         due to heaviness of the expressions
-        // by compliling to the native Javascript functions? - 29.09.26    
+        // by compiling to the native Javascript functions? - 29.09.26    
